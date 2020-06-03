@@ -31,7 +31,8 @@ def on_login(data: dict, activity: Activity) -> (int, Union[str, None]):
     user_id = environ.env.session.get(SessionKeys.user_id.value)
     user_name = environ.env.session.get(SessionKeys.user_name.value)
 
-    response = ActivityBuilder.activity_for_login(user_id, user_name)
+    threads = environ.env.thread.threads_for(user_id, limit=100)
+    response = ActivityBuilder.activity_for_login(user_id, user_name, threads)
 
     # environ.env.observer.emit('on_login', (data, activity))
     return ECodes.OK, response
