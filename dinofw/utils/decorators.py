@@ -3,7 +3,7 @@ import traceback
 from functools import wraps
 
 import eventlet
-from activitystreams import parse as as_parser
+import activitystreams as as_parser
 from dinofw import environ
 from dinofw.config import ConfigKeys, SessionKeys, ErrorCodes
 import logging
@@ -12,6 +12,8 @@ from dinofw import validation
 from dinofw import utils
 from datetime import datetime
 from uuid import uuid4 as uuid
+
+from dinofw.utils.exceptions import NoSuchUserException
 
 logger = logging.getLogger()
 
