@@ -1,6 +1,6 @@
-from dinofw import environ
 from activitystreams import Activity
 
+from dinofw import environ
 from dinofw.config import SessionKeys
 
 
