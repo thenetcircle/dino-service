@@ -32,7 +32,7 @@ def create_app():
     message_channel = "dino_{}_{}".format(message_env, message_db)
     message_queue = "redis://{}".format(queue_host)
 
-    logger.info("message_queue: %s" % message_queue)
+    logger.info(f"message_queue: {message_queue}")
     cors = environ.env.config.get(ConfigKeys.CORS_ORIGINS, default="*").split(",")
     if cors == ["*"]:
         cors = cors[0]

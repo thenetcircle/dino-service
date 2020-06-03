@@ -29,7 +29,7 @@ def pre_process(validation_name, should_validate_request=True):
             def _pre_process(*args, **kwargs):
                 if not hasattr(validation.request, validation_name):
                     raise RuntimeError(
-                        "no such attribute on validation.request: %s" % validation_name
+                        f"no such attribute on validation.request: {validation_name}"
                     )
 
                 try:
@@ -53,10 +53,9 @@ def pre_process(validation_name, should_validate_request=True):
                             try:
                                 user_name = utils.get_user_name_for(data["actor"]["id"])
                             except NoSuchUserException:
-                                error_msg = (
-                                    '[%s] no user found for user_id "%s" in session'
-                                    % (validation_name, str(data["actor"]["id"]))
-                                )
+                                user_id = data["actor"]["id"]
+                                error_msg = f'[{validation_name}] no user found for user_id "{user_id}" in session'
+
                                 logger.error(error_msg)
                                 return ErrorCodes.NO_USER_IN_SESSION, error_msg
                         data["actor"]["displayName"] = utils.b64e(user_name)
@@ -70,8 +69,7 @@ def pre_process(validation_name, should_validate_request=True):
                         )
                         if not is_valid:
                             logger.error(
-                                "[%s] validation failed, error message: %s"
-                                % (validation_name, str(error_msg))
+                                f"[{validation_name}] validation failed, error message: {error_msg}"
                             )
                             return ErrorCodes.VALIDATION_ERROR, error_msg
 
@@ -87,8 +85,7 @@ def pre_process(validation_name, should_validate_request=True):
                                 all_ok, status_code, msg = validator(data, activity)
                                 if not all_ok:
                                     logger.warning(
-                                        '[%s] validator "%s" failed: %s'
-                                        % (validation_name, str(validator), str(msg))
+                                        f'[{validation_name}] validator "{str(validator)}" failed: {str(msg)}'
                                     )
                                     break
 
@@ -97,7 +94,7 @@ def pre_process(validation_name, should_validate_request=True):
                             status_code, message = view_func(*args, **kwargs)
 
                 except Exception as e:
-                    logger.error("%s: %s" % (validation_name, str(e)))
+                    logger.error(f"{validation_name}: {str(e)}")
                     logger.exception(traceback.format_exc())
                     environ.env.stats.incr("event." + validation_name + ".exception")
                     environ.env.capture_exception(sys.exc_info())
@@ -108,8 +105,7 @@ def pre_process(validation_name, should_validate_request=True):
                 else:
                     environ.env.stats.incr("event." + validation_name + ".error")
                     logger.warning(
-                        "in decorator for %s, status_code: %s, message: %s"
-                        % (validation_name, status_code, str(message))
+                        f"in decorator for {validation_name}, status_code: {status_code}, message: {message}"
                     )
                 return status_code, message
 
@@ -143,7 +139,7 @@ def respond_with(gn_event_name=None, should_disconnect=False, emit_response=True
             except Exception as e:
                 environ.env.stats.incr(gn_event_name + ".exception")
                 tb = traceback.format_exc()
-                logger.error("%s: %s" % (gn_event_name, str(e)))
+                logger.error(f"{gn_event_name}: {str(e)}")
                 environ.env.capture_exception(sys.exc_info())
 
                 if should_disconnect and environ.env.config.get(
@@ -159,7 +155,7 @@ def respond_with(gn_event_name=None, should_disconnect=False, emit_response=True
 
             if status_code != 200:
                 logger.warning(
-                    "in decorator, status_code: %s, data: %s" % (status_code, str(data))
+                    f"in decorator, status_code: {status_code}, data: {str(data)}"
                 )
                 if should_disconnect and environ.env.config.get(
                     ConfigKeys.DISCONNECT_ON_FAILED_LOGIN, False

@@ -57,7 +57,7 @@ class MultipleRoomsFoundForNameException(Exception):
         self.room_name = room_name
 
     def __str__(self):
-        return 'MultipleRoomsFoundForNameException<room_name: "%s">' % self.room_name
+        return f'MultipleRoomsFoundForNameException<room_name: "{self.room_name}">'
 
     def __repr__(self):
         return self.__str__()

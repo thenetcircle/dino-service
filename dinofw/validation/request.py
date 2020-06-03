@@ -25,18 +25,14 @@ class RequestValidator(BaseValidator):
                 environ.env.session[attachment.object_type] = attachment.content
 
         if SessionKeys.token.value not in environ.env.session:
-            logger.warning(
-                "no token in session when logging in for user id %s" % str(user_id)
-            )
+            logger.warning(f"no token in session when logging in for user id {user_id}")
             return False, ECodes.NO_USER_IN_SESSION, "no token in session"
 
         token = environ.env.session.get(SessionKeys.token.value)
         is_valid, error_msg, session = self.validate_login(user_id, token)
 
         if not is_valid:
-            logger.warning(
-                "login is not valid for user id %s: %s" % (str(user_id), str(error_msg))
-            )
+            logger.warning(f"login is not valid for user id {user_id}: {error_msg}")
             environ.env.stats.incr("on_login.failed")
             return False, ECodes.NOT_ALLOWED, error_msg
 

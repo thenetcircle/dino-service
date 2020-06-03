@@ -11,8 +11,8 @@ class BaseValidator:
 
         session_user_id = environ.env.session.get("user_id", "NOT_FOUND_IN_SESSION")
         if str(activity.actor.id).strip() != str(session_user_id).strip():
-            error_msg = "user_id in session '%s' doesn't match user_id in request '%s'"
-            return False, error_msg % (session_user_id, activity.actor.id)
+            error_msg = f"user_id in session '{session_user_id}' does not match user_id in request '{activity.actor.id}'"
+            return False, error_msg
 
         return True, None
 
@@ -49,9 +49,9 @@ class BaseValidator:
                 continue
 
             if key not in session:
-                return False, '"%s" is a required parameter' % key
+                return False, f'"{key}" is a required parameter'
 
             val = session[key]
             if val is None or val == "":
-                return False, '"%s" is a required parameter' % key
+                return False, f'"{key}" is a required parameter'
         return True, None

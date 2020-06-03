@@ -72,11 +72,7 @@ class AuthRedis(object):
             self.redis.hset(key, session_key, session_value)
         except Exception as e:
             logger.error(
-                'could not update session for user %s; key "%s", value "%s": %s',
-                user_id,
-                session_key,
-                session_value,
-                str(e),
+                f'could not update session for user {user_id}; key "{session_key}", value "{session_value}": {str(e)}'
             )
             logger.exception(traceback.format_exc(e))
 
@@ -105,13 +101,11 @@ class AuthRedis(object):
         stored_token = stored_session.get(SessionKeys.token.value)
         if stored_token != supplied_token:
             logger.warning(
-                'user "%s" supplied token "%s" but stored token is "%s"'
-                % (user_id, supplied_token, stored_token)
+                f'user "{user_id}" supplied token "{supplied_token}" but stored token is "{supplied_token}"'
             )
             return (
                 False,
-                'invalid token "%s" supplied for user id "%s"'
-                % (supplied_token, user_id),
+                f'invalid token "{supplied_token}" supplied for user id "{user_id}"',
                 None,
             )
 
