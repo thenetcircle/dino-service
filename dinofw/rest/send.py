@@ -1,15 +1,13 @@
 import logging
-import traceback
-import eventlet
-
 import sys
+import traceback
+
+import eventlet
+from flask import request
 
 from dinofw import environ
 from dinofw import utils
 from dinofw.rest.base import BaseResource
-
-from flask import request
-
 from dinofw.utils.activity import ActivityBuilder
 
 logger = logging.getLogger(__name__)

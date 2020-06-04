@@ -13,18 +13,22 @@ class GroupHandler:
                 "owner": "batman",
                 "created": "2020-05-03T13:12:43Z",
                 "updated": "2020-06-04T07:16:28Z",
-                "users_list": [{
-                    "id": 1234,
-                    "name": "foo",
-                    "avatar": "https://example.com/image/1234.jpg"
-                }, {
-                    "id": 4321,
-                    "name": "bar",
-                    "avatar": "https://example.com/image/4321.jpg"
-                }, {
-                    "id": 5678,
-                    "name": "baz",
-                    "avatar": "https://example.com/image/5678.jpg"
-                }]
+                "users_list": [
+                    {
+                        "id": 1234,
+                        "name": "foo",
+                        "avatar": "https://example.com/image/1234.jpg",
+                    },
+                    {
+                        "id": 4321,
+                        "name": "bar",
+                        "avatar": "https://example.com/image/4321.jpg",
+                    },
+                    {
+                        "id": 5678,
+                        "name": "baz",
+                        "avatar": "https://example.com/image/5678.jpg",
+                    },
+                ],
             }
         ]

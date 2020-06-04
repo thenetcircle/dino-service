@@ -32,13 +32,10 @@ def on_login(data: dict, activity: Activity) -> (int, Union[str, None]):
     user_name = environ.env.session.get(SessionKeys.user_name.value)
 
     response = ActivityBuilder.activity_for_login(
-        user_id,
-        user_name,
-        encode_attachments=True,
-        include_history=True,
+        user_id, user_name, encode_attachments=True, include_history=True,
     )
 
-    environ.env.observer.emit('on_login', (data, activity))
+    environ.env.observer.emit("on_login", (data, activity))
     return ECodes.OK, response
 
 

@@ -21,9 +21,9 @@ def connect() -> (int, None):
     return api.connect()
 
 
-@socketio.on('login', namespace='/')
-@respond_with('gn_login', should_disconnect=True)
-@pre_process('on_login', should_validate_request=False)
+@socketio.on("login", namespace="/")
+@respond_with("gn_login", should_disconnect=True)
+@pre_process("on_login", should_validate_request=False)
 def on_login(data: dict, activity: Activity) -> (int, str):
     try:
         status_code, msg = api.on_login(data, activity)
@@ -31,13 +31,13 @@ def on_login(data: dict, activity: Activity) -> (int, str):
             disconnect()
         return status_code, msg
     except Exception as e:
-        logger.error(f'could not login, will disconnect client: {str(e)}')
+        logger.error(f"could not login, will disconnect client: {str(e)}")
         logger.exception(traceback.format_exc())
         environ.env.capture_exception(sys.exc_info())
         return 500, str(e)
 
 
-@socketio.on('disconnect', namespace='/')
+@socketio.on("disconnect", namespace="/")
 def on_disconnect() -> (int, None):
     # no pre-processing for disconnect event
     return api.on_disconnect()

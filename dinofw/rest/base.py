@@ -1,8 +1,8 @@
-from datetime import datetime
-from flask_restful import Resource
-
 import logging
 import traceback
+from datetime import datetime
+
+from flask_restful import Resource
 
 logger = logging.getLogger(__name__)
 
