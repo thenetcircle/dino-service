@@ -4,7 +4,7 @@ from gnenv import create_env
 from gnenv.environ import GNEnvironment
 
 from dinofw.config import ConfigKeys
-from dinofw.thread.handler import ThreadHandler
+from dinofw.groups.handler import GroupHandler
 
 logger = logging.getLogger(__name__)
 
@@ -155,7 +155,7 @@ def init_cache_service(gn_env: GNEnvironment):
 
 
 def init_thread_service(gn_env: GNEnvironment):
-    gn_env.threads = ThreadHandler(gn_env)
+    gn_env.threads = GroupHandler(gn_env)
 
 
 def initialize_env(dino_env):
