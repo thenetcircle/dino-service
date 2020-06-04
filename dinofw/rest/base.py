@@ -12,11 +12,12 @@ class BaseResource(Resource):
         self.cache_clear_interval = cache_clear_interval
 
     def get(self):
-        if (
-            datetime.utcnow() - self._get_last_cleared()
-        ).total_seconds() > self.cache_clear_interval:
+        utc_now = datetime.utcnow()
+        time_since = utc_now - self._get_last_cleared()
+
+        if time_since.total_seconds() > self.cache_clear_interval:
             self._get_lru_method().cache_clear()
-            self._set_last_cleared(datetime.utcnow())
+            self._set_last_cleared(utc_now)
 
         try:
             return {"status_code": 200, "data": self.do_get()}
