@@ -3,22 +3,15 @@ import sys
 import traceback
 from datetime import datetime as dt
 
-import activitystreams
-
-from dinofw.utils.activity import ActivityBuilder
-
 from dinofw import environ
 from dinofw import utils
-from dinofw import validation
 from dinofw.config import SessionKeys as S
-from dinofw.config import ConfigKeys
-from dinofw.config import UserKeys
-from dinofw.utils.exceptions import NoSuchUserException
+from dinofw.utils.activity import ActivityBuilder
 
 logger = logging.getLogger(__name__)
 
 
-class OnLoginHooks(object):
+class OnLoginHooks:
     @staticmethod
     def update_session_and_join_private_room(arg: tuple) -> None:
         data, activity = arg
