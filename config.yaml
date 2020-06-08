@@ -1,0 +1,12 @@
+auth:
+    type: 'allowall'
+
+cache:
+    type: 'memory'
+
+coordinator:
+    host: 'maggie-kafka-1'
+    db: 13
+
+stats:
+    type: 'mock'

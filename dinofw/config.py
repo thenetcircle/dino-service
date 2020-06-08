@@ -51,6 +51,14 @@ class AckStatus:
     READ = 2
 
 
+class RedisKeys:
+    RKEY_AUTH = 'user:auth:{}'  # user:auth:user_id
+
+    @staticmethod
+    def auth_key(user_id: str) -> str:
+        return RedisKeys.RKEY_AUTH.format(user_id)
+
+
 class ConfigKeys:
     REQ_LOG_LOC = "request_log_location"
     LOG_LEVEL = "log_level"

@@ -6,6 +6,18 @@ from gnenv.environ import GNEnvironment
 from dinofw.config import ConfigKeys
 from dinofw.groups.handler import GroupHandler
 
+from flask_socketio import emit as _flask_emit
+from flask_socketio import send as _flask_send
+from flask_socketio import join_room as _flask_join_room
+from flask_socketio import leave_room as _flask_leave_room
+from flask import redirect as _flask_redirect
+from flask import url_for as _flask_url_for
+from flask import request as _flask_request
+from flask import send_from_directory as _flask_send_from_directory
+from flask import render_template as _flask_render_template
+from flask import session as _flask_session
+from flask_socketio import disconnect as _flask_disconnect
+
 logger = logging.getLogger(__name__)
 
 
@@ -154,22 +166,145 @@ def init_cache_service(gn_env: GNEnvironment):
         )
 
 
-def init_thread_service(gn_env: GNEnvironment):
-    gn_env.threads = GroupHandler(gn_env)
+def init_group_service(gn_env: GNEnvironment):
+    gn_env.groups = GroupHandler(gn_env)
+
+
+def init_flask(gn_env: GNEnvironment):
+    gn_env.out_of_scope_emit = None  # needs to be set later after socketio object has been created
+    gn_env.emit = _flask_emit
+    gn_env.send = _flask_send
+    gn_env.join_room = _flask_join_room
+    gn_env.leave_room = _flask_leave_room
+    gn_env.render_template = _flask_render_template
+    gn_env.send_from_directory = _flask_send_from_directory
+    gn_env.session = _flask_session
+    gn_env.request = _flask_request
+
+
+def init_stats_service(gn_env: GNEnvironment) -> None:
+    if len(gn_env.config) == 0 or gn_env.config.get(ConfigKeys.TESTING, False):
+        # assume we're testing
+        return
+
+    stats_engine = gn_env.config.get(ConfigKeys.STATS_SERVICE, None)
+
+    if stats_engine is None:
+        raise RuntimeError('no stats service specified')
+
+    stats_type = stats_engine.get(ConfigKeys.TYPE, None)
+    if stats_type is None:
+        raise RuntimeError('no stats type specified, use one of [statsd] (set host to mock if no stats service wanted)')
+
+    if stats_type == 'statsd':
+        from dinofw.stats.statsd import StatsdService
+        gn_env.stats = StatsdService(gn_env)
+        gn_env.stats.set('connections', 0)
+
+    elif stats_type == 'mock':
+        from dinofw.stats.statsd import MockStatsd
+        gn_env.stats = MockStatsd()
+        gn_env.stats.set('connections', 0)
+
+
+def init_response_formatter(gn_env: GNEnvironment):
+    if len(gn_env.config) == 0 or gn_env.config.get(ConfigKeys.TESTING, False):
+        # assume we're testing
+        return
+
+    def get_format_keys() -> list:
+        _def_keys = ['status_code', 'data', 'error']
+
+        res_format = gn_env.config.get(ConfigKeys.RESPONSE_FORMAT, None)
+        if res_format is None:
+            logger.info('using default response format, no config specified')
+            return _def_keys
+
+        if type(res_format) != str:
+            logger.warning('configured response format is of type "%s", using default' % str(type(res_format)))
+            return _def_keys
+
+        if len(res_format.strip()) == 0:
+            logger.warning('configured response format is blank, using default')
+            return _def_keys
+
+        keys = res_format.split(',')
+        if len(keys) != 3:
+            logger.warning('configured response format not "<code>,<data>,<error>" but "%s", using default' % res_format)
+            return _def_keys
+
+        for i, key in enumerate(keys):
+            if len(key.strip()) == 0:
+                logger.warning('response format key if index %s is blank in "%s", using default' % (str(i), keys))
+                return _def_keys
+        return keys
+
+    code_key, data_key, error_key = get_format_keys()
+
+    from dinofw.utils.formatter import SimpleResponseFormatter
+    gn_env.response_formatter = SimpleResponseFormatter(code_key, data_key, error_key)
+    logger.info('configured response formatting as %s' % str(gn_env.response_formatter))
+
+
+def init_request_validators(gn_env: GNEnvironment) -> None:
+    from yapsy.PluginManager import PluginManager
+    logging.getLogger('yapsy').setLevel(gn_env.config.get(ConfigKeys.LOG_LEVEL, logging.INFO))
+
+    plugin_manager = PluginManager()
+    plugin_manager.setPluginPlaces(['dino/validation/events'])
+    plugin_manager.collectPlugins()
+
+    gn_env.event_validator_map = dict()
+    gn_env.event_validators = dict()
+
+    for pluginInfo in plugin_manager.getAllPlugins():
+        plugin_manager.activatePluginByName(pluginInfo.name)
+        gn_env.event_validators[pluginInfo.name] = pluginInfo.plugin_object
+
+    validation = gn_env.config.get(ConfigKeys.VALIDATION, None)
+    if validation is None:
+        return
+
+    for key in validation.keys():
+        if key not in gn_env.event_validator_map:
+            gn_env.event_validator_map[key] = list()
+        plugins = validation[key].copy()
+        validation[key] = dict()
+        for plugin_info in plugins:
+            plugin_name = plugin_info.get('name')
+            validation[key][plugin_name] = plugin_info
+            try:
+                gn_env.event_validator_map[key].append(gn_env.event_validators[plugin_name])
+            except KeyError:
+                raise KeyError('specified plugin "%s" does not exist' % key)
+
+    gn_env.config.set(ConfigKeys.VALIDATION, validation)
+
+    for pluginInfo in plugin_manager.getAllPlugins():
+        pluginInfo.plugin_object.setup(gn_env)
+
+
+
+def init_observer(gn_env: GNEnvironment) -> None:
+    from pymitter import EventEmitter
+    gn_env.observer = EventEmitter()
 
 
 def initialize_env(dino_env):
+    logging.basicConfig(level='DEBUG', format=ConfigKeys.DEFAULT_LOG_FORMAT)
+
+    init_flask(dino_env)
     init_logging(dino_env)
     init_database(dino_env)
     init_auth_service(dino_env)
     init_cache_service(dino_env)
-    init_thread_service(dino_env)
+    init_stats_service(dino_env)
+    init_group_service(dino_env)
+    init_response_formatter(dino_env)
+    init_request_validators(dino_env)
+    init_observer(dino_env)
 
-    # init_request_validators(dino_env)
     # init_pub_sub(dino_env)
-    # init_stats_service(dino_env)
-    # init_observer(dino_env)
-    # init_response_formatter(dino_env)
     # init_enrichment_service(dino_env)
     # init_storage_engine(dino_env)
 

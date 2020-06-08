@@ -4,7 +4,7 @@ from typing import Union
 from activitystreams import Activity
 
 from dinofw import environ
-from dinofw.config import ErrorCodes as ECodes
+from dinofw.config import ErrorCodes as ECodes, ConfigKeys
 from dinofw.config import SessionKeys
 from dinofw.utils.activity import ActivityBuilder
 
@@ -17,7 +17,7 @@ def connect() -> (int, None):
 
     :return: {'status_code': 200}
     """
-    return ECodes.OK, None
+    return ECodes.OK, ""
 
 
 def on_login(data: dict, activity: Activity) -> (int, Union[str, None]):

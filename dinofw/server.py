@@ -3,20 +3,24 @@ import logging
 from flask import Flask
 from flask_socketio import SocketIO
 from werkzeug.contrib.fixers import ProxyFix
-
-from dinofw import environ
 from dinofw.config import ConfigKeys
 
-
+logging.basicConfig(level='DEBUG', format=ConfigKeys.DEFAULT_LOG_FORMAT)
 logger = logging.getLogger(__name__)
 socket_logger = logging.getLogger("socketio")
-socket_logger.setLevel(logging.WARNING)
+socket_logger.setLevel(logging.DEBUG)
 logging.getLogger("amqp").setLevel(logging.WARNING)
 logging.getLogger("kafka.conn").setLevel(logging.WARNING)
+logging.getLogger("engineio.server").setLevel(logging.WARNING)
+
+from dinofw import environ
 
 
 def create_app():
-    _app = Flask(__name__)
+    _app = Flask(
+        __name__,
+        static_folder='templates/static'
+    )
 
     # used for encrypting cookies for handling sessions
     _app.config["SECRET_KEY"] = "abc492ee-9739-11e6-a174-07f6b92d4a4b"

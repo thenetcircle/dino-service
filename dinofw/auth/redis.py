@@ -3,18 +3,15 @@ import traceback
 import redis
 from typing import Union
 
-from zope.interface import implementer
-
-from dino.auth import IAuth
-from dino.config import ConfigKeys
-from dino.config import RedisKeys
-from dino.config import SessionKeys
+from dinofw.auth import IAuth
+from dinofw.config import ConfigKeys
+from dinofw.config import RedisKeys
+from dinofw.config import SessionKeys
 
 logger = logging.getLogger()
 
 
-@implementer(IAuth)
-class AuthRedis(object):
+class AuthRedis(IAuth):
     def __init__(self, host: str, port: int = 6379, db: int = 0, env=None):
         if env.config.get(ConfigKeys.TESTING, False) or host == "mock":
             from fakeredis import FakeStrictRedis
@@ -26,7 +23,7 @@ class AuthRedis(object):
             self.redis_instance = None
 
         if env is None:
-            from dino import environ
+            from dinofw import environ
 
             self.env = environ.env
         else:

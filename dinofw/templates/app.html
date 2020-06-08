@@ -2,27 +2,39 @@
 <html>
 <head>
     <title>python-socketio test</title>
-    <script type="text/javascript" src="//code.jquery.com/jquery-2.1.4.min.js"></script>
-    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.4/socket.io.slim.js"></script>
+    <script type="text/javascript" src="/static/jquery-2.1.4.min.js"></script>
+    <script type="text/javascript" src="/static/socket.io-2.0.4.slim.js"></script>
     <script type="text/javascript" charset="utf-8">
         $(document).ready(function(){
             var socket = io.connect();
 
             socket.on('connect', function() {
-                socket.emit('my_event', {data: 'I\'m connected!'});
+                socket.emit('login', {
+                    verb: 'login',
+                    actor: {
+                        id: '1971',
+                        displayName: 'batman',
+                        attachments: [{
+                            objectType: 'token',
+                            content: 'some-token'
+                        }]
+                    }
+                });
             });
 
-            socket.on('disconnect', function() {
+            socket.on('gn_login', function(data) {
+                for (let i = 0; i < data.data.object.attachments.length; i++) {
+                    let group = data.data.object.attachments[i]
+                    $('#log').append('<a href="#" class="group_id" id="group-id-' + group.id + '">' + group.displayName + '</a><br />');
+                }
+            });
+
+            socket.on('gn_disconnect', function() {
                 $('#log').append('<br>Disconnected');
             });
 
             $('form#disconnect').submit(function(event) {
-                socket.emit('disconnect request');
-                return false;
-            });
-
-            $('form#disconnect').submit(function(event) {
-                socket.emit('disconnect request');
+                socket.emit('disconnect');
                 return false;
             });
         });
