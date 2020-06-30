@@ -7,7 +7,8 @@ from uuid import uuid4 as uuid
 import pytz
 
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import ActionLog, PaginationQuery, GroupUsers, GroupJoinQuery, Joiner, JoinerUpdateQuery
+from dinofw.rest.models import ActionLog, PaginationQuery, GroupUsers, GroupJoinQuery, Joiner, JoinerUpdateQuery, \
+    UpdateGroupQuery, CreateGroupQuery, AdminUpdateGroupQuery
 from dinofw.rest.models import Group
 from dinofw.rest.models import Histories
 from dinofw.rest.models import HistoryQuery
@@ -66,6 +67,9 @@ class GroupResource(BaseResource):
             hide_before=0
         )
 
+    async def create(self, user_id: int, query: CreateGroupQuery) -> Group:
+        pass
+
     async def joins(self, user_id: int, group_id: str, query: GroupJoinQuery) -> List[Joiner]:
         return [self._join(group_id)]
 
@@ -73,6 +77,12 @@ class GroupResource(BaseResource):
         return self._join(group_id)
 
     async def delete_join_request(self, user_id: int, group_id: str, joiner_id: int) -> None:
+        pass
+
+    async def admin_update_group_information(self, group_id, query: AdminUpdateGroupQuery) -> Group:
+        pass
+
+    async def update_group_information(self, user_id: int, group_id: str, query: UpdateGroupQuery) -> Group:
         pass
 
     async def update_join_request(self, user_id: int, group_id: str, joiner_id: int, query: JoinerUpdateQuery) -> Joiner:
@@ -83,3 +93,12 @@ class GroupResource(BaseResource):
 
     async def get_group(self, group_id: str):
         return self._group(group_id)
+
+    async def hide_histories_for_user(self, group_id: str, user_id: int, query: HistoryQuery):
+        pass
+
+    async def delete_one_group_for_user(self, user_id: int, group_id: str) -> None:
+        pass
+
+    async def delete_all_groups_for_user(self, user_id: int, group_id: str) -> None:
+        pass

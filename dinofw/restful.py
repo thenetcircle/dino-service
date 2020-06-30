@@ -4,7 +4,7 @@ from typing import List
 from fastapi import FastAPI
 
 from dinofw import environ
-from dinofw.rest.models import AdminQuery, JoinerUpdateQuery
+from dinofw.rest.models import AdminQuery, JoinerUpdateQuery, AdminUpdateGroupQuery
 from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import EditMessageQuery
 from dinofw.rest.models import Group
@@ -57,7 +57,7 @@ async def hide_group_history_for_user(group_id: str, user_id: int, query: Histor
     """
     user hide group history, which won't affect other user(s), only mark for this user
     """
-    return await environ.env.rest.group.hides_histories_for_user(group_id, user_id, query)
+    return await environ.env.rest.group.hide_histories_for_user(group_id, user_id, query)
 
 
 @app.post("/v1/groups/{group_id}/messages", response_model=List[Message])
@@ -65,7 +65,7 @@ async def get_messages_in_group(group_id: str, query: HistoryQuery) -> List[Mess
     """
     get messages in a group, order by time in descendent
     """
-    return await environ.env.rest.group.messages(group_id, query)
+    return await environ.env.rest.message.messages(group_id, query)
 
 
 @app.put("/v1/groups/{group_id}/messages")
@@ -73,7 +73,7 @@ async def batch_update_messages_in_group(group_id: str, query: HistoryQuery):
     """
     batch update messages in group
     """
-    return await environ.env.rest.group.update_messages(group_id, query)
+    return await environ.env.rest.message.update_messages(group_id, query)
 
 
 @app.delete("/v1/groups/{group_id}/messages")
@@ -81,7 +81,7 @@ async def batch_delete_messages_in_group(group_id: str, query: HistoryQuery):
     """
     batch delete messages in group
     """
-    return await environ.env.rest.group.delete_messages(group_id, query)
+    return await environ.env.rest.message.delete_messages(group_id, query)
 
 
 @app.post("/v1/groups/{group_id}/users/{user_id}/messages", response_model=List[Message])
@@ -89,7 +89,7 @@ async def get_messages_for_user_in_group(group_id: str, user_id: int, query: His
     """
     get user messages in a group
     """
-    return await environ.env.rest.group.messages_for_user(group_id, user_id, query)
+    return await environ.env.rest.message.messages_for_user(group_id, user_id, query)
 
 
 @app.put("/v1/groups/{group_id}/users/{user_id}/messages", response_model=List[Message])
@@ -97,7 +97,7 @@ async def batch_update_messages_in_group_for_user(group_id: str, user_id: int, q
     """
     batch update user messages in a group (blocked, spammer, forcefakechecked)
     """
-    return await environ.env.rest.group.messages_for_user(group_id, user_id, query)
+    return await environ.env.rest.message.update_messages_for_user(group_id, user_id, query)
 
 
 @app.delete("/v1/groups/{group_id}/users/{user_id}/messages", response_model=List[Message])
@@ -105,7 +105,7 @@ async def batch_delete_messages_in_group_for_user(group_id: str, user_id: int, q
     """
     batch delete user messages in a group (gdpr)
     """
-    return await environ.env.rest.group.delete_user_messages_for_group(group_id, user_id, query)
+    return await environ.env.rest.message.delete_messages_for_user_in_group(group_id, user_id, query)
 
 
 @app.post("/v1/groups/{group_id}/users/{user_id}/send", response_model=List[Message])
@@ -157,11 +157,11 @@ async def get_group_information(group_id) -> Group:
 
 
 @app.put("/v1/groups/{group_id}", response_model=Group)
-async def edit_group_information(group_id, query: UpdateGroupQuery) -> Group:
+async def edit_group_information(group_id, query: AdminUpdateGroupQuery) -> Group:
     """
     admin update group
     """
-    return await environ.env.rest.group.edit(group_id)
+    return await environ.env.rest.group.admin_update_group_information(group_id, query)
 
 
 @app.post("/v1/users/{user_id}/groups", response_model=List[Group])
@@ -185,7 +185,7 @@ async def update_group_information(user_id: int, group_id: str, query: UpdateGro
     """
     update a group
     """
-    return await environ.env.rest.groups.update(user_id, group_id, query)
+    return await environ.env.rest.groups.update_group_information(user_id, group_id, query)
 
 
 @app.delete("/v1/users/{user_id}/groups/{group_id}")
@@ -194,7 +194,7 @@ async def delete_one_group_for_user(user_id: int, group_id: str):
     owner delete a group
     """
     # TODO: how would deletion work here for other users in the group?
-    return await environ.env.rest.user.delete(user_id, group_id)
+    return await environ.env.rest.group.delete_on_group_for_user(user_id, group_id)
 
 
 @app.delete("/v1/users/{user_id}/groups")
@@ -203,7 +203,7 @@ async def delete_all_groups_for_user(user_id: int) -> Group:
     batch delete user created group
     """
     # TODO: really delete all user's groups? what about other users in group?
-    return await environ.env.rest.groups.delete(user_id)
+    return await environ.env.rest.groups.delete_all_groups_for_user(user_id)
 
 
 @app.post("/v1/users/{user_id}/groups/{group_id}/joins", response_model=List[Joiner])

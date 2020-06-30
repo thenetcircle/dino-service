@@ -56,12 +56,12 @@ class GroupQuery(PaginationQuery):
     has_unread: int
 
 
-class AdminUpdateGroupQuery(AdminQuery):
-    group_status: int
-
-
 class JoinerUpdateQuery(BaseModel):
     status: int
+
+
+class AdminUpdateGroupQuery(AdminQuery):
+    group_status: int
 
 
 class UpdateGroupQuery(BaseModel):
