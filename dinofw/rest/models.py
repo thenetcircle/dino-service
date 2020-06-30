@@ -71,7 +71,7 @@ class UpdateGroupQuery(BaseModel):
     group_context: str
 
 
-class EditMessageQuery(AdminQuery, MessageQuery):
+class EditMessageQuery(MessageQuery):
     read_at: int
 
 

@@ -36,6 +36,14 @@ def create_app():
 app = create_app()
 
 
+@app.post("/v1/groups", response_model=List[Group])
+async def search_groups(query: SearchQuery) -> List[Group]:
+    """
+    search groups sort by created time descendent
+    """
+    return await environ.env.rest.group.search(query)
+
+
 @app.post("/v1/groups/{group_id}/histories/{user_id}", response_model=List[Histories])
 async def group_history_for_user(group_id: str, user_id: int, query: HistoryQuery) -> List[Histories]:
     """
@@ -140,30 +148,6 @@ async def users_in_group(group_id: str, query: PaginationQuery) -> GroupUsers:
     return await environ.env.rest.group.users(group_id, query)
 
 
-@app.get("/v1/userstats/{user_id}", response_model=UserStats)
-async def user_statistics(user_id: int) -> UserStats:
-    """
-    get user statistic data
-    """
-    return await environ.env.rest.user.stats(user_id)
-
-
-@app.get("/v1/groups/{group_id}/userstats/{user_id}", response_model=UserGroupStats)
-async def user_statistics_in_group(group_id: str, user_id: int) -> UserGroupStats:
-    """
-    get user statistic in group
-    """
-    return await environ.env.rest.group.stats(group_id, user_id)
-
-
-@app.post("/v1/groups", response_model=List[Group])
-async def search_groups(query: SearchQuery) -> List[Group]:
-    """
-    search groups sort by created time descendent
-    """
-    return await environ.env.rest.group.search(query)
-
-
 @app.get("/v1/groups/{group_id}", response_model=Group)
 async def group_information(group_id) -> Group:
     """
@@ -238,7 +222,7 @@ async def get_group_join_requests(user_id: int, group_id: str, query: GroupJoinQ
     return await environ.env.rest.group.joins(user_id, group_id, query)
 
 
-@app.get("/users/{user_id}/groups/{group_id}/joins/{joiner_id}", response_model=Joiner)
+@app.get("/v1/users/{user_id}/groups/{group_id}/joins/{joiner_id}", response_model=Joiner)
 async def get_join_details(user_id: int, group_id: str, joiner_id: int) -> Joiner:
     """
     get join details
@@ -246,7 +230,7 @@ async def get_join_details(user_id: int, group_id: str, joiner_id: int) -> Joine
     return await environ.env.rest.group.get_join_details(user_id, group_id, joiner_id)
 
 
-@app.put("/users/{user_id}/groups/{group_id}/joins/{joiner_id}", response_model=Joiner)
+@app.put("/v1/users/{user_id}/groups/{group_id}/joins/{joiner_id}", response_model=Joiner)
 async def approve_or_deny_join_request(user_id: int, group_id: str, joiner_id: int, query: JoinerUpdateQuery) -> Joiner:
     """
     approve or deny a user join request
@@ -254,9 +238,25 @@ async def approve_or_deny_join_request(user_id: int, group_id: str, joiner_id: i
     return await environ.env.rest.group.update_join_request(user_id, group_id, joiner_id, query)
 
 
-@app.delete("/users/{user_id}/groups/{group_id}/joins/{joiner_id}")
+@app.delete("/v1/users/{user_id}/groups/{group_id}/joins/{joiner_id}")
 async def delete_join_request(user_id: int, group_id: str, joiner_id: int) -> None:
     """
     approve or deny a user join request
     """
     return await environ.env.rest.group.delete_join_request(user_id, group_id, joiner_id)
+
+
+@app.get("/v1/groups/{group_id}/userstats/{user_id}", response_model=UserGroupStats)
+async def user_statistics_in_group(group_id: str, user_id: int) -> UserGroupStats:
+    """
+    get user statistic in group
+    """
+    return await environ.env.rest.group.stats(group_id, user_id)
+
+
+@app.get("/v1/userstats/{user_id}", response_model=UserStats)
+async def user_statistics(user_id: int) -> UserStats:
+    """
+    get user statistic data
+    """
+    return await environ.env.rest.user.stats(user_id)
