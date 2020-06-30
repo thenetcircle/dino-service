@@ -30,7 +30,7 @@ class Message(BaseModel):
 class ActionLog(BaseModel):
     action_id: str
     user_id: int
-    group_id: int
+    group_id: str
     message_id: str
     action_type: int
     created_at: int

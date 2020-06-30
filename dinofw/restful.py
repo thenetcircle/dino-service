@@ -20,7 +20,7 @@ app = create_app()
 
 @app.post("/v1/groups/{group_id}/histories/{user_id}", response_model=List[Histories])
 async def group_history_for_user(group_id: str, user_id: int, query: HistoryQuery) -> List[Histories]:
-    return await environ.env.rest.group.history(group_id, user_id, query)
+    return await environ.env.rest.group.histories(group_id, user_id, query)
 
 
 @app.post("/v1/groups/{group_id}/messages", response_model=List[Message])
