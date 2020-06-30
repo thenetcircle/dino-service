@@ -37,7 +37,7 @@ app = create_app()
 
 
 @app.post("/v1/groups", response_model=List[Group])
-async def search_groups(query: SearchQuery) -> List[Group]:
+async def search_for_groups(query: SearchQuery) -> List[Group]:
     """
     search groups sort by created time descendent
     """
@@ -45,7 +45,7 @@ async def search_groups(query: SearchQuery) -> List[Group]:
 
 
 @app.post("/v1/groups/{group_id}/histories/{user_id}", response_model=List[Histories])
-async def group_history_for_user(group_id: str, user_id: int, query: HistoryQuery) -> List[Histories]:
+async def get_group_history_for_user(group_id: str, user_id: int, query: HistoryQuery) -> List[Histories]:
     """
     get user visible history in a group sort by time in descendent, messages and action log.
     """
@@ -69,7 +69,7 @@ async def get_messages_in_group(group_id: str, query: HistoryQuery) -> List[Mess
 
 
 @app.put("/v1/groups/{group_id}/messages")
-async def batch_update_messages(group_id: str, query: HistoryQuery):
+async def batch_update_messages_in_group(group_id: str, query: HistoryQuery):
     """
     batch update messages in group
     """
@@ -77,7 +77,7 @@ async def batch_update_messages(group_id: str, query: HistoryQuery):
 
 
 @app.delete("/v1/groups/{group_id}/messages")
-async def batch_delete_messages(group_id: str, query: HistoryQuery):
+async def batch_delete_messages_in_group(group_id: str, query: HistoryQuery):
     """
     batch delete messages in group
     """
@@ -125,7 +125,7 @@ async def get_message_details(group_id: str, user_id: int, message_id: str) -> M
 
 
 @app.put("/v1/groups/{group_id}/users/{user_id}/messages/{message_id}", response_model=Message)
-async def edit_message(group_id: str, user_id: int, message_id: str, query: EditMessageQuery) -> Message:
+async def edit_a_message(group_id: str, user_id: int, message_id: str, query: EditMessageQuery) -> Message:
     """
     edit a group message
     """
@@ -133,7 +133,7 @@ async def edit_message(group_id: str, user_id: int, message_id: str, query: Edit
 
 
 @app.delete("/v1/groups/{group_id}/users/{user_id}/messages/{message_id}", response_model=Message)
-async def delete_message(group_id: str, user_id: int, message_id: str, query: AdminQuery) -> Message:
+async def delete_a_message(group_id: str, user_id: int, message_id: str, query: AdminQuery) -> Message:
     """
     delete a message in group (hard delete)
     """
@@ -141,7 +141,7 @@ async def delete_message(group_id: str, user_id: int, message_id: str, query: Ad
 
 
 @app.post("/v1/groups/{group_id}/users", response_model=GroupUsers)
-async def users_in_group(group_id: str, query: PaginationQuery) -> GroupUsers:
+async def get_users_in_group(group_id: str, query: PaginationQuery) -> GroupUsers:
     """
     get users in group
     """
@@ -149,7 +149,7 @@ async def users_in_group(group_id: str, query: PaginationQuery) -> GroupUsers:
 
 
 @app.get("/v1/groups/{group_id}", response_model=Group)
-async def group_information(group_id) -> Group:
+async def get_group_information(group_id) -> Group:
     """
     get group detail
     """
@@ -165,7 +165,7 @@ async def edit_group_information(group_id, query: UpdateGroupQuery) -> Group:
 
 
 @app.post("/v1/users/{user_id}/groups", response_model=List[Group])
-async def groups_for_user(user_id: int, query: GroupQuery) -> List[Group]:
+async def get_groups_for_user(user_id: int, query: GroupQuery) -> List[Group]:
     """
     get user's group sort by latest message update
     """
@@ -173,7 +173,7 @@ async def groups_for_user(user_id: int, query: GroupQuery) -> List[Group]:
 
 
 @app.post("/v1/users/{user_id}/groups/create", response_model=Group)
-async def create_new_group(user_id: int, query: CreateGroupQuery) -> Group:
+async def create_a_new_group(user_id: int, query: CreateGroupQuery) -> Group:
     """
     create a group
     """
@@ -181,7 +181,7 @@ async def create_new_group(user_id: int, query: CreateGroupQuery) -> Group:
 
 
 @app.put("/v1/users/{user_id}/groups/{group_id}", response_model=Group)
-async def update_group(user_id: int, group_id: str, query: UpdateGroupQuery) -> Group:
+async def update_group_information(user_id: int, group_id: str, query: UpdateGroupQuery) -> Group:
     """
     update a group
     """
@@ -223,7 +223,7 @@ async def send_join_request_to_group(user_id: int, group_id: str, query: GroupJo
 
 
 @app.get("/v1/users/{user_id}/groups/{group_id}/joins/{joiner_id}", response_model=Joiner)
-async def get_join_details(user_id: int, group_id: str, joiner_id: int) -> Joiner:
+async def get_group_join_details(user_id: int, group_id: str, joiner_id: int) -> Joiner:
     """
     get join details
     """
@@ -231,7 +231,7 @@ async def get_join_details(user_id: int, group_id: str, joiner_id: int) -> Joine
 
 
 @app.put("/v1/users/{user_id}/groups/{group_id}/joins/{joiner_id}", response_model=Joiner)
-async def approve_or_deny_join_request(user_id: int, group_id: str, joiner_id: int, query: JoinerUpdateQuery) -> Joiner:
+async def approve_or_deny_group_join_request(user_id: int, group_id: str, joiner_id: int, query: JoinerUpdateQuery) -> Joiner:
     """
     approve or deny a user join request
     """
@@ -239,7 +239,7 @@ async def approve_or_deny_join_request(user_id: int, group_id: str, joiner_id: i
 
 
 @app.delete("/v1/users/{user_id}/groups/{group_id}/joins/{joiner_id}")
-async def delete_join_request(user_id: int, group_id: str, joiner_id: int) -> None:
+async def delete_group_join_request(user_id: int, group_id: str, joiner_id: int) -> None:
     """
     approve or deny a user join request
     """
@@ -247,7 +247,7 @@ async def delete_join_request(user_id: int, group_id: str, joiner_id: int) -> No
 
 
 @app.get("/v1/groups/{group_id}/userstats/{user_id}", response_model=UserGroupStats)
-async def user_statistics_in_group(group_id: str, user_id: int) -> UserGroupStats:
+async def get_user_statistics_in_group(group_id: str, user_id: int) -> UserGroupStats:
     """
     get user statistic in group
     """
@@ -255,7 +255,7 @@ async def user_statistics_in_group(group_id: str, user_id: int) -> UserGroupStat
 
 
 @app.get("/v1/userstats/{user_id}", response_model=UserStats)
-async def user_statistics(user_id: int) -> UserStats:
+async def get_user_statistics(user_id: int) -> UserStats:
     """
     get user statistic data
     """
