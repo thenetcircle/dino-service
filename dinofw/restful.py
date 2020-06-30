@@ -61,7 +61,7 @@ async def hide_group_history_for_user(group_id: str, user_id: int, query: Histor
 
 
 @app.post("/v1/groups/{group_id}/messages", response_model=List[Message])
-async def group_messages(group_id: str, query: HistoryQuery) -> List[Message]:
+async def get_messages_in_group(group_id: str, query: HistoryQuery) -> List[Message]:
     """
     get messages in a group, order by time in descendent
     """
@@ -71,7 +71,7 @@ async def group_messages(group_id: str, query: HistoryQuery) -> List[Message]:
 @app.put("/v1/groups/{group_id}/messages")
 async def batch_update_messages(group_id: str, query: HistoryQuery):
     """
-    batch update messages
+    batch update messages in group
     """
     return await environ.env.rest.group.update_messages(group_id, query)
 
@@ -79,13 +79,13 @@ async def batch_update_messages(group_id: str, query: HistoryQuery):
 @app.delete("/v1/groups/{group_id}/messages")
 async def batch_delete_messages(group_id: str, query: HistoryQuery):
     """
-    batch delete messages
+    batch delete messages in group
     """
     return await environ.env.rest.group.delete_messages(group_id, query)
 
 
 @app.post("/v1/groups/{group_id}/users/{user_id}/messages", response_model=List[Message])
-async def group_messages_for_user(group_id: str, user_id: int, query: HistoryQuery) -> List[Message]:
+async def get_messages_for_user_in_group(group_id: str, user_id: int, query: HistoryQuery) -> List[Message]:
     """
     get user messages in a group
     """
