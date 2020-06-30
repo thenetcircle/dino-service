@@ -1,10 +1,10 @@
 from activitystreams import Activity
 
 from dinofw.config import ConfigKeys
-from dinofw.server import socketio
+from dinofw.sockets import socketio
 from dinofw import api
 from dinofw import environ
-from dinofw.server import app
+from dinofw.sockets import app
 from flask_socketio import disconnect
 
 import logging

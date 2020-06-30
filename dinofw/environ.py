@@ -284,10 +284,19 @@ def init_request_validators(gn_env: GNEnvironment) -> None:
         pluginInfo.plugin_object.setup(gn_env)
 
 
-
 def init_observer(gn_env: GNEnvironment) -> None:
     from pymitter import EventEmitter
     gn_env.observer = EventEmitter()
+
+
+def init_rest(gn_env: GNEnvironment) -> None:
+    from dinofw.rest.groups import GroupResource
+
+    class RestResources:
+        group: GroupResource
+
+    gn_env.rest = RestResources()
+    gn_env.rest.group = GroupResource()
 
 
 def initialize_env(dino_env):
@@ -303,6 +312,8 @@ def initialize_env(dino_env):
     init_response_formatter(dino_env)
     init_request_validators(dino_env)
     init_observer(dino_env)
+
+    init_rest(dino_env)
 
     # init_pub_sub(dino_env)
     # init_enrichment_service(dino_env)
