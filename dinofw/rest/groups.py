@@ -7,7 +7,7 @@ from uuid import uuid4 as uuid
 import pytz
 
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import ActionLog
+from dinofw.rest.models import ActionLog, PaginationQuery, GroupUsers
 from dinofw.rest.models import Group
 from dinofw.rest.models import Histories
 from dinofw.rest.models import HistoryQuery
@@ -19,11 +19,11 @@ logger = logging.getLogger(__name__)
 
 
 class GroupResource(BaseResource):
-    async def messages(self, group_id: str, query: HistoryQuery) -> List[Message]:
-        return [self._message(group_id)]
-
-    async def messages_for_user(self, group_id: str, user_id: int, query: HistoryQuery) -> List[Message]:
-        return [self._message(group_id, user_id)]
+    async def users(self, group_id: str, query: PaginationQuery) -> GroupUsers:
+        return GroupUsers(
+            owner_id=1,
+            users=[1, 2, 3, 4]
+        )
 
     async def histories(self, group_id: str, user_id: int, query: HistoryQuery) -> List[Histories]:
         now = datetime.utcnow()

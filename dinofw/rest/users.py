@@ -14,12 +14,6 @@ logger = logging.getLogger(__name__)
 
 
 class UserResource(BaseResource):
-    async def users(self, group_id: str, query: PaginationQuery) -> GroupUsers:
-        return GroupUsers(
-            owner_id=1,
-            users=[1, 2, 3, 4]
-        )
-
     async def stats(self, user_id: int) -> UserStats:
         amount = int(random.random() * 10000)
         now = datetime.utcnow()

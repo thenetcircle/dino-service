@@ -8,17 +8,47 @@ class PaginationQuery(BaseModel):
     per_page: int
 
 
-class HistoryQuery(PaginationQuery):
-    time_from: Optional[int] = None
-    time_to: Optional[int] = None
-    message_type: Optional[int] = None
-    status: Optional[int] = None
+class AdminQuery(BaseModel):
+    admin_id: Optional[int]
+
+
+class MessageQuery(PaginationQuery, AdminQuery):
+    message_type: Optional[int]
+    status: Optional[int]
+
+
+class HistoryQuery(MessageQuery):
+    time_from: Optional[int]
+    time_to: Optional[int]
 
 
 class SearchQuery(PaginationQuery):
     keyword: Optional[str]
     group_type: Optional[int]
     status: Optional[int]
+
+
+class SendMessageQuery(BaseModel):
+    message_payload: str
+    message_type: str
+
+
+class CreateGroupQuery(BaseModel):
+    group_name: str
+    group_meta: int  # TODO: int or str?
+    group_type: str
+    group_context: str
+
+
+class UpdateGroupQuery(BaseModel):
+    # TODO: update owner?
+    group_name: str
+    group_weight: int
+    group_context: str
+
+
+class EditMessageQuery(BaseModel, AdminQuery, MessageQuery):
+    read_at: int
 
 
 class Message(BaseModel):
