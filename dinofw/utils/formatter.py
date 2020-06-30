@@ -29,5 +29,7 @@ class SimpleResponseFormatter(IResponseFormatter):
         return {self.code_key: status_code, self.data_key: data}
 
     def __repr__(self):
-        return 'SimpleResponseFormatter<format="{%s: <status code>, %s: <data dict>, %s: <error message>}">' % \
-               (self.code_key, self.data_key, self.error_key)
+        return (
+            'SimpleResponseFormatter<format="{%s: <status code>, %s: <data dict>, %s: <error message>}">'
+            % (self.code_key, self.data_key, self.error_key)
+        )

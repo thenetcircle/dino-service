@@ -7,8 +7,17 @@ from uuid import uuid4 as uuid
 import pytz
 
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import ActionLog, PaginationQuery, GroupUsers, GroupJoinQuery, Joiner, JoinerUpdateQuery, \
-    UpdateGroupQuery, CreateGroupQuery, AdminUpdateGroupQuery
+from dinofw.rest.models import (
+    ActionLog,
+    PaginationQuery,
+    GroupUsers,
+    GroupJoinQuery,
+    Joiner,
+    JoinerUpdateQuery,
+    UpdateGroupQuery,
+    CreateGroupQuery,
+    AdminUpdateGroupQuery,
+)
 from dinofw.rest.models import Group
 from dinofw.rest.models import Histories
 from dinofw.rest.models import HistoryQuery
@@ -21,12 +30,11 @@ logger = logging.getLogger(__name__)
 
 class GroupResource(BaseResource):
     async def users(self, group_id: str, query: PaginationQuery) -> GroupUsers:
-        return GroupUsers(
-            owner_id=1,
-            users=[1, 2, 3, 4]
-        )
+        return GroupUsers(owner_id=1, users=[1, 2, 3, 4])
 
-    async def histories(self, group_id: str, user_id: int, query: HistoryQuery) -> List[Histories]:
+    async def histories(
+        self, group_id: str, user_id: int, query: HistoryQuery
+    ) -> List[Histories]:
         now = datetime.utcnow()
         now = now.replace(tzinfo=pytz.UTC)
         now = int(float(now.strftime("%s")))
@@ -38,12 +46,12 @@ class GroupResource(BaseResource):
             message_id=str(uuid()),
             action_type=0,
             created_at=now,
-            admin_id=0
+            admin_id=0,
         )
 
         histories = [
             Histories(message=self._message(group_id)),
-            Histories(action_log=action_log)
+            Histories(action_log=action_log),
         ]
 
         return histories
@@ -64,28 +72,40 @@ class GroupResource(BaseResource):
             unread_amount=amount - int(random.random() * amount),
             last_read_time=now,
             last_send_time=now,
-            hide_before=0
+            hide_before=0,
         )
 
     async def create(self, user_id: int, query: CreateGroupQuery) -> Group:
         pass
 
-    async def joins(self, user_id: int, group_id: str, query: GroupJoinQuery) -> List[Joiner]:
+    async def joins(
+        self, user_id: int, group_id: str, query: GroupJoinQuery
+    ) -> List[Joiner]:
         return [self._join(group_id)]
 
-    async def get_join_details(self, user_id: int, group_id: str, joiner_id: int) -> Joiner:
+    async def get_join_details(
+        self, user_id: int, group_id: str, joiner_id: int
+    ) -> Joiner:
         return self._join(group_id)
 
-    async def delete_join_request(self, user_id: int, group_id: str, joiner_id: int) -> None:
+    async def delete_join_request(
+        self, user_id: int, group_id: str, joiner_id: int
+    ) -> None:
         pass
 
-    async def admin_update_group_information(self, group_id, query: AdminUpdateGroupQuery) -> Group:
+    async def admin_update_group_information(
+        self, group_id, query: AdminUpdateGroupQuery
+    ) -> Group:
         pass
 
-    async def update_group_information(self, user_id: int, group_id: str, query: UpdateGroupQuery) -> Group:
+    async def update_group_information(
+        self, user_id: int, group_id: str, query: UpdateGroupQuery
+    ) -> Group:
         pass
 
-    async def update_join_request(self, user_id: int, group_id: str, joiner_id: int, query: JoinerUpdateQuery) -> Joiner:
+    async def update_join_request(
+        self, user_id: int, group_id: str, joiner_id: int, query: JoinerUpdateQuery
+    ) -> Joiner:
         return self._join(group_id, status=query.status)
 
     async def search(self, query: SearchQuery) -> List[Group]:
@@ -94,7 +114,9 @@ class GroupResource(BaseResource):
     async def get_group(self, group_id: str):
         return self._group(group_id)
 
-    async def hide_histories_for_user(self, group_id: str, user_id: int, query: HistoryQuery):
+    async def hide_histories_for_user(
+        self, group_id: str, user_id: int, query: HistoryQuery
+    ):
         pass
 
     async def delete_one_group_for_user(self, user_id: int, group_id: str) -> None:

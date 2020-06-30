@@ -171,7 +171,9 @@ def init_group_service(gn_env: GNEnvironment):
 
 
 def init_flask(gn_env: GNEnvironment):
-    gn_env.out_of_scope_emit = None  # needs to be set later after socketio object has been created
+    gn_env.out_of_scope_emit = (
+        None  # needs to be set later after socketio object has been created
+    )
     gn_env.emit = _flask_emit
     gn_env.send = _flask_send
     gn_env.join_room = _flask_join_room
@@ -190,21 +192,25 @@ def init_stats_service(gn_env: GNEnvironment) -> None:
     stats_engine = gn_env.config.get(ConfigKeys.STATS_SERVICE, None)
 
     if stats_engine is None:
-        raise RuntimeError('no stats service specified')
+        raise RuntimeError("no stats service specified")
 
     stats_type = stats_engine.get(ConfigKeys.TYPE, None)
     if stats_type is None:
-        raise RuntimeError('no stats type specified, use one of [statsd] (set host to mock if no stats service wanted)')
+        raise RuntimeError(
+            "no stats type specified, use one of [statsd] (set host to mock if no stats service wanted)"
+        )
 
-    if stats_type == 'statsd':
+    if stats_type == "statsd":
         from dinofw.stats.statsd import StatsdService
-        gn_env.stats = StatsdService(gn_env)
-        gn_env.stats.set('connections', 0)
 
-    elif stats_type == 'mock':
+        gn_env.stats = StatsdService(gn_env)
+        gn_env.stats.set("connections", 0)
+
+    elif stats_type == "mock":
         from dinofw.stats.statsd import MockStatsd
+
         gn_env.stats = MockStatsd()
-        gn_env.stats.set('connections', 0)
+        gn_env.stats.set("connections", 0)
 
 
 def init_response_formatter(gn_env: GNEnvironment):
@@ -213,45 +219,58 @@ def init_response_formatter(gn_env: GNEnvironment):
         return
 
     def get_format_keys() -> list:
-        _def_keys = ['status_code', 'data', 'error']
+        _def_keys = ["status_code", "data", "error"]
 
         res_format = gn_env.config.get(ConfigKeys.RESPONSE_FORMAT, None)
         if res_format is None:
-            logger.info('using default response format, no config specified')
+            logger.info("using default response format, no config specified")
             return _def_keys
 
         if type(res_format) != str:
-            logger.warning('configured response format is of type "%s", using default' % str(type(res_format)))
+            logger.warning(
+                'configured response format is of type "%s", using default'
+                % str(type(res_format))
+            )
             return _def_keys
 
         if len(res_format.strip()) == 0:
-            logger.warning('configured response format is blank, using default')
+            logger.warning("configured response format is blank, using default")
             return _def_keys
 
-        keys = res_format.split(',')
+        keys = res_format.split(",")
         if len(keys) != 3:
-            logger.warning('configured response format not "<code>,<data>,<error>" but "%s", using default' % res_format)
+            logger.warning(
+                'configured response format not "<code>,<data>,<error>" but "%s", using default'
+                % res_format
+            )
             return _def_keys
 
         for i, key in enumerate(keys):
             if len(key.strip()) == 0:
-                logger.warning('response format key if index %s is blank in "%s", using default' % (str(i), keys))
+                logger.warning(
+                    'response format key if index %s is blank in "%s", using default'
+                    % (str(i), keys)
+                )
                 return _def_keys
         return keys
 
     code_key, data_key, error_key = get_format_keys()
 
     from dinofw.utils.formatter import SimpleResponseFormatter
+
     gn_env.response_formatter = SimpleResponseFormatter(code_key, data_key, error_key)
-    logger.info('configured response formatting as %s' % str(gn_env.response_formatter))
+    logger.info("configured response formatting as %s" % str(gn_env.response_formatter))
 
 
 def init_request_validators(gn_env: GNEnvironment) -> None:
     from yapsy.PluginManager import PluginManager
-    logging.getLogger('yapsy').setLevel(gn_env.config.get(ConfigKeys.LOG_LEVEL, logging.INFO))
+
+    logging.getLogger("yapsy").setLevel(
+        gn_env.config.get(ConfigKeys.LOG_LEVEL, logging.INFO)
+    )
 
     plugin_manager = PluginManager()
-    plugin_manager.setPluginPlaces(['dino/validation/events'])
+    plugin_manager.setPluginPlaces(["dino/validation/events"])
     plugin_manager.collectPlugins()
 
     gn_env.event_validator_map = dict()
@@ -271,10 +290,12 @@ def init_request_validators(gn_env: GNEnvironment) -> None:
         plugins = validation[key].copy()
         validation[key] = dict()
         for plugin_info in plugins:
-            plugin_name = plugin_info.get('name')
+            plugin_name = plugin_info.get("name")
             validation[key][plugin_name] = plugin_info
             try:
-                gn_env.event_validator_map[key].append(gn_env.event_validators[plugin_name])
+                gn_env.event_validator_map[key].append(
+                    gn_env.event_validators[plugin_name]
+                )
             except KeyError:
                 raise KeyError('specified plugin "%s" does not exist' % key)
 
@@ -286,6 +307,7 @@ def init_request_validators(gn_env: GNEnvironment) -> None:
 
 def init_observer(gn_env: GNEnvironment) -> None:
     from pymitter import EventEmitter
+
     gn_env.observer = EventEmitter()
 
 
@@ -306,7 +328,7 @@ def init_rest(gn_env: GNEnvironment) -> None:
 
 
 def initialize_env(dino_env):
-    logging.basicConfig(level='DEBUG', format=ConfigKeys.DEFAULT_LOG_FORMAT)
+    logging.basicConfig(level="DEBUG", format=ConfigKeys.DEFAULT_LOG_FORMAT)
 
     init_flask(dino_env)
     init_logging(dino_env)

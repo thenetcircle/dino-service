@@ -52,7 +52,7 @@ class AckStatus:
 
 
 class RedisKeys:
-    RKEY_AUTH = 'user:auth:{}'  # user:auth:user_id
+    RKEY_AUTH = "user:auth:{}"  # user:auth:user_id
 
     @staticmethod
     def auth_key(user_id: str) -> str:

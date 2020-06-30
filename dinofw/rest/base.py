@@ -30,7 +30,7 @@ class BaseResource(ABC):
             group_context="",
             last_message_overview="some text",
             last_message_user_id=0,
-            last_message_time=now
+            last_message_time=now,
         )
 
     def _join(self, group_id, status=None):
@@ -47,7 +47,7 @@ class BaseResource(ABC):
             inviter_id=int(random.random() * 1000000),
             created_at=now,
             status=status,
-            invitation_context=""
+            invitation_context="",
         )
 
     def _message(self, group_id, user_id=None, message_id=None):
@@ -73,5 +73,5 @@ class BaseResource(ABC):
             last_action_log_id=0,
             removed_at=now,
             removed_by_user=0,
-            message_payload="some message payload"
+            message_payload="some message payload",
         )

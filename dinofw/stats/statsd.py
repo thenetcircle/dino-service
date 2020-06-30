@@ -36,20 +36,23 @@ class StatsdService(IStats):
         conf = env.config.get(ConfigKeys.STATS_SERVICE)
         host = conf.get(ConfigKeys.HOST)
 
-        if env.config.get(ConfigKeys.TESTING, False) or host == 'mock':
+        if env.config.get(ConfigKeys.TESTING, False) or host == "mock":
             self.statsd = MockStatsd()
         else:
             import statsd
 
             port = conf.get(ConfigKeys.PORT)
-            prefix = 'dino'
+            prefix = "dino"
             if ConfigKeys.PREFIX in conf:
                 prefix = conf.get(ConfigKeys.PREFIX)
             if ConfigKeys.INCLUDE_HOST_NAME in conf:
                 include_host_name = conf.get(ConfigKeys.INCLUDE_HOST_NAME)
-                if include_host_name is not None and str(include_host_name).strip().lower() in ['yes', '1', 'true']:
+                if include_host_name is not None and str(
+                    include_host_name
+                ).strip().lower() in ["yes", "1", "true"]:
                     import socket
-                    prefix = '%s.%s' % (prefix, socket.gethostname())
+
+                    prefix = "%s.%s" % (prefix, socket.gethostname())
 
             self.statsd = statsd.StatsClient(host, int(port), prefix=prefix)
 

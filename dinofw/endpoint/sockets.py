@@ -13,7 +13,7 @@ import sys
 
 from dinofw.utils.decorators import respond_with, pre_process
 
-logging.basicConfig(level='DEBUG', format=ConfigKeys.DEFAULT_LOG_FORMAT)
+logging.basicConfig(level="DEBUG", format=ConfigKeys.DEFAULT_LOG_FORMAT)
 logger = logging.getLogger(__name__)
 
 
@@ -47,12 +47,12 @@ def on_disconnect() -> (int, None):
     return api.on_disconnect()
 
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route("/", methods=["GET", "POST"])
 def index():
-    return environ.env.render_template('app.html')
+    return environ.env.render_template("app.html")
 
 
-@app.route('/static/<path:path>')
+@app.route("/static/<path:path>")
 def send_static(path):
     print(path)
-    return environ.env.send_from_directory('templates/static/', path)
+    return environ.env.send_from_directory("templates/static/", path)

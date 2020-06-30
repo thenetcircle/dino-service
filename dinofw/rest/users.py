@@ -31,7 +31,7 @@ class UserResource(BaseResource):
             last_send_time=now,
             last_send_group_id=1,
             last_group_join_time=now,
-            last_group_join_sent_time=now
+            last_group_join_sent_time=now,
         )
 
     async def groups(self, user_id: int, query: GroupQuery) -> List[Group]:
