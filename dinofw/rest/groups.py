@@ -7,7 +7,7 @@ from uuid import uuid4 as uuid
 import pytz
 
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import ActionLog, PaginationQuery, GroupUsers
+from dinofw.rest.models import ActionLog, PaginationQuery, GroupUsers, GroupJoinQuery, Joiner, JoinerUpdateQuery
 from dinofw.rest.models import Group
 from dinofw.rest.models import Histories
 from dinofw.rest.models import HistoryQuery
@@ -65,6 +65,18 @@ class GroupResource(BaseResource):
             last_send_time=now,
             hide_before=0
         )
+
+    async def joins(self, user_id: int, group_id: str, query: GroupJoinQuery) -> List[Joiner]:
+        return [self._join(group_id)]
+
+    async def get_join_details(self, user_id: int, group_id: str, joiner_id: int) -> Joiner:
+        return self._join(group_id)
+
+    async def delete_join_request(self, user_id: int, group_id: str, joiner_id: int) -> None:
+        pass
+
+    async def update_join_request(self, user_id: int, group_id: str, joiner_id: int, query: JoinerUpdateQuery) -> Joiner:
+        return self._join(group_id, status=query.status)
 
     async def search(self, query: SearchQuery) -> List[Group]:
         return [self._group()]

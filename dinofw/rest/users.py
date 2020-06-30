@@ -1,14 +1,14 @@
 import logging
 import random
 from datetime import datetime
-import pytz
 from typing import List
 
+import pytz
+
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import PaginationQuery
-from dinofw.rest.models import GroupUsers
-from dinofw.rest.models import UserStats
 from dinofw.rest.models import Group
+from dinofw.rest.models import GroupQuery
+from dinofw.rest.models import UserStats
 
 logger = logging.getLogger(__name__)
 
@@ -34,5 +34,5 @@ class UserResource(BaseResource):
             last_group_join_sent_time=now
         )
 
-    async def groups(self, user_id: int) -> List[Group]:
+    async def groups(self, user_id: int, query: GroupQuery) -> List[Group]:
         return [self._group()]

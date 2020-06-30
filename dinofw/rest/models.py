@@ -40,6 +40,30 @@ class CreateGroupQuery(BaseModel):
     group_context: str
 
 
+class GroupJoinQuery(BaseModel):
+    joiner_id: int
+    inviter_id: int
+    invitation_context: str
+
+
+class GroupJoinerQuery(PaginationQuery):
+    status: int
+
+
+class GroupQuery(PaginationQuery):
+    ownership: Optional[int]
+    weight: Optional[int]
+    has_unread: int
+
+
+class AdminUpdateGroupQuery(AdminQuery):
+    group_status: int
+
+
+class JoinerUpdateQuery(BaseModel):
+    status: int
+
+
 class UpdateGroupQuery(BaseModel):
     # TODO: update owner?
     group_name: str
@@ -47,7 +71,7 @@ class UpdateGroupQuery(BaseModel):
     group_context: str
 
 
-class EditMessageQuery(BaseModel, AdminQuery, MessageQuery):
+class EditMessageQuery(AdminQuery, MessageQuery):
     read_at: int
 
 

@@ -5,7 +5,7 @@ from uuid import uuid4 as uuid
 
 import pytz
 
-from dinofw.rest.models import Group, Message
+from dinofw.rest.models import Group, Message, Joiner
 
 
 class BaseResource(ABC):
@@ -31,6 +31,23 @@ class BaseResource(ABC):
             last_message_overview="some text",
             last_message_user_id=0,
             last_message_time=now
+        )
+
+    def _join(self, group_id, status=None):
+        now = datetime.utcnow()
+        now = now.replace(tzinfo=pytz.UTC)
+        now = int(float(now.strftime("%s")))
+
+        if status is None:
+            status = 0
+
+        return Joiner(
+            joined_id=int(random.random() * 1000000),
+            group_id=group_id,
+            inviter_id=int(random.random() * 1000000),
+            created_at=now,
+            status=status,
+            invitation_context=""
         )
 
     def _message(self, group_id, user_id=None, message_id=None):

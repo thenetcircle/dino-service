@@ -4,8 +4,25 @@ from typing import List
 from fastapi import FastAPI
 
 from dinofw import environ
-from dinofw.rest.models import HistoryQuery, Message, Histories, PaginationQuery, GroupUsers, UserStats, UserGroupStats, \
-    Group, SearchQuery, MessageQuery, SendMessageQuery, AdminQuery, EditMessageQuery, CreateGroupQuery, UpdateGroupQuery
+from dinofw.rest.models import AdminQuery, JoinerUpdateQuery
+from dinofw.rest.models import CreateGroupQuery
+from dinofw.rest.models import EditMessageQuery
+from dinofw.rest.models import Group
+from dinofw.rest.models import GroupJoinQuery
+from dinofw.rest.models import GroupJoinerQuery
+from dinofw.rest.models import GroupQuery
+from dinofw.rest.models import GroupUsers
+from dinofw.rest.models import Histories
+from dinofw.rest.models import HistoryQuery
+from dinofw.rest.models import Joiner
+from dinofw.rest.models import Message
+from dinofw.rest.models import MessageQuery
+from dinofw.rest.models import PaginationQuery
+from dinofw.rest.models import SearchQuery
+from dinofw.rest.models import SendMessageQuery
+from dinofw.rest.models import UpdateGroupQuery
+from dinofw.rest.models import UserGroupStats
+from dinofw.rest.models import UserStats
 
 logger = logging.getLogger(__name__)
 logging.getLogger("amqp").setLevel(logging.INFO)
@@ -156,7 +173,7 @@ async def group_information(group_id) -> Group:
 
 
 @app.put("/v1/groups/{group_id}", response_model=Group)
-async def edit_group_information(group_id) -> Group:
+async def edit_group_information(group_id, query: UpdateGroupQuery) -> Group:
     """
     admin update group
     """
@@ -164,17 +181,26 @@ async def edit_group_information(group_id) -> Group:
 
 
 @app.post("/v1/users/{user_id}/groups", response_model=List[Group])
-async def groups_for_user(user_id: int) -> List[Group]:
-    return await environ.env.rest.user.groups(user_id)
+async def groups_for_user(user_id: int, query: GroupQuery) -> List[Group]:
+    """
+    get user's group sort by latest message update
+    """
+    return await environ.env.rest.user.groups(user_id, query)
 
 
 @app.post("/v1/users/{user_id}/groups/create", response_model=Group)
 async def create_new_group(user_id: int, query: CreateGroupQuery) -> Group:
+    """
+    create a group
+    """
     return await environ.env.rest.groups.create(user_id, query)
 
 
 @app.put("/v1/users/{user_id}/groups/{group_id}", response_model=Group)
 async def update_group(user_id: int, group_id: str, query: UpdateGroupQuery) -> Group:
+    """
+    update a group
+    """
     return await environ.env.rest.groups.update(user_id, group_id, query)
 
 
@@ -194,3 +220,43 @@ async def delete_all_groups_for_user(user_id: int) -> Group:
     """
     # TODO: really delete all user's groups? what about other users in group?
     return await environ.env.rest.groups.delete(user_id)
+
+
+@app.post("/v1/users/{user_id}/groups/{group_id}/joins", response_model=List[Joiner])
+async def get_group_join_requests(user_id: int, group_id: str, query: GroupJoinerQuery) -> List[Joiner]:
+    """
+    get a group's join requests sort by create time in decendent
+    """
+    return await environ.env.rest.group.joins(user_id, group_id, query)
+
+
+@app.put("/v1/users/{user_id}/groups/{group_id}/joins", response_model=List[Joiner])
+async def get_group_join_requests(user_id: int, group_id: str, query: GroupJoinQuery) -> List[Joiner]:
+    """
+    send a group join request
+    """
+    return await environ.env.rest.group.joins(user_id, group_id, query)
+
+
+@app.get("/users/{user_id}/groups/{group_id}/joins/{joiner_id}", response_model=Joiner)
+async def get_join_details(user_id: int, group_id: str, joiner_id: int) -> Joiner:
+    """
+    get join details
+    """
+    return await environ.env.rest.group.get_join_details(user_id, group_id, joiner_id)
+
+
+@app.put("/users/{user_id}/groups/{group_id}/joins/{joiner_id}", response_model=Joiner)
+async def approve_or_deny_join_request(user_id: int, group_id: str, joiner_id: int, query: JoinerUpdateQuery) -> Joiner:
+    """
+    approve or deny a user join request
+    """
+    return await environ.env.rest.group.update_join_request(user_id, group_id, joiner_id, query)
+
+
+@app.delete("/users/{user_id}/groups/{group_id}/joins/{joiner_id}")
+async def delete_join_request(user_id: int, group_id: str, joiner_id: int) -> None:
+    """
+    approve or deny a user join request
+    """
+    return await environ.env.rest.group.delete_join_request(user_id, group_id, joiner_id)
