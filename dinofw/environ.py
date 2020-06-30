@@ -291,12 +291,15 @@ def init_observer(gn_env: GNEnvironment) -> None:
 
 def init_rest(gn_env: GNEnvironment) -> None:
     from dinofw.rest.groups import GroupResource
+    from dinofw.rest.users import UserResource
 
     class RestResources:
         group: GroupResource
+        user: UserResource
 
     gn_env.rest = RestResources()
     gn_env.rest.group = GroupResource()
+    gn_env.rest.user = UserResource()
 
 
 def initialize_env(dino_env):

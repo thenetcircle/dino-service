@@ -1,77 +1,60 @@
-import logging
-import traceback
+import random
+from abc import ABC
 from datetime import datetime
+from uuid import uuid4 as uuid
 
-from flask_restful import Resource
+import pytz
 
-logger = logging.getLogger(__name__)
+from dinofw.rest.models import Group, Message
 
 
-class BaseResource(Resource):
-    def __init__(self, cache_clear_interval=2):
-        self.cache_clear_interval = cache_clear_interval
+class BaseResource(ABC):
+    def _group(self, group_id=None):
+        now = datetime.utcnow()
+        now = now.replace(tzinfo=pytz.UTC)
+        now = int(float(now.strftime("%s")))
 
-    def get(self):
-        utc_now = datetime.utcnow()
-        time_since = utc_now - self._get_last_cleared()
+        if group_id is None:
+            group_id = str(uuid())
 
-        if time_since.total_seconds() > self.cache_clear_interval:
-            self._get_lru_method().cache_clear()
-            self._set_last_cleared(utc_now)
+        return Group(
+            group_id=group_id,
+            name="a group name",
+            description="some description",
+            status=0,
+            group_type=0,
+            created_at=now,
+            updated_at=now,
+            owner_id=0,
+            group_meta=0,
+            group_context="",
+            last_message_overview="some text",
+            last_message_user_id=0,
+            last_message_time=now
+        )
 
-        try:
-            return {"status_code": 200, "data": self.do_get()}
-        except Exception as e:
-            logger.error(f"could not do get: {str(e)}")
-            logger.exception(traceback.format_exc())
-            return {"status_code": 500, "data": str(e)}
+    def _message(self, group_id, user_id=None, message_id=None):
+        now = datetime.utcnow()
+        now = now.replace(tzinfo=pytz.UTC)
+        now = int(float(now.strftime("%s")))
 
-    def post(self):
-        try:
-            data = self.do_post()
-            return_value = {"status_code": 200}
-            if data is not None:
-                return_value["data"] = data
-            return return_value
-        except Exception as e:
-            logger.error(f"could not do post: {str(e)}")
-            logger.exception(traceback.format_exc())
-            return {"status_code": 500, "data": str(e)}
+        if user_id is None:
+            user_id = int(random.random() * 1000000)
 
-    def delete(self):
-        try:
-            data = self.do_delete()
-            return_value = {"status_code": 200}
-            if data is not None:
-                return_value["data"] = data
-            return return_value
-        except Exception as e:
-            logger.error(f"could not do delete: {str(e)}")
-            logger.exception(traceback.format_exc())
-            return {"status_code": 500, "data": str(e)}
+        if message_id is None:
+            message_id = str(uuid())
 
-    def validate_json(self, request, silent=True):
-        try:
-            return True, None, request.get_json(silent=silent)
-        except Exception as e:
-            logger.error(f"error: {str(e)}")
-            logger.exception(traceback.format_exc())
-            return False, "invalid json in request", None
-
-    def do_delete(self):
-        raise NotImplementedError()
-
-    def do_post(self):
-        raise NotImplementedError()
-
-    def do_get(self):
-        raise NotImplementedError()
-
-    def _get_lru_method(self):
-        raise NotImplementedError()
-
-    def _get_last_cleared(self):
-        raise NotImplementedError()
-
-    def _set_last_cleared(self, last_cleared):
-        raise NotImplementedError()
+        return Message(
+            message_id=message_id,
+            group_id=group_id,
+            user_id=user_id,
+            created_at=now,
+            status=0,
+            message_type=0,
+            read_at=now,
+            updated_at=now,
+            last_action_log_id=0,
+            removed_at=now,
+            removed_by_user=0,
+            message_payload="some message payload"
+        )

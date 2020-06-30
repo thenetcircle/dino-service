@@ -1,59 +1,34 @@
 import logging
 import random
 from datetime import datetime
-import pytz
 from typing import List
 from uuid import uuid4 as uuid
 
-from dinofw.rest.models import Message, ActionLog
-from dinofw.rest.models import HistoryQuery
+import pytz
+
+from dinofw.rest.base import BaseResource
+from dinofw.rest.models import ActionLog
+from dinofw.rest.models import Group
 from dinofw.rest.models import Histories
+from dinofw.rest.models import HistoryQuery
+from dinofw.rest.models import Message
+from dinofw.rest.models import SearchQuery
+from dinofw.rest.models import UserGroupStats
 
 logger = logging.getLogger(__name__)
 
 
-class GroupResource:
+class GroupResource(BaseResource):
     async def messages(self, group_id: str, query: HistoryQuery) -> List[Message]:
-        now = datetime.utcnow()
-        now = now.replace(tzinfo=pytz.UTC)
-        now = int(float(now.strftime("%s")))
+        return [self._message(group_id)]
 
-        message = Message(
-            message_id=str(uuid()),
-            group_id=group_id,
-            user_id=int(random.random() * 1000000),
-            created_at=now,
-            status=0,
-            message_type=0,
-            read_at=now,
-            updated_at=now,
-            last_action_log_id=0,
-            removed_at=now,
-            removed_by_user=0,
-            message_payload="some message payload"
-        )
-
-        return [message]
+    async def messages_for_user(self, group_id: str, user_id: int, query: HistoryQuery) -> List[Message]:
+        return [self._message(group_id, user_id)]
 
     async def histories(self, group_id: str, user_id: int, query: HistoryQuery) -> List[Histories]:
         now = datetime.utcnow()
         now = now.replace(tzinfo=pytz.UTC)
         now = int(float(now.strftime("%s")))
-
-        message = Message(
-            message_id=str(uuid()),
-            group_id=group_id,
-            user_id=int(random.random() * 1000000),
-            created_at=now,
-            status=0,
-            message_type=0,
-            read_at=now,
-            updated_at=now,
-            last_action_log_id=0,
-            removed_at=now,
-            removed_by_user=0,
-            message_payload="some message payload"
-        )
 
         action_log = ActionLog(
             action_id=str(uuid()),
@@ -66,8 +41,33 @@ class GroupResource:
         )
 
         histories = [
-            Histories(message=message),
+            Histories(message=self._message(group_id)),
             Histories(action_log=action_log)
         ]
 
         return histories
+
+    async def message(self, group_id: str, user_id: int, message_id: str) -> Message:
+        return self._message(group_id, user_id, message_id)
+
+    async def stats(self, group_id: str, user_id) -> UserGroupStats:
+        amount = int(random.random() * 10000)
+        now = datetime.utcnow()
+        now = now.replace(tzinfo=pytz.UTC)
+        now = int(float(now.strftime("%s")))
+
+        return UserGroupStats(
+            user_id=user_id,
+            group_id=group_id,
+            message_amount=amount,
+            unread_amount=amount - int(random.random() * amount),
+            last_read_time=now,
+            last_send_time=now,
+            hide_before=0
+        )
+
+    async def search(self, query: SearchQuery) -> List[Group]:
+        return [self._group()]
+
+    async def get_group(self, group_id: str):
+        return self._group(group_id)
