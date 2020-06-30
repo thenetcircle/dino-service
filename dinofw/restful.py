@@ -215,7 +215,7 @@ async def get_group_join_requests(user_id: int, group_id: str, query: GroupJoine
 
 
 @app.put("/v1/users/{user_id}/groups/{group_id}/joins", response_model=List[Joiner])
-async def get_group_join_requests(user_id: int, group_id: str, query: GroupJoinQuery) -> List[Joiner]:
+async def send_join_request_to_group(user_id: int, group_id: str, query: GroupJoinQuery) -> List[Joiner]:
     """
     send a group join request
     """
