@@ -4,17 +4,17 @@ from datetime import datetime as dt
 import pytz
 
 from dinofw.rest.models import GroupQuery
-from dinofw.storage.models import GroupModel
-from dinofw.storage.models import MessageModel
+from dinofw.storage.cassandra_models import GroupModel
+from dinofw.storage.cassandra_models import MessageModel
 
 
 class CassandraHandler:
     def __init__(self):
         connection.setup(
-            ['127.0.0.1'],
+            ['maggie-cassandra-1'],
             default_keyspace="dinofw",
             protocol_version=3,
-            retry_connection=True
+            retry_connect=True
         )
 
         sync_table(GroupModel)
@@ -23,7 +23,7 @@ class CassandraHandler:
     def get_groups_for_user(self, user_id: int, query: GroupQuery):
         if query.since is None:
             since = dt.utcnow()
-            since = since.replace(pytz.UTC)
+            since = since.replace(tzinfo=pytz.UTC)
         else:
             since = dt.strptime(str(query.since), "%s")
 

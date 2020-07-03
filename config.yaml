@@ -4,6 +4,9 @@ auth:
 cache:
     type: 'memory'
 
+db:
+    uri: "sqlite:///./sql_app.db"
+
 coordinator:
     host: 'maggie-kafka-1'
     db: 13

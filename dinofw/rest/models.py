@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 
 class PaginationQuery(BaseModel):
-    since: int
+    since: Optional[int]
     per_page: int
 
 
@@ -53,7 +53,7 @@ class GroupJoinerQuery(PaginationQuery):
 class GroupQuery(PaginationQuery):
     ownership: Optional[int]
     weight: Optional[int]
-    has_unread: int
+    has_unread: Optional[int]
 
 
 class JoinerUpdateQuery(BaseModel):

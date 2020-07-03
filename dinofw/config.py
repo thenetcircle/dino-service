@@ -144,6 +144,8 @@ class ConfigKeys:
     REMOTE = "remote"
     PRIVATE_KEY = "private_key"
 
+    URI = "uri"
+
 
 class ErrorCodes(object):
     OK = 200

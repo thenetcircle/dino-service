@@ -4,11 +4,12 @@ from cassandra.cqlengine.models import Model
 
 
 class MessageModel(Model):
+    __table_name__ = 'messages'
+
     group_id = columns.UUID(
         required=True,
         primary_key=True,
         partition_key=True,
-        index=True,
     )
     created_at = columns.DateTime(
         required=True,
@@ -18,7 +19,6 @@ class MessageModel(Model):
     user_id = columns.Integer(
         required=True,
         primary_key=True,
-        index=True,
     )
     message_id = columns.UUID(
         required=True,
@@ -36,20 +36,16 @@ class MessageModel(Model):
 
 
 class GroupModel(Model):
+    __table_name__ = 'groups'
+
     user_id = columns.Integer(
         required=True,
         primary_key=True,
         partition_key=True,
-        index=True,
-    )
-    last_message_time = columns.DateTime(
-        required=True,
-        primary_key=True,
-        clustering_order="DESC",
     )
     group_id = columns.UUID(
         required=True,
-        index=True,
+        primary_key=True,
         default=uuid.uuid4,
     )
 
