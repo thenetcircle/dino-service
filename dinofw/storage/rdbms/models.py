@@ -11,12 +11,20 @@ class GroupEntity(env.Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
 
-    group_id = Column(String, index=True)
-    user_id = Column(Integer, index=True)
+    group_id = Column(String, index=True, nullable=False)
+    user_id = Column(Integer, index=True, nullable=False)
 
-    last_message_time = Column(DateTime, index=True)
-    created_at = Column(DateTime)
+    last_message_time = Column(DateTime, index=True, nullable=False)
+    created_at = Column(DateTime, nullable=False)
 
-    name = Column(String)
+    name = Column(String, nullable=False)
     description = Column(String)
     last_message_overview = Column(String)
+
+
+class LastReadModel(env.Base):
+    __tablename__ = "last_read"
+
+    group_id = Column(String, primary_key=True, index=True, nullable=False)
+    user_id = Column(Integer, primary_key=True, index=True, nullable=False)
+    read_at = Column(DateTime, nullable=False)

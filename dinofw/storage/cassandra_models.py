@@ -4,7 +4,7 @@ from cassandra.cqlengine.models import Model
 
 
 class MessageModel(Model):
-    __table_name__ = 'messages'
+    __table_name__ = "messages"
 
     group_id = columns.UUID(
         required=True,
@@ -35,8 +35,27 @@ class MessageModel(Model):
     # read_at = columns.DateTime()  # TODO: read by whom?
 
 
+"""
+class LastReadModel(Model):
+    __table_name__ = "last_read"
+
+    group_id = columns.UUID(
+        required=True,
+        primary_key=True,
+        partition_key=True,
+    )
+    user_id = columns.Integer(
+        required=True,
+        primary_key=True,
+    )
+
+    read_at = columns.DateTime(required=True)
+"""
+
+
+"""
 class GroupModel(Model):
-    __table_name__ = 'groups'
+    __table_name__ = "groups"
 
     user_id = columns.Integer(
         required=True,
@@ -61,3 +80,4 @@ class GroupModel(Model):
 
     last_message_overview = columns.Text()
     last_message_user_id = columns.Integer()
+"""
