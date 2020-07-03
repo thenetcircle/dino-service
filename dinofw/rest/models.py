@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 
 class PaginationQuery(BaseModel):
-    page: int
+    since: int
     per_page: int
 
 
@@ -91,6 +91,8 @@ class Message(BaseModel):
 
 
 class GroupUsers(BaseModel):
+    # TODO: should sort user ids by join datetime
+    group_id: str
     owner_id: int
     users: List[int]
 

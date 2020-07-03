@@ -15,6 +15,9 @@ logger = logging.getLogger(__name__)
 
 
 class MessageResource(BaseResource):
+    def __init__(self, env):
+        self.env = env
+
     async def send(self, group_id: str, user_id: int, query: SendMessageQuery) -> None:
         pass
 

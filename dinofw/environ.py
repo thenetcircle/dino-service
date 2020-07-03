@@ -322,9 +322,9 @@ def init_rest(gn_env: GNEnvironment) -> None:
         message: MessageResource
 
     gn_env.rest = RestResources()
-    gn_env.rest.group = GroupResource()
-    gn_env.rest.user = UserResource()
-    gn_env.rest.message = MessageResource()
+    gn_env.rest.group = GroupResource(gn_env)
+    gn_env.rest.user = UserResource(gn_env)
+    gn_env.rest.message = MessageResource(gn_env)
 
 
 def initialize_env(dino_env):

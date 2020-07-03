@@ -14,6 +14,14 @@ logger = logging.getLogger(__name__)
 
 
 class UserResource(BaseResource):
+    def __init__(self, env):
+        self.env = env
+
+    async def get_groups_for_user(self, user_id: int, query: GroupQuery) -> List[Group]:
+        groups = self.env.storage.get_groups_for_user(user_id, query)
+
+        return [self.to_group_repr(group) for group in groups]
+
     async def stats(self, user_id: int) -> UserStats:
         amount = int(random.random() * 10000)
         now = datetime.utcnow()
@@ -33,6 +41,3 @@ class UserResource(BaseResource):
             last_group_join_time=now,
             last_group_join_sent_time=now,
         )
-
-    async def groups(self, user_id: int, query: GroupQuery) -> List[Group]:
-        return [self._group()]

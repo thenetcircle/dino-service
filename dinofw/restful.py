@@ -178,7 +178,7 @@ async def get_users_in_group(group_id: str, query: PaginationQuery) -> GroupUser
     """
     get users in group
     """
-    return await environ.env.rest.group.users(group_id, query)
+    return await environ.env.rest.group.get_users_in_group(group_id, query)
 
 
 @app.get("/v1/groups/{group_id}", response_model=Group)
@@ -202,7 +202,7 @@ async def get_groups_for_user(user_id: int, query: GroupQuery) -> List[Group]:
     """
     get user's group sort by latest message update
     """
-    return await environ.env.rest.user.groups(user_id, query)
+    return await environ.env.rest.user.get_groups_for_user(user_id, query)
 
 
 @app.post("/v1/users/{user_id}/groups/create", response_model=Group)
