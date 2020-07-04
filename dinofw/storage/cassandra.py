@@ -1,7 +1,10 @@
+import pytz
 from cassandra.cqlengine.management import sync_table
 from cassandra.cqlengine import connection
 
-from dinofw.rest.models import MessageQuery
+from uuid import uuid4 as uuid
+from datetime import datetime as dt
+from dinofw.rest.models import MessageQuery, SendMessageQuery
 from dinofw.storage.cassandra_models import MessageModel
 
 
@@ -23,3 +26,19 @@ class CassandraHandler:
         ).limit(
             query.per_page or 100
         ).all()
+
+    def store_message(self, group_id: str, user_id: int, query: SendMessageQuery):
+        created_at = dt.utcnow()
+        created_at = created_at.replace(tzinfo=pytz.UTC)
+        message_id = uuid()
+
+        MessageModel.create(
+            group_id=group_id,
+            user_id=user_id,
+            created_at=created_at,
+            message_id=message_id,
+            message_payload=query.message_payload,
+            message_type=query.message_type
+        )
+
+        return str(message_id)
