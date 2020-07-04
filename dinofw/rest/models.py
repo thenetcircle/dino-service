@@ -1,11 +1,23 @@
+from datetime import datetime as dt
 from typing import Optional, List
 
+import pytz
 from pydantic import BaseModel
 
 
 class PaginationQuery(BaseModel):
     since: Optional[int]
     per_page: int
+
+    @staticmethod
+    def to_dt(s):
+        if s is None:
+            s = dt.utcnow()
+            s = s.replace(tzinfo=pytz.UTC)
+        else:
+            s = dt.strptime(str(s), "%s")
+
+        return s
 
 
 class AdminQuery(BaseModel):

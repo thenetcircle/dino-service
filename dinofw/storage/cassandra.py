@@ -1,10 +1,7 @@
 from cassandra.cqlengine.management import sync_table
 from cassandra.cqlengine import connection
-from datetime import datetime as dt
-import pytz
 
-from dinofw.rest.models import GroupQuery
-from dinofw.storage.cassandra_models import GroupModel
+from dinofw.rest.models import MessageQuery
 from dinofw.storage.cassandra_models import MessageModel
 
 
@@ -17,19 +14,12 @@ class CassandraHandler:
             retry_connect=True
         )
 
-        sync_table(GroupModel)
         sync_table(MessageModel)
 
-    def get_groups_for_user(self, user_id: int, query: GroupQuery):
-        if query.since is None:
-            since = dt.utcnow()
-            since = since.replace(tzinfo=pytz.UTC)
-        else:
-            since = dt.strptime(str(query.since), "%s")
-
-        return GroupModel.objects(
-            GroupModel.user_id == user_id,
-            GroupModel.updated_at <= since
+    def get_messages_in_group(self, group_id: str, query: MessageQuery):
+        return MessageModel.objects(
+            MessageModel.group_id == group_id,
+            MessageModel.created_at <= MessageQuery.to_dt(query.since)
         ).limit(
             query.per_page or 100
         ).all()

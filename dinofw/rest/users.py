@@ -18,7 +18,7 @@ class UserResource(BaseResource):
         self.env = env
 
     async def get_groups_for_user(self, user_id: int, query: GroupQuery) -> List[Group]:
-        groups = self.env.storage.get_groups_for_user(user_id, query)
+        groups = self.env.db.get_groups_for_user(user_id, query)
 
         return [self.to_group_repr(group) for group in groups]
 
