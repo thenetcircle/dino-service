@@ -145,6 +145,8 @@ class ActionLog(BaseModel):
 
 class Group(BaseModel):
     group_id: str
+    users: List[int]
+    last_read: int
     name: str
     description: str
     status: int

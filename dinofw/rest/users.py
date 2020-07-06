@@ -18,9 +18,24 @@ class UserResource(BaseResource):
         self.env = env
 
     async def get_groups_for_user(self, user_id: int, query: GroupQuery) -> List[Group]:
-        groups = self.env.db.get_groups_for_user(user_id, query)
+        groups_and_last_reads = self.env.db.get_groups_for_user(user_id, query)
+        groups = list()
 
-        return [self.to_group_repr(group) for group in groups]
+        for group, last_read, users in groups_and_last_reads:
+            group_dict = group.dict()
+            lr_dict = last_read.dict()
+
+            del group_dict["id"]
+            del lr_dict["id"]
+            del lr_dict["user_id"]
+
+            groups.append(Group(
+                **group_dict,
+                **lr_dict,
+                users=users,
+            ))
+
+        return groups
 
     async def stats(self, user_id: int) -> UserStats:
         amount = int(random.random() * 10000)
