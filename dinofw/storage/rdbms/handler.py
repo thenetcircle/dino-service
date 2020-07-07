@@ -6,12 +6,15 @@ from dinofw.storage.rdbms.schemas import LastReadBase, GroupBase
 
 
 class RelationalHandler:
+    def __init__(self, env):
+        self.env = env
+
     def get_groups_for_user(self, db: Session, user_id: int, query: GroupQuery):
         results = (
             db.query(models.GroupEntity)
-            .filter(models.GroupEntity.user_id == user_id)
-            .filter(models.GroupEntity.last_message_time <= GroupQuery.to_dt(query.since))
             .join(models.LastReadModel, models.LastReadModel.group_id == models.GroupEntity.group_id)
+            .filter(models.GroupEntity.last_message_time <= GroupQuery.to_dt(query.since))
+            .filter(models.LastReadModel.user_id == user_id)
             .order_by(models.GroupEntity.last_message_time.desc())
             .limit(query.per_page)
             .all()
@@ -19,12 +22,22 @@ class RelationalHandler:
 
         groups = list()
 
-        # TODO: get a list of user ids in each group as well
-
         for row in results:
             group = GroupBase(**row.GroupEntity)
             last_read = LastReadBase(**row.LastReadEntity)
-            groups.append((group, last_read, list()))
+
+            # users in a group shouldn't change that often
+            user_ids = self.env.cache.get_user_ids_in_group(group.group_id)
+
+            if user_ids is None:
+                user_ids = (
+                    db.query(models.LastReadModel.user_id)
+                    .filter(models.LastReadModel.group_id == group.group_id)
+                    .distinct()
+                )
+                self.env.cache.set_user_ids_in_group(group.group_id, user_ids)
+
+            groups.append((group, last_read, user_ids))
 
         return groups
 

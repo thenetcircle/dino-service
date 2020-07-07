@@ -137,10 +137,10 @@ class ActionLog(BaseModel):
     action_id: str
     user_id: int
     group_id: str
-    message_id: str
     action_type: int
     created_at: int
-    admin_id: int
+    admin_id: Optional[int]
+    message_id: Optional[str]
 
 
 class Group(BaseModel):
