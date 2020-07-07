@@ -3,6 +3,7 @@ from typing import List
 
 from sqlalchemy.orm import Session
 
+from dinofw.db.cassandra.schemas import MessageBase
 from dinofw.rest.base import BaseResource
 from dinofw.rest.models import (
     SendMessageQuery,
@@ -26,13 +27,17 @@ class MessageResource(BaseResource):
         self.env.db.update_group_new_message(message, db)
         self.env.db.update_last_read_on_send_new_message(user_id, message, db)
 
-        message_dict = message.dict()
+        return MessageResource.message_base_to_message(message)
 
-        message_dict["removed_at"] = MessageQuery.to_ts(message_dict["removed_at"])
-        message_dict["updated_at"] = MessageQuery.to_ts(message_dict["updated_at"])
-        message_dict["created_at"] = MessageQuery.to_ts(message_dict["created_at"])
+    async def messages_in_group(self, group_id: str, query: MessageQuery) -> List[Message]:
+        raw_messages = self.env.storage.get_messages_in_group(group_id, query)
+        messages = list()
 
-        return Message(**message_dict)
+        for message_base in raw_messages:
+            message = MessageResource.message_base_to_message(message_base)
+            messages.append(message)
+
+        return messages
 
     async def edit(self, group_id: str, user_id: int, query: EditMessageQuery) -> None:
         pass
@@ -42,21 +47,6 @@ class MessageResource(BaseResource):
 
     async def details(self, group_id: str, user_id: int, message_id: str) -> Message:
         pass
-
-    async def messages_in_group(self, group_id: str, query: MessageQuery) -> List[Message]:
-        raw_messages = self.env.storage.get_messages_in_group(group_id, query)
-        messages = list()
-
-        for message in raw_messages:
-            message_dict = message.dict()
-
-            message_dict["removed_at"] = MessageQuery.to_ts(message_dict["removed_at"])
-            message_dict["updated_at"] = MessageQuery.to_ts(message_dict["updated_at"])
-            message_dict["created_at"] = MessageQuery.to_ts(message_dict["created_at"])
-
-            messages.append(Message(**message_dict))
-
-        return messages
 
     async def messages_for_user(
         self, group_id: str, user_id: int, query: HistoryQuery
@@ -78,3 +68,13 @@ class MessageResource(BaseResource):
 
     async def delete_messages(self, group_id: str, query: HistoryQuery):
         pass
+
+    @staticmethod
+    def message_base_to_message(message: MessageBase) -> Message:
+        message_dict = message.dict()
+
+        message_dict["removed_at"] = MessageQuery.to_ts(message_dict["removed_at"])
+        message_dict["updated_at"] = MessageQuery.to_ts(message_dict["updated_at"])
+        message_dict["created_at"] = MessageQuery.to_ts(message_dict["created_at"])
+
+        return Message(**message_dict)
