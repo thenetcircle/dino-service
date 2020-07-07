@@ -19,7 +19,8 @@ class JoinerModel(Model):
     )
     inviter_id = columns.Integer(
         required=True,
-        primary_key=True,)
+        primary_key=True,
+    )
     joined_id = columns.Integer(
         required=True,
         primary_key=True,
