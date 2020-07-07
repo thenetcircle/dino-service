@@ -217,11 +217,11 @@ async def get_groups_for_user(user_id: int, query: GroupQuery, db: Session = Dep
 
 
 @app.post("/v1/users/{user_id}/groups/create", response_model=Group)
-async def create_a_new_group(user_id: int, query: CreateGroupQuery) -> Group:
+async def create_a_new_group(user_id: int, query: CreateGroupQuery, db: Session = Depends(get_db)) -> Group:
     """
     create a group
     """
-    return await environ.env.rest.groups.create(user_id, query)
+    return await environ.env.rest.group.create_new_group(user_id, query, db)
 
 
 @app.put("/v1/users/{user_id}/groups/{group_id}", response_model=Group)

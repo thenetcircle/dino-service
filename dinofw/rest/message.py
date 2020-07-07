@@ -23,7 +23,7 @@ class MessageResource(BaseResource):
         message = self.env.storage.store_message(group_id, user_id, query)
 
         self.env.db.update_group_new_message(message, db)
-        self.env.db.update_last_read_on_send_new_message(user_id, message, db)
+        self.env.db.update_last_read_in_group_for_user(user_id, group_id, message.created_at, db)
 
         return MessageResource.message_base_to_message(message)
 

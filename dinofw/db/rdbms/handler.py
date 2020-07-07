@@ -1,8 +1,12 @@
+from uuid import uuid4 as uuid
+from datetime import datetime as dt
+import pytz
 from sqlalchemy.orm import Session
 
 from dinofw.db.cassandra.schemas import MessageBase
-from dinofw.rest.models import GroupQuery
-from dinofw.db.rdbms import models, schemas
+from dinofw.db.rdbms.models import LastReadEntity
+from dinofw.rest.models import GroupQuery, CreateGroupQuery
+from dinofw.db.rdbms import models
 from dinofw.db.rdbms.schemas import LastReadBase, GroupBase
 
 
@@ -64,28 +68,48 @@ class RelationalHandler:
         db.commit()
         db.refresh(group)
 
-    def update_last_read_on_send_new_message(self, user_id: int, message: MessageBase, db: Session):
+    def update_last_read_in_group_for_user(self, user_id: int, group_id: str, last_read_time: dt, db: Session):
         """
         TODO: should we update last read for sender? or sender also acks?
         """
         last_read = (
             db.query(models.LastReadEntity)
             .filter(models.LastReadEntity.user_id == user_id)
-            .filter(models.LastReadEntity.group_id == message.group_id)
+            .filter(models.LastReadEntity.group_id == group_id)
             .first()
         )
 
-        last_read.last_read = message.created_at
+        if last_read is None:
+            last_read = LastReadEntity(
+                group_id=group_id,
+                user_id=user_id,
+                last_read=last_read_time
+            )
+        else:
+            last_read.last_read = last_read_time
 
         db.add(last_read)
         db.commit()
         db.refresh(last_read)
 
-    def create_group(self, db: Session, group: schemas.GroupCreate):
-        db_group = models.GroupEntity(**group.dict())
+    def create_group(self, user_id: int, query: CreateGroupQuery, db: Session) -> GroupBase:
+        created_at = dt.utcnow()
+        created_at = created_at.replace(tzinfo=pytz.UTC)
 
-        db.add(db_group)
+        group_entity = models.GroupEntity(
+            group_id=str(uuid()),
+            name=query.group_name,
+            group_type=query.group_type,
+            last_message_time=created_at,
+            created_at=created_at,
+            owner_id=user_id,
+            group_meta=query.group_meta,
+            group_context=query.group_context,
+            description=query.description,
+        )
+
+        db.add(group_entity)
         db.commit()
-        db.refresh(db_group)
+        db.refresh(group_entity)
 
-        return db_group
+        return GroupBase(**group_entity.__dict__)

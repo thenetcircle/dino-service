@@ -5,7 +5,9 @@ from typing import List
 from uuid import uuid4 as uuid
 
 import pytz
+from sqlalchemy.orm import Session
 
+from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.rest.base import BaseResource
 from dinofw.rest.models import (
     ActionLog,
@@ -80,8 +82,21 @@ class GroupResource(BaseResource):
             hide_before=0,
         )
 
-    async def create(self, user_id: int, query: CreateGroupQuery) -> Group:
-        pass
+    async def create_new_group(self, user_id: int, query: CreateGroupQuery, db: Session) -> Group:
+        group = self.env.db.create_group(user_id, query, db)
+
+        self.env.db.update_last_read_in_group_for_user(
+            user_id,
+            group.group_id,
+            group.created_at,
+            db
+        )
+
+        return GroupResource.group_base_to_group(
+            group,
+            users=[user_id],
+            last_read=group.created_at
+        )
 
     async def joins(
         self, user_id: int, group_id: str, query: GroupJoinQuery
@@ -129,3 +144,15 @@ class GroupResource(BaseResource):
 
     async def delete_all_groups_for_user(self, user_id: int, group_id: str) -> None:
         pass
+
+    @staticmethod
+    def group_base_to_group(group: GroupBase, users: List[int], last_read: datetime) -> Group:
+        group_dict = group.dict()
+
+        group_dict["updated_at"] = CreateGroupQuery.to_ts(group_dict["updated_at"])
+        group_dict["created_at"] = CreateGroupQuery.to_ts(group_dict["created_at"])
+        group_dict["last_message_time"] = CreateGroupQuery.to_ts(group_dict["last_message_time"])
+        group_dict["last_read"] = CreateGroupQuery.to_ts(last_read)
+        group_dict["users"] = users
+
+        return Group(**group_dict)

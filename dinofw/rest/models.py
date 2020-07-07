@@ -5,7 +5,28 @@ import pytz
 from pydantic import BaseModel
 
 
-class PaginationQuery(BaseModel):
+class AbstractQuery(BaseModel):
+    @staticmethod
+    def to_dt(s):
+        if s is None:
+            s = dt.utcnow()
+            s = s.replace(tzinfo=pytz.UTC)
+        else:
+            s = int(s)
+            s = dt.utcfromtimestamp(s)
+            print(s)
+
+        return s
+
+    @staticmethod
+    def to_ts(ds):
+        if ds is None:
+            return None
+
+        return ds.strftime("%s")
+
+
+class PaginationQuery(AbstractQuery):
     since: Optional[int]
     per_page: int
 
@@ -29,7 +50,7 @@ class PaginationQuery(BaseModel):
         return ds.strftime("%s")
 
 
-class AdminQuery(BaseModel):
+class AdminQuery(AbstractQuery):
     admin_id: Optional[int]
 
 
@@ -49,19 +70,20 @@ class SearchQuery(PaginationQuery):
     status: Optional[int]
 
 
-class SendMessageQuery(BaseModel):
+class SendMessageQuery(AbstractQuery):
     message_payload: str
     message_type: str
 
 
-class CreateGroupQuery(BaseModel):
+class CreateGroupQuery(AbstractQuery):
     group_name: str
-    group_meta: int  # TODO: int or str?
     group_type: str
-    group_context: str
+    description: Optional[str]
+    group_meta: Optional[int]  # TODO: int or str?
+    group_context: Optional[str]
 
 
-class GroupJoinQuery(BaseModel):
+class GroupJoinQuery(AbstractQuery):
     joiner_id: int
     inviter_id: int
     invitation_context: str
@@ -77,7 +99,7 @@ class GroupQuery(PaginationQuery):
     has_unread: Optional[int]
 
 
-class JoinerUpdateQuery(BaseModel):
+class JoinerUpdateQuery(AbstractQuery):
     status: int
 
 
@@ -85,7 +107,7 @@ class AdminUpdateGroupQuery(AdminQuery):
     group_status: int
 
 
-class UpdateGroupQuery(BaseModel):
+class UpdateGroupQuery(AbstractQuery):
     # TODO: update owner?
     group_name: str
     group_weight: int
@@ -96,7 +118,7 @@ class EditMessageQuery(MessageQuery):
     read_at: int
 
 
-class Message(BaseModel):
+class Message(AbstractQuery):
     group_id: str
     created_at: int
     user_id: int
@@ -111,14 +133,14 @@ class Message(BaseModel):
     last_action_log_id: Optional[str]
 
 
-class GroupUsers(BaseModel):
+class GroupUsers(AbstractQuery):
     # TODO: should sort user ids by join datetime
     group_id: str
     owner_id: int
     users: List[int]
 
 
-class UserStats(BaseModel):
+class UserStats(AbstractQuery):
     user_id: int
     message_amount: int
     unread_amount: int
@@ -132,7 +154,7 @@ class UserStats(BaseModel):
     last_group_join_sent_time: int
 
 
-class UserGroupStats(BaseModel):
+class UserGroupStats(AbstractQuery):
     user_id: int
     group_id: str
     message_amount: int
@@ -142,7 +164,7 @@ class UserGroupStats(BaseModel):
     hide_before: int
 
 
-class ActionLog(BaseModel):
+class ActionLog(AbstractQuery):
     action_id: str
     user_id: int
     group_id: str
@@ -152,7 +174,7 @@ class ActionLog(BaseModel):
     message_id: Optional[str]
 
 
-class Group(BaseModel):
+class Group(AbstractQuery):
     group_id: str
     users: List[int]
     last_read: int
@@ -170,7 +192,7 @@ class Group(BaseModel):
     last_message_time: int
 
 
-class Joiner(BaseModel):
+class Joiner(AbstractQuery):
     joined_id: int
     group_id: str
     inviter_id: int
@@ -179,6 +201,6 @@ class Joiner(BaseModel):
     invitation_context: str
 
 
-class Histories(BaseModel):
+class Histories(AbstractQuery):
     message: Optional[Message]
     action_log: Optional[ActionLog]
