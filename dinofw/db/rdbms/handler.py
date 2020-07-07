@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 
+from dinofw.db.cassandra.schemas import MessageBase
 from dinofw.rest.models import GroupQuery
 from dinofw.db.rdbms import models, schemas
 from dinofw.db.rdbms.schemas import LastReadBase, GroupBase
@@ -48,6 +49,37 @@ class RelationalHandler:
             groups.append((group, last_read, user_ids))
 
         return groups
+
+    def update_group_new_message(self, message: MessageBase, db: Session):
+        group = (
+            db.query(models.GroupEntity)
+            .filter(models.GroupEntity.group_id == message.group_id)
+            .first()
+        )
+
+        group.last_message_time = message.created_at
+        group.last_message_overview = message.message_payload  # TODO: trim somehow, maybe has a schema
+
+        db.add(group)
+        db.commit()
+        db.refresh(group)
+
+    def update_last_read_on_send_new_message(self, user_id: int, message: MessageBase, db: Session):
+        """
+        TODO: should we update last read for sender? or sender also acks?
+        """
+        last_read = (
+            db.query(models.LastReadEntity)
+            .filter(models.LastReadEntity.user_id == user_id)
+            .filter(models.LastReadEntity.group_id == message.group_id)
+            .first()
+        )
+
+        last_read.last_read = message.created_at
+
+        db.add(last_read)
+        db.commit()
+        db.refresh(last_read)
 
     def create_group(self, db: Session, group: schemas.GroupCreate):
         db_group = models.GroupEntity(**group.dict())

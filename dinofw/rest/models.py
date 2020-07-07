@@ -15,7 +15,9 @@ class PaginationQuery(BaseModel):
             s = dt.utcnow()
             s = s.replace(tzinfo=pytz.UTC)
         else:
-            s = dt.strptime(str(s), "%s")
+            s = int(s)
+            s = dt.utcfromtimestamp(s)
+            print(s)
 
         return s
 
@@ -95,18 +97,18 @@ class EditMessageQuery(MessageQuery):
 
 
 class Message(BaseModel):
-    message_id: str
     group_id: str
-    user_id: int
     created_at: int
-    status: int
-    message_type: int
-    read_at: int
-    updated_at: int
-    last_action_log_id: int
-    removed_at: int
-    removed_by_user: int
+    user_id: int
+    message_id: str
     message_payload: str
+
+    status: Optional[int]
+    message_type: Optional[int]
+    updated_at: Optional[int]
+    removed_at: Optional[int]
+    removed_by_user: Optional[int]
+    last_action_log_id: Optional[str]
 
 
 class GroupUsers(BaseModel):

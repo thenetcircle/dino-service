@@ -80,7 +80,7 @@ async def get_messages_in_group(group_id: str, query: HistoryQuery) -> List[Mess
     """
     get messages in a group, order by time in descendent
     """
-    return await environ.env.rest.message.messages(group_id, query)
+    return await environ.env.rest.message.messages_in_group(group_id, query)
 
 
 @app.put("/v1/groups/{group_id}/messages")
@@ -137,14 +137,14 @@ async def batch_delete_messages_in_group_for_user(
     )
 
 
-@app.post("/v1/groups/{group_id}/users/{user_id}/send", response_model=List[Message])
+@app.post("/v1/groups/{group_id}/users/{user_id}/send", response_model=Message)
 async def send_message_to_group(
-    group_id: str, user_id: int, query: SendMessageQuery
+    group_id: str, user_id: int, query: SendMessageQuery, db: Session = Depends(get_db)
 ) -> List[Message]:
     """
     user sends a message in a group
     """
-    return await environ.env.rest.message.send(group_id, user_id, query)
+    return await environ.env.rest.message.save_new_message(group_id, user_id, query, db)
 
 
 @app.get(
@@ -153,7 +153,7 @@ async def send_message_to_group(
 )
 async def get_message_details(group_id: str, user_id: int, message_id: str) -> Message:
     """
-    get message detail
+    get message details
     """
     return await environ.env.rest.message.details(group_id, user_id, message_id)
 
@@ -195,7 +195,7 @@ async def get_users_in_group(group_id: str, query: PaginationQuery) -> GroupUser
 @app.get("/v1/groups/{group_id}", response_model=Group)
 async def get_group_information(group_id) -> Group:
     """
-    get group detail
+    get group details
     """
     return await environ.env.rest.group.get_group(group_id)
 

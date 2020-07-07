@@ -1,45 +1,25 @@
-import uuid
+from datetime import datetime
+from typing import Optional
 
-from cassandra.cqlengine.columns import UUID
-from cassandra.cqlengine.columns import DateTime
-from cassandra.cqlengine.columns import Integer
-from cassandra.cqlengine.columns import Text
-from cassandra.cqlengine.models import Model
+from pydantic import BaseModel
 
 
-class MessageModel(Model):
-    __table_name__ = "messages"
+class MessageBase(BaseModel):
+    group_id: str
+    created_at: datetime
+    user_id: int
+    message_id: str
+    message_payload: str
 
-    group_id = UUID(
-        required=True,
-        primary_key=True,
-        partition_key=True,
-    )
-    created_at = DateTime(
-        required=True,
-        primary_key=True,
-        clustering_order="DESC",
-    )
-    user_id = Integer(
-        required=True,
-        primary_key=True,
-    )
-    message_id = UUID(
-        required=True,
-        default=uuid.uuid4
-    )
-    message_payload = Text(
-        required=True
-    )
-
-    status = Integer()
-    message_type = Integer()
-    updated_at = DateTime()
-    removed_at = DateTime()
-    removed_by_user = Integer()
-    last_action_log_id = UUID()
+    status: Optional[int]
+    message_type: Optional[int]
+    updated_at: Optional[datetime]
+    removed_at: Optional[datetime]
+    removed_by_user: Optional[int]
+    last_action_log_id: Optional[str]
 
 
+"""
 class JoinerModel(Model):
     __table_name__ = "joiners"
 
@@ -96,3 +76,4 @@ class ActionLogModel(Model):
 
     admin_id = Integer()
     message_id = UUID()
+"""
