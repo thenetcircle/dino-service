@@ -40,7 +40,6 @@ class CassandraHandler:
 
     def get_messages_in_group(self, group_id: str, query: MessageQuery) -> List[MessageBase]:
         since = MessageQuery.to_dt(query.since)
-        print(f"since: {since}")
 
         # TODO: add message_type and status filter from MessageQuery
         raw_messages = (
