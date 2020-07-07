@@ -17,6 +17,6 @@ def init_db(env):
     env.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     env.Base = declarative_base()
 
-    from dinofw.db.rdbms.models import GroupEntity, LastReadModel
+    from dinofw.db.rdbms.models import GroupEntity, LastReadEntity
 
     env.Base.metadata.create_all(bind=engine)

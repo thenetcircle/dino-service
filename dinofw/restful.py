@@ -1,7 +1,9 @@
 import logging
 from typing import List
 
+from fastapi import Depends
 from fastapi import FastAPI
+from sqlalchemy.orm import Session
 
 from dinofw import environ
 from dinofw.rest.models import AdminQuery, JoinerUpdateQuery, AdminUpdateGroupQuery
@@ -34,6 +36,15 @@ def create_app():
 
 
 app = create_app()
+
+
+# dependency
+def get_db():
+    db = environ.env.SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 
 @app.post("/v1/groups", response_model=List[Group])
@@ -198,11 +209,11 @@ async def edit_group_information(group_id, query: AdminUpdateGroupQuery) -> Grou
 
 
 @app.post("/v1/users/{user_id}/groups", response_model=List[Group])
-async def get_groups_for_user(user_id: int, query: GroupQuery) -> List[Group]:
+async def get_groups_for_user(user_id: int, query: GroupQuery, db: Session = Depends(get_db)) -> List[Group]:
     """
     get user's group sort by latest message update
     """
-    return await environ.env.rest.user.get_groups_for_user(user_id, query)
+    return await environ.env.rest.user.get_groups_for_user(user_id, query, db)
 
 
 @app.post("/v1/users/{user_id}/groups/create", response_model=Group)

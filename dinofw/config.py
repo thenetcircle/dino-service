@@ -53,6 +53,11 @@ class AckStatus:
 
 class RedisKeys:
     RKEY_AUTH = "user:auth:{}"  # user:auth:user_id
+    RKEY_USERS_IN_GROUP = "group:users:{}"  # group:users:group_id
+
+    @staticmethod
+    def user_ids_in_group(group_id: str) -> str:
+        return RedisKeys.RKEY_USERS_IN_GROUP.format(group_id)
 
     @staticmethod
     def auth_key(user_id: str) -> str:

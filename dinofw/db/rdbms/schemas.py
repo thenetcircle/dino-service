@@ -13,6 +13,13 @@ class GroupBase(BaseModel):
     last_message_time: datetime
     last_message_overview: Optional[str]
 
+    group_type: int
+    owner_id: int
+
+    updated_at: Optional[datetime]
+    group_meta: Optional[int]
+    group_context: Optional[str]
+
 
 class LastReadBase(BaseModel):
     group_id: str

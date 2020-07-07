@@ -19,6 +19,13 @@ class PaginationQuery(BaseModel):
 
         return s
 
+    @staticmethod
+    def to_ts(ds):
+        if ds is None:
+            return None
+
+        return ds.strftime("%s")
+
 
 class AdminQuery(BaseModel):
     admin_id: Optional[int]
@@ -148,16 +155,16 @@ class Group(BaseModel):
     users: List[int]
     last_read: int
     name: str
-    description: str
-    status: int
+    description: Optional[str]
+    status: Optional[int]
     group_type: int
     created_at: int
-    updated_at: int
+    updated_at: Optional[int]
     owner_id: int
-    group_meta: int
-    group_context: str
-    last_message_overview: str
-    last_message_user_id: int
+    group_meta: Optional[int]
+    group_context: Optional[str]
+    last_message_overview: Optional[str]
+    last_message_user_id: Optional[int]
     last_message_time: int
 
 

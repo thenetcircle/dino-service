@@ -1,13 +1,15 @@
 import sys
 import logging
 import socket
+from typing import List
+
 import redis
 
 from datetime import datetime
 from datetime import timedelta
 
 from dinofw.cache import ICache
-from dinofw.config import ConfigKeys
+from dinofw.config import ConfigKeys, RedisKeys
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +71,14 @@ class CacheRedis(ICache):
             self.listen_port = args[bind_arg_pos + 1].split(":")[1]
 
         self.listen_host = socket.gethostname().split(".")[0]
+
+    def get_user_ids_in_group(self, group_id: str):
+        return self.redis.smembers(RedisKeys.user_ids_in_group(group_id))
+
+    def set_user_ids_in_group(self, group_id: str, user_ids: List[int]):
+        key = RedisKeys.user_ids_in_group(group_id)
+        self.redis.delete(key)
+        return self.redis.sadd(key, *user_ids)
 
     @property
     def redis(self):
