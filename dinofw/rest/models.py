@@ -27,6 +27,9 @@ class AbstractQuery(BaseModel):
 
 
 class PaginationQuery(AbstractQuery):
+    """
+    TODO: should we use something else? time_until or so, want to query backwards in time, not forwards
+    """
     since: Optional[int]
     per_page: int
 

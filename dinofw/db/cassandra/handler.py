@@ -12,7 +12,7 @@ from dinofw.db.cassandra.models import ActionLogModel
 from dinofw.db.cassandra.models import JoinerModel
 from dinofw.db.cassandra.models import MessageModel
 from dinofw.db.cassandra.schemas import MessageBase
-from dinofw.rest.models import GroupJoinerQuery, Message
+from dinofw.rest.models import GroupJoinerQuery
 from dinofw.rest.models import HistoryQuery
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
