@@ -77,9 +77,11 @@ def init_database(gn_env: GNEnvironment):
         return
 
     from dinofw.db.rdbms.database import init_db as init_sql_alchemy
+
     init_sql_alchemy(gn_env)
 
     from dinofw.db.rdbms.handler import RelationalHandler
+
     gn_env.db = RelationalHandler(gn_env)
 
 

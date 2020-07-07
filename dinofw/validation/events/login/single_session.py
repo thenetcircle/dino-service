@@ -36,6 +36,10 @@ class OnLoginEnforceSingleSession(IPlugin):
         try:
             return self._process(data, activity)
         except Exception as e:
-            logger.error('could not execute plugin single_session: %s' % str(e))
+            logger.error("could not execute plugin single_session: %s" % str(e))
             logger.exception(traceback.format_exc())
-            return False, ErrorCodes.VALIDATION_ERROR, 'could not execute validation plugin single_session'
+            return (
+                False,
+                ErrorCodes.VALIDATION_ERROR,
+                "could not execute validation plugin single_session",
+            )

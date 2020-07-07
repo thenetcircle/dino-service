@@ -12,12 +12,11 @@ def init_db(env):
     if database_uri.startswith("sqlite"):
         connection_args = {"check_same_thread": False}
 
-    engine = create_engine(
-        database_uri, connect_args=connection_args
-    )
+    engine = create_engine(database_uri, connect_args=connection_args)
 
     env.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     env.Base = declarative_base()
 
     from dinofw.db.rdbms.models import GroupEntity, LastReadModel
+
     env.Base.metadata.create_all(bind=engine)

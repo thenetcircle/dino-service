@@ -1,4 +1,5 @@
 import uuid
+
 from cassandra.cqlengine import columns
 from cassandra.cqlengine.models import Model
 
@@ -18,8 +19,7 @@ class JoinerModel(Model):
     )
     inviter_id = columns.Integer(
         required=True,
-        primary_key=True,
-    )
+        primary_key=True,)
     joined_id = columns.Integer(
         required=True,
         primary_key=True,
@@ -56,6 +56,7 @@ class ActionLogModel(Model):
     action_type = columns.Integer(
         required=True
     )
+
     admin_id = columns.Integer()
     message_id = columns.UUID()
 

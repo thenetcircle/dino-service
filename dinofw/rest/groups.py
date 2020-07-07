@@ -32,7 +32,9 @@ class GroupResource(BaseResource):
     def __init__(self, env):
         self.env = env
 
-    async def get_users_in_group(self, group_id: str, query: PaginationQuery) -> GroupUsers:
+    async def get_users_in_group(
+        self, group_id: str, query: PaginationQuery
+    ) -> GroupUsers:
         return GroupUsers(group_id=group_id, owner_id=1, users=[1, 2, 3, 4])
 
     async def histories(

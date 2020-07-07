@@ -12,8 +12,13 @@ class RelationalHandler:
     def get_groups_for_user(self, db: Session, user_id: int, query: GroupQuery):
         results = (
             db.query(models.GroupEntity)
-            .join(models.LastReadModel, models.LastReadModel.group_id == models.GroupEntity.group_id)
-            .filter(models.GroupEntity.last_message_time <= GroupQuery.to_dt(query.since))
+            .join(
+                models.LastReadModel,
+                models.LastReadModel.group_id == models.GroupEntity.group_id,
+            )
+            .filter(
+                models.GroupEntity.last_message_time <= GroupQuery.to_dt(query.since)
+            )
             .filter(models.LastReadModel.user_id == user_id)
             .order_by(models.GroupEntity.last_message_time.desc())
             .limit(query.per_page)

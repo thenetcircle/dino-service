@@ -29,11 +29,7 @@ class UserResource(BaseResource):
             del lr_dict["id"]
             del lr_dict["user_id"]
 
-            groups.append(Group(
-                **group_dict,
-                **lr_dict,
-                users=users,
-            ))
+            groups.append(Group(**group_dict, **lr_dict, users=users,))
 
         return groups
 
