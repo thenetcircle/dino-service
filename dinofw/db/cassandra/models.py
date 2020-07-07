@@ -1,34 +1,37 @@
 import uuid
 
-from cassandra.cqlengine import columns
+from cassandra.cqlengine.columns import UUID
+from cassandra.cqlengine.columns import DateTime
+from cassandra.cqlengine.columns import Integer
+from cassandra.cqlengine.columns import Text
 from cassandra.cqlengine.models import Model
 
 
 class JoinerModel(Model):
     __table_name__ = "joiners"
 
-    group_id = columns.UUID(
+    group_id = UUID(
         required=True,
         primary_key=True,
         partition_key=True,
     )
-    created_at = columns.DateTime(
+    created_at = DateTime(
         required=True,
         primary_key=True,
         clustering_order="DESC",
     )
-    inviter_id = columns.Integer(
+    inviter_id = Integer(
         required=True,
         primary_key=True,
     )
-    joined_id = columns.Integer(
+    joined_id = Integer(
         required=True,
         primary_key=True,
     )
-    status = columns.Integer(
+    status = Integer(
         required=True
     )
-    invitation_context = columns.Text(
+    invitation_context = Text(
         required=True
     )
 
@@ -36,59 +39,59 @@ class JoinerModel(Model):
 class ActionLogModel(Model):
     __table_name__ = "action_logs"
 
-    group_id = columns.UUID(
+    group_id = UUID(
         required=True,
         primary_key=True,
         partition_key=True,
     )
-    created_at = columns.DateTime(
+    created_at = DateTime(
         required=True,
         primary_key=True,
         clustering_order="DESC",
     )
-    user_id = columns.Integer(
+    user_id = Integer(
         required=True,
         primary_key=True,
     )
-    action_id = columns.UUID(
+    action_id = UUID(
         required=True,
         default=uuid.uuid4
     )
-    action_type = columns.Integer(
+    action_type = Integer(
         required=True
     )
 
-    admin_id = columns.Integer()
-    message_id = columns.UUID()
+    admin_id = Integer()
+    message_id = UUID()
 
 
 class MessageModel(Model):
     __table_name__ = "messages"
 
-    group_id = columns.UUID(
+    group_id = UUID(
         required=True,
         primary_key=True,
         partition_key=True,
     )
-    created_at = columns.DateTime(
+    created_at = DateTime(
         required=True,
         primary_key=True,
         clustering_order="DESC",
     )
-    user_id = columns.Integer(
+    user_id = Integer(
         required=True,
         primary_key=True,
     )
-    message_id = columns.UUID(
+    message_id = UUID(
         required=True,
         default=uuid.uuid4
     )
-    message_payload = columns.Text(
+    message_payload = Text(
         required=True
     )
 
-    status = columns.Integer()
-    message_type = columns.Integer()
-    updated_at = columns.DateTime()
-    removed_by_user = columns.Integer()
-    last_action_log_id = columns.UUID()
+    status = Integer()
+    message_type = Integer()
+    updated_at = DateTime()
+    removed_by_user = Integer()
+    last_action_log_id = UUID()
