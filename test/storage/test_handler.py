@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from dinofw.rest.models import GroupQuery
-from dinofw.storage.cassandra import CassandraHandler
+from dinofw.db.cassandra import CassandraHandler
 
 
 class TestCassandraHandler(TestCase):

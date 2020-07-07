@@ -4,17 +4,27 @@ from cassandra.cqlengine import connection
 
 from uuid import uuid4 as uuid
 from datetime import datetime as dt
+
+from gnenv.environ import GNEnvironment
+
+from dinofw.config import ConfigKeys
 from dinofw.rest.models import MessageQuery, SendMessageQuery, HistoryQuery, GroupJoinerQuery
-from dinofw.storage.cassandra.models import MessageModel
-from dinofw.storage.cassandra.models import JoinerModel
-from dinofw.storage.cassandra.models import ActionLogModel
+from dinofw.db.cassandra.models import MessageModel
+from dinofw.db.cassandra.models import JoinerModel
+from dinofw.db.cassandra.models import ActionLogModel
 
 
 class CassandraHandler:
-    def __init__(self):
+    def __init__(self, env: GNEnvironment):
+        self.env = env
+
+    def setup_tables(self):
+        hosts = self.env.config.get(ConfigKeys.HOST, domain=ConfigKeys.STORAGE).split(",")
+        key_space = self.env.config.get(ConfigKeys.KEY_SPACE, domain=ConfigKeys.STORAGE)
+
         connection.setup(
-            ['maggie-cassandra-1'],
-            default_keyspace="dinofw",
+            hosts,
+            default_keyspace=key_space,
             protocol_version=3,
             retry_connect=True
         )

@@ -5,7 +5,11 @@ cache:
     type: 'memory'
 
 db:
-    uri: "sqlite:///./sql_app.db"
+    uri: "mysql://dino:dino@maggie-kafka-2/dinofw"
+
+storage:
+    host: "maggie-cassandra-1,maggie-cassandra-2"
+    key_space: "dinofw"
 
 coordinator:
     host: 'maggie-kafka-1'

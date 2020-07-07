@@ -76,10 +76,22 @@ def init_database(gn_env: GNEnvironment):
         # assume we're testing
         return
 
-    from dinofw.db.handler import DatabaseRdbms
+    from dinofw.db.rdbms.database import init_db as init_sql_alchemy
+    init_sql_alchemy(gn_env)
 
-    gn_env.db = DatabaseRdbms(gn_env)
-    gn_env.db.init_config()
+    from dinofw.db.rdbms.handler import RelationalHandler
+    gn_env.db = RelationalHandler(gn_env)
+
+
+def init_cassandra(gn_env: GNEnvironment):
+    if len(gn_env.config) == 0 or gn_env.config.get(ConfigKeys.TESTING, False):
+        # assume we're testing
+        return
+
+    from dinofw.db.cassandra.handler import CassandraHandler
+
+    gn_env.storage = CassandraHandler(gn_env)
+    gn_env.storage.setup_tables()
 
 
 def init_auth_service(gn_env: GNEnvironment):
@@ -333,6 +345,7 @@ def initialize_env(dino_env):
     init_flask(dino_env)
     init_logging(dino_env)
     init_database(dino_env)
+    init_cassandra(dino_env)
     init_auth_service(dino_env)
     init_cache_service(dino_env)
     init_stats_service(dino_env)

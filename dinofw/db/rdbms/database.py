@@ -1,4 +1,3 @@
-from gnenv.environ import GNEnvironment
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -6,7 +5,7 @@ from sqlalchemy.orm import sessionmaker
 from dinofw.config import ConfigKeys
 
 
-def init_db(env: GNEnvironment):
+def init_db(env):
     database_uri = env.config.get(ConfigKeys.URI, domain=ConfigKeys.DB)
 
     connection_args = dict()
@@ -19,4 +18,6 @@ def init_db(env: GNEnvironment):
 
     env.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     env.Base = declarative_base()
+
+    from dinofw.db.rdbms.models import GroupEntity, LastReadModel
     env.Base.metadata.create_all(bind=engine)

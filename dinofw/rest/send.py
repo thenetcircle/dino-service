@@ -48,7 +48,7 @@ class SendResource(BaseResource):
         }
         data["object"] = {"content": msg_content}
 
-        # TODO: save to storage
+        # TODO: save to db
 
         if not environ.env.cache.user_is_in_multicast(target_id):
             logger.info(f"user {target_id} is offline, dropping message: {str(json)}")

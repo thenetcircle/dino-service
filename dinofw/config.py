@@ -72,6 +72,7 @@ class ConfigKeys:
     EXCHANGE = "exchange"
     TESTING = "testing"
     STORAGE = "storage"
+    KEY_SPACE = "key_space"
     AUTH_SERVICE = "auth"
     CACHE_SERVICE = "cache"
     STATS_SERVICE = "stats"

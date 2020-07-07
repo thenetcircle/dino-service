@@ -1,8 +1,8 @@
 from sqlalchemy.orm import Session
 
 from dinofw.rest.models import GroupQuery
-from dinofw.storage.rdbms import models, schemas
-from dinofw.storage.rdbms.schemas import LastReadBase, GroupBase
+from dinofw.db.rdbms import models, schemas
+from dinofw.db.rdbms.schemas import LastReadBase, GroupBase
 
 
 class RelationalHandler:
