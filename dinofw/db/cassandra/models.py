@@ -64,9 +64,7 @@ class JoinerModel(Model):
     status = Integer(
         required=True
     )
-    invitation_context = Text(
-        required=True
-    )
+    invitation_context = Text()
 
 
 class ActionLogModel(Model):

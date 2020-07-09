@@ -19,61 +19,21 @@ class MessageBase(BaseModel):
     last_action_log_id: Optional[str]
 
 
-"""
-class JoinerModel(Model):
-    __table_name__ = "joiners"
-
-    group_id = UUID(
-        required=True,
-        primary_key=True,
-        partition_key=True,
-    )
-    created_at = DateTime(
-        required=True,
-        primary_key=True,
-        clustering_order="DESC",
-    )
-    inviter_id = Integer(
-        required=True,
-        primary_key=True,
-    )
-    joined_id = Integer(
-        required=True,
-        primary_key=True,
-    )
-    status = Integer(
-        required=True
-    )
-    invitation_context = Text(
-        required=True
-    )
+class JoinerBase(MessageBase):
+    group_id: str
+    created_at: datetime
+    inviter_id: int
+    joined_id: int
+    status: int
+    invitation_context: Optional[str]
 
 
-class ActionLogModel(Model):
-    __table_name__ = "action_logs"
+class ActionLogBase(BaseModel):
+    group_id: str
+    created_at: datetime
+    user_id: int
+    action_id: str
+    action_type: int
 
-    group_id = UUID(
-        required=True,
-        primary_key=True,
-        partition_key=True,
-    )
-    created_at = DateTime(
-        required=True,
-        primary_key=True,
-        clustering_order="DESC",
-    )
-    user_id = Integer(
-        required=True,
-        primary_key=True,
-    )
-    action_id = UUID(
-        required=True,
-        default=uuid.uuid4
-    )
-    action_type = Integer(
-        required=True
-    )
-
-    admin_id = Integer()
-    message_id = UUID()
-"""
+    admin_id: Optional[int]
+    message_id: Optional[int]

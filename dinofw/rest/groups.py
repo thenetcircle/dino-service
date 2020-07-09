@@ -1,12 +1,13 @@
 import logging
 import random
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 from uuid import uuid4 as uuid
 
 import pytz
 from sqlalchemy.orm import Session
 
+from dinofw.db.cassandra.schemas import JoinerBase
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.rest.base import BaseResource
 from dinofw.rest.models import (
@@ -18,7 +19,7 @@ from dinofw.rest.models import (
     JoinerUpdateQuery,
     UpdateGroupQuery,
     CreateGroupQuery,
-    AdminUpdateGroupQuery,
+    AdminUpdateGroupQuery, GroupJoinerQuery,
 )
 from dinofw.rest.models import Group
 from dinofw.rest.models import Histories
@@ -34,10 +35,23 @@ class GroupResource(BaseResource):
     def __init__(self, env):
         self.env = env
 
-    async def get_users_in_group(
-        self, group_id: str, query: PaginationQuery
-    ) -> GroupUsers:
-        return GroupUsers(group_id=group_id, owner_id=1, users=[1, 2, 3, 4])
+    async def get_users_in_group(self, group_id: str, db: Session) -> GroupUsers:
+        group, user_ids = self.env.db.get_users_in_group(group_id, db)
+
+        return GroupUsers(
+            group_id=group_id,
+            owner_id=group.owner_id,
+            users=user_ids
+        )
+
+    async def get_group(self, group_id: str, db: Session):
+        group, user_ids = self.env.db.get_users_in_group(group_id, db)
+
+        return GroupResource.group_base_to_group(
+            group,
+            users=user_ids,
+            last_read=None
+        )
 
     async def histories(
         self, group_id: str, user_id: int, query: HistoryQuery
@@ -99,14 +113,18 @@ class GroupResource(BaseResource):
         )
 
     async def joins(
-        self, user_id: int, group_id: str, query: GroupJoinQuery
+        self, group_id: str, query: GroupJoinerQuery
     ) -> List[Joiner]:
-        return [self._join(group_id)]
+        joins = self.env.storage.get_group_joins_for_status(group_id, query.status)
+
+        return [GroupResource.joiner_base_to_joiner(join) for join in joins]
 
     async def get_join_details(
         self, user_id: int, group_id: str, joiner_id: int
     ) -> Joiner:
-        return self._join(group_id)
+        join = self.env.storage.get_group_join_for_user(group_id, joiner_id)
+
+        return GroupResource.joiner_base_to_joiner(join)
 
     async def delete_join_request(
         self, user_id: int, group_id: str, joiner_id: int
@@ -131,9 +149,6 @@ class GroupResource(BaseResource):
     async def search(self, query: SearchQuery) -> List[Group]:
         return [self._group()]
 
-    async def get_group(self, group_id: str):
-        return self._group(group_id)
-
     async def hide_histories_for_user(
         self, group_id: str, user_id: int, query: HistoryQuery
     ):
@@ -146,7 +161,7 @@ class GroupResource(BaseResource):
         pass
 
     @staticmethod
-    def group_base_to_group(group: GroupBase, users: List[int], last_read: datetime) -> Group:
+    def group_base_to_group(group: GroupBase, users: List[int], last_read: Optional[datetime]) -> Group:
         group_dict = group.dict()
 
         group_dict["updated_at"] = CreateGroupQuery.to_ts(group_dict["updated_at"])
@@ -156,3 +171,11 @@ class GroupResource(BaseResource):
         group_dict["users"] = users
 
         return Group(**group_dict)
+
+    @staticmethod
+    def joiner_base_to_joiner(join: JoinerBase) -> Joiner:
+        join_dict = join.dict()
+
+        join_dict["created_at"] = GroupJoinerQuery.to_ts(join_dict["created_at"])
+
+        return Joiner(**join_dict)

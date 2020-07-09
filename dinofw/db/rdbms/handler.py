@@ -1,9 +1,10 @@
+from typing import List, Tuple
 from uuid import uuid4 as uuid
 from datetime import datetime as dt
 import pytz
 from sqlalchemy.orm import Session
 
-from dinofw.db.cassandra.schemas import MessageBase
+from dinofw.db.cassandra.schemas import MessageBase, JoinerBase
 from dinofw.db.rdbms.models import LastReadEntity
 from dinofw.rest.models import GroupQuery, CreateGroupQuery
 from dinofw.db.rdbms import models
@@ -14,7 +15,24 @@ class RelationalHandler:
     def __init__(self, env):
         self.env = env
 
-    def get_groups_for_user(self, user_id: int, query: GroupQuery, db: Session):
+    def get_users_in_group(self, group_id: str, db: Session) -> (GroupBase, List[int]):
+        group_entity = (
+            db.query(models.GroupEntity)
+            .filter(models.GroupEntity.group_id == group_id)
+            .first()
+        )
+
+        group = GroupBase(**group_entity.__dict__)
+        user_ids = self._users_in_group(group_entity, db)
+
+        return group, user_ids
+
+    def get_groups_for_user(
+            self,
+            user_id: int,
+            query: GroupQuery,
+            db: Session
+    ) -> List[Tuple[GroupBase, LastReadBase, List[int]]]:
         results = (
             db.query(models.GroupEntity, models.LastReadEntity)
             .join(
@@ -35,26 +53,13 @@ class RelationalHandler:
         for group_entity, last_read_entity in results:
             group = GroupBase(**group_entity.__dict__)
             last_read = LastReadBase(**last_read_entity.__dict__)
-
-            # users in a group shouldn't change that often
-            user_ids = self.env.cache.get_user_ids_in_group(group.group_id)
-
-            if user_ids is None or len(user_ids) == 0:
-                user_ids = (
-                    db.query(models.LastReadEntity.user_id)
-                    .filter(models.LastReadEntity.group_id == group.group_id)
-                    .distinct()
-                    .all()
-                )
-                user_ids = {user_id[0] for user_id in user_ids}
-
-                self.env.cache.set_user_ids_in_group(group.group_id, user_ids)
+            user_ids = self._users_in_group(group_entity, db)
 
             groups.append((group, last_read, user_ids))
 
         return groups
 
-    def update_group_new_message(self, message: MessageBase, db: Session):
+    def update_group_new_message(self, message: MessageBase, db: Session) -> None:
         group = (
             db.query(models.GroupEntity)
             .filter(models.GroupEntity.group_id == message.group_id)
@@ -68,7 +73,7 @@ class RelationalHandler:
         db.commit()
         db.refresh(group)
 
-    def update_last_read_in_group_for_user(self, user_id: int, group_id: str, last_read_time: dt, db: Session):
+    def update_last_read_in_group_for_user(self, user_id: int, group_id: str, last_read_time: dt, db: Session) -> None:
         """
         TODO: should we update last read for sender? or sender also acks?
         """
@@ -113,3 +118,20 @@ class RelationalHandler:
         db.refresh(group_entity)
 
         return GroupBase(**group_entity.__dict__)
+
+    def _users_in_group(self, group: models.GroupEntity, db: Session) -> List[int]:
+        # users in a group shouldn't change that often
+        user_ids = self.env.cache.get_user_ids_in_group(group.group_id)
+
+        if user_ids is None or len(user_ids) == 0:
+            user_ids = (
+                db.query(models.LastReadEntity.user_id)
+                .filter(models.LastReadEntity.group_id == group.group_id)
+                .distinct()
+                .all()
+            )
+            user_ids = {user_id[0] for user_id in user_ids}
+
+            self.env.cache.set_user_ids_in_group(group.group_id, user_ids)
+
+        return user_ids

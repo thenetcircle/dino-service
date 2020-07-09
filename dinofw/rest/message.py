@@ -37,6 +37,18 @@ class MessageResource(BaseResource):
 
         return messages
 
+    async def messages_for_user(
+        self, group_id: str, user_id: int, query: HistoryQuery
+    ) -> List[Message]:
+        raw_messages = self.env.storage.get_messages_in_group_for_user(group_id, user_id, query)
+        messages = list()
+
+        for message_base in raw_messages:
+            message = MessageResource.message_base_to_message(message_base)
+            messages.append(message)
+
+        return messages
+
     async def edit(self, group_id: str, user_id: int, query: EditMessageQuery) -> None:
         pass
 
@@ -45,11 +57,6 @@ class MessageResource(BaseResource):
 
     async def details(self, group_id: str, user_id: int, message_id: str) -> Message:
         pass
-
-    async def messages_for_user(
-        self, group_id: str, user_id: int, query: HistoryQuery
-    ) -> List[Message]:
-        return [self._message(group_id, user_id)]
 
     async def update_messages_for_user(
         self, group_id: str, user_id: int, query: MessageQuery

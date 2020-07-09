@@ -14,14 +14,14 @@ class AbstractQuery(BaseModel):
         else:
             s = int(s)
             s = dt.utcfromtimestamp(s)
-            print(s)
 
         return s
 
     @staticmethod
     def to_ts(ds):
         if ds is None:
-            return None
+            ds = dt.utcnow()
+            ds = ds.replace(tzinfo=pytz.UTC)
 
         return ds.strftime("%s")
 

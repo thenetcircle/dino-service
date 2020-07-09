@@ -11,7 +11,7 @@ from dinofw.config import ConfigKeys
 from dinofw.db.cassandra.models import ActionLogModel
 from dinofw.db.cassandra.models import JoinerModel
 from dinofw.db.cassandra.models import MessageModel
-from dinofw.db.cassandra.schemas import MessageBase
+from dinofw.db.cassandra.schemas import MessageBase, JoinerBase
 from dinofw.rest.models import GroupJoinerQuery
 from dinofw.rest.models import HistoryQuery
 from dinofw.rest.models import MessageQuery
@@ -58,6 +58,54 @@ class CassandraHandler:
 
         return messages
 
+    def get_group_joins_for_status(self, group_id: str, query: GroupJoinerQuery) -> List[JoinerBase]:
+        raw_joins = (
+            JoinerModel.objects(
+                JoinerModel.group_id == group_id,
+                JoinerModel.status == query.status,
+            )
+            .all()
+        )
+
+        joins = list()
+
+        for join in raw_joins:
+            joins.append(CassandraHandler.joiner_base_from_joiner(join))
+
+        return joins
+
+    def get_group_join_for_user(self, group_id: str, joiner_id: int) -> JoinerBase:
+        raw_join = (
+            JoinerModel.objects(
+                JoinerModel.group_id == group_id,
+                JoinerModel.joined_id == joiner_id,
+            )
+            .first()
+        )
+
+        return CassandraHandler.joiner_base_from_joiner(raw_join)
+
+    def get_messages_in_group_for_user(self, group_id: str, user_id: int, query: MessageQuery) -> List[MessageBase]:
+        since = MessageQuery.to_dt(query.since)
+
+        # TODO: add message_type and status filter from MessageQuery
+        raw_messages = (
+            MessageModel.objects(
+                MessageModel.group_id == group_id,
+                MessageModel.user_id == user_id,
+                MessageModel.created_at >= since,
+            )
+            .limit(query.per_page or 100)
+            .all()
+        )
+
+        messages = list()
+
+        for message in raw_messages:
+            messages.append(CassandraHandler.message_base_from_entity(message))
+
+        return messages
+
     @staticmethod
     def message_base_from_entity(message: MessageModel) -> MessageBase:
         return MessageBase(
@@ -72,6 +120,17 @@ class CassandraHandler:
             removed_at=message.removed_at,
             removed_by_user=message.removed_by_user,
             last_action_log_id=message.last_action_log_id,
+        )
+
+    @staticmethod
+    def joiner_base_from_joiner(join: JoinerModel) -> JoinerBase:
+        return JoinerBase(
+            group_id=str(join.group_id),
+            created_at=join.created_at,
+            inviter_id=join.inviter_id,
+            joined_id=join.joined_id,
+            status=join.status,
+            invitation_context=join.invitation_context,
         )
 
     def store_message(self, group_id: str, user_id: int, query: SendMessageQuery):
