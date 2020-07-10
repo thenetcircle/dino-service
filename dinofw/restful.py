@@ -333,4 +333,4 @@ async def get_user_statistics(user_id: int) -> UserStats:
     """
     TODO: get user statistic data
     """
-    return await environ.env.rest.user.stats(user_id)
+    return await environ.env.rest.user.get_stats(user_id)

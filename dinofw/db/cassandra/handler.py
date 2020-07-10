@@ -38,13 +38,15 @@ class CassandraHandler:
         sync_table(JoinerModel)
 
     def get_messages_in_group(self, group_id: str, query: MessageQuery) -> List[MessageBase]:
-        since = MessageQuery.to_dt(query.since)
+        until = MessageQuery.to_dt(query.until)
+        hide_before = MessageQuery.to_dt(query.hide_before)
 
         # TODO: add message_type and status filter from MessageQuery
         raw_messages = (
             MessageModel.objects(
                 MessageModel.group_id == group_id,
-                MessageModel.created_at >= since,
+                MessageModel.created_at <= until,
+                MessageModel.created_at > hide_before
             )
             .limit(query.per_page or 100)
             .all()

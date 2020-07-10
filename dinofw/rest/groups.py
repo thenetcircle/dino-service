@@ -56,28 +56,12 @@ class GroupResource(BaseResource):
     async def histories(
         self, group_id: str, query: MessageQuery
     ) -> List[Histories]:
-        # TODO: maybe not needed
-
-        now = datetime.utcnow()
-        now = now.replace(tzinfo=pytz.UTC)
-        now = int(float(now.strftime("%s")))
-
         action_log = self.env.storage.get_action_log_for_group(group_id, query)
         messages = self.env.storage.get_messages_in_group(group_id, query)
 
-        action_log = ActionLog(
-            action_id=str(uuid()),
-            user_id=int(random.random() * 1000000),
-            group_id=group_id,
-            message_id=str(uuid()),
-            action_type=0,
-            created_at=now,
-            admin_id=0,
-        )
-
         histories = [
-            Histories(message=self._message(group_id)),
-            Histories(action_log=action_log),
+            Histories(messages=messages),
+            Histories(action_logs=action_log),
         ]
 
         return histories
@@ -85,7 +69,7 @@ class GroupResource(BaseResource):
     async def message(self, group_id: str, user_id: int, message_id: str) -> Message:
         return self._message(group_id, user_id, message_id)
 
-    async def stats(self, group_id: str, user_id) -> UserGroupStats:
+    async def get_stats(self, group_id: str, user_id) -> UserGroupStats:
         amount = int(random.random() * 10000)
         now = datetime.utcnow()
         now = now.replace(tzinfo=pytz.UTC)
