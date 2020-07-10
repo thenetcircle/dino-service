@@ -7,7 +7,6 @@ from dinofw.db.cassandra.schemas import MessageBase
 from dinofw.rest.base import BaseResource
 from dinofw.rest.models import AdminQuery
 from dinofw.rest.models import EditMessageQuery
-from dinofw.rest.models import HistoryQuery
 from dinofw.rest.models import Message
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
@@ -38,7 +37,7 @@ class MessageResource(BaseResource):
         return messages
 
     async def messages_for_user(
-        self, group_id: str, user_id: int, query: HistoryQuery
+        self, group_id: str, user_id: int, query: MessageQuery
     ) -> List[Message]:
         raw_messages = self.env.storage.get_messages_in_group_for_user(group_id, user_id, query)
         messages = list()
@@ -68,10 +67,10 @@ class MessageResource(BaseResource):
     ):
         pass
 
-    async def update_messages(self, group_id: str, query: HistoryQuery):
+    async def update_messages(self, group_id: str, query: MessageQuery):
         pass
 
-    async def delete_messages(self, group_id: str, query: HistoryQuery):
+    async def delete_messages(self, group_id: str, query: MessageQuery):
         pass
 
     @staticmethod
