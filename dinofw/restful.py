@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from sqlalchemy.orm import Session
 
 from dinofw import environ
-from dinofw.rest.models import AdminQuery, JoinerUpdateQuery, AdminUpdateGroupQuery
+from dinofw.rest.models import AdminQuery, JoinerUpdateQuery, AdminUpdateGroupQuery, UpdateUserGroupStats
 from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import EditMessageQuery
 from dinofw.rest.models import Group
@@ -317,11 +317,15 @@ async def get_user_statistics_in_group(group_id: str, user_id: int) -> UserGroup
 
 
 @app.put("/v1/groups/{group_id}/userstats/{user_id}", response_model=UserGroupStats)
-async def update_user_statistics_in_group(group_id: str, user_id: int) -> UserGroupStats:
+async def update_user_statistics_in_group(
+        group_id: str,
+        user_id: int,
+        query: UpdateUserGroupStats
+) -> UserGroupStats:
     """
     TODO: update user statistic in group
     """
-    return await environ.env.rest.group.update_stats(group_id, user_id)
+    return await environ.env.rest.group.update_stats(group_id, user_id, query)
 
 
 @app.get("/v1/userstats/{user_id}", response_model=UserStats)

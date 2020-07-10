@@ -154,13 +154,16 @@ class UserStats(AbstractQuery):
 
 
 class UserGroupStats(AbstractQuery):
-    user_id: int
-    group_id: str
     message_amount: int
     unread_amount: int
     last_read_time: int
     last_send_time: int
     hide_before: int
+
+
+class UpdateUserGroupStats(AbstractQuery):
+    last_read_time: Optional[int]
+    hide_before: Optional[int]
 
 
 class ActionLog(AbstractQuery):
