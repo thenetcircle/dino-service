@@ -15,11 +15,9 @@ from dinofw.rest.models import GroupJoinerQuery
 from dinofw.rest.models import GroupQuery
 from dinofw.rest.models import GroupUsers
 from dinofw.rest.models import Histories
-from dinofw.rest.models import HistoryQuery
 from dinofw.rest.models import Joiner
 from dinofw.rest.models import Message
 from dinofw.rest.models import MessageQuery
-from dinofw.rest.models import PaginationQuery
 from dinofw.rest.models import SearchQuery
 from dinofw.rest.models import SendMessageQuery
 from dinofw.rest.models import UpdateGroupQuery
@@ -55,9 +53,9 @@ async def search_for_groups(query: SearchQuery) -> List[Group]:
     return await environ.env.rest.group.search(query)
 
 
-@app.post("/v1/groups/{group_id}/histories/{user_id}", response_model=List[Histories])
+@app.post("/v1/groups/{group_id}/histories", response_model=List[Histories])
 async def get_group_history_for_user(
-    group_id: str, user_id: int, query: HistoryQuery
+    group_id: str, user_id: int, query: MessageQuery
 ) -> List[Histories]:
     """
     TODO: get user visible history in a group sort by time in descendent, messages and action log.
@@ -66,7 +64,7 @@ async def get_group_history_for_user(
 
 
 @app.delete("/v1/groups/{group_id}/histories/{user_id}")
-async def hide_group_history_for_user(group_id: str, user_id: int, query: HistoryQuery):
+async def hide_group_history_for_user(group_id: str, user_id: int, query: MessageQuery):
     """
     TODO: user hide group history, which won't affect other user(s), only mark for this user
     """
@@ -76,7 +74,7 @@ async def hide_group_history_for_user(group_id: str, user_id: int, query: Histor
 
 
 @app.post("/v1/groups/{group_id}/messages", response_model=List[Message])
-async def get_messages_in_group(group_id: str, query: HistoryQuery) -> List[Message]:
+async def get_messages_in_group(group_id: str, query: MessageQuery) -> List[Message]:
     """
     get messages in a group, order by time in descendent
     """
@@ -84,7 +82,7 @@ async def get_messages_in_group(group_id: str, query: HistoryQuery) -> List[Mess
 
 
 @app.put("/v1/groups/{group_id}/messages")
-async def batch_update_messages_in_group(group_id: str, query: HistoryQuery):
+async def batch_update_messages_in_group(group_id: str, query: MessageQuery):
     """
     TODO: batch update messages in group
     """
@@ -92,7 +90,7 @@ async def batch_update_messages_in_group(group_id: str, query: HistoryQuery):
 
 
 @app.delete("/v1/groups/{group_id}/messages")
-async def batch_delete_messages_in_group(group_id: str, query: HistoryQuery):
+async def batch_delete_messages_in_group(group_id: str, query: MessageQuery):
     """
     TODO: batch delete messages in group
     """
@@ -103,7 +101,7 @@ async def batch_delete_messages_in_group(group_id: str, query: HistoryQuery):
     "/v1/groups/{group_id}/users/{user_id}/messages", response_model=List[Message]
 )
 async def get_messages_for_user_in_group(
-    group_id: str, user_id: int, query: HistoryQuery
+    group_id: str, user_id: int, query: MessageQuery
 ) -> List[Message]:
     """
     get user messages in a group
@@ -315,7 +313,15 @@ async def get_user_statistics_in_group(group_id: str, user_id: int) -> UserGroup
     """
     TODO: get user statistic in group
     """
-    return await environ.env.rest.group.stats(group_id, user_id)
+    return await environ.env.rest.group.get_stats(group_id, user_id)
+
+
+@app.put("/v1/groups/{group_id}/userstats/{user_id}", response_model=UserGroupStats)
+async def update_user_statistics_in_group(group_id: str, user_id: int) -> UserGroupStats:
+    """
+    TODO: update user statistic in group
+    """
+    return await environ.env.rest.group.update_stats(group_id, user_id)
 
 
 @app.get("/v1/userstats/{user_id}", response_model=UserStats)

@@ -60,11 +60,7 @@ class AdminQuery(AbstractQuery):
 class MessageQuery(PaginationQuery, AdminQuery):
     message_type: Optional[int]
     status: Optional[int]
-
-
-class HistoryQuery(MessageQuery):
-    time_from: Optional[int]
-    time_to: Optional[int]
+    hide_before: Optional[int]
 
 
 class SearchQuery(PaginationQuery):
@@ -205,5 +201,5 @@ class Joiner(AbstractQuery):
 
 
 class Histories(AbstractQuery):
-    message: Optional[Message]
-    action_log: Optional[ActionLog]
+    messages: Optional[List[Message]]
+    action_logs: Optional[List[ActionLog]]

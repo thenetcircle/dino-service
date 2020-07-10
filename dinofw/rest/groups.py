@@ -23,7 +23,7 @@ from dinofw.rest.models import (
 )
 from dinofw.rest.models import Group
 from dinofw.rest.models import Histories
-from dinofw.rest.models import HistoryQuery
+from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import Message
 from dinofw.rest.models import SearchQuery
 from dinofw.rest.models import UserGroupStats
@@ -54,11 +54,16 @@ class GroupResource(BaseResource):
         )
 
     async def histories(
-        self, group_id: str, user_id: int, query: HistoryQuery
+        self, group_id: str, query: MessageQuery
     ) -> List[Histories]:
+        # TODO: maybe not needed
+
         now = datetime.utcnow()
         now = now.replace(tzinfo=pytz.UTC)
         now = int(float(now.strftime("%s")))
+
+        action_log = self.env.storage.get_action_log_for_group(group_id, query)
+        messages = self.env.storage.get_messages_in_group(group_id, query)
 
         action_log = ActionLog(
             action_id=str(uuid()),
@@ -150,7 +155,7 @@ class GroupResource(BaseResource):
         return [self._group()]
 
     async def hide_histories_for_user(
-        self, group_id: str, user_id: int, query: HistoryQuery
+        self, group_id: str, user_id: int, query: MessageQuery
     ):
         pass
 
