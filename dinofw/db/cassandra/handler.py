@@ -13,7 +13,6 @@ from dinofw.db.cassandra.models import JoinerModel
 from dinofw.db.cassandra.models import MessageModel
 from dinofw.db.cassandra.schemas import MessageBase, JoinerBase
 from dinofw.rest.models import GroupJoinerQuery
-from dinofw.rest.models import HistoryQuery
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
 
@@ -149,11 +148,11 @@ class CassandraHandler:
 
         return CassandraHandler.message_base_from_entity(message)
 
-    def get_action_log_in_group(self, group_id: str, query: HistoryQuery):
+    def get_action_log_in_group(self, group_id: str, query: MessageQuery):
         return (
             ActionLogModel.objects(
                 ActionLogModel.group_id == group_id,
-                ActionLogModel.created_at <= HistoryQuery.to_dt(query.since),
+                ActionLogModel.created_at <= MessageQuery.to_dt(query.since),
             )
             .limit(query.per_page or 100)
             .all()
