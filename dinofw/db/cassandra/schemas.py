@@ -23,7 +23,7 @@ class JoinerBase(MessageBase):
     group_id: str
     created_at: datetime
     inviter_id: int
-    joined_id: int
+    joiner_id: int
     status: int
     invitation_context: Optional[str]
 

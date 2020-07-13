@@ -173,7 +173,7 @@ class Group(AbstractQuery):
 
 
 class Joiner(AbstractQuery):
-    joined_id: int
+    joiner_id: int
     group_id: str
     inviter_id: int
     created_at: int
