@@ -80,6 +80,23 @@ class CacheRedis(ICache):
         self.redis.delete(key)
         return self.redis.sadd(key, *user_ids)
 
+    def get_last_read_time_in_group_for_user(self, group_id: str, user_id: int) -> Optional[dt]:
+        # TODO: when/how to update? when user retrieves messages or when acking or both?
+
+        key = RedisKeys.last_read_time(group_id)
+        last_read = self.redis.hget(key, user_id)
+
+        if last_read is None:
+            return None
+
+        last_sent = int(float(str(last_read, "utf-8")))
+        return dt.utcfromtimestamp(last_sent)
+
+    def set_last_read_time_in_group_for_user(self, group_id: str, user_id: int, last_read: dt) -> None:
+        key = RedisKeys.last_read_time(group_id)
+        last_read = last_read.strftime("%s")
+        self.redis.hset(key, user_id, last_read)
+
     def get_last_send_time_in_group_for_user(self, group_id: str, user_id: int) -> Optional[dt]:
         key = RedisKeys.last_send_time(group_id)
         last_sent = self.redis.hget(key, user_id)

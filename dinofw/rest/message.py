@@ -1,6 +1,8 @@
 import logging
+from datetime import datetime as dt
 from typing import List
 
+import pytz
 from sqlalchemy.orm import Session
 
 from dinofw.db.cassandra.schemas import MessageBase
@@ -23,6 +25,12 @@ class MessageResource(BaseResource):
 
         self.env.db.update_group_new_message(message, db)
         self.env.db.update_last_read_in_group_for_user(user_id, group_id, message.created_at, db)
+
+        now = dt.utcnow()
+        now = now.replace(tzinfo=pytz.UTC)
+
+        self.env.cache.set_last_send_time_in_group_for_user(group_id, user_id, now)
+        self.env.cache.set_last_read_time_in_group_for_user(group_id, user_id, now)
 
         return MessageResource.message_base_to_message(message)
 

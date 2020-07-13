@@ -105,7 +105,9 @@ class RelationalHandler:
         db.refresh(last_read)
 
     def get_last_read(self, group_id: str, user_id: int, db: Session) -> Optional[dt]:
-        # TODO: cache in redis
+        last_read = self.env.cache.get_last_read_time_in_group_for_user(group_id, user_id)
+        if last_read is not None:
+            return last_read
 
         last_read = (
             db.query(models.LastReadEntity)
@@ -116,6 +118,8 @@ class RelationalHandler:
 
         if last_read is None:
             return None
+
+        self.env.cache.set_last_read_time_in_group_for_user(group_id, user_id, last_read.last_read)
 
         return last_read.last_read
 

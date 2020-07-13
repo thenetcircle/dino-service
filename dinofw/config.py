@@ -55,6 +55,11 @@ class RedisKeys:
     RKEY_AUTH = "user:auth:{}"  # user:auth:user_id
     RKEY_USERS_IN_GROUP = "group:users:{}"  # group:users:group_id
     RKEY_LAST_SEND_TIME = "group:lastsent:{}"  # group:lastsent:group_id
+    RKEY_LAST_READ_TIME = "group:lastread:{}"  # group:lastread:group_id
+
+    @staticmethod
+    def last_read_time(group_id: str) -> str:
+        return RedisKeys.RKEY_LAST_READ_TIME.format(group_id)
 
     @staticmethod
     def last_send_time(group_id: str) -> str:
