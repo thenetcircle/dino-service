@@ -98,7 +98,7 @@ class UpdateGroupQuery(AbstractQuery):
 
 
 class EditMessageQuery(MessageQuery):
-    read_at: int
+    message_payload: Optional[str]
 
 
 class Message(AbstractQuery):

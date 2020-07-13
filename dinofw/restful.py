@@ -154,7 +154,7 @@ async def get_message_details(group_id: str, user_id: int, message_id: str) -> M
     """
     TODO: get message details
     """
-    return await environ.env.rest.message.details(group_id, user_id, message_id)
+    return await environ.env.rest.message.message_details(group_id, user_id, message_id)
 
 
 @app.put(
@@ -165,9 +165,9 @@ async def edit_a_message(
     group_id: str, user_id: int, message_id: str, query: EditMessageQuery
 ) -> Message:
     """
-    TODO: edit a group message
+    edit a group message
     """
-    return await environ.env.rest.message.edit(group_id, user_id, message_id, query)
+    return await environ.env.rest.message.edit_message(group_id, user_id, message_id, query)
 
 
 @app.delete(
@@ -178,9 +178,9 @@ async def delete_a_message(
     group_id: str, user_id: int, message_id: str, query: AdminQuery
 ) -> Message:
     """
-    TODO: delete a message in group (hard delete)
+    delete a message in group (hard delete)
     """
-    return await environ.env.rest.message.delete(group_id, user_id, message_id, query)
+    return await environ.env.rest.message.delete_message(group_id, user_id, message_id, query)
 
 
 @app.get("/v1/groups/{group_id}/users", response_model=GroupUsers)

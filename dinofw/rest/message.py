@@ -48,13 +48,13 @@ class MessageResource(BaseResource):
 
         return messages
 
-    async def edit(self, group_id: str, user_id: int, query: EditMessageQuery) -> None:
-        pass
+    async def edit_message(self, group_id: str, user_id: int, message_id: str, query: EditMessageQuery) -> None:
+        self.env.storage.edit_message(group_id, user_id, message_id, query)
 
-    async def delete(self, group_id: str, user_id: int, query: AdminQuery) -> None:
-        pass
+    async def delete_message(self, group_id: str, user_id: int, message_id: str, query: AdminQuery) -> None:
+        self.env.storage.delete_message(group_id, user_id, message_id, query)
 
-    async def details(self, group_id: str, user_id: int, message_id: str) -> Message:
+    async def message_details(self, group_id: str, user_id: int, message_id: str) -> Message:
         pass
 
     async def update_messages_for_user_in_group(self, group_id: str, user_id: int, query: MessageQuery) -> None:

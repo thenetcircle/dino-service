@@ -15,7 +15,7 @@ from dinofw.db.cassandra.models import JoinerModel
 from dinofw.db.cassandra.models import MessageModel
 from dinofw.db.cassandra.schemas import JoinerBase
 from dinofw.db.cassandra.schemas import MessageBase
-from dinofw.rest.models import GroupJoinQuery
+from dinofw.rest.models import GroupJoinQuery, EditMessageQuery, AdminQuery
 from dinofw.rest.models import GroupJoinerQuery
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
@@ -119,6 +119,49 @@ class CassandraHandler:
             messages.append(CassandraHandler.message_base_from_entity(message))
 
         return messages
+
+    def delete_message(self, group_id: str, user_id: int, message_id: str, query: MessageQuery) -> None:
+        message = (
+            MessageModel.objects(
+                MessageModel.group_id == group_id,
+                MessageModel.user_id == user_id,
+                MessageModel.message_id == message_id,
+            )
+            .first()
+        )
+
+        if message is None:
+            self.logger.warning(f"no message found for user {user_id}, group {group_id}, message {message_id}")
+            return
+
+        removed_at = dt.utcnow()
+        removed_at = removed_at.replace(tzinfo=pytz.UTC)
+
+        message.update(
+            message_payload=None,
+            status=query.status or message.status,
+            removed_by_user=query.admin_id,
+            removed_at=removed_at,
+        )
+
+    def edit_message(self, group_id: str, user_id: int, message_id: str, query: EditMessageQuery) -> None:
+        message = (
+            MessageModel.objects(
+                MessageModel.group_id == group_id,
+                MessageModel.user_id == user_id,
+                MessageModel.message_id == message_id,
+            )
+            .first()
+        )
+
+        if message is None:
+            self.logger.warning(f"no message found for user {user_id}, group {group_id}, message {message_id}")
+            return
+
+        message.update(
+            message_payload=query.message_payload or message.message_payload,
+            status=query.status or message.status,
+        )
 
     def update_messages_in_group(self, group_id: str, query: MessageQuery) -> None:
         def callback(message: MessageModel) -> None:
