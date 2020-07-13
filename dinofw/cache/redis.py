@@ -1,11 +1,11 @@
 import sys
 import logging
 import socket
-from typing import List
+from typing import List, Optional
 
 import redis
 
-from datetime import datetime
+from datetime import datetime as dt
 from datetime import timedelta
 
 from dinofw.cache import ICache
@@ -20,7 +20,7 @@ class MemoryCache:
 
     def set(self, key, value, ttl=30):
         try:
-            expires_at = (datetime.utcnow() + timedelta(seconds=ttl)).timestamp()
+            expires_at = (dt.utcnow() + timedelta(seconds=ttl)).timestamp()
             self.vals[key] = (expires_at, value)
         except:
             pass
@@ -30,7 +30,7 @@ class MemoryCache:
             if key not in self.vals:
                 return None
             expires_at, value = self.vals[key]
-            now = datetime.utcnow().timestamp()
+            now = dt.utcnow().timestamp()
             if now > expires_at:
                 del self.vals[key]
                 return None
@@ -79,6 +79,21 @@ class CacheRedis(ICache):
         key = RedisKeys.user_ids_in_group(group_id)
         self.redis.delete(key)
         return self.redis.sadd(key, *user_ids)
+
+    def get_last_send_time_in_group_for_user(self, group_id: str, user_id: int) -> Optional[dt]:
+        key = RedisKeys.last_send_time(group_id)
+        last_sent = self.redis.hget(key, user_id)
+
+        if last_sent is None:
+            return None
+
+        last_sent = int(float(str(last_sent, "utf-8")))
+        return dt.utcfromtimestamp(last_sent)
+
+    def set_last_send_time_in_group_for_user(self, group_id: str, user_id: int, last_sent: dt) -> None:
+        key = RedisKeys.last_send_time(group_id)
+        last_sent = last_sent.strftime("%s")
+        self.redis.hset(key, user_id, last_sent)
 
     @property
     def redis(self):

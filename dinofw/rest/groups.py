@@ -19,7 +19,7 @@ from dinofw.rest.models import (
     JoinerUpdateQuery,
     UpdateGroupQuery,
     CreateGroupQuery,
-    AdminUpdateGroupQuery, GroupJoinerQuery,
+    AdminUpdateGroupQuery, GroupJoinerQuery, AbstractQuery,
 )
 from dinofw.rest.models import Group
 from dinofw.rest.models import Histories
@@ -69,20 +69,31 @@ class GroupResource(BaseResource):
     async def message(self, group_id: str, user_id: int, message_id: str) -> Message:
         return self._message(group_id, user_id, message_id)
 
-    async def get_stats(self, group_id: str, user_id) -> UserGroupStats:
-        amount = int(random.random() * 10000)
-        now = datetime.utcnow()
-        now = now.replace(tzinfo=pytz.UTC)
-        now = int(float(now.strftime("%s")))
+    async def get_stats(self, group_id: str, user_id: int, db: Session) -> UserGroupStats:
+        read_at = self.env.db.get_last_read(group_id, user_id, db)
+        last_send_time = self.env.db.get_last_send_time_in_group_for_user(group_id, user_id, db)
+        message_amount = self.env.storage.count_messages_in_group(group_id)
+
+        if last_send_time is None:
+            last_send_time = 0
+        else:
+            last_send_time = AbstractQuery.to_ts(last_send_time)
+
+        if read_at is None:
+            unread_amount = message_amount
+            read_at = 0
+        else:
+            unread_amount = self.env.storage.count_messages_in_group_since(group_id, read_at)
+            read_at = AbstractQuery.to_ts(read_at)
 
         return UserGroupStats(
             user_id=user_id,
             group_id=group_id,
-            message_amount=amount,
-            unread_amount=amount - int(random.random() * amount),
-            last_read_time=now,
-            last_send_time=now,
-            hide_before=0,
+            message_amount=message_amount,
+            unread_amount=unread_amount,
+            last_read_time=read_at,
+            last_send_time=last_send_time,
+            hide_before=0,  # TODO: get hide_before
         )
 
     async def create_new_group(self, user_id: int, query: CreateGroupQuery, db: Session) -> Group:

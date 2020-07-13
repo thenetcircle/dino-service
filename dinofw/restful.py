@@ -310,11 +310,15 @@ async def delete_group_join_request(
 
 
 @app.get("/v1/groups/{group_id}/userstats/{user_id}", response_model=UserGroupStats)
-async def get_user_statistics_in_group(group_id: str, user_id: int) -> UserGroupStats:
+async def get_user_statistics_in_group(
+        group_id: str,
+        user_id: int,
+        db: Session = Depends(get_db)
+) -> UserGroupStats:
     """
-    TODO: get user statistic in group
+    get user statistic in group
     """
-    return await environ.env.rest.group.get_stats(group_id, user_id)
+    return await environ.env.rest.group.get_stats(group_id, user_id, db)
 
 
 @app.put("/v1/groups/{group_id}/userstats/{user_id}", response_model=UserGroupStats)

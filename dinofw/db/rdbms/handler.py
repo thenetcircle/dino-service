@@ -1,5 +1,5 @@
 from datetime import datetime as dt
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from uuid import uuid4 as uuid
 
 import pytz
@@ -103,6 +103,40 @@ class RelationalHandler:
         db.add(last_read)
         db.commit()
         db.refresh(last_read)
+
+    def get_last_read(self, group_id: str, user_id: int, db: Session) -> Optional[dt]:
+        # TODO: cache in redis
+
+        last_read = (
+            db.query(models.LastReadEntity)
+            .filter(models.LastReadEntity.user_id == user_id)
+            .filter(models.LastReadEntity.group_id == group_id)
+            .first()
+        )
+
+        if last_read is None:
+            return None
+
+        return last_read.last_read
+
+    def get_last_send_time_in_group_for_user(self, group_id: str, user_id: int, db: Session) -> Optional[dt]:
+        last_sent = self.env.cache.get_last_send_time_in_group_for_user(group_id, user_id)
+        if last_sent is not None:
+            return last_sent
+
+        last_sent = (
+            db.query(models.LastSentEntity)
+            .filter(models.LastSentEntity.user_id == user_id)
+            .filter(models.LastSentEntity.group_id == group_id)
+            .first()
+        )
+
+        if last_sent is None:
+            return None
+
+        self.env.cache.set_last_send_time_in_group_for_user(group_id, user_id, last_sent.last_sent)
+
+        return last_sent.last_sent
 
     def create_group(self, user_id: int, query: CreateGroupQuery, db: Session) -> GroupBase:
         created_at = dt.utcnow()

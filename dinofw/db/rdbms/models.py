@@ -34,3 +34,13 @@ class LastReadEntity(env.Base):
     group_id = Column(String(36), index=True, nullable=False)
     user_id = Column(Integer, index=True, nullable=False)
     last_read = Column(DateTime, nullable=False)
+
+
+class LastSentEntity(env.Base):
+    __tablename__ = "last_sent"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    group_id = Column(String(36), index=True, nullable=False)
+    user_id = Column(Integer, index=True, nullable=False)
+    last_sent = Column(DateTime, nullable=False)

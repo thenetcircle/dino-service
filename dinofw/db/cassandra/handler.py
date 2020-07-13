@@ -120,6 +120,20 @@ class CassandraHandler:
 
         return messages
 
+    def count_messages_in_group(self, group_id: str) -> int:
+        # TODO: cache for a while if more than X messages? maybe TTL proportional to the amount
+        return MessageModel.objects(MessageModel.group_id == group_id).limit(None).count()
+
+    def count_messages_in_group_since(self, group_id: str, since: dt) -> int:
+        return (
+            MessageModel.objects(
+                MessageModel.group_id == group_id,
+                MessageModel.created_at > since,
+            )
+            .limit(None)
+            .count()
+        )
+
     def delete_message(self, group_id: str, user_id: int, message_id: str, query: MessageQuery) -> None:
         message = (
             MessageModel.objects(
