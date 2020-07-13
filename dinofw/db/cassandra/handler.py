@@ -1,9 +1,11 @@
 from datetime import datetime as dt
+from time import time
 from typing import List
 from uuid import uuid4 as uuid
 
 import pytz
 from cassandra.cqlengine import connection
+from cassandra.cqlengine.query import BatchQuery
 from cassandra.cqlengine.management import sync_table
 from gnenv.environ import GNEnvironment
 
@@ -18,10 +20,13 @@ from dinofw.rest.models import GroupJoinerQuery
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
 
+import logging
+
 
 class CassandraHandler:
     def __init__(self, env: GNEnvironment):
         self.env = env
+        self.logger = logging.getLogger(__name__)
 
     def setup_tables(self):
         key_space = self.env.config.get(ConfigKeys.KEY_SPACE, domain=ConfigKeys.STORAGE)
@@ -114,6 +119,35 @@ class CassandraHandler:
             messages.append(CassandraHandler.message_base_from_entity(message))
 
         return messages
+
+    def update_messages_in_group(self, group_id: str, query: MessageQuery) -> None:
+        until = dt.utcnow()
+        until = until.replace(tzinfo=pytz.UTC)
+        start = time()
+        amount = 0
+
+        while True:
+            messages = (
+                MessageModel.objects(
+                    MessageModel.group_id == group_id,
+                    MessageModel.created_at <= until,
+                )
+                .limit(500)
+                .all()
+            )
+
+            if not len(messages):
+                end = time()
+                elapsed = (end - start) / 1000
+                self.logger.info(f"finished batch updating {amount} messages in group {group_id} after {elapsed:.2f}s")
+                break
+            else:
+                amount += len(messages)
+
+            with BatchQuery() as b:
+                for message in messages:
+                    message.status = query.status
+                    message.batch(b).save()
 
     def save_group_join_request(self, group_id: str, query: GroupJoinQuery) -> JoinerBase:
         created_at = dt.utcnow()

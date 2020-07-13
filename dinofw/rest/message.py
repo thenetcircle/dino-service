@@ -68,7 +68,7 @@ class MessageResource(BaseResource):
         pass
 
     async def update_messages(self, group_id: str, query: MessageQuery):
-        pass
+        self.env.storage.update_messages_in_group(group_id, query)
 
     async def delete_messages(self, group_id: str, query: MessageQuery):
         pass
