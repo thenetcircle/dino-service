@@ -101,12 +101,19 @@ class GroupResource(BaseResource):
             last_read=group.created_at
         )
 
-    async def joins(
+    async def get_join_requests(
         self, group_id: str, query: GroupJoinerQuery
     ) -> List[Joiner]:
         joins = self.env.storage.get_group_joins_for_status(group_id, query.status)
 
         return [GroupResource.joiner_base_to_joiner(join) for join in joins]
+
+    async def save_join_request(
+        self, group_id: str, query: GroupJoinQuery
+    ) -> Joiner:
+        join = self.env.storage.save_group_join_request(group_id, query)
+
+        return GroupResource.joiner_base_to_joiner(join)
 
     async def get_join_details(
         self, user_id: int, group_id: str, joiner_id: int

@@ -12,7 +12,7 @@ from dinofw.db.cassandra.models import ActionLogModel
 from dinofw.db.cassandra.models import JoinerModel
 from dinofw.db.cassandra.models import MessageModel
 from dinofw.db.cassandra.schemas import MessageBase, JoinerBase
-from dinofw.rest.models import GroupJoinerQuery
+from dinofw.rest.models import GroupJoinerQuery, GroupJoinQuery
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
 
@@ -58,6 +58,21 @@ class CassandraHandler:
             messages.append(CassandraHandler.message_base_from_entity(message))
 
         return messages
+
+    def save_group_join_request(self, group_id: str, query: GroupJoinQuery) -> JoinerBase:
+        created_at = dt.utcnow()
+        created_at = created_at.replace(tzinfo=pytz.UTC)
+
+        joiner = JoinerModel.create(
+            group_id=group_id,
+            inviter_id=query.inviter_id,
+            joiner_id=query.joiner_id,
+            created_at=created_at,
+            invitation_context=query.invitation_context,
+            status=0,  # TODO: need to specify in query? or not required?
+        )
+
+        return joiner
 
     def get_group_joins_for_status(self, group_id: str, query: GroupJoinerQuery) -> List[JoinerBase]:
         raw_joins = (

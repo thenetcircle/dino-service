@@ -57,7 +57,7 @@ class JoinerModel(Model):
         required=True,
         primary_key=True,
     )
-    joined_id = Integer(
+    joiner_id = Integer(
         required=True,
         primary_key=True,
     )

@@ -259,7 +259,7 @@ async def get_group_join_requests(
     """
     get a group's join requests sort by create time in decendent
     """
-    return await environ.env.rest.group.joins(group_id, query)
+    return await environ.env.rest.group.get_join_requests(group_id, query)
 
 
 @app.put("/v1/users/{user_id}/groups/{group_id}/joins", response_model=List[Joiner])
@@ -267,9 +267,9 @@ async def send_join_request_to_group(
     user_id: int, group_id: str, query: GroupJoinQuery
 ) -> List[Joiner]:
     """
-    TODO: send a group join request
+    send a group join request TODO: also send to dino client?
     """
-    return await environ.env.rest.group.joins(user_id, group_id, query)
+    return await environ.env.rest.group.save_join_request(group_id, query)
 
 
 @app.get(
