@@ -71,14 +71,14 @@ class MessageResource(BaseResource):
         self.env.storage.update_messages_in_group(group_id, query)
 
     async def delete_messages(self, group_id: str, query: MessageQuery):
-        pass
+        self.env.storage.delete_messages_in_group(group_id, query)
 
     @staticmethod
     def message_base_to_message(message: MessageBase) -> Message:
         message_dict = message.dict()
 
-        message_dict["removed_at"] = MessageQuery.to_ts(message_dict["removed_at"])
-        message_dict["updated_at"] = MessageQuery.to_ts(message_dict["updated_at"])
-        message_dict["created_at"] = MessageQuery.to_ts(message_dict["created_at"])
+        message_dict["removed_at"] = MessageQuery.to_ts(message_dict["removed_at"], allow_none=True)
+        message_dict["updated_at"] = MessageQuery.to_ts(message_dict["updated_at"], allow_none=True)
+        message_dict["created_at"] = MessageQuery.to_ts(message_dict["created_at"], allow_none=True)
 
         return Message(**message_dict)

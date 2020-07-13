@@ -4,7 +4,6 @@ from gnenv import create_env
 from gnenv.environ import GNEnvironment
 
 from dinofw.config import ConfigKeys
-from dinofw.groups.handler import GroupHandler
 
 from flask_socketio import emit as _flask_emit
 from flask_socketio import send as _flask_send
@@ -180,10 +179,6 @@ def init_cache_service(gn_env: GNEnvironment):
         )
 
 
-def init_group_service(gn_env: GNEnvironment):
-    gn_env.groups = GroupHandler(gn_env)
-
-
 def init_flask(gn_env: GNEnvironment):
     gn_env.out_of_scope_emit = (
         None  # needs to be set later after socketio object has been created
@@ -351,11 +346,9 @@ def initialize_env(dino_env):
     init_auth_service(dino_env)
     init_cache_service(dino_env)
     init_stats_service(dino_env)
-    init_group_service(dino_env)
     init_response_formatter(dino_env)
     init_request_validators(dino_env)
     init_observer(dino_env)
-
     init_rest(dino_env)
 
     # init_pub_sub(dino_env)

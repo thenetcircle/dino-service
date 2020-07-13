@@ -7,7 +7,10 @@ from pydantic import BaseModel
 
 class AbstractQuery(BaseModel):
     @staticmethod
-    def to_dt(s):
+    def to_dt(s, allow_none: bool = False):
+        if s is None and allow_none:
+            return None
+
         if s is None:
             s = dt.utcnow()
             s = s.replace(tzinfo=pytz.UTC)
@@ -18,7 +21,10 @@ class AbstractQuery(BaseModel):
         return s
 
     @staticmethod
-    def to_ts(ds):
+    def to_ts(ds, allow_none: bool = False):
+        if ds is None and allow_none:
+            return None
+
         if ds is None:
             ds = dt.utcnow()
             ds = ds.replace(tzinfo=pytz.UTC)

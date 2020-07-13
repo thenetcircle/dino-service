@@ -85,7 +85,7 @@ async def get_messages_in_group(group_id: str, query: MessageQuery) -> List[Mess
 @app.put("/v1/groups/{group_id}/messages")
 async def batch_update_messages_in_group(group_id: str, query: MessageQuery):
     """
-    TODO: batch update messages in group
+    batch update messages in group
     """
     return await environ.env.rest.message.update_messages(group_id, query)
 

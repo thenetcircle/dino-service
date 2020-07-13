@@ -127,27 +127,54 @@ class CassandraHandler:
         amount = 0
 
         while True:
-            messages = (
-                MessageModel.objects(
-                    MessageModel.group_id == group_id,
-                    MessageModel.created_at <= until,
-                )
-                .limit(500)
-                .all()
-            )
+            messages = self._batch_messages_in_group(group_id, until)
+            amount += len(messages)
 
             if not len(messages):
                 end = time()
                 elapsed = (end - start) / 1000
                 self.logger.info(f"finished batch updating {amount} messages in group {group_id} after {elapsed:.2f}s")
                 break
-            else:
-                amount += len(messages)
 
             with BatchQuery() as b:
                 for message in messages:
                     message.status = query.status
                     message.batch(b).save()
+
+                    until = message.created_at
+
+    def delete_messages_in_group(self, group_id: str, query: MessageQuery) -> None:
+        until = dt.utcnow()
+        until = until.replace(tzinfo=pytz.UTC)
+
+        start = time()
+        amount = 0
+
+        while True:
+            removed_at = dt.utcnow()
+            removed_at = removed_at.replace(tzinfo=pytz.UTC)
+
+            messages = self._batch_messages_in_group(group_id, until)
+            amount += len(messages)
+
+            if not len(messages):
+                end = time()
+                elapsed = (end - start) / 1000
+                self.logger.info(f"finished batch deleting {amount} messages in group {group_id} after {elapsed:.2f}s")
+                break
+
+            with BatchQuery() as b:
+                for message in messages:
+                    # TODO: is there a status they should use in the query for deletions?
+                    message.status = query.status
+
+                    # TODO: needed?
+                    message.message_type = query.message_type
+
+                    message.removed_at = removed_at
+                    message.batch(b).save()
+
+                    until = message.created_at
 
     def save_group_join_request(self, group_id: str, query: GroupJoinQuery) -> JoinerBase:
         created_at = dt.utcnow()
@@ -205,6 +232,15 @@ class CassandraHandler:
             .all()
         )
 
+    def _batch_messages_in_group(self, group_id: str, until: dt):
+        return (
+            MessageModel.objects(
+                MessageModel.group_id == group_id,
+                MessageModel.created_at < until,
+            )
+            .limit(500)
+            .all()
+        )
 
     @staticmethod
     def message_base_from_entity(message: MessageModel) -> MessageBase:
