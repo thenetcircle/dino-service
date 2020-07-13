@@ -67,6 +67,7 @@ async def get_group_history_for_user(
 async def hide_group_history_for_user(group_id: str, user_id: int, query: MessageQuery):
     """
     TODO: user hide group history, which won't affect other user(s), only mark for this user
+    TODO: this might not be needed anymore, since we'll be using `hide_before` in the query
     """
     return await environ.env.rest.group.hide_histories_for_user(
         group_id, user_id, query
