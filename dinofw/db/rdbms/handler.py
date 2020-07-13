@@ -33,6 +33,9 @@ class RelationalHandler:
             query: GroupQuery,
             db: Session
     ) -> List[Tuple[GroupBase, LastReadBase, List[int]]]:
+        until = GroupQuery.to_dt(query.until)
+        hide_before = GroupQuery.to_dt(query.hide_before)  # TODO: default hide_before should be loooong ago
+
         results = (
             db.query(models.GroupEntity, models.LastReadEntity)
             .join(
@@ -40,7 +43,8 @@ class RelationalHandler:
                 models.LastReadEntity.group_id == models.GroupEntity.group_id,
             )
             .filter(
-                models.GroupEntity.last_message_time <= GroupQuery.to_dt(query.since)
+                models.GroupEntity.last_message_time <= until,
+                models.GroupEntity.last_message_time > hide_before,
             )
             .filter(models.LastReadEntity.user_id == user_id)
             .order_by(models.GroupEntity.last_message_time.desc())

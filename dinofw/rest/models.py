@@ -28,6 +28,7 @@ class AbstractQuery(BaseModel):
 
 class PaginationQuery(AbstractQuery):
     until: Optional[int]
+    hide_before: Optional[int]
     per_page: int
 
     @staticmethod
@@ -57,7 +58,6 @@ class AdminQuery(AbstractQuery):
 class MessageQuery(PaginationQuery, AdminQuery):
     message_type: Optional[int]
     status: Optional[int]
-    hide_before: Optional[int]
 
 
 class SearchQuery(PaginationQuery):
