@@ -11,8 +11,10 @@ from dinofw.config import ConfigKeys
 from dinofw.db.cassandra.models import ActionLogModel
 from dinofw.db.cassandra.models import JoinerModel
 from dinofw.db.cassandra.models import MessageModel
-from dinofw.db.cassandra.schemas import MessageBase, JoinerBase
-from dinofw.rest.models import GroupJoinerQuery, GroupJoinQuery
+from dinofw.db.cassandra.schemas import JoinerBase
+from dinofw.db.cassandra.schemas import MessageBase
+from dinofw.rest.models import GroupJoinQuery
+from dinofw.rest.models import GroupJoinerQuery
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
 

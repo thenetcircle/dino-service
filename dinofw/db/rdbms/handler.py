@@ -1,14 +1,17 @@
+from datetime import datetime as dt
 from typing import List, Tuple
 from uuid import uuid4 as uuid
-from datetime import datetime as dt
+
 import pytz
 from sqlalchemy.orm import Session
 
-from dinofw.db.cassandra.schemas import MessageBase, JoinerBase
-from dinofw.db.rdbms.models import LastReadEntity
-from dinofw.rest.models import GroupQuery, CreateGroupQuery
+from dinofw.db.cassandra.schemas import MessageBase
 from dinofw.db.rdbms import models
-from dinofw.db.rdbms.schemas import LastReadBase, GroupBase
+from dinofw.db.rdbms.models import LastReadEntity
+from dinofw.db.rdbms.schemas import GroupBase
+from dinofw.db.rdbms.schemas import LastReadBase
+from dinofw.rest.models import CreateGroupQuery
+from dinofw.rest.models import GroupQuery
 
 
 class RelationalHandler:

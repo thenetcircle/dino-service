@@ -31,25 +31,6 @@ class PaginationQuery(AbstractQuery):
     hide_before: Optional[int]
     per_page: int
 
-    @staticmethod
-    def to_dt(s):
-        if s is None:
-            s = dt.utcnow()
-            s = s.replace(tzinfo=pytz.UTC)
-        else:
-            s = int(s)
-            s = dt.utcfromtimestamp(s)
-            print(s)
-
-        return s
-
-    @staticmethod
-    def to_ts(ds):
-        if ds is None:
-            return None
-
-        return ds.strftime("%s")
-
 
 class AdminQuery(AbstractQuery):
     admin_id: Optional[int]
