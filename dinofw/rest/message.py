@@ -57,15 +57,11 @@ class MessageResource(BaseResource):
     async def details(self, group_id: str, user_id: int, message_id: str) -> Message:
         pass
 
-    async def update_messages_for_user(
-        self, group_id: str, user_id: int, query: MessageQuery
-    ) -> List[Message]:
-        pass
+    async def update_messages_for_user_in_group(self, group_id: str, user_id: int, query: MessageQuery) -> None:
+        self.env.storage.update_messages_in_group_for_user(group_id, user_id, query)
 
-    async def delete_messages_for_user_in_group(
-        self, group_id: str, user_id: int, query: AdminQuery
-    ):
-        pass
+    async def delete_messages_for_user_in_group(self, group_id: str, user_id: int, query: MessageQuery) -> None:
+        self.env.storage.update_messages_in_group_for_user(group_id, user_id, query)
 
     async def update_messages(self, group_id: str, query: MessageQuery):
         self.env.storage.update_messages_in_group(group_id, query)

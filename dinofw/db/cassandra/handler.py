@@ -1,6 +1,6 @@
 from datetime import datetime as dt
 from time import time
-from typing import List
+from typing import List, Optional
 from uuid import uuid4 as uuid
 
 import pytz
@@ -121,60 +121,62 @@ class CassandraHandler:
         return messages
 
     def update_messages_in_group(self, group_id: str, query: MessageQuery) -> None:
-        until = dt.utcnow()
-        until = until.replace(tzinfo=pytz.UTC)
-        start = time()
-        amount = 0
+        def callback(message: MessageModel) -> None:
+            message.status = query.status
 
-        while True:
-            messages = self._batch_messages_in_group(group_id, until)
-            amount += len(messages)
+        self._update_all_messages_in_group(
+            group_id=group_id,
+            callback=callback
+        )
 
-            if not len(messages):
-                end = time()
-                elapsed = (end - start) / 1000
-                self.logger.info(f"finished batch updating {amount} messages in group {group_id} after {elapsed:.2f}s")
-                break
+    def update_messages_in_group_for_user(self, group_id: str, user_id: int, query: MessageQuery) -> None:
+        def callback(message: MessageModel) -> None:
+            message.status = query.status
 
-            with BatchQuery() as b:
-                for message in messages:
-                    message.status = query.status
-                    message.batch(b).save()
-
-                    until = message.created_at
+        self._update_all_messages_in_group(
+            group_id=group_id,
+            callback=callback,
+            user_id=user_id,
+        )
 
     def delete_messages_in_group(self, group_id: str, query: MessageQuery) -> None:
-        until = dt.utcnow()
-        until = until.replace(tzinfo=pytz.UTC)
+        def callback(message: MessageModel):
+            # TODO: is there a status they should use in the query for deletions?
+            message.status = query.status
 
-        start = time()
-        amount = 0
+            # TODO: needed?
+            message.message_type = query.message_type
 
-        while True:
-            removed_at = dt.utcnow()
-            removed_at = removed_at.replace(tzinfo=pytz.UTC)
+            message.removed_at = removed_at
+            message.removed_by_user = query.admin_id
 
-            messages = self._batch_messages_in_group(group_id, until)
-            amount += len(messages)
+        removed_at = dt.utcnow()
+        removed_at = removed_at.replace(tzinfo=pytz.UTC)
 
-            if not len(messages):
-                end = time()
-                elapsed = (end - start) / 1000
-                self.logger.info(f"finished batch deleting {amount} messages in group {group_id} after {elapsed:.2f}s")
-                break
+        self._update_all_messages_in_group(
+            group_id=group_id,
+            callback=callback
+        )
 
-            with BatchQuery() as b:
-                for message in messages:
-                    # TODO: is there a status they should use in the query for deletions?
-                    message.status = query.status
+    def delete_messages_in_group_for_user(self, group_id: str, user_id: int, query: MessageQuery) -> None:
+        def callback(message: MessageModel):
+            # TODO: is there a status they should use in the query for deletions?
+            message.status = query.status
 
-                    # TODO: needed?
-                    message.message_type = query.message_type
+            # TODO: needed?
+            message.message_type = query.message_type
 
-                    message.removed_at = removed_at
-                    message.batch(b).save()
+            message.removed_at = removed_at
+            message.removed_by_user = query.admin_id
 
-                    until = message.created_at
+        removed_at = dt.utcnow()
+        removed_at = removed_at.replace(tzinfo=pytz.UTC)
+
+        self._update_all_messages_in_group(
+            group_id=group_id,
+            callback=callback,
+            user_id=user_id,
+        )
 
     def save_group_join_request(self, group_id: str, query: GroupJoinQuery) -> JoinerBase:
         created_at = dt.utcnow()
@@ -232,15 +234,60 @@ class CassandraHandler:
             .all()
         )
 
-    def _batch_messages_in_group(self, group_id: str, until: dt):
-        return (
-            MessageModel.objects(
-                MessageModel.group_id == group_id,
-                MessageModel.created_at < until,
+    def _update_all_messages_in_group(self, group_id: str, callback: callable, user_id: int = None):
+        until = dt.utcnow()
+        until = until.replace(tzinfo=pytz.UTC)
+        start = time()
+        amount = 0
+
+        while True:
+            messages = self._get_batch_of_messages_in_group(
+                group_id=group_id,
+                until=until,
+                user_id=user_id,
             )
-            .limit(500)
-            .all()
-        )
+
+            if not len(messages):
+                end = time()
+                elapsed = (end - start) / 1000
+                self.logger.info(f"finished batch updating {amount} messages in group {group_id} after {elapsed:.2f}s")
+                break
+
+            amount += len(messages)
+            until = self._update_messages(messages, callback)
+
+    def _update_messages(self, messages: List[MessageModel], callback: callable) -> Optional[dt]:
+        until = None
+
+        with BatchQuery() as b:
+            for message in messages:
+                callback(message)
+                message.batch(b).save()
+
+                until = message.created_at
+
+        return until
+
+    def _get_batch_of_messages_in_group(self, group_id: str, until: dt, user_id: int = None) -> List[MessageModel]:
+        if user_id is None:
+            return (
+                MessageModel.objects(
+                    MessageModel.group_id == group_id,
+                    MessageModel.created_at < until,
+                )
+                .limit(500)
+                .all()
+            )
+        else:
+            return (
+                MessageModel.objects(
+                    MessageModel.group_id == group_id,
+                    MessageModel.user_id == user_id,
+                    MessageModel.created_at < until,
+                )
+                .limit(500)
+                .all()
+            )
 
     @staticmethod
     def message_base_from_entity(message: MessageModel) -> MessageBase:

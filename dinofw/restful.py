@@ -93,7 +93,7 @@ async def batch_update_messages_in_group(group_id: str, query: MessageQuery):
 @app.delete("/v1/groups/{group_id}/messages")
 async def batch_delete_messages_in_group(group_id: str, query: MessageQuery):
     """
-    TODO: batch delete messages in group
+    batch delete messages in group
     """
     return await environ.env.rest.message.delete_messages(group_id, query)
 
@@ -115,9 +115,9 @@ async def batch_update_messages_in_group_for_user(
     group_id: str, user_id: int, query: MessageQuery
 ) -> List[Message]:
     """
-    TODO: batch update user messages in a group (blocked, spammer, forcefakechecked)
+    batch update user messages in a group (blocked, spammer, forcefakechecked)
     """
-    return await environ.env.rest.message.update_messages_for_user(
+    return await environ.env.rest.message.update_messages_for_user_in_group(
         group_id, user_id, query
     )
 
@@ -129,7 +129,7 @@ async def batch_delete_messages_in_group_for_user(
     group_id: str, user_id: int, query: AdminQuery
 ) -> List[Message]:
     """
-    TODO: batch delete user messages in a group (gdpr)
+    batch delete user messages in a group (gdpr)
     """
     return await environ.env.rest.message.delete_messages_for_user_in_group(
         group_id, user_id, query
