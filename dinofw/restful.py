@@ -58,7 +58,7 @@ async def get_group_history_for_user(
     group_id: str, user_id: int, query: MessageQuery
 ) -> List[Histories]:
     """
-    TODO: get user visible history in a group sort by time in descendent, messages and action log.
+    get user visible history in a group sort by time in descendent, messages and action log.
     """
     return await environ.env.rest.group.histories(group_id, user_id, query)
 
@@ -152,7 +152,7 @@ async def send_message_to_group(
 )
 async def get_message_details(group_id: str, user_id: int, message_id: str) -> Message:
     """
-    TODO: get message details
+    get message details
     """
     return await environ.env.rest.message.message_details(group_id, user_id, message_id)
 
@@ -199,10 +199,10 @@ async def get_group_information(group_id, db: Session = Depends(get_db)) -> Grou
     return await environ.env.rest.group.get_group(group_id, db)
 
 
-@app.put("/v1/groups/{group_id}", response_model=Group)
+@app.put("/v1/groups/{group_id}")
 async def edit_group_information(group_id, query: AdminUpdateGroupQuery) -> Group:
     """
-    TODO: admin update group
+    admin update group  TODO: failure/success response model
     """
     return await environ.env.rest.group.admin_update_group_information(group_id, query)
 
@@ -228,7 +228,7 @@ async def update_group_information(
     user_id: int, group_id: str, query: UpdateGroupQuery
 ) -> Group:
     """
-    TODO: update a group
+    update a group
     """
     return await environ.env.rest.groups.update_group_information(
         user_id, group_id, query
@@ -273,9 +273,7 @@ async def send_join_request_to_group(
     return await environ.env.rest.group.save_join_request(group_id, query)
 
 
-@app.get(
-    "/v1/users/{user_id}/groups/{group_id}/joins/{joiner_id}", response_model=Joiner
-)
+@app.get("/v1/users/{user_id}/groups/{group_id}/joins/{joiner_id}", response_model=Joiner)
 async def get_group_join_details(user_id: int, group_id: str, joiner_id: int) -> Joiner:
     """
     get join details
@@ -283,30 +281,22 @@ async def get_group_join_details(user_id: int, group_id: str, joiner_id: int) ->
     return await environ.env.rest.group.get_join_details(user_id, group_id, joiner_id)
 
 
-@app.put(
-    "/v1/users/{user_id}/groups/{group_id}/joins/{joiner_id}", response_model=Joiner
-)
+@app.put("/v1/users/{user_id}/groups/{group_id}/joins/{joiner_id}", response_model=Joiner)
 async def approve_or_deny_group_join_request(
-    user_id: int, group_id: str, joiner_id: int, query: JoinerUpdateQuery
+        user_id: int, group_id: str, joiner_id: int, query: JoinerUpdateQuery
 ) -> Joiner:
     """
-    TODO: approve or deny a user join request
+    approve or deny a user join request
     """
-    return await environ.env.rest.group.update_join_request(
-        user_id, group_id, joiner_id, query
-    )
+    return await environ.env.rest.group.update_join_request(group_id, joiner_id, query)
 
 
 @app.delete("/v1/users/{user_id}/groups/{group_id}/joins/{joiner_id}")
-async def delete_group_join_request(
-    user_id: int, group_id: str, joiner_id: int
-) -> None:
+async def delete_group_join_request(user_id: int, group_id: str, joiner_id: int) -> None:
     """
-    TODO: approve or deny a user join request
+    approve or deny a user join request
     """
-    return await environ.env.rest.group.delete_join_request(
-        user_id, group_id, joiner_id
-    )
+    return await environ.env.rest.group.delete_join_request(group_id, joiner_id)
 
 
 @app.get("/v1/groups/{group_id}/userstats/{user_id}", response_model=UserGroupStats)

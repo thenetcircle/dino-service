@@ -56,7 +56,7 @@ class GroupResource(BaseResource):
     async def histories(
         self, group_id: str, query: MessageQuery
     ) -> List[Histories]:
-        action_log = self.env.storage.get_action_log_for_group(group_id, query)
+        action_log = self.env.storage.get_action_log_in_group(group_id, query)
         messages = self.env.storage.get_messages_in_group(group_id, query)
 
         histories = [
@@ -133,25 +133,35 @@ class GroupResource(BaseResource):
 
         return GroupResource.joiner_base_to_joiner(join)
 
-    async def delete_join_request(
-        self, user_id: int, group_id: str, joiner_id: int
-    ) -> None:
-        pass
+    async def admin_update_group_information(self, group_id, query: AdminUpdateGroupQuery, db: Session) -> bool:
+        group_base = self.env.db.admin_update_group_information(group_id, query, db)
 
-    async def admin_update_group_information(
-        self, group_id, query: AdminUpdateGroupQuery
-    ) -> Group:
-        pass
+        if group_base is None:
+            # TODO: return an error response instead
+            return False
 
-    async def update_group_information(
-        self, user_id: int, group_id: str, query: UpdateGroupQuery
-    ) -> Group:
-        pass
+        return True
 
-    async def update_join_request(
-        self, user_id: int, group_id: str, joiner_id: int, query: JoinerUpdateQuery
-    ) -> Joiner:
-        return self._join(group_id, status=query.status)
+    async def update_group_information(self, user_id: int, group_id: str, query: UpdateGroupQuery, db: Session) -> bool:
+        group_base = self.env.db.update_group_information(group_id, user_id, query, db)
+
+        if group_base is None:
+            # TODO: return an error response instead
+            return False
+
+        return True
+
+    async def delete_join_request(self, group_id: str, joiner_id: int) -> None:
+        self.env.storage.delete_join_request(group_id, joiner_id)
+
+    async def update_join_request(self, group_id: str, joiner_id: int, query: JoinerUpdateQuery) -> bool:
+        joiner_base = self.env.storage.update_join_request(group_id, joiner_id, query)
+
+        if joiner_base is None:
+            # TODO: return an error response instead
+            return False
+
+        return True
 
     async def search(self, query: SearchQuery) -> List[Group]:
         return [self._group()]

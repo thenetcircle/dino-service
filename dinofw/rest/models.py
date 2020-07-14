@@ -7,7 +7,10 @@ from pydantic import BaseModel
 
 class AbstractQuery(BaseModel):
     @staticmethod
-    def to_dt(s, allow_none: bool = False):
+    def to_dt(s, allow_none: bool = False, default: dt = None):
+        if s is None and default is not None:
+            return default
+
         if s is None and allow_none:
             return None
 
@@ -92,9 +95,9 @@ class AdminUpdateGroupQuery(AdminQuery):
 
 class UpdateGroupQuery(AbstractQuery):
     # TODO: update owner?
-    group_name: str
-    group_weight: int
-    group_context: str
+    group_name: Optional[str]
+    group_weight: Optional[int]
+    group_context: Optional[str]
 
 
 class EditMessageQuery(MessageQuery):

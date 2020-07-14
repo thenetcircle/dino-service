@@ -63,7 +63,7 @@ class MessageResource(BaseResource):
         self.env.storage.delete_message(group_id, user_id, message_id, query)
 
     async def message_details(self, group_id: str, user_id: int, message_id: str) -> Message:
-        pass
+        return self.env.storage.get_message(group_id, user_id, message_id)
 
     async def update_messages_for_user_in_group(self, group_id: str, user_id: int, query: MessageQuery) -> None:
         self.env.storage.update_messages_in_group_for_user(group_id, user_id, query)

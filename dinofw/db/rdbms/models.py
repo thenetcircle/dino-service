@@ -14,6 +14,7 @@ class GroupEntity(env.Base):
     group_id = Column(String(36), nullable=False, index=True)
     name = Column(String(128), nullable=False)
 
+    status = Column(Integer, nullable=True)
     group_type = Column(Integer, nullable=False, server_default='0')
     last_message_time = Column(DateTime, nullable=False, index=True)
     created_at = Column(DateTime, nullable=False)
@@ -21,6 +22,7 @@ class GroupEntity(env.Base):
 
     updated_at = Column(DateTime)
     group_meta = Column(Integer)
+    group_weight = Column(Integer)
     group_context = Column(String(512))
     description = Column(String(256))
     last_message_overview = Column(String(256))

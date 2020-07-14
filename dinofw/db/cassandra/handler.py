@@ -15,7 +15,7 @@ from dinofw.db.cassandra.models import JoinerModel
 from dinofw.db.cassandra.models import MessageModel
 from dinofw.db.cassandra.schemas import JoinerBase
 from dinofw.db.cassandra.schemas import MessageBase
-from dinofw.rest.models import GroupJoinQuery, EditMessageQuery, AdminQuery
+from dinofw.rest.models import GroupJoinQuery, EditMessageQuery, AdminQuery, JoinerUpdateQuery
 from dinofw.rest.models import GroupJoinerQuery
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
@@ -27,6 +27,10 @@ class CassandraHandler:
     def __init__(self, env: GNEnvironment):
         self.env = env
         self.logger = logging.getLogger(__name__)
+
+        # used when no `hide_before` is specified in a query
+        beginning_of_1995 = 789_000_000
+        self.long_ago = dt.utcfromtimestamp(beginning_of_1995)
 
     def setup_tables(self):
         key_space = self.env.config.get(ConfigKeys.KEY_SPACE, domain=ConfigKeys.STORAGE)
@@ -46,7 +50,7 @@ class CassandraHandler:
 
     def get_messages_in_group(self, group_id: str, query: MessageQuery) -> List[MessageBase]:
         until = MessageQuery.to_dt(query.until)
-        hide_before = MessageQuery.to_dt(query.hide_before)  # TODO: default hide_before should be loooong ago
+        hide_before = MessageQuery.to_dt(query.hide_before, default=self.long_ago)
 
         # TODO: add message_type and status filter from MessageQuery
         raw_messages = (
@@ -68,7 +72,7 @@ class CassandraHandler:
 
     def get_group_joins_for_status(self, group_id: str, query: GroupJoinerQuery) -> List[JoinerBase]:
         until = MessageQuery.to_dt(query.until)
-        hide_before = MessageQuery.to_dt(query.hide_before)  # TODO: default hide_before should be loooong ago
+        hide_before = MessageQuery.to_dt(query.hide_before, default=self.long_ago)
 
         raw_joins = (
             JoinerModel.objects(
@@ -92,15 +96,45 @@ class CassandraHandler:
         raw_join = (
             JoinerModel.objects(
                 JoinerModel.group_id == group_id,
-                JoinerModel.joined_id == joiner_id,
+                JoinerModel.joiner_id == joiner_id,
             )
             .first()
         )
 
         return CassandraHandler.joiner_base_from_entity(raw_join)
 
+    def delete_join_request(self, group_id: str, joiner_id: int) -> None:
+        # TODO: test if we need to fetch first and delete later or if we can do it in the same query
+        _ = (
+            JoinerModel.objects(
+                JoinerModel.group_id == group_id,
+                JoinerModel.joiner_id == joiner_id,
+            )
+            .first()
+            .delete()
+        )
+
+    def update_join_request(self, group_id: str, joiner_id: int, query: JoinerUpdateQuery) -> Optional[JoinerBase]:
+        raw_join = (
+            JoinerModel.objects(
+                JoinerModel.group_id == group_id,
+                JoinerModel.joiner_id == joiner_id,
+            )
+            .first()
+        )
+
+        if raw_join is None:
+            return None
+
+        raw_join.update(
+            status=query.status or raw_join.status
+        )
+
+        return CassandraHandler.joiner_base_from_entity(raw_join)
+
     def get_messages_in_group_for_user(self, group_id: str, user_id: int, query: MessageQuery) -> List[MessageBase]:
         until = MessageQuery.to_dt(query.until)
+        hide_before = MessageQuery.to_dt(query.hide_before, default=self.long_ago)
 
         # TODO: add message_type and status filter from MessageQuery
         raw_messages = (
@@ -108,6 +142,7 @@ class CassandraHandler:
                 MessageModel.group_id == group_id,
                 MessageModel.user_id == user_id,
                 MessageModel.created_at <= until,
+                MessageModel.created_at > hide_before,
             )
             .limit(query.per_page or 100)
             .all()
@@ -122,9 +157,19 @@ class CassandraHandler:
 
     def count_messages_in_group(self, group_id: str) -> int:
         # TODO: cache for a while if more than X messages? maybe TTL proportional to the amount
-        return MessageModel.objects(MessageModel.group_id == group_id).limit(None).count()
+        # TODO: count all or only after `hide_before`?
+
+        return (
+            MessageModel.objects(
+                MessageModel.group_id == group_id
+            )
+            .limit(None)
+            .count()
+        )
 
     def count_messages_in_group_since(self, group_id: str, since: dt) -> int:
+        # TODO: count all or only after `hide_before`?
+
         return (
             MessageModel.objects(
                 MessageModel.group_id == group_id,
@@ -134,6 +179,21 @@ class CassandraHandler:
             .count()
         )
 
+    def get_message(self, group_id: str, user_id: int, message_id: str) -> MessageBase:
+        # TODO: use `hide_before` here?
+
+        message = (
+            MessageModel.objects(
+                MessageModel.group_id == group_id,
+                MessageModel.user_id == user_id,
+                MessageModel.message_id == message_id,
+            )
+            .allow_filtering()
+            .first()
+        )
+
+        return CassandraHandler.message_base_from_entity(message)
+
     def delete_message(self, group_id: str, user_id: int, message_id: str, query: MessageQuery) -> None:
         message = (
             MessageModel.objects(
@@ -141,6 +201,7 @@ class CassandraHandler:
                 MessageModel.user_id == user_id,
                 MessageModel.message_id == message_id,
             )
+            .allow_filtering()
             .first()
         )
 
@@ -165,6 +226,7 @@ class CassandraHandler:
                 MessageModel.user_id == user_id,
                 MessageModel.message_id == message_id,
             )
+            .allow_filtering()
             .first()
         )
 
@@ -268,11 +330,13 @@ class CassandraHandler:
 
     def get_action_log_in_group(self, group_id: str, query: MessageQuery):
         until = MessageQuery.to_dt(query.until)
+        hide_before = MessageQuery.to_dt(query.hide_before, default=self.long_ago)
 
         return (
             ActionLogModel.objects(
                 ActionLogModel.group_id == group_id,
                 ActionLogModel.created_at <= until,
+                ActionLogModel.created_at > hide_before,
             )
             .limit(query.per_page or 100)
             .all()
@@ -280,11 +344,13 @@ class CassandraHandler:
 
     def get_joiners_in_group(self, group_id: str, query: GroupJoinerQuery):
         until = GroupJoinerQuery.to_dt(query.until)
+        hide_before = MessageQuery.to_dt(query.hide_before, default=self.long_ago)
 
         return (
             ActionLogModel.objects(
                 JoinerModel.group_id == group_id,
                 JoinerModel.created_at <= until,
+                JoinerModel.created_at > hide_before,
             )
             .filter(JoinerModel.status == query.status)
             .limit(query.per_page or 100)
@@ -368,7 +434,7 @@ class CassandraHandler:
             group_id=str(join.group_id),
             created_at=join.created_at,
             inviter_id=join.inviter_id,
-            joined_id=join.joined_id,
+            joiner_id=join.joiner_id,
             status=join.status,
             invitation_context=join.invitation_context,
         )
