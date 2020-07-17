@@ -18,20 +18,15 @@ class UserResource(BaseResource):
         self.env = env
 
     async def get_groups_for_user(self, user_id: int, query: GroupQuery, db) -> List[Group]:
-        groups_and_last_reads = self.env.db.get_groups_for_user(user_id, query, db)
+        groups_stats_and_users = self.env.db.get_groups_for_user(user_id, query, db)
         groups = list()
 
-        for group, last_read, users in groups_and_last_reads:
+        for group, user_group_stats, users in groups_stats_and_users:
             group_dict = group.dict()
-            lr_dict = last_read.dict()
 
-            del lr_dict["user_id"]
-            del lr_dict["group_id"]
-
-            group_dict.update(lr_dict)
             group_dict["users"] = users
+            group_dict["last_read"] = GroupQuery.to_ts(user_group_stats.last_read)
 
-            group_dict["last_read"] = GroupQuery.to_ts(group_dict["last_read"])
             group_dict["created_at"] = GroupQuery.to_ts(group_dict["created_at"])
             group_dict["updated_at"] = GroupQuery.to_ts(group_dict["updated_at"])
             group_dict["last_message_time"] = GroupQuery.to_ts(group_dict["last_message_time"])
@@ -44,7 +39,7 @@ class UserResource(BaseResource):
         amount = int(random.random() * 10000)
         now = datetime.utcnow()
         now = now.replace(tzinfo=pytz.UTC)
-        now = int(float(now.strftime("%s")))
+        now = float(now.strftime("%s.%f"))
 
         return UserStats(
             user_id=user_id,

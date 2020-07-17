@@ -23,7 +23,7 @@ class GroupBase(BaseModel):
     group_context: Optional[str]
 
 
-class UserStatsBase(BaseModel):
+class UserGroupStatsBase(BaseModel):
     group_id: str
     user_id: int
     last_read: datetime
@@ -38,7 +38,7 @@ class Group(GroupBase):
         orm_mode = True
 
 
-class UserStats(UserStatsBase):
+class UserGroupStats(UserGroupStatsBase):
     id: int
 
     class Config:

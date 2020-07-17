@@ -12,7 +12,7 @@ class BaseResource(ABC):
     def _group(self, group_id=None):
         now = datetime.utcnow()
         now = now.replace(tzinfo=pytz.UTC)
-        now = int(float(now.strftime("%s")))
+        now = float(now.strftime("%s.%f"))
 
         if group_id is None:
             group_id = str(uuid())
@@ -36,7 +36,7 @@ class BaseResource(ABC):
     def _join(self, group_id, status=None):
         now = datetime.utcnow()
         now = now.replace(tzinfo=pytz.UTC)
-        now = int(float(now.strftime("%s")))
+        now = float(now.strftime("%s.%f"))
 
         if status is None:
             status = 0
@@ -53,7 +53,7 @@ class BaseResource(ABC):
     def _message(self, group_id, user_id=None, message_id=None):
         now = datetime.utcnow()
         now = now.replace(tzinfo=pytz.UTC)
-        now = int(float(now.strftime("%s")))
+        now = float(now.strftime("%s.%f"))
 
         if user_id is None:
             user_id = int(random.random() * 1000000)

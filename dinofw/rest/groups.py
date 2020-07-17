@@ -6,8 +6,9 @@ from sqlalchemy.orm import Session
 
 from dinofw.db.cassandra.schemas import JoinerBase
 from dinofw.db.rdbms.schemas import GroupBase
+from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import AbstractQuery
+from dinofw.rest.models import AbstractQuery, UpdateUserGroupStats
 from dinofw.rest.models import AdminUpdateGroupQuery
 from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import Group
@@ -64,7 +65,7 @@ class GroupResource(BaseResource):
     async def message(self, group_id: str, user_id: int, message_id: str) -> Message:
         return self._message(group_id, user_id, message_id)
 
-    async def get_stats(self, group_id: str, user_id: int, db: Session) -> UserGroupStats:
+    async def get_user_group_stats(self, group_id: str, user_id: int, db: Session) -> UserGroupStats:
         user_stats = self.env.db.get_user_stats_in_group(group_id, user_id, db)
         message_amount = self.env.storage.count_messages_in_group(group_id)
 
@@ -89,6 +90,11 @@ class GroupResource(BaseResource):
             last_send_time=last_sent,
             hide_before=hide_before,
         )
+
+    async def update_user_group_stats(self, group_id: str, user_id: int, query: UpdateUserGroupStats, db: Session):
+        user_stats_base = self.env.db.update_user_stats_in_group(group_id, user_id, query, db)
+
+        return GroupResource.user_group_stats_base_to_user_group_stats(user_stats_base)
 
     async def create_new_group(self, user_id: int, query: CreateGroupQuery, db: Session) -> Group:
         group = self.env.db.create_group(user_id, query, db)
@@ -190,3 +196,13 @@ class GroupResource(BaseResource):
         join_dict["created_at"] = GroupJoinerQuery.to_ts(join_dict["created_at"])
 
         return Joiner(**join_dict)
+
+    @staticmethod
+    def user_group_stats_base_to_user_group_stats(user_stats: UserGroupStatsBase):
+        stats_dict = user_stats.dict()
+
+        stats_dict["last_read"] = AbstractQuery.to_ts(stats_dict["last_read"])
+        stats_dict["last_sent"] = AbstractQuery.to_ts(stats_dict["last_sent"])
+        stats_dict["hide_before"] = AbstractQuery.to_ts(stats_dict["hide_before"])
+
+        return UserGroupStats(**stats_dict)

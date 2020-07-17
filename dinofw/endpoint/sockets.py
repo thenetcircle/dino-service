@@ -54,5 +54,4 @@ def index():
 
 @app.route("/static/<path:path>")
 def send_static(path):
-    print(path)
     return environ.env.send_from_directory("templates/static/", path)

@@ -23,14 +23,12 @@ class MessageResource(BaseResource):
     async def save_new_message(self, group_id: str, user_id: int, query: SendMessageQuery, db: Session) -> Message:
         message = self.env.storage.store_message(group_id, user_id, query)
 
-        self.env.db.update_group_new_message(message, db)
-        self.env.db.update_last_read_in_group_for_user(user_id, group_id, message.created_at, db)
-
+        # cassandra DT is different from python DT
         now = dt.utcnow()
         now = now.replace(tzinfo=pytz.UTC)
 
-        self.env.cache.set_last_send_time_in_group_for_user(group_id, user_id, now)
-        self.env.cache.set_last_read_time_in_group_for_user(group_id, user_id, now)
+        self.env.db.update_group_new_message(message, db)
+        self.env.db.update_last_read_and_sent_in_group_for_user(user_id, group_id, now, db)
 
         return MessageResource.message_base_to_message(message)
 

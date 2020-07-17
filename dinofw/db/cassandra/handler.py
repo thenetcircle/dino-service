@@ -169,7 +169,6 @@ class CassandraHandler:
 
     def count_messages_in_group_since(self, group_id: str, since: dt) -> int:
         # TODO: count all or only after `hide_before`?
-
         return (
             MessageModel.objects(
                 MessageModel.group_id == group_id,

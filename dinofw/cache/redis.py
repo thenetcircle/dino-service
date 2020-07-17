@@ -10,7 +10,7 @@ from datetime import timedelta
 
 from dinofw.cache import ICache
 from dinofw.config import ConfigKeys, RedisKeys
-from dinofw.db.rdbms.schemas import UserStatsBase
+from dinofw.db.rdbms.schemas import UserGroupStatsBase
 
 logger = logging.getLogger(__name__)
 
@@ -81,25 +81,36 @@ class CacheRedis(ICache):
         self.redis.delete(key)
         return self.redis.sadd(key, *user_ids)
 
-    def get_user_stats_group(self, group_id: str, user_id: int) -> Optional[dt, dt, dt]:
+    def get_user_stats_group(self, group_id: str, user_id: int) -> Optional[UserGroupStatsBase]:
         """
         :return: [last_read, last_sent, hide_before]
         """
         def to_dt(byte_ts):
-            int_ts = int(float(str(byte_ts, "utf-8")))
-            return dt.utcfromtimestamp(int_ts)
+            int_ts = float(byte_ts)
+            return dt.fromtimestamp(int_ts)
 
         key = RedisKeys.user_stats_in_group(group_id)
         user_stats = self.redis.hget(key, user_id)
 
         if user_stats is None:
-            return None, None, None
+            return None
 
-        return [to_dt(timestamp) for timestamp in user_stats.split("|")]
+        last_read, last_sent, hide_before = [
+            to_dt(timestamp)
+            for timestamp in str(user_stats, "utf-8").split("|")
+        ]
 
-    def set_user_stats_group(self, group_id: str, user_id: int, stats: UserStatsBase) -> Optional[dt, dt, dt]:
+        return UserGroupStatsBase(
+            group_id=group_id,
+            user_id=user_id,
+            last_read=last_read,
+            last_sent=last_sent,
+            hide_before=hide_before
+        )
+
+    def set_user_stats_group(self, group_id: str, user_id: int, stats: UserGroupStatsBase) -> None:
         def to_ts(datetime: dt):
-            return datetime.strftime("%s")
+            return datetime.strftime("%s.%f")
 
         stats_list = [stats.last_read, stats.last_sent, stats.hide_before]
         user_stats = "|".join([to_ts(stat) for stat in stats_list])
