@@ -33,7 +33,7 @@ class MessageModel(Model):
     )
 
     status = Integer()
-    message_type = Integer()
+    message_type = Text()
     updated_at = DateTime()
     removed_at = DateTime()
     removed_by_user = Integer()

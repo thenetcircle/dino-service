@@ -112,7 +112,7 @@ class Message(AbstractQuery):
     message_payload: str
 
     status: Optional[int]
-    message_type: Optional[int]
+    message_type: Optional[str]
     updated_at: Optional[float]
     removed_at: Optional[float]
     removed_by_user: Optional[int]
