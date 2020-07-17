@@ -94,7 +94,7 @@ class RelationalHandler:
         db.commit()
         db.refresh(group)
 
-    def remove_last_read_in_group_for_user(self, user_id: int, group_id: str, db: Session) -> None:
+    def remove_last_read_in_group_for_user(self, group_id: str, user_id: int, db: Session) -> None:
         _ = (
             db.query(models.UserGroupStatsEntity)
             .filter(models.UserGroupStatsEntity.user_id == user_id)
@@ -103,7 +103,7 @@ class RelationalHandler:
         )
         db.commit()
 
-    def update_last_read_in_group_for_user(self, user_id: int, group_id: str, last_read_time: dt, db: Session) -> None:
+    def update_last_read_in_group_for_user(self, group_id: str, user_id: int, last_read_time: dt, db: Session) -> None:
         """
         TODO: should we update last read for sender? or sender also acks?
         """
@@ -114,7 +114,11 @@ class RelationalHandler:
             .first()
         )
 
+        should_update_cached_user_ids_in_group = False
+
         if user_stats is None:
+            should_update_cached_user_ids_in_group = True
+
             user_stats = models.UserGroupStatsEntity(
                 group_id=group_id,
                 user_id=user_id,
@@ -128,6 +132,9 @@ class RelationalHandler:
         db.add(user_stats)
         db.commit()
         db.refresh(user_stats)
+
+        if should_update_cached_user_ids_in_group:
+            self.get_user_ids_in_group(group_id, db, skip_cache=True)
 
     def admin_update_group_information(
             self,

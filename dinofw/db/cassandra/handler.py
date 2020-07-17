@@ -223,18 +223,19 @@ class CassandraHandler:
             callback=callback
         )
 
-    def create_join_action_log(self, user_id: int, group_id: str, action_time: dt) -> ActionLogBase:
-        return self._create_action_log(user_id, group_id, action_time, CassandraHandler.ACTION_TYPE_JOIN)
+    def create_join_action_log(self, group_id: str, user_id: int, action_time: dt) -> ActionLogBase:
+        return self._create_action_log(group_id, user_id, action_time, CassandraHandler.ACTION_TYPE_JOIN)
 
-    def create_leave_action_log(self, user_id: int, group_id: str, action_time: dt) -> ActionLogBase:
-        return self._create_action_log(user_id, group_id, action_time, CassandraHandler.ACTION_TYPE_LEAVE)
+    def create_leave_action_log(self, group_id: str, user_id: int, action_time: dt) -> ActionLogBase:
+        return self._create_action_log(group_id, user_id, action_time, CassandraHandler.ACTION_TYPE_LEAVE)
 
-    def _create_action_log(self, user_id: int, group_id: str, action_time: dt, action_type: int) -> ActionLogBase:
+    def _create_action_log(self, group_id: str, user_id: int, action_time: dt, action_type: int) -> ActionLogBase:
         log = ActionLogModel.create(
             group_id=group_id,
             user_id=user_id,
             created_at=action_time,
             action_type=action_type,
+            action_id=uuid()
         )
 
         return CassandraHandler.action_log_base_from_entity(log)
@@ -367,11 +368,11 @@ class CassandraHandler:
     @staticmethod
     def action_log_base_from_entity(log: ActionLogModel) -> ActionLogBase:
         return ActionLogBase(
-            group_id=log.group_id,
+            group_id=str(log.group_id),
             created_at=log.created_at,
             user_id=log.user_id,
-            action_id=log.action_id,
+            action_id=str(log.action_id),
             action_type=log.action_type,
             admin_id=log.action_id,
-            message_ii=log.message_id,
+            message_id=str(log.message_id) if log.message_id is not None else None,
         )

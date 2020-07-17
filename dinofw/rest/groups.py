@@ -6,7 +6,7 @@ import pytz
 from sqlalchemy.orm import Session
 
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import AbstractQuery, UpdateUserGroupStats
+from dinofw.rest.models import AbstractQuery, UpdateUserGroupStats, ActionLog
 from dinofw.rest.models import AdminUpdateGroupQuery
 from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import Group
@@ -130,16 +130,23 @@ class GroupResource(BaseResource):
 
         return None
 
-    async def join_group(self, group_id: str, user_id: int, db: Session) -> None:
+    async def join_group(self, group_id: str, user_id: int, db: Session) -> ActionLog:
         now = dt.utcnow()
         now = now.replace(tzinfo=pytz.UTC)
 
         self.env.db.update_last_read_in_group_for_user(group_id, user_id, now, db)
-        self.env.storage.create_join_action_log(group_id, user_id, now)
+        action_log = self.env.storage.create_join_action_log(group_id, user_id, now)
 
-    async def leave_group(self, group_id: str, user_id: int, db: Session) -> None:
+        return GroupResource.action_log_base_to_action_log(action_log)
+
+    async def leave_group(self, group_id: str, user_id: int, db: Session) -> ActionLog:
+        now = dt.utcnow()
+        now = now.replace(tzinfo=pytz.UTC)
+
         self.env.db.remove_last_read_in_group_for_user(group_id, user_id, db)
-        self.env.storage.create_leave_action_log(group_id, user_id)
+        action_log = self.env.storage.create_leave_action_log(group_id, user_id, now)
+
+        return GroupResource.action_log_base_to_action_log(action_log)
 
     async def search(self, query: SearchQuery) -> List[Group]:
         return [self._group()]
