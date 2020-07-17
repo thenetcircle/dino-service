@@ -23,18 +23,12 @@ class GroupBase(BaseModel):
     group_context: Optional[str]
 
 
-class LastReadBase(BaseModel):
+class UserStatsBase(BaseModel):
     group_id: str
     user_id: int
     last_read: datetime
-
-
-class GroupCreate(GroupBase):
-    pass
-
-
-class LastReadCreate(LastReadBase):
-    pass
+    last_sent: datetime
+    hide_before: datetime
 
 
 class Group(GroupBase):
@@ -44,7 +38,7 @@ class Group(GroupBase):
         orm_mode = True
 
 
-class LastRead(LastReadBase):
+class UserStats(UserStatsBase):
     id: int
 
     class Config:

@@ -1,31 +1,26 @@
 import logging
-import random
 from datetime import datetime
 from typing import List, Optional
-from uuid import uuid4 as uuid
 
-import pytz
 from sqlalchemy.orm import Session
 
 from dinofw.db.cassandra.schemas import JoinerBase
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import (
-    ActionLog,
-    PaginationQuery,
-    GroupUsers,
-    GroupJoinQuery,
-    Joiner,
-    JoinerUpdateQuery,
-    UpdateGroupQuery,
-    CreateGroupQuery,
-    AdminUpdateGroupQuery, GroupJoinerQuery, AbstractQuery,
-)
+from dinofw.rest.models import AbstractQuery
+from dinofw.rest.models import AdminUpdateGroupQuery
+from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import Group
+from dinofw.rest.models import GroupJoinQuery
+from dinofw.rest.models import GroupJoinerQuery
+from dinofw.rest.models import GroupUsers
 from dinofw.rest.models import Histories
-from dinofw.rest.models import MessageQuery
+from dinofw.rest.models import Joiner
+from dinofw.rest.models import JoinerUpdateQuery
 from dinofw.rest.models import Message
+from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SearchQuery
+from dinofw.rest.models import UpdateGroupQuery
 from dinofw.rest.models import UserGroupStats
 
 logger = logging.getLogger(__name__)
@@ -70,30 +65,29 @@ class GroupResource(BaseResource):
         return self._message(group_id, user_id, message_id)
 
     async def get_stats(self, group_id: str, user_id: int, db: Session) -> UserGroupStats:
-        read_at = self.env.db.get_last_read(group_id, user_id, db)
-        last_send_time = self.env.db.get_last_send_time_in_group_for_user(group_id, user_id, db)
+        user_stats = self.env.db.get_user_stats_in_group(group_id, user_id, db)
         message_amount = self.env.storage.count_messages_in_group(group_id)
 
-        if last_send_time is None:
-            last_send_time = 0
-        else:
-            last_send_time = AbstractQuery.to_ts(last_send_time)
+        last_sent = 0
+        last_read = 0
+        hide_before = 0
+        unread_amount = message_amount
 
-        if read_at is None:
-            unread_amount = message_amount
-            read_at = 0
-        else:
-            unread_amount = self.env.storage.count_messages_in_group_since(group_id, read_at)
-            read_at = AbstractQuery.to_ts(read_at)
+        if user_stats is not None:
+            last_sent = AbstractQuery.to_ts(user_stats.last_sent)
+            hide_before = AbstractQuery.to_ts(user_stats.hide_before)
+            last_read = AbstractQuery.to_ts(user_stats.last_read)
+
+            unread_amount = self.env.storage.count_messages_in_group_since(group_id, user_stats.last_read)
 
         return UserGroupStats(
             user_id=user_id,
             group_id=group_id,
             message_amount=message_amount,
             unread_amount=unread_amount,
-            last_read_time=read_at,
-            last_send_time=last_send_time,
-            hide_before=0,  # TODO: get hide_before
+            last_read_time=last_read,
+            last_send_time=last_sent,
+            hide_before=hide_before,
         )
 
     async def create_new_group(self, user_id: int, query: CreateGroupQuery, db: Session) -> Group:

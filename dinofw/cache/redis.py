@@ -10,6 +10,7 @@ from datetime import timedelta
 
 from dinofw.cache import ICache
 from dinofw.config import ConfigKeys, RedisKeys
+from dinofw.db.rdbms.schemas import UserStatsBase
 
 logger = logging.getLogger(__name__)
 
@@ -80,37 +81,31 @@ class CacheRedis(ICache):
         self.redis.delete(key)
         return self.redis.sadd(key, *user_ids)
 
-    def get_last_read_time_in_group_for_user(self, group_id: str, user_id: int) -> Optional[dt]:
-        # TODO: when/how to update? when user retrieves messages or when acking or both?
+    def get_user_stats_group(self, group_id: str, user_id: int) -> Optional[dt, dt, dt]:
+        """
+        :return: [last_read, last_sent, hide_before]
+        """
+        def to_dt(byte_ts):
+            int_ts = int(float(str(byte_ts, "utf-8")))
+            return dt.utcfromtimestamp(int_ts)
 
-        key = RedisKeys.last_read_time(group_id)
-        last_read = self.redis.hget(key, user_id)
+        key = RedisKeys.user_stats_in_group(group_id)
+        user_stats = self.redis.hget(key, user_id)
 
-        if last_read is None:
-            return None
+        if user_stats is None:
+            return None, None, None
 
-        last_sent = int(float(str(last_read, "utf-8")))
-        return dt.utcfromtimestamp(last_sent)
+        return [to_dt(timestamp) for timestamp in user_stats.split("|")]
 
-    def set_last_read_time_in_group_for_user(self, group_id: str, user_id: int, last_read: dt) -> None:
-        key = RedisKeys.last_read_time(group_id)
-        last_read = last_read.strftime("%s")
-        self.redis.hset(key, user_id, last_read)
+    def set_user_stats_group(self, group_id: str, user_id: int, stats: UserStatsBase) -> Optional[dt, dt, dt]:
+        def to_ts(datetime: dt):
+            return datetime.strftime("%s")
 
-    def get_last_send_time_in_group_for_user(self, group_id: str, user_id: int) -> Optional[dt]:
-        key = RedisKeys.last_send_time(group_id)
-        last_sent = self.redis.hget(key, user_id)
+        stats_list = [stats.last_read, stats.last_sent, stats.hide_before]
+        user_stats = "|".join([to_ts(stat) for stat in stats_list])
 
-        if last_sent is None:
-            return None
-
-        last_sent = int(float(str(last_sent, "utf-8")))
-        return dt.utcfromtimestamp(last_sent)
-
-    def set_last_send_time_in_group_for_user(self, group_id: str, user_id: int, last_sent: dt) -> None:
-        key = RedisKeys.last_send_time(group_id)
-        last_sent = last_sent.strftime("%s")
-        self.redis.hset(key, user_id, last_sent)
+        key = RedisKeys.user_stats_in_group(group_id)
+        self.redis.hset(key, user_id, user_stats)
 
     @property
     def redis(self):

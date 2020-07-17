@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from dinofw.db.cassandra.schemas import MessageBase
 from dinofw.db.rdbms import models
 from dinofw.db.rdbms.models import LastReadEntity
-from dinofw.db.rdbms.schemas import GroupBase
+from dinofw.db.rdbms.schemas import GroupBase, UserStatsBase
 from dinofw.db.rdbms.schemas import LastReadBase
 from dinofw.rest.models import CreateGroupQuery, AdminUpdateGroupQuery, UpdateGroupQuery
 from dinofw.rest.models import GroupQuery
@@ -164,43 +164,25 @@ class RelationalHandler:
 
         return GroupBase(**group_entity)
 
-    def get_last_read(self, group_id: str, user_id: int, db: Session) -> Optional[dt]:
-        last_read = self.env.cache.get_last_read_time_in_group_for_user(group_id, user_id)
-        if last_read is not None:
-            return last_read
+    def get_user_stats_in_group(self, group_id: str, user_id: int, db: Session) -> Optional[UserStatsBase]:
+        user_stats = self.env.cache.get_user_stats_group(group_id, user_id)
+        if user_stats is not None:
+            return UserStatsBase(**user_stats)
 
-        last_read = (
-            db.query(models.LastReadEntity)
-            .filter(models.LastReadEntity.user_id == user_id)
-            .filter(models.LastReadEntity.group_id == group_id)
+        user_stats = (
+            db.query(models.UserStatsEntity)
+            .filter(models.UserStatsEntity.user_id == user_id)
+            .filter(models.UserStatsEntity.group_id == group_id)
             .first()
         )
 
-        if last_read is None:
+        if user_stats is None:
             return None
 
-        self.env.cache.set_last_read_time_in_group_for_user(group_id, user_id, last_read.last_read)
+        base = UserStatsBase(**user_stats)
+        self.env.cache.set_user_stats_group(group_id, user_id, base)
 
-        return last_read.last_read
-
-    def get_last_send_time_in_group_for_user(self, group_id: str, user_id: int, db: Session) -> Optional[dt]:
-        last_sent = self.env.cache.get_last_send_time_in_group_for_user(group_id, user_id)
-        if last_sent is not None:
-            return last_sent
-
-        last_sent = (
-            db.query(models.LastSentEntity)
-            .filter(models.LastSentEntity.user_id == user_id)
-            .filter(models.LastSentEntity.group_id == group_id)
-            .first()
-        )
-
-        if last_sent is None:
-            return None
-
-        self.env.cache.set_last_send_time_in_group_for_user(group_id, user_id, last_sent.last_sent)
-
-        return last_sent.last_sent
+        return base
 
     def create_group(self, user_id: int, query: CreateGroupQuery, db: Session) -> GroupBase:
         created_at = dt.utcnow()

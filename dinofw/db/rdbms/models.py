@@ -28,21 +28,14 @@ class GroupEntity(env.Base):
     last_message_overview = Column(String(256))
 
 
-class LastReadEntity(env.Base):
-    __tablename__ = "last_read"
+class UserStatsEntity(env.Base):
+    __tablename__ = "user_stats"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
 
     group_id = Column(String(36), index=True, nullable=False)
     user_id = Column(Integer, index=True, nullable=False)
+
     last_read = Column(DateTime, nullable=False)
-
-
-class LastSentEntity(env.Base):
-    __tablename__ = "last_sent"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-
-    group_id = Column(String(36), index=True, nullable=False)
-    user_id = Column(Integer, index=True, nullable=False)
     last_sent = Column(DateTime, nullable=False)
+    hide_before = Column(DateTime, nullable=False)
