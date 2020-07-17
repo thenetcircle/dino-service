@@ -69,24 +69,10 @@ class CreateGroupQuery(AbstractQuery):
     group_context: Optional[str]
 
 
-class GroupJoinQuery(AbstractQuery):
-    joiner_id: int
-    inviter_id: int
-    invitation_context: str
-
-
-class GroupJoinerQuery(PaginationQuery):
-    status: int
-
-
 class GroupQuery(PaginationQuery):
     ownership: Optional[int]
     weight: Optional[int]
     has_unread: Optional[int]
-
-
-class JoinerUpdateQuery(AbstractQuery):
-    status: int
 
 
 class AdminUpdateGroupQuery(AdminQuery):
@@ -141,6 +127,8 @@ class UserStats(AbstractQuery):
 
 
 class UserGroupStats(AbstractQuery):
+    group_id: str
+    user_id: int
     message_amount: int
     unread_amount: int
     last_read_time: float
@@ -179,15 +167,6 @@ class Group(AbstractQuery):
     last_message_overview: Optional[str]
     # last_message_user_id: Optional[int]
     last_message_time: float
-
-
-class Joiner(AbstractQuery):
-    joiner_id: int
-    group_id: str
-    inviter_id: int
-    created_at: float
-    status: int
-    invitation_context: str
 
 
 class Histories(AbstractQuery):

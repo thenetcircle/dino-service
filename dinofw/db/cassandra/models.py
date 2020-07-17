@@ -40,31 +40,6 @@ class MessageModel(Model):
     last_action_log_id = UUID()
 
 
-class JoinerModel(Model):
-    __table_name__ = "joiners"
-
-    group_id = UUID(
-        required=True,
-        primary_key=True,
-        partition_key=True,
-    )
-    joiner_id = Integer(
-        required=True,
-        index=True,
-    )
-    status = Integer(
-        required=True,
-        index=True,
-    )
-    created_at = DateTime(
-        required=True
-    )
-    inviter_id = Integer(
-        required=True
-    )
-    invitation_context = Text()
-
-
 class ActionLogModel(Model):
     __table_name__ = "action_logs"
 

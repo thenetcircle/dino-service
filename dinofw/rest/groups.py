@@ -1,23 +1,17 @@
 import logging
-from datetime import datetime
+from datetime import datetime as dt
 from typing import List, Optional
 
+import pytz
 from sqlalchemy.orm import Session
 
-from dinofw.db.cassandra.schemas import JoinerBase, MessageBase, ActionLogBase
-from dinofw.db.rdbms.schemas import GroupBase
-from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import AbstractQuery, UpdateUserGroupStats, ActionLog
+from dinofw.rest.models import AbstractQuery, UpdateUserGroupStats
 from dinofw.rest.models import AdminUpdateGroupQuery
 from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import Group
-from dinofw.rest.models import GroupJoinQuery
-from dinofw.rest.models import GroupJoinerQuery
 from dinofw.rest.models import GroupUsers
 from dinofw.rest.models import Histories
-from dinofw.rest.models import Joiner
-from dinofw.rest.models import JoinerUpdateQuery
 from dinofw.rest.models import Message
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SearchQuery
@@ -98,7 +92,7 @@ class GroupResource(BaseResource):
         )
 
     async def update_user_group_stats(self, group_id: str, user_id: int, query: UpdateUserGroupStats, db: Session):
-        user_stats_base = self.env.db.update_user_stats_in_group(group_id, user_id, query, db)
+        user_stats_base = self.env.db.update_user_group_stats(group_id, user_id, query, db)
 
         return GroupResource.user_group_stats_base_to_user_group_stats(user_stats_base)
 
@@ -118,31 +112,6 @@ class GroupResource(BaseResource):
             last_read=group.created_at
         )
 
-    async def get_join_requests(
-        self, group_id: str, query: GroupJoinerQuery
-    ) -> List[Joiner]:
-        joins = self.env.storage.get_group_joins_for_status(group_id, query)
-
-        return [GroupResource.joiner_base_to_joiner(join) for join in joins]
-
-    async def save_join_request(
-        self, group_id: str, query: GroupJoinQuery
-    ) -> Joiner:
-        join = self.env.storage.save_group_join_request(group_id, query)
-
-        return GroupResource.joiner_base_to_joiner(join)
-
-    async def get_join_details(
-        self, user_id: int, group_id: str, joiner_id: int
-    ) -> Optional[Joiner]:
-        join = self.env.storage.get_group_join_for_user(group_id, joiner_id)
-
-        if join is None:
-            # TODO: handle
-            return None
-
-        return GroupResource.joiner_base_to_joiner(join)
-
     async def admin_update_group_information(self, group_id, query: AdminUpdateGroupQuery, db: Session) -> bool:
         group_base = self.env.db.admin_update_group_information(group_id, query, db)
 
@@ -161,25 +130,19 @@ class GroupResource(BaseResource):
 
         return None
 
-    async def delete_join_request(self, group_id: str, joiner_id: int) -> None:
-        self.env.storage.delete_join_request(group_id, joiner_id)
+    async def join_group(self, group_id: str, user_id: int, db: Session) -> None:
+        now = dt.utcnow()
+        now = now.replace(tzinfo=pytz.UTC)
 
-    async def update_join_request(self, group_id: str, joiner_id: int, query: JoinerUpdateQuery) -> bool:
-        joiner_base = self.env.storage.update_join_request(group_id, joiner_id, query)
+        self.env.db.update_last_read_in_group_for_user(group_id, user_id, now, db)
+        self.env.storage.create_join_action_log(group_id, user_id, now)
 
-        if joiner_base is None:
-            # TODO: return an error response instead
-            return False
-
-        return True
+    async def leave_group(self, group_id: str, user_id: int, db: Session) -> None:
+        self.env.db.remove_last_read_in_group_for_user(group_id, user_id, db)
+        self.env.storage.create_leave_action_log(group_id, user_id)
 
     async def search(self, query: SearchQuery) -> List[Group]:
         return [self._group()]
-
-    async def hide_histories_for_user(
-        self, group_id: str, user_id: int, query: MessageQuery
-    ):
-        pass
 
     async def delete_one_group_for_user(self, user_id: int, group_id: str) -> None:
         pass

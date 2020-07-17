@@ -11,12 +11,11 @@ from gnenv.environ import GNEnvironment
 
 from dinofw.config import ConfigKeys
 from dinofw.db.cassandra.models import ActionLogModel
-from dinofw.db.cassandra.models import JoinerModel
 from dinofw.db.cassandra.models import MessageModel
-from dinofw.db.cassandra.schemas import JoinerBase, ActionLogBase
+from dinofw.db.cassandra.schemas import ActionLogBase
 from dinofw.db.cassandra.schemas import MessageBase
-from dinofw.rest.models import GroupJoinQuery, EditMessageQuery, AdminQuery, JoinerUpdateQuery
-from dinofw.rest.models import GroupJoinerQuery
+from dinofw.rest.models import EditMessageQuery
+from dinofw.rest.models import AdminQuery
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
 
@@ -24,6 +23,9 @@ import logging
 
 
 class CassandraHandler:
+    ACTION_TYPE_JOIN = 0
+    ACTION_TYPE_LEAVE = 1
+
     def __init__(self, env: GNEnvironment):
         self.env = env
         self.logger = logging.getLogger(__name__)
@@ -46,7 +48,6 @@ class CassandraHandler:
 
         sync_table(MessageModel)
         sync_table(ActionLogModel)
-        sync_table(JoinerModel)
 
     def get_messages_in_group(self, group_id: str, query: MessageQuery) -> List[MessageBase]:
         until = MessageQuery.to_dt(query.until)
@@ -71,82 +72,6 @@ class CassandraHandler:
             messages.append(CassandraHandler.message_base_from_entity(message))
 
         return messages
-
-    def get_group_joins_for_status(self, group_id: str, query: GroupJoinerQuery) -> List[JoinerBase]:
-        until = MessageQuery.to_dt(query.until)
-        hide_before = MessageQuery.to_dt(query.hide_before, default=self.long_ago)
-
-        joins = (
-            JoinerModel.objects(
-                JoinerModel.group_id == group_id,
-                JoinerModel.status == query.status,
-                JoinerModel.created_at <= until,
-                MessageModel.created_at > hide_before,
-            )
-            .limit(query.per_page or 100)
-            .allow_filtering()
-            .all()
-        )
-
-        return [CassandraHandler.joiner_base_from_entity(join) for join in joins]
-
-    def save_group_join_request(self, group_id: str, query: GroupJoinQuery) -> JoinerBase:
-        created_at = dt.utcnow()
-        created_at = created_at.replace(tzinfo=pytz.UTC)
-
-        joiner = JoinerModel.create(
-            group_id=group_id,
-            inviter_id=query.inviter_id,
-            joiner_id=query.joiner_id,
-            created_at=created_at,
-            invitation_context=query.invitation_context,
-            status=0,  # TODO: need to specify in query? or not required?
-        )
-
-        return CassandraHandler.joiner_base_from_entity(joiner)
-
-    def get_group_join_for_user(self, group_id: str, joiner_id: int) -> Optional[JoinerBase]:
-        raw_join = (
-            JoinerModel.objects(
-                JoinerModel.group_id == group_id,
-                JoinerModel.joiner_id == joiner_id,
-            )
-            .first()
-        )
-
-        if raw_join is None:
-            return None
-
-        return CassandraHandler.joiner_base_from_entity(raw_join)
-
-    def delete_join_request(self, group_id: str, joiner_id: int) -> None:
-        # TODO: test if we need to fetch first and delete later or if we can do it in the same query
-        _ = (
-            JoinerModel.objects(
-                JoinerModel.group_id == group_id,
-                JoinerModel.joiner_id == joiner_id,
-            )
-            .first()
-            .delete()
-        )
-
-    def update_join_request(self, group_id: str, joiner_id: int, query: JoinerUpdateQuery) -> Optional[JoinerBase]:
-        raw_join = (
-            JoinerModel.objects(
-                JoinerModel.group_id == group_id,
-                JoinerModel.joiner_id == joiner_id,
-            )
-            .first()
-        )
-
-        if raw_join is None:
-            return None
-
-        raw_join.update(
-            status=query.status or raw_join.status
-        )
-
-        return CassandraHandler.joiner_base_from_entity(raw_join)
 
     def get_messages_in_group_for_user(self, group_id: str, user_id: int, query: MessageQuery) -> List[MessageBase]:
         until = MessageQuery.to_dt(query.until)
@@ -298,6 +223,22 @@ class CassandraHandler:
             callback=callback
         )
 
+    def create_join_action_log(self, user_id: int, group_id: str, action_time: dt) -> ActionLogBase:
+        return self._create_action_log(user_id, group_id, action_time, CassandraHandler.ACTION_TYPE_JOIN)
+
+    def create_leave_action_log(self, user_id: int, group_id: str, action_time: dt) -> ActionLogBase:
+        return self._create_action_log(user_id, group_id, action_time, CassandraHandler.ACTION_TYPE_LEAVE)
+
+    def _create_action_log(self, user_id: int, group_id: str, action_time: dt, action_type: int) -> ActionLogBase:
+        log = ActionLogModel.create(
+            group_id=group_id,
+            user_id=user_id,
+            created_at=action_time,
+            action_type=action_type,
+        )
+
+        return CassandraHandler.action_log_base_from_entity(log)
+
     def delete_messages_in_group_for_user(self, group_id: str, user_id: int, query: MessageQuery) -> None:
         # TODO: copy messages to another table `messages_deleted` and then remove the rows for `messages`
 
@@ -351,23 +292,6 @@ class CassandraHandler:
         )
 
         return [CassandraHandler.action_log_base_from_entity(log) for log in action_logs]
-
-    def get_joiners_in_group(self, group_id: str, query: GroupJoinerQuery):
-        until = GroupJoinerQuery.to_dt(query.until)
-        hide_before = MessageQuery.to_dt(query.hide_before, default=self.long_ago)
-
-        joiners = (
-            ActionLogModel.objects(
-                JoinerModel.group_id == group_id,
-                JoinerModel.created_at <= until,
-                JoinerModel.created_at > hide_before,
-            )
-            .filter(JoinerModel.status == query.status)
-            .limit(query.per_page or 100)
-            .all()
-        )
-
-        return [CassandraHandler.joiner_base_from_entity(join) for join in joiners]
 
     def _update_all_messages_in_group(self, group_id: str, callback: callable, user_id: int = None):
         until = dt.utcnow()
@@ -438,17 +362,6 @@ class CassandraHandler:
             removed_at=message.removed_at,
             removed_by_user=message.removed_by_user,
             last_action_log_id=message.last_action_log_id,
-        )
-
-    @staticmethod
-    def joiner_base_from_entity(join: JoinerModel) -> JoinerBase:
-        return JoinerBase(
-            group_id=str(join.group_id),
-            created_at=join.created_at,
-            inviter_id=join.inviter_id,
-            joiner_id=join.joiner_id,
-            status=join.status,
-            invitation_context=join.invitation_context,
         )
 
     @staticmethod

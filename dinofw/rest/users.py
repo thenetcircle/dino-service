@@ -35,7 +35,10 @@ class UserResource(BaseResource):
 
         return groups
 
-    async def stats(self, user_id: int) -> UserStats:
+    async def get_user_stats(self, user_id: int) -> UserStats:
+        # TODO: groups = await self.get_groups_for_user()
+        # TODO: get number of groups with unread messages in
+
         amount = int(random.random() * 10000)
         now = datetime.utcnow()
         now = now.replace(tzinfo=pytz.UTC)

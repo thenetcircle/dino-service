@@ -19,15 +19,6 @@ class MessageBase(BaseModel):
     last_action_log_id: Optional[str]
 
 
-class JoinerBase(BaseModel):
-    group_id: str
-    created_at: datetime
-    inviter_id: int
-    joiner_id: int
-    status: int
-    invitation_context: Optional[str]
-
-
 class ActionLogBase(BaseModel):
     group_id: str
     created_at: datetime

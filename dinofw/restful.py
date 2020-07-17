@@ -6,16 +6,13 @@ from fastapi import FastAPI
 from sqlalchemy.orm import Session
 
 from dinofw import environ
-from dinofw.rest.models import AdminQuery, JoinerUpdateQuery, AdminUpdateGroupQuery, UpdateUserGroupStats
+from dinofw.rest.models import AdminQuery, AdminUpdateGroupQuery, UpdateUserGroupStats
 from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import EditMessageQuery
 from dinofw.rest.models import Group
-from dinofw.rest.models import GroupJoinQuery
-from dinofw.rest.models import GroupJoinerQuery
 from dinofw.rest.models import GroupQuery
 from dinofw.rest.models import GroupUsers
 from dinofw.rest.models import Histories
-from dinofw.rest.models import Joiner
 from dinofw.rest.models import Message
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SearchQuery
@@ -236,48 +233,20 @@ async def delete_all_groups_for_user(user_id: int) -> Group:
     return await environ.env.rest.groups.delete_all_groups_for_user(user_id)
 
 
-@app.post("/v1/users/{user_id}/groups/{group_id}/joins", response_model=List[Joiner])
-async def get_group_join_requests(
-    user_id: int, group_id: str, query: GroupJoinerQuery
-) -> List[Joiner]:
+@app.put("/v1/groups/{group_id}/users/{user_id}/join")
+async def join_group(user_id: int, group_id: str, db: Session = Depends(get_db)) -> None:
     """
-    get a group's join requests sort by create time in decendent
+    join a group
     """
-    return await environ.env.rest.group.get_join_requests(group_id, query)
+    return await environ.env.rest.group.join_group(group_id, user_id, db)
 
 
-@app.put("/v1/users/{user_id}/groups/{group_id}/joins", response_model=Joiner)
-async def send_join_request_to_group(user_id: int, group_id: str, query: GroupJoinQuery) -> Joiner:
+@app.delete("/v1/groups/{group_id}/users/{user_id}/join")
+async def leave_group(user_id: int, group_id: str, db: Session = Depends(get_db)) -> None:
     """
-    send a group join request TODO: also send to dino client?
+    leave a group
     """
-    return await environ.env.rest.group.save_join_request(group_id, query)
-
-
-@app.get("/v1/users/{user_id}/groups/{group_id}/joins/{joiner_id}", response_model=Joiner)
-async def get_group_join_details(user_id: int, group_id: str, joiner_id: int) -> Joiner:
-    """
-    get join details
-    """
-    return await environ.env.rest.group.get_join_details(user_id, group_id, joiner_id)
-
-
-@app.put("/v1/users/{user_id}/groups/{group_id}/joins/{joiner_id}", response_model=Joiner)
-async def approve_or_deny_group_join_request(
-        user_id: int, group_id: str, joiner_id: int, query: JoinerUpdateQuery
-) -> Joiner:
-    """
-    approve or deny a user join request
-    """
-    return await environ.env.rest.group.update_join_request(group_id, joiner_id, query)
-
-
-@app.delete("/v1/users/{user_id}/groups/{group_id}/joins/{joiner_id}")
-async def delete_group_join_request(user_id: int, group_id: str, joiner_id: int) -> None:
-    """
-    approve or deny a user join request
-    """
-    return await environ.env.rest.group.delete_join_request(group_id, joiner_id)
+    return await environ.env.rest.group.leave_group(group_id, user_id, db)
 
 
 @app.get("/v1/groups/{group_id}/userstats/{user_id}", response_model=UserGroupStats)
@@ -310,4 +279,4 @@ async def get_user_statistics(user_id: int) -> UserStats:
     """
     TODO: get user statistic data
     """
-    return await environ.env.rest.user.get_stats(user_id)
+    return await environ.env.rest.user.get_user_stats(user_id)
