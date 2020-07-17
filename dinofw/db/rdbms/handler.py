@@ -103,35 +103,38 @@ class RelationalHandler:
         )
         db.commit()
 
-    def update_last_read_in_group_for_user(self, group_id: str, user_id: int, last_read_time: dt, db: Session) -> None:
+    def update_last_read_in_group_for_user(
+            self, group_id: str, user_ids: List[int], last_read_time: dt, db: Session
+    ) -> None:
         """
         TODO: should we update last read for sender? or sender also acks?
         """
-        user_stats = (
-            db.query(models.UserGroupStatsEntity)
-            .filter(models.UserGroupStatsEntity.user_id == user_id)
-            .filter(models.UserGroupStatsEntity.group_id == group_id)
-            .first()
-        )
-
         should_update_cached_user_ids_in_group = False
 
-        if user_stats is None:
-            should_update_cached_user_ids_in_group = True
-
-            user_stats = models.UserGroupStatsEntity(
-                group_id=group_id,
-                user_id=user_id,
-                last_read=last_read_time,
-                hide_before=last_read_time,
-                last_sent=last_read_time,
+        for user_id in user_ids:
+            user_stats = (
+                db.query(models.UserGroupStatsEntity)
+                .filter(models.UserGroupStatsEntity.user_id == user_id)
+                .filter(models.UserGroupStatsEntity.group_id == group_id)
+                .first()
             )
-        else:
-            user_stats.last_read = last_read_time
 
-        db.add(user_stats)
+            if user_stats is None:
+                should_update_cached_user_ids_in_group = True
+
+                user_stats = models.UserGroupStatsEntity(
+                    group_id=group_id,
+                    user_id=user_id,
+                    last_read=last_read_time,
+                    hide_before=last_read_time,
+                    last_sent=last_read_time,
+                )
+            else:
+                user_stats.last_read = last_read_time
+
+            db.add(user_stats)
+
         db.commit()
-        db.refresh(user_stats)
 
         if should_update_cached_user_ids_in_group:
             self.get_user_ids_in_group(group_id, db, skip_cache=True)
@@ -310,7 +313,7 @@ class RelationalHandler:
         if should_update_cached_user_ids_in_group:
             self.get_user_ids_in_group(group_id, db, skip_cache=True)
 
-    def create_group(self, user_id: int, query: CreateGroupQuery, db: Session) -> GroupBase:
+    def create_group(self, owner_id: int, query: CreateGroupQuery, db: Session) -> GroupBase:
         created_at = dt.utcnow()
         created_at = created_at.replace(tzinfo=pytz.UTC)
 
@@ -320,7 +323,7 @@ class RelationalHandler:
             group_type=query.group_type,
             last_message_time=created_at,
             created_at=created_at,
-            owner_id=user_id,
+            owner_id=owner_id,
             group_meta=query.group_meta,
             group_context=query.group_context,
             description=query.description,

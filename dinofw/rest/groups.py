@@ -98,17 +98,26 @@ class GroupResource(BaseResource):
 
     async def create_new_group(self, user_id: int, query: CreateGroupQuery, db: Session) -> Group:
         group = self.env.db.create_group(user_id, query, db)
+        user_ids = {user_id}
+
+        if query.users is not None and query.users:
+            user_ids.update(query.users)
 
         self.env.db.update_last_read_in_group_for_user(
-            user_id,
             group.group_id,
+            user_ids,
             group.created_at,
             db
         )
 
+        now = dt.utcnow()
+        now = now.replace(tzinfo=pytz.UTC)
+
+        self.env.storage.create_join_action_log(group.group_id, list(user_ids), now)
+
         return GroupResource.group_base_to_group(
             group,
-            users=[user_id],
+            users=list(user_ids),
             last_read=group.created_at
         )
 
@@ -134,19 +143,19 @@ class GroupResource(BaseResource):
         now = dt.utcnow()
         now = now.replace(tzinfo=pytz.UTC)
 
-        self.env.db.update_last_read_in_group_for_user(group_id, user_id, now, db)
-        action_log = self.env.storage.create_join_action_log(group_id, user_id, now)
+        self.env.db.update_last_read_in_group_for_user(group_id, [user_id], now, db)
+        action_log = self.env.storage.create_join_action_log(group_id, [user_id], now)
 
-        return GroupResource.action_log_base_to_action_log(action_log)
+        return GroupResource.action_log_base_to_action_log(action_log[0])
 
     async def leave_group(self, group_id: str, user_id: int, db: Session) -> ActionLog:
         now = dt.utcnow()
         now = now.replace(tzinfo=pytz.UTC)
 
-        self.env.db.remove_last_read_in_group_for_user(group_id, user_id, db)
-        action_log = self.env.storage.create_leave_action_log(group_id, user_id, now)
+        self.env.db.remove_last_read_in_group_for_user(group_id, [user_id], db)
+        action_log = self.env.storage.create_leave_action_log(group_id, [user_id], now)
 
-        return GroupResource.action_log_base_to_action_log(action_log)
+        return GroupResource.action_log_base_to_action_log(action_log[0])
 
     async def search(self, query: SearchQuery) -> List[Group]:
         return [self._group()]

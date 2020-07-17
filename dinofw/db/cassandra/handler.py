@@ -223,22 +223,29 @@ class CassandraHandler:
             callback=callback
         )
 
-    def create_join_action_log(self, group_id: str, user_id: int, action_time: dt) -> ActionLogBase:
-        return self._create_action_log(group_id, user_id, action_time, CassandraHandler.ACTION_TYPE_JOIN)
+    def create_join_action_log(self, group_id: str, user_ids: List[int], action_time: dt) -> List[ActionLogBase]:
+        return self._create_action_log(group_id, user_ids, action_time, CassandraHandler.ACTION_TYPE_JOIN)
 
-    def create_leave_action_log(self, group_id: str, user_id: int, action_time: dt) -> ActionLogBase:
-        return self._create_action_log(group_id, user_id, action_time, CassandraHandler.ACTION_TYPE_LEAVE)
+    def create_leave_action_log(self, group_id: str, user_ids: [int], action_time: dt) -> List[ActionLogBase]:
+        return self._create_action_log(group_id, user_ids, action_time, CassandraHandler.ACTION_TYPE_LEAVE)
 
-    def _create_action_log(self, group_id: str, user_id: int, action_time: dt, action_type: int) -> ActionLogBase:
-        log = ActionLogModel.create(
-            group_id=group_id,
-            user_id=user_id,
-            created_at=action_time,
-            action_type=action_type,
-            action_id=uuid()
-        )
+    def _create_action_log(
+            self, group_id: str, user_ids: List[int], action_time: dt, action_type: int
+    ) -> List[ActionLogBase]:
+        logs = list()
 
-        return CassandraHandler.action_log_base_from_entity(log)
+        for user_id in user_ids:
+            log = ActionLogModel.create(
+                group_id=group_id,
+                user_id=user_id,
+                created_at=action_time,
+                action_type=action_type,
+                action_id=uuid()
+            )
+
+            logs.append(CassandraHandler.action_log_base_from_entity(log))
+
+        return logs
 
     def delete_messages_in_group_for_user(self, group_id: str, user_id: int, query: MessageQuery) -> None:
         # TODO: copy messages to another table `messages_deleted` and then remove the rows for `messages`
@@ -373,6 +380,6 @@ class CassandraHandler:
             user_id=log.user_id,
             action_id=str(log.action_id),
             action_type=log.action_type,
-            admin_id=log.action_id,
+            admin_id=log.admin_id,
             message_id=str(log.message_id) if log.message_id is not None else None,
         )
