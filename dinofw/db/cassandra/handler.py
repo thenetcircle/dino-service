@@ -50,6 +50,8 @@ class CassandraHandler:
 
     def get_messages_in_group(self, group_id: str, query: MessageQuery) -> List[MessageBase]:
         until = MessageQuery.to_dt(query.until)
+
+        # TODO: get default hide_before from user stats in db/cache if not in query
         hide_before = MessageQuery.to_dt(query.hide_before, default=self.long_ago)
 
         # TODO: add message_type and status filter from MessageQuery

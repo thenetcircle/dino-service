@@ -4,11 +4,11 @@ from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
-from dinofw.db.cassandra.schemas import JoinerBase
+from dinofw.db.cassandra.schemas import JoinerBase, MessageBase, ActionLogBase
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import AbstractQuery, UpdateUserGroupStats
+from dinofw.rest.models import AbstractQuery, UpdateUserGroupStats, ActionLog
 from dinofw.rest.models import AdminUpdateGroupQuery
 from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import Group
@@ -54,6 +54,9 @@ class GroupResource(BaseResource):
     ) -> List[Histories]:
         action_log = self.env.storage.get_action_log_in_group(group_id, query)
         messages = self.env.storage.get_messages_in_group(group_id, query)
+
+        messages = [GroupResource.message_base_to_message(message) for message in messages]
+        action_log = [GroupResource.action_log_base_to_action_log(log) for log in action_log]
 
         histories = [
             Histories(messages=messages),
@@ -206,3 +209,21 @@ class GroupResource(BaseResource):
         stats_dict["hide_before"] = AbstractQuery.to_ts(stats_dict["hide_before"])
 
         return UserGroupStats(**stats_dict)
+
+    @staticmethod
+    def message_base_to_message(message: MessageBase) -> Message:
+        message_dict = message.dict()
+
+        message_dict["created_at"] = AbstractQuery.to_ts(message_dict["created_at"])
+        message_dict["updated_at"] = AbstractQuery.to_ts(message_dict["updated_at"])
+        message_dict["removed_at"] = AbstractQuery.to_ts(message_dict["removed_at"])
+
+        return Message(**message_dict)
+
+    @staticmethod
+    def action_log_base_to_action_log(action_log: ActionLogBase) -> ActionLog:
+        action_dict = action_log.dict()
+
+        action_dict["created_at"] = AbstractQuery.to_ts(action_dict["created_at"])
+
+        return ActionLog(**action_dict)

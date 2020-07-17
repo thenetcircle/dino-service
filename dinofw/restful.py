@@ -54,13 +54,11 @@ async def search_for_groups(query: SearchQuery) -> List[Group]:
 
 
 @app.post("/v1/groups/{group_id}/histories", response_model=List[Histories])
-async def get_group_history_for_user(
-    group_id: str, user_id: int, query: MessageQuery
-) -> List[Histories]:
+async def get_group_history_for_user(group_id: str, query: MessageQuery) -> List[Histories]:
     """
     get user visible history in a group sort by time in descendent, messages and action log.
     """
-    return await environ.env.rest.group.histories(group_id, user_id, query)
+    return await environ.env.rest.group.histories(group_id, query)
 
 
 @app.delete("/v1/groups/{group_id}/histories/{user_id}")
