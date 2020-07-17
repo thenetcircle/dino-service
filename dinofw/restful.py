@@ -61,17 +61,6 @@ async def get_group_history_for_user(group_id: str, query: MessageQuery) -> List
     return await environ.env.rest.group.histories(group_id, query)
 
 
-@app.delete("/v1/groups/{group_id}/histories/{user_id}")
-async def hide_group_history_for_user(group_id: str, user_id: int, query: MessageQuery):
-    """
-    TODO: user hide group history, which won't affect other user(s), only mark for this user
-    TODO: this might not be needed anymore, since we'll be using `hide_before` in the query
-    """
-    return await environ.env.rest.group.hide_histories_for_user(
-        group_id, user_id, query
-    )
-
-
 @app.post("/v1/groups/{group_id}/messages", response_model=List[Message])
 async def get_messages_in_group(group_id: str, query: MessageQuery) -> List[Message]:
     """
@@ -96,14 +85,14 @@ async def batch_delete_messages_in_group(group_id: str, query: MessageQuery):
     return await environ.env.rest.message.delete_messages(group_id, query)
 
 
-@app.post(
-    "/v1/groups/{group_id}/users/{user_id}/messages", response_model=List[Message]
-)
+@app.post("/v1/groups/{group_id}/users/{user_id}/messages", response_model=List[Message])
 async def get_messages_for_user_in_group(
     group_id: str, user_id: int, query: MessageQuery
 ) -> List[Message]:
     """
-    get user messages in a group
+    TODO: get user messages in a group
+    TODO: this is not easy to do in cassandra since created_at comes before user_id in the partition keys
+    TODO: see if we can iterate over all to find the user's messages
     """
     return await environ.env.rest.message.messages_for_user(group_id, user_id, query)
 
@@ -113,7 +102,9 @@ async def batch_update_messages_in_group_for_user(
     group_id: str, user_id: int, query: MessageQuery
 ) -> List[Message]:
     """
-    batch update user messages in a group (blocked, spammer, forcefakechecked)
+    TODO: batch update user messages in a group (blocked, spammer, forcefakechecked)
+    TODO: this is not easy to do in cassandra since created_at comes before user_id in the partition keys
+    TODO: see if we can iterate over all to find the user's messages then batch update
     """
     return await environ.env.rest.message.update_messages_for_user_in_group(
         group_id, user_id, query
@@ -127,7 +118,9 @@ async def batch_delete_messages_in_group_for_user(
     group_id: str, user_id: int, query: AdminQuery
 ) -> List[Message]:
     """
-    batch delete user messages in a group (gdpr)
+    TODO: batch delete user messages in a group (gdpr)
+    TODO: this is not easy to do in cassandra since created_at comes before user_id in the partition keys
+    TODO: see if we can iterate over all to find the user's messages then batch delete
     """
     return await environ.env.rest.message.delete_messages_for_user_in_group(
         group_id, user_id, query
@@ -144,10 +137,7 @@ async def send_message_to_group(
     return await environ.env.rest.message.save_new_message(group_id, user_id, query, db)
 
 
-@app.get(
-    "/v1/groups/{group_id}/users/{user_id}/messages/{message_id}",
-    response_model=Message,
-)
+@app.get("/v1/groups/{group_id}/users/{user_id}/messages/{message_id}", response_model=Message)
 async def get_message_details(group_id: str, user_id: int, message_id: str) -> Message:
     """
     get message details
@@ -155,29 +145,25 @@ async def get_message_details(group_id: str, user_id: int, message_id: str) -> M
     return await environ.env.rest.message.message_details(group_id, user_id, message_id)
 
 
-@app.put(
-    "/v1/groups/{group_id}/users/{user_id}/messages/{message_id}",
-    response_model=Message,
-)
+@app.put("/v1/groups/{group_id}/users/{user_id}/messages/{message_id}", response_model=Message)
 async def edit_a_message(
     group_id: str, user_id: int, message_id: str, query: EditMessageQuery
 ) -> Message:
     """
     edit a group message
     """
+    # TODO: handle no such message error
     return await environ.env.rest.message.edit_message(group_id, user_id, message_id, query)
 
 
-@app.delete(
-    "/v1/groups/{group_id}/users/{user_id}/messages/{message_id}",
-    response_model=Message,
-)
+@app.delete("/v1/groups/{group_id}/users/{user_id}/messages/{message_id}")
 async def delete_a_message(
     group_id: str, user_id: int, message_id: str, query: AdminQuery
-) -> Message:
+) -> None:
     """
     delete a message in group (hard delete)
     """
+    # TODO: handle no such message error
     return await environ.env.rest.message.delete_message(group_id, user_id, message_id, query)
 
 
@@ -186,6 +172,7 @@ async def get_users_in_group(group_id: str, db: Session = Depends(get_db)) -> Gr
     """
     get users in group
     """
+    # TODO: handle no such group error
     return await environ.env.rest.group.get_users_in_group(group_id, db)
 
 
@@ -221,16 +208,14 @@ async def create_a_new_group(user_id: int, query: CreateGroupQuery, db: Session 
     return await environ.env.rest.group.create_new_group(user_id, query, db)
 
 
-@app.put("/v1/users/{user_id}/groups/{group_id}", response_model=Group)
+@app.put("/v1/users/{user_id}/groups/{group_id}")
 async def update_group_information(
-    user_id: int, group_id: str, query: UpdateGroupQuery
+    user_id: int, group_id: str, query: UpdateGroupQuery, db: Session = Depends(get_db)
 ) -> Group:
     """
     update a group
     """
-    return await environ.env.rest.groups.update_group_information(
-        user_id, group_id, query
-    )
+    return await environ.env.rest.group.update_group_information(user_id, group_id, query, db)
 
 
 @app.delete("/v1/users/{user_id}/groups/{group_id}")

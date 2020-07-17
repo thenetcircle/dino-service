@@ -171,13 +171,13 @@ class Group(AbstractQuery):
     description: Optional[str]
     status: Optional[int]
     group_type: int
-    created_at: int
+    created_at: float
     updated_at: Optional[float]
     owner_id: int
     group_meta: Optional[int]
     group_context: Optional[str]
     last_message_overview: Optional[str]
-    last_message_user_id: Optional[int]
+    # last_message_user_id: Optional[int]
     last_message_time: float
 
 

@@ -24,12 +24,16 @@ class RelationalHandler:
         beginning_of_1995 = 789_000_000
         self.long_ago = dt.utcfromtimestamp(beginning_of_1995)
 
-    def get_users_in_group(self, group_id: str, db: Session) -> (GroupBase, List[int]):
+    def get_users_in_group(self, group_id: str, db: Session) -> (Optional[GroupBase], Optional[List[int]]):
         group_entity = (
             db.query(models.GroupEntity)
             .filter(models.GroupEntity.group_id == group_id)
             .first()
         )
+
+        if group_entity is None:
+            # TODO: handle
+            return None, None
 
         group = GroupBase(**group_entity.__dict__)
         user_ids = self.get_user_ids_in_group(group_id, db)
@@ -64,15 +68,15 @@ class RelationalHandler:
         groups = list()
 
         for group_entity, user_group_stats_entity in results:
-            group = GroupBase(**group_entity)
-            user_group_stats = UserGroupStatsBase(**user_group_stats_entity)
+            group = GroupBase(**group_entity.__dict__)
+            user_group_stats = UserGroupStatsBase(**user_group_stats_entity.__dict__)
             user_ids = self.get_user_ids_in_group(group_entity.group_id, db)
 
             groups.append((group, user_group_stats, user_ids))
 
         return groups
 
-    def update_group_new_message(self, message: MessageBase, db: Session) -> None:
+    def update_group_new_message(self, message: MessageBase, sent_time: dt, db: Session) -> None:
         group = (
             db.query(models.GroupEntity)
             .filter(models.GroupEntity.group_id == message.group_id)
@@ -83,7 +87,7 @@ class RelationalHandler:
             # TODO: return error message
             return None
 
-        group.last_message_time = message.created_at
+        group.last_message_time = sent_time
         group.last_message_overview = message.message_payload  # TODO: trim somehow, maybe has a schema
 
         db.add(group)
@@ -170,7 +174,7 @@ class RelationalHandler:
         db.commit()
         db.refresh(group_entity)
 
-        return GroupBase(**group_entity)
+        return GroupBase(**group_entity.__dict__)
 
     def get_user_stats_in_group(self, group_id: str, user_id: int, db: Session) -> Optional[UserGroupStatsBase]:
         user_stats = self.env.cache.get_user_stats_group(group_id, user_id)

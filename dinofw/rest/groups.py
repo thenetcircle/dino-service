@@ -31,8 +31,11 @@ class GroupResource(BaseResource):
     def __init__(self, env):
         self.env = env
 
-    async def get_users_in_group(self, group_id: str, db: Session) -> GroupUsers:
+    async def get_users_in_group(self, group_id: str, db: Session) -> Optional[GroupUsers]:
         group, user_ids = self.env.db.get_users_in_group(group_id, db)
+
+        if group is None:
+            return None
 
         return GroupUsers(
             group_id=group_id,
@@ -145,14 +148,14 @@ class GroupResource(BaseResource):
 
         return True
 
-    async def update_group_information(self, user_id: int, group_id: str, query: UpdateGroupQuery, db: Session) -> bool:
-        group_base = self.env.db.update_group_information(group_id, user_id, query, db)
+    async def update_group_information(self, user_id: int, group_id: str, query: UpdateGroupQuery, db: Session) -> None:
+        group_base = self.env.db.update_group_information(group_id, query, db)
 
         if group_base is None:
             # TODO: return an error response instead
-            return False
+            return None
 
-        return True
+        return None
 
     async def delete_join_request(self, group_id: str, joiner_id: int) -> None:
         self.env.storage.delete_join_request(group_id, joiner_id)
@@ -179,51 +182,3 @@ class GroupResource(BaseResource):
 
     async def delete_all_groups_for_user(self, user_id: int, group_id: str) -> None:
         pass
-
-    @staticmethod
-    def group_base_to_group(group: GroupBase, users: List[int], last_read: Optional[datetime]) -> Group:
-        group_dict = group.dict()
-
-        group_dict["updated_at"] = CreateGroupQuery.to_ts(group_dict["updated_at"])
-        group_dict["created_at"] = CreateGroupQuery.to_ts(group_dict["created_at"])
-        group_dict["last_message_time"] = CreateGroupQuery.to_ts(group_dict["last_message_time"])
-        group_dict["last_read"] = CreateGroupQuery.to_ts(last_read)
-        group_dict["users"] = users
-
-        return Group(**group_dict)
-
-    @staticmethod
-    def joiner_base_to_joiner(join: JoinerBase) -> Joiner:
-        join_dict = join.dict()
-
-        join_dict["created_at"] = GroupJoinerQuery.to_ts(join_dict["created_at"])
-
-        return Joiner(**join_dict)
-
-    @staticmethod
-    def user_group_stats_base_to_user_group_stats(user_stats: UserGroupStatsBase):
-        stats_dict = user_stats.dict()
-
-        stats_dict["last_read"] = AbstractQuery.to_ts(stats_dict["last_read"])
-        stats_dict["last_sent"] = AbstractQuery.to_ts(stats_dict["last_sent"])
-        stats_dict["hide_before"] = AbstractQuery.to_ts(stats_dict["hide_before"])
-
-        return UserGroupStats(**stats_dict)
-
-    @staticmethod
-    def message_base_to_message(message: MessageBase) -> Message:
-        message_dict = message.dict()
-
-        message_dict["created_at"] = AbstractQuery.to_ts(message_dict["created_at"])
-        message_dict["updated_at"] = AbstractQuery.to_ts(message_dict["updated_at"])
-        message_dict["removed_at"] = AbstractQuery.to_ts(message_dict["removed_at"])
-
-        return Message(**message_dict)
-
-    @staticmethod
-    def action_log_base_to_action_log(action_log: ActionLogBase) -> ActionLog:
-        action_dict = action_log.dict()
-
-        action_dict["created_at"] = AbstractQuery.to_ts(action_dict["created_at"])
-
-        return ActionLog(**action_dict)

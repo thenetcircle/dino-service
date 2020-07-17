@@ -180,7 +180,7 @@ class CassandraHandler:
             .count()
         )
 
-    def get_message(self, group_id: str, user_id: int, message_id: str) -> MessageBase:
+    def get_message(self, group_id: str, user_id: int, message_id: str) -> Optional[MessageBase]:
         # TODO: use `hide_before` here?
 
         message = (
@@ -193,9 +193,12 @@ class CassandraHandler:
             .first()
         )
 
+        if message is None:
+            return None
+
         return CassandraHandler.message_base_from_entity(message)
 
-    def delete_message(self, group_id: str, user_id: int, message_id: str, query: MessageQuery) -> None:
+    def delete_message(self, group_id: str, user_id: int, message_id: str, query: AdminQuery) -> None:
         message = (
             MessageModel.objects(
                 MessageModel.group_id == group_id,
@@ -214,13 +217,14 @@ class CassandraHandler:
         removed_at = removed_at.replace(tzinfo=pytz.UTC)
 
         message.update(
-            message_payload=None,
-            status=query.status or message.status,
+            message_payload="-",  # TODO: allow None values in cassanrda tbale
             removed_by_user=query.admin_id,
             removed_at=removed_at,
         )
 
-    def edit_message(self, group_id: str, user_id: int, message_id: str, query: EditMessageQuery) -> None:
+    def edit_message(
+            self, group_id: str, user_id: int, message_id: str, query: EditMessageQuery
+    ) -> Optional[MessageBase]:
         message = (
             MessageModel.objects(
                 MessageModel.group_id == group_id,
@@ -233,12 +237,14 @@ class CassandraHandler:
 
         if message is None:
             self.logger.warning(f"no message found for user {user_id}, group {group_id}, message {message_id}")
-            return
+            return None
 
         message.update(
             message_payload=query.message_payload or message.message_payload,
             status=query.status or message.status,
         )
+
+        return CassandraHandler.message_base_from_entity(message)
 
     def update_messages_in_group(self, group_id: str, query: MessageQuery) -> None:
         def callback(message: MessageModel) -> None:
@@ -279,6 +285,8 @@ class CassandraHandler:
         )
 
     def delete_messages_in_group_for_user(self, group_id: str, user_id: int, query: MessageQuery) -> None:
+        # TODO: copy messages to another table `messages_deleted` and then remove the rows for `messages`
+
         def callback(message: MessageModel):
             # TODO: is there a status they should use in the query for deletions?
             message.status = query.status
