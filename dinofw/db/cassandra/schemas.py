@@ -19,7 +19,7 @@ class MessageBase(BaseModel):
     last_action_log_id: Optional[str]
 
 
-class JoinerBase(MessageBase):
+class JoinerBase(BaseModel):
     group_id: str
     created_at: datetime
     inviter_id: int

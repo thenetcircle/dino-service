@@ -13,7 +13,7 @@ from dinofw.config import ConfigKeys
 from dinofw.db.cassandra.models import ActionLogModel
 from dinofw.db.cassandra.models import JoinerModel
 from dinofw.db.cassandra.models import MessageModel
-from dinofw.db.cassandra.schemas import JoinerBase
+from dinofw.db.cassandra.schemas import JoinerBase, ActionLogBase
 from dinofw.db.cassandra.schemas import MessageBase
 from dinofw.rest.models import GroupJoinQuery, EditMessageQuery, AdminQuery, JoinerUpdateQuery
 from dinofw.rest.models import GroupJoinerQuery
@@ -76,25 +76,36 @@ class CassandraHandler:
         until = MessageQuery.to_dt(query.until)
         hide_before = MessageQuery.to_dt(query.hide_before, default=self.long_ago)
 
-        raw_joins = (
+        joins = (
             JoinerModel.objects(
                 JoinerModel.group_id == group_id,
                 JoinerModel.status == query.status,
-                JoinerModel.created_at <= until.until,
+                JoinerModel.created_at <= until,
                 MessageModel.created_at > hide_before,
             )
             .limit(query.per_page or 100)
+            .allow_filtering()
             .all()
         )
 
-        joins = list()
+        return [CassandraHandler.joiner_base_from_entity(join) for join in joins]
 
-        for join in raw_joins:
-            joins.append(CassandraHandler.joiner_base_from_entity(join))
+    def save_group_join_request(self, group_id: str, query: GroupJoinQuery) -> JoinerBase:
+        created_at = dt.utcnow()
+        created_at = created_at.replace(tzinfo=pytz.UTC)
 
-        return joins
+        joiner = JoinerModel.create(
+            group_id=group_id,
+            inviter_id=query.inviter_id,
+            joiner_id=query.joiner_id,
+            created_at=created_at,
+            invitation_context=query.invitation_context,
+            status=0,  # TODO: need to specify in query? or not required?
+        )
 
-    def get_group_join_for_user(self, group_id: str, joiner_id: int) -> JoinerBase:
+        return CassandraHandler.joiner_base_from_entity(joiner)
+
+    def get_group_join_for_user(self, group_id: str, joiner_id: int) -> Optional[JoinerBase]:
         raw_join = (
             JoinerModel.objects(
                 JoinerModel.group_id == group_id,
@@ -102,6 +113,9 @@ class CassandraHandler:
             )
             .first()
         )
+
+        if raw_join is None:
+            return None
 
         return CassandraHandler.joiner_base_from_entity(raw_join)
 
@@ -306,21 +320,6 @@ class CassandraHandler:
             user_id=user_id,
         )
 
-    def save_group_join_request(self, group_id: str, query: GroupJoinQuery) -> JoinerBase:
-        created_at = dt.utcnow()
-        created_at = created_at.replace(tzinfo=pytz.UTC)
-
-        joiner = JoinerModel.create(
-            group_id=group_id,
-            inviter_id=query.inviter_id,
-            joiner_id=query.joiner_id,
-            created_at=created_at,
-            invitation_context=query.invitation_context,
-            status=0,  # TODO: need to specify in query? or not required?
-        )
-
-        return joiner
-
     def store_message(self, group_id: str, user_id: int, query: SendMessageQuery):
         created_at = dt.utcnow()
         created_at = created_at.replace(tzinfo=pytz.UTC)
@@ -341,7 +340,7 @@ class CassandraHandler:
         until = MessageQuery.to_dt(query.until)
         hide_before = MessageQuery.to_dt(query.hide_before, default=self.long_ago)
 
-        return (
+        action_logs = (
             ActionLogModel.objects(
                 ActionLogModel.group_id == group_id,
                 ActionLogModel.created_at <= until,
@@ -351,11 +350,13 @@ class CassandraHandler:
             .all()
         )
 
+        return [CassandraHandler.action_log_base_from_entity(log) for log in action_logs]
+
     def get_joiners_in_group(self, group_id: str, query: GroupJoinerQuery):
         until = GroupJoinerQuery.to_dt(query.until)
         hide_before = MessageQuery.to_dt(query.hide_before, default=self.long_ago)
 
-        return (
+        joiners = (
             ActionLogModel.objects(
                 JoinerModel.group_id == group_id,
                 JoinerModel.created_at <= until,
@@ -365,6 +366,8 @@ class CassandraHandler:
             .limit(query.per_page or 100)
             .all()
         )
+
+        return [CassandraHandler.joiner_base_from_entity(join) for join in joiners]
 
     def _update_all_messages_in_group(self, group_id: str, callback: callable, user_id: int = None):
         until = dt.utcnow()
@@ -446,4 +449,16 @@ class CassandraHandler:
             joiner_id=join.joiner_id,
             status=join.status,
             invitation_context=join.invitation_context,
+        )
+
+    @staticmethod
+    def action_log_base_from_entity(log: ActionLogModel) -> ActionLogBase:
+        return ActionLogBase(
+            group_id=log.group_id,
+            created_at=log.created_at,
+            user_id=log.user_id,
+            action_id=log.action_id,
+            action_type=log.action_type,
+            admin_id=log.action_id,
+            message_ii=log.message_id,
         )

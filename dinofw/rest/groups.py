@@ -121,7 +121,7 @@ class GroupResource(BaseResource):
     async def get_join_requests(
         self, group_id: str, query: GroupJoinerQuery
     ) -> List[Joiner]:
-        joins = self.env.storage.get_group_joins_for_status(group_id, query.status)
+        joins = self.env.storage.get_group_joins_for_status(group_id, query)
 
         return [GroupResource.joiner_base_to_joiner(join) for join in joins]
 
@@ -134,8 +134,12 @@ class GroupResource(BaseResource):
 
     async def get_join_details(
         self, user_id: int, group_id: str, joiner_id: int
-    ) -> Joiner:
+    ) -> Optional[Joiner]:
         join = self.env.storage.get_group_join_for_user(group_id, joiner_id)
+
+        if join is None:
+            # TODO: handle
+            return None
 
         return GroupResource.joiner_base_to_joiner(join)
 

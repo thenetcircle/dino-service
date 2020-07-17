@@ -48,20 +48,18 @@ class JoinerModel(Model):
         primary_key=True,
         partition_key=True,
     )
-    created_at = DateTime(
-        required=True,
-        primary_key=True,
-        clustering_order="DESC",
-    )
-    inviter_id = Integer(
-        required=True,
-        primary_key=True,
-    )
     joiner_id = Integer(
         required=True,
-        primary_key=True,
+        index=True,
     )
     status = Integer(
+        required=True,
+        index=True,
+    )
+    created_at = DateTime(
+        required=True
+    )
+    inviter_id = Integer(
         required=True
     )
     invitation_context = Text()
