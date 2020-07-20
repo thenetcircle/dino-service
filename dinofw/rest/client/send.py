@@ -22,12 +22,12 @@ class SendResource(BaseClientResource):
     def async_post(self, json):
         self.logger.debug(f"POST request: {str(json)}")
 
-        if "content" not in json:
-            raise RuntimeError("no key [content] in json message")
+        if "payload" not in json:
+            raise RuntimeError("no key [payload] in json message")
 
-        msg_content = json.get("content")
+        msg_content = json.get("payload")
         if msg_content is None or len(msg_content.strip()) == 0:
-            raise RuntimeError("content may not be blank")
+            raise RuntimeError("payload may not be blank")
 
         target_ids = json.get("users")
         group_id = json.get("group_id")
@@ -55,7 +55,7 @@ class SendResource(BaseClientResource):
                 environ.env.out_of_scope_emit(
                     "message",
                     data,
-                    room=target_id,
+                    room=str(target_id),
                     json=True,
                     namespace="/",
                     broadcast=True,

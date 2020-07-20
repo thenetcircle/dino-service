@@ -26,6 +26,8 @@ class MessageResource(BaseResource):
         self.env.db.update_group_new_message(message, now, db)
         self.env.db.update_last_read_and_sent_in_group_for_user(user_id, group_id, now, db)
 
+        # TODO: call dino client rest api /send to broadcast to WS clients
+
         return MessageResource.message_base_to_message(message)
 
     async def messages_in_group(self, group_id: str, query: MessageQuery) -> List[Message]:
