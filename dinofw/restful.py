@@ -264,13 +264,13 @@ async def get_user_statistics_in_group(
     return await environ.env.rest.group.get_user_group_stats(group_id, user_id, db)
 
 
-@app.put("/v1/groups/{group_id}/userstats/{user_id}", response_model=UserGroupStats)
+@app.put("/v1/groups/{group_id}/userstats/{user_id}")
 async def update_user_statistics_in_group(
         group_id: str,
         user_id: int,
         query: UpdateUserGroupStats,
         db: Session = Depends(get_db)
-) -> UserGroupStats:
+) -> None:
     """
     update user statistic in group
     """

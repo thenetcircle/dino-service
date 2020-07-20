@@ -100,10 +100,14 @@ class GroupResource(BaseResource):
             hide_before=hide_before,
         )
 
-    async def update_user_group_stats(self, group_id: str, user_id: int, query: UpdateUserGroupStats, db: Session):
-        user_stats_base = self.env.db.update_user_group_stats(group_id, user_id, query, db)
-
-        return GroupResource.user_group_stats_base_to_user_group_stats(user_stats_base)
+    async def update_user_group_stats(
+            self,
+            group_id: str,
+            user_id: int,
+            query: UpdateUserGroupStats,
+            db: Session
+    ) -> None:
+        self.env.db.update_user_group_stats(group_id, user_id, query, db)
 
     async def create_new_group(self, user_id: int, query: CreateGroupQuery, db: Session) -> Group:
         group = self.env.db.create_group(user_id, query, db)
