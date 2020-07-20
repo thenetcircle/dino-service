@@ -177,9 +177,9 @@ def init_cache_service(gn_env: GNEnvironment):
 
 
 def init_flask(gn_env: GNEnvironment):
-    gn_env.out_of_scope_emit = (
-        None  # needs to be set later after socketio object has been created
-    )
+    # needs to be set later after socketio object has been created
+    gn_env.out_of_scope_emit = None
+
     gn_env.emit = _flask_emit
     gn_env.send = _flask_send
     gn_env.join_room = _flask_join_room

@@ -155,8 +155,10 @@ class GroupResource(BaseResource):
         now = dt.utcnow()
         now = now.replace(tzinfo=pytz.UTC)
 
-        self.env.db.update_last_read_in_group_for_user(group_id, [user_id], now, db)
-        action_log = self.env.storage.create_join_action_log(group_id, [user_id], now)
+        user_id_and_last_read = {user_id: now}
+
+        self.env.db.update_last_read_in_group_for_user(group_id, user_id_and_last_read, now, db)
+        action_log = self.env.storage.create_join_action_log(group_id, user_id_and_last_read, now)
 
         return GroupResource.action_log_base_to_action_log(action_log[0])
 
