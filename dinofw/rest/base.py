@@ -1,5 +1,5 @@
 from abc import ABC
-from datetime import datetime
+from datetime import datetime as dt
 from typing import Optional, List
 
 from dinofw.db.cassandra.schemas import MessageBase, ActionLogBase
@@ -8,6 +8,13 @@ from dinofw.rest.models import Group, Message, AbstractQuery, UserGroupStats, Ac
 
 
 class BaseResource(ABC):
+    def __init__(self, env):
+        self.env = env
+
+        # used when no `hide_before` is specified in a query
+        beginning_of_1995 = 789_000_000
+        self.long_ago = dt.utcfromtimestamp(beginning_of_1995)
+
     @staticmethod
     def message_base_to_message(message: MessageBase) -> Message:
         message_dict = message.dict()
@@ -19,7 +26,7 @@ class BaseResource(ABC):
         return Message(**message_dict)
 
     @staticmethod
-    def group_base_to_group(group: GroupBase, users: List[int], last_read: Optional[datetime]) -> Group:
+    def group_base_to_group(group: GroupBase, users: List[int], last_read: Optional[dt]) -> Group:
         group_dict = group.dict()
 
         group_dict["updated_at"] = AbstractQuery.to_ts(group_dict["updated_at"], allow_none=True)

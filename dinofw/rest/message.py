@@ -17,9 +17,6 @@ logger = logging.getLogger(__name__)
 
 
 class MessageResource(BaseResource):
-    def __init__(self, env):
-        self.env = env
-
     async def save_new_message(self, group_id: str, user_id: int, query: SendMessageQuery, db: Session) -> Message:
         message = self.env.storage.store_message(group_id, user_id, query)
 

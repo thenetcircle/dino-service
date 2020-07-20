@@ -12,7 +12,6 @@ from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import Group
 from dinofw.rest.models import GroupUsers
 from dinofw.rest.models import Histories
-from dinofw.rest.models import Message
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SearchQuery
 from dinofw.rest.models import UpdateGroupQuery
@@ -22,9 +21,6 @@ logger = logging.getLogger(__name__)
 
 
 class GroupResource(BaseResource):
-    def __init__(self, env):
-        self.env = env
-
     async def get_users_in_group(self, group_id: str, db: Session) -> Optional[GroupUsers]:
         group, user_ids = self.env.db.get_users_in_group(group_id, db)
 
@@ -61,9 +57,6 @@ class GroupResource(BaseResource):
         ]
 
         return histories
-
-    async def message(self, group_id: str, user_id: int, message_id: str) -> Message:
-        return self._message(group_id, user_id, message_id)
 
     async def get_user_group_stats(self, group_id: str, user_id: int, db: Session) -> UserGroupStats:
         user_stats = self.env.db.get_user_stats_in_group(group_id, user_id, db)
