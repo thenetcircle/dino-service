@@ -26,7 +26,12 @@ class BaseResource(ABC):
         return Message(**message_dict)
 
     @staticmethod
-    def group_base_to_group(group: GroupBase, users: Dict[int, float], last_read: Optional[dt]) -> Group:
+    def group_base_to_group(
+            group: GroupBase,
+            users: Dict[int, float],
+            last_read: Optional[dt],
+            user_count: int
+    ) -> Group:
         group_dict = group.dict()
 
         users = [
@@ -43,6 +48,7 @@ class BaseResource(ABC):
         group_dict["last_message_time"] = AbstractQuery.to_ts(group_dict["last_message_time"])
         group_dict["last_read"] = AbstractQuery.to_ts(last_read)
         group_dict["users"] = users
+        group_dict["user_count"] = user_count
 
         return Group(**group_dict)
 

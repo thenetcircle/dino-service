@@ -24,7 +24,12 @@ class RelationalHandler:
         beginning_of_1995 = 789_000_000
         self.long_ago = dt.utcfromtimestamp(beginning_of_1995)
 
-    def get_users_in_group(self, group_id: str, db: Session) -> (Optional[GroupBase], Optional[Dict[int, float]]):
+    def get_users_in_group(
+            self,
+            group_id: str,
+            query: GroupQuery,
+            db: Session
+    ) -> (Optional[GroupBase], Optional[Dict[int, float]], Optional[int]):
         group_entity = (
             db.query(models.GroupEntity)
             .filter(models.GroupEntity.group_id == group_id)
@@ -33,12 +38,13 @@ class RelationalHandler:
 
         if group_entity is None:
             # TODO: handle
-            return None, None
+            return None, None, None
 
         group = GroupBase(**group_entity.__dict__)
-        users = self.get_user_ids_and_join_times_in_group(group_id, db)
+        users = self.get_user_ids_and_join_times_in_group(group_id, query, db)
+        user_count = self.count_users_in_group(group_id, db)
 
-        return group, users
+        return group, users, user_count
 
     def get_groups_for_user(
             self,
@@ -342,9 +348,24 @@ class RelationalHandler:
 
         return GroupBase(**group_entity.__dict__)
 
+    def count_users_in_group(self, group_id: str, db: Session) -> int:
+        user_count = self.env.cache.get_user_count_in_group(group_id)
+        if user_count is not None:
+            return user_count
+
+        user_count = (
+            db.query(models.UserGroupStatsEntity)
+            .filter(models.UserGroupStatsEntity.group_id == group_id)
+            .distinct()
+            .count()
+        )
+
+        return user_count
+
     def get_user_ids_and_join_times_in_group(
             self,
             group_id: str,
+            query: GroupQuery,
             db: Session,
             skip_cache: bool = False
     ) -> Dict[int, float]:
@@ -359,6 +380,8 @@ class RelationalHandler:
                 db.query(models.UserGroupStatsEntity)
                 .filter(models.UserGroupStatsEntity.group_id == group_id)
                 .distinct()
+                .order_by(models.UserGroupStatsEntity.join_time.desc())
+                .limit(query.per_page or 50)
                 .all()
             )
             users = {user.user_id: GroupQuery.to_ts(user.join_time) for user in users}

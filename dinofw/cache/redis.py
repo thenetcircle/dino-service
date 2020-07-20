@@ -14,6 +14,8 @@ from dinofw.db.rdbms.schemas import UserGroupStatsBase
 
 logger = logging.getLogger(__name__)
 
+FIVE_MINUTES = 60 * 5
+
 
 class MemoryCache:
     def __init__(self):
@@ -72,6 +74,15 @@ class CacheRedis(ICache):
             self.listen_port = args[bind_arg_pos + 1].split(":")[1]
 
         self.listen_host = socket.gethostname().split(".")[0]
+
+    def get_user_count_in_group(self, group_id: str) -> Optional[int]:
+        key = RedisKeys.user_in_group(group_id)
+        n_users = self.redis.scard(key)
+
+        if n_users is None:
+            return None
+
+        return n_users
 
     def get_user_ids_and_join_time_in_group(self, group_id: str):
         users = self.redis.smembers(RedisKeys.user_in_group(group_id))

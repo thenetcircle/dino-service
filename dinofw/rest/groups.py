@@ -6,7 +6,7 @@ import pytz
 from sqlalchemy.orm import Session
 
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import AbstractQuery, UpdateUserGroupStats, ActionLog, GroupJoinTime
+from dinofw.rest.models import AbstractQuery, UpdateUserGroupStats, ActionLog, GroupJoinTime, GroupQuery
 from dinofw.rest.models import AdminUpdateGroupQuery
 from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import Group
@@ -22,7 +22,10 @@ logger = logging.getLogger(__name__)
 
 class GroupResource(BaseResource):
     async def get_users_in_group(self, group_id: str, db: Session) -> Optional[GroupUsers]:
-        group, users = self.env.db.get_users_in_group(group_id, db)
+        # limit list of users/join times to first 50
+        query = GroupQuery(per_page=50)
+
+        group, first_users, n_users = self.env.db.get_users_in_group(group_id, query, db)
 
         if group is None:
             return None
@@ -32,23 +35,27 @@ class GroupResource(BaseResource):
                 user_id=user_id,
                 join_time=join_time,
             )
-            for user_id, join_time in users.items()
+            for user_id, join_time in first_users.items()
         ]
-        users.sort(key=lambda user: user.join_time, reverse=True)
 
         return GroupUsers(
             group_id=group_id,
             owner_id=group.owner_id,
-            users=users
+            user_count=n_users,
+            users=users,
         )
 
     async def get_group(self, group_id: str, db: Session) -> Group:
-        group, users = self.env.db.get_users_in_group(group_id, db)
+        # limit list of users/join times to first 50
+        query = GroupQuery(per_page=50)
+
+        group, first_users, n_users = self.env.db.get_users_in_group(group_id, query, db)
 
         return GroupResource.group_base_to_group(
             group,
-            users=users,
-            last_read=None
+            users=first_users,
+            last_read=None,
+            user_count=n_users,
         )
 
     async def histories(
@@ -122,7 +129,8 @@ class GroupResource(BaseResource):
         return GroupResource.group_base_to_group(
             group,
             users=users,
-            last_read=group.created_at
+            last_read=group.created_at,
+            user_count=len(users),
         )
 
     async def admin_update_group_information(self, group_id, query: AdminUpdateGroupQuery, db: Session) -> bool:

@@ -114,6 +114,7 @@ class GroupJoinTime(AbstractQuery):
 class GroupUsers(AbstractQuery):
     group_id: str
     owner_id: int
+    user_count: int
     users: List[GroupJoinTime]
 
 
@@ -156,6 +157,7 @@ class ActionLog(AbstractQuery):
 class Group(AbstractQuery):
     group_id: str
     users: List[GroupJoinTime]
+    user_count: int
     last_read: float
     name: str
     description: Optional[str]
