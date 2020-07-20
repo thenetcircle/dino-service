@@ -6,7 +6,10 @@ from fastapi import FastAPI
 from sqlalchemy.orm import Session
 
 from dinofw import environ
-from dinofw.rest.models import AdminQuery, AdminUpdateGroupQuery, UpdateUserGroupStats, ActionLog
+from dinofw.rest.models import AdminQuery
+from dinofw.rest.models import AdminUpdateGroupQuery
+from dinofw.rest.models import UpdateUserGroupStats
+from dinofw.rest.models import ActionLog
 from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import EditMessageQuery
 from dinofw.rest.models import Group

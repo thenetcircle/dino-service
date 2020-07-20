@@ -1,5 +1,5 @@
 from datetime import datetime as dt
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Set, Dict
 from uuid import uuid4 as uuid
 
 import pytz
@@ -24,7 +24,7 @@ class RelationalHandler:
         beginning_of_1995 = 789_000_000
         self.long_ago = dt.utcfromtimestamp(beginning_of_1995)
 
-    def get_users_in_group(self, group_id: str, db: Session) -> (Optional[GroupBase], Optional[List[int]]):
+    def get_users_in_group(self, group_id: str, db: Session) -> (Optional[GroupBase], Optional[Dict[int, float]]):
         group_entity = (
             db.query(models.GroupEntity)
             .filter(models.GroupEntity.group_id == group_id)
@@ -36,9 +36,9 @@ class RelationalHandler:
             return None, None
 
         group = GroupBase(**group_entity.__dict__)
-        user_ids = self.get_user_ids_in_group(group_id, db)
+        users = self.get_user_ids_and_join_times_in_group(group_id, db)
 
-        return group, user_ids
+        return group, users
 
     def get_groups_for_user(
             self,
@@ -70,9 +70,9 @@ class RelationalHandler:
         for group_entity, user_group_stats_entity in results:
             group = GroupBase(**group_entity.__dict__)
             user_group_stats = UserGroupStatsBase(**user_group_stats_entity.__dict__)
-            user_ids = self.get_user_ids_in_group(group_entity.group_id, db)
+            users = self.get_user_ids_and_join_times_in_group(group_entity.group_id, db)
 
-            groups.append((group, user_group_stats, user_ids))
+            groups.append((group, user_group_stats, users))
 
         return groups
 
@@ -128,6 +128,7 @@ class RelationalHandler:
                     last_read=last_read_time,
                     hide_before=last_read_time,
                     last_sent=last_read_time,
+                    join_time=last_read_time,
                 )
             else:
                 user_stats.last_read = last_read_time
@@ -137,7 +138,7 @@ class RelationalHandler:
         db.commit()
 
         if should_update_cached_user_ids_in_group:
-            self.get_user_ids_in_group(group_id, db, skip_cache=True)
+            self.get_user_ids_and_join_times_in_group(group_id, db, skip_cache=True)
 
     def admin_update_group_information(
             self,
@@ -249,6 +250,7 @@ class RelationalHandler:
                 last_read=last_read,
                 last_sent=self.long_ago,
                 hide_before=hide_before,
+                join_time=last_read,
             )
 
         else:
@@ -267,7 +269,7 @@ class RelationalHandler:
 
         # update the cached user ids for this group (might have a new one)
         if should_update_cached_user_ids_in_group:
-            self.get_user_ids_in_group(group_id, db, skip_cache=True)
+            self.get_user_ids_and_join_times_in_group(group_id, db, skip_cache=True)
 
         return base
 
@@ -296,6 +298,7 @@ class RelationalHandler:
                 last_read=created_at,
                 last_sent=created_at,
                 hide_before=self.long_ago,
+                join_time=created_at,
             )
 
         else:
@@ -311,7 +314,7 @@ class RelationalHandler:
 
         # update the cached user ids for this group (might have a new one)
         if should_update_cached_user_ids_in_group:
-            self.get_user_ids_in_group(group_id, db, skip_cache=True)
+            self.get_user_ids_and_join_times_in_group(group_id, db, skip_cache=True)
 
     def create_group(self, owner_id: int, query: CreateGroupQuery, db: Session) -> GroupBase:
         created_at = dt.utcnow()
@@ -335,22 +338,26 @@ class RelationalHandler:
 
         return GroupBase(**group_entity.__dict__)
 
-    def get_user_ids_in_group(self, group_id: str, db: Session, skip_cache: bool = False) -> List[int]:
+    def get_user_ids_and_join_times_in_group(
+            self,
+            group_id: str,
+            db: Session,
+            skip_cache: bool = False
+    ) -> Dict[int, float]:
         # users in a group shouldn't change that often
         if skip_cache:
-            user_ids = None
+            users = None
         else:
-            user_ids = self.env.cache.get_user_ids_in_group(group_id)
+            users = self.env.cache.get_user_ids_and_join_time_in_group(group_id)
 
-        if user_ids is None or len(user_ids) == 0:
-            user_ids = (
-                db.query(models.UserGroupStatsEntity.user_id)
+        if users is None or len(users) == 0:
+            users = (
+                db.query(models.UserGroupStatsEntity)
                 .filter(models.UserGroupStatsEntity.group_id == group_id)
                 .distinct()
                 .all()
             )
-            user_ids = {user_id[0] for user_id in user_ids}
+            users = {user.user_id: GroupQuery.to_ts(user.join_time) for user in users}
+            self.env.cache.set_user_ids_and_join_time_in_group(group_id, users)
 
-            self.env.cache.set_user_ids_in_group(group_id, user_ids)
-
-        return user_ids
+        return users

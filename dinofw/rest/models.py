@@ -106,11 +106,15 @@ class Message(AbstractQuery):
     last_action_log_id: Optional[str]
 
 
+class GroupJoinTime(AbstractQuery):
+    user_id: int
+    join_time: float
+
+
 class GroupUsers(AbstractQuery):
-    # TODO: should sort user ids by join datetime
     group_id: str
     owner_id: int
-    users: List[int]
+    users: List[GroupJoinTime]
 
 
 class UserStats(AbstractQuery):

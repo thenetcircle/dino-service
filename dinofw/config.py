@@ -71,7 +71,7 @@ class RedisKeys:
         return RedisKeys.RKEY_LAST_SEND_TIME.format(group_id)
 
     @staticmethod
-    def user_ids_in_group(group_id: str) -> str:
+    def user_in_group(group_id: str) -> str:
         return RedisKeys.RKEY_USERS_IN_GROUP.format(group_id)
 
     @staticmethod

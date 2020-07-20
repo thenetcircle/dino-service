@@ -41,3 +41,4 @@ class UserGroupStatsEntity(env.Base):
     last_read = Column(DATETIME(fsp=3), nullable=False)
     last_sent = Column(DATETIME(fsp=3), nullable=False)
     hide_before = Column(DATETIME(fsp=3), nullable=False)
+    join_time = Column(DATETIME(fsp=3), nullable=False)

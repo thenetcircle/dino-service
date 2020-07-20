@@ -1,7 +1,7 @@
 import sys
 import logging
 import socket
-from typing import List, Optional
+from typing import List, Optional, Set, Dict
 
 import redis
 
@@ -73,13 +73,25 @@ class CacheRedis(ICache):
 
         self.listen_host = socket.gethostname().split(".")[0]
 
-    def get_user_ids_in_group(self, group_id: str):
-        return self.redis.smembers(RedisKeys.user_ids_in_group(group_id))
+    def get_user_ids_and_join_time_in_group(self, group_id: str):
+        users = self.redis.smembers(RedisKeys.user_in_group(group_id))
+        users = [str(user, "utf-8").split("|") for user in users]
 
-    def set_user_ids_in_group(self, group_id: str, user_ids: List[int]):
-        key = RedisKeys.user_ids_in_group(group_id)
+        return {
+            int(user_id): float(join_time)
+            for user_id, join_time in users
+        }
+
+    def set_user_ids_and_join_time_in_group(self, group_id: str, users: Dict[int, float]):
+        key = RedisKeys.user_in_group(group_id)
         self.redis.delete(key)
-        return self.redis.sadd(key, *user_ids)
+
+        values = [
+            "|".join([str(user_id), str(join_time)])
+            for user_id, join_time in users.items()
+        ]
+
+        return self.redis.sadd(key, *values)
 
     def get_user_stats_group(self, group_id: str, user_id: int) -> Optional[UserGroupStatsBase]:
         """

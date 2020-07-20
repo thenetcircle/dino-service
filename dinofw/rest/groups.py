@@ -6,7 +6,7 @@ import pytz
 from sqlalchemy.orm import Session
 
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import AbstractQuery, UpdateUserGroupStats, ActionLog
+from dinofw.rest.models import AbstractQuery, UpdateUserGroupStats, ActionLog, GroupJoinTime
 from dinofw.rest.models import AdminUpdateGroupQuery
 from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import Group
@@ -22,15 +22,23 @@ logger = logging.getLogger(__name__)
 
 class GroupResource(BaseResource):
     async def get_users_in_group(self, group_id: str, db: Session) -> Optional[GroupUsers]:
-        group, user_ids = self.env.db.get_users_in_group(group_id, db)
+        group, users = self.env.db.get_users_in_group(group_id, db)
 
         if group is None:
             return None
 
+        users = [
+            GroupJoinTime(
+                user_id=user_id,
+                join_time=join_time,
+            )
+            for user_id, join_time in users.items()
+        ]
+
         return GroupUsers(
             group_id=group_id,
             owner_id=group.owner_id,
-            users=user_ids
+            users=users
         )
 
     async def get_group(self, group_id: str, db: Session):
