@@ -1,15 +1,13 @@
 import logging
-from datetime import datetime
-from typing import List, Tuple, Dict, Any
+from typing import List, Tuple, Any
 
-import pytz
 from sqlalchemy.orm import Session
 
 from dinofw.db.rdbms.schemas import GroupBase, UserGroupStatsBase
-from dinofw.rest.base import BaseResource
-from dinofw.rest.models import Group, GroupJoinTime
-from dinofw.rest.models import GroupQuery
-from dinofw.rest.models import UserStats
+from dinofw.rest.server.base import BaseResource
+from dinofw.rest.server.models import Group, GroupJoinTime
+from dinofw.rest.server.models import GroupQuery
+from dinofw.rest.server.models import UserStats
 
 logger = logging.getLogger(__name__)
 

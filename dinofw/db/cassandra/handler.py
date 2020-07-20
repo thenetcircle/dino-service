@@ -14,10 +14,10 @@ from dinofw.db.cassandra.models import ActionLogModel
 from dinofw.db.cassandra.models import MessageModel
 from dinofw.db.cassandra.schemas import ActionLogBase
 from dinofw.db.cassandra.schemas import MessageBase
-from dinofw.rest.models import EditMessageQuery
-from dinofw.rest.models import AdminQuery
-from dinofw.rest.models import MessageQuery
-from dinofw.rest.models import SendMessageQuery
+from dinofw.rest.server.models import EditMessageQuery
+from dinofw.rest.server.models import AdminQuery
+from dinofw.rest.server.models import MessageQuery
+from dinofw.rest.server.models import SendMessageQuery
 
 import logging
 

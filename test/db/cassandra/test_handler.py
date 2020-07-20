@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from dinofw.rest.models import HistoryQuery, MessageQuery
+from dinofw.rest.server.models import MessageQuery
 from dinofw.db.cassandra.handler import CassandraHandler
 
 

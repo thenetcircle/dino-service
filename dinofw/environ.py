@@ -9,13 +9,10 @@ from flask_socketio import emit as _flask_emit
 from flask_socketio import send as _flask_send
 from flask_socketio import join_room as _flask_join_room
 from flask_socketio import leave_room as _flask_leave_room
-from flask import redirect as _flask_redirect
-from flask import url_for as _flask_url_for
 from flask import request as _flask_request
 from flask import send_from_directory as _flask_send_from_directory
 from flask import render_template as _flask_render_template
 from flask import session as _flask_session
-from flask_socketio import disconnect as _flask_disconnect
 
 logger = logging.getLogger(__name__)
 
@@ -321,9 +318,9 @@ def init_observer(gn_env: GNEnvironment) -> None:
 
 
 def init_rest(gn_env: GNEnvironment) -> None:
-    from dinofw.rest.groups import GroupResource
-    from dinofw.rest.users import UserResource
-    from dinofw.rest.message import MessageResource
+    from dinofw.rest.server.groups import GroupResource
+    from dinofw.rest.server.users import UserResource
+    from dinofw.rest.server.message import MessageResource
 
     class RestResources:
         group: GroupResource

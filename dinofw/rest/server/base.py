@@ -1,10 +1,10 @@
 from abc import ABC
 from datetime import datetime as dt
-from typing import Optional, List, Dict
+from typing import Optional, Dict
 
 from dinofw.db.cassandra.schemas import MessageBase, ActionLogBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase, GroupBase
-from dinofw.rest.models import Group, Message, AbstractQuery, UserGroupStats, ActionLog, GroupJoinTime
+from dinofw.rest.server.models import Group, Message, AbstractQuery, UserGroupStats, ActionLog, GroupJoinTime
 
 
 class BaseResource(ABC):

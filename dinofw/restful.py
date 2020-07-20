@@ -6,23 +6,23 @@ from fastapi import FastAPI
 from sqlalchemy.orm import Session
 
 from dinofw import environ
-from dinofw.rest.models import AdminQuery
-from dinofw.rest.models import AdminUpdateGroupQuery
-from dinofw.rest.models import UpdateUserGroupStats
-from dinofw.rest.models import ActionLog
-from dinofw.rest.models import CreateGroupQuery
-from dinofw.rest.models import EditMessageQuery
-from dinofw.rest.models import Group
-from dinofw.rest.models import GroupQuery
-from dinofw.rest.models import GroupUsers
-from dinofw.rest.models import Histories
-from dinofw.rest.models import Message
-from dinofw.rest.models import MessageQuery
-from dinofw.rest.models import SearchQuery
-from dinofw.rest.models import SendMessageQuery
-from dinofw.rest.models import UpdateGroupQuery
-from dinofw.rest.models import UserGroupStats
-from dinofw.rest.models import UserStats
+from dinofw.rest.server.models import AdminQuery
+from dinofw.rest.server.models import AdminUpdateGroupQuery
+from dinofw.rest.server.models import UpdateUserGroupStats
+from dinofw.rest.server.models import ActionLog
+from dinofw.rest.server.models import CreateGroupQuery
+from dinofw.rest.server.models import EditMessageQuery
+from dinofw.rest.server.models import Group
+from dinofw.rest.server.models import GroupQuery
+from dinofw.rest.server.models import GroupUsers
+from dinofw.rest.server.models import Histories
+from dinofw.rest.server.models import Message
+from dinofw.rest.server.models import MessageQuery
+from dinofw.rest.server.models import SearchQuery
+from dinofw.rest.server.models import SendMessageQuery
+from dinofw.rest.server.models import UpdateGroupQuery
+from dinofw.rest.server.models import UserGroupStats
+from dinofw.rest.server.models import UserStats
 
 logger = logging.getLogger(__name__)
 logging.getLogger("amqp").setLevel(logging.INFO)

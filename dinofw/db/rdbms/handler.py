@@ -1,5 +1,5 @@
 from datetime import datetime as dt
-from typing import List, Tuple, Optional, Set, Dict
+from typing import List, Tuple, Optional, Dict
 from uuid import uuid4 as uuid
 
 import pytz
@@ -9,11 +9,11 @@ from dinofw.db.cassandra.schemas import MessageBase
 from dinofw.db.rdbms import models
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
-from dinofw.rest.models import AdminUpdateGroupQuery
-from dinofw.rest.models import CreateGroupQuery
-from dinofw.rest.models import GroupQuery
-from dinofw.rest.models import UpdateGroupQuery
-from dinofw.rest.models import UpdateUserGroupStats
+from dinofw.rest.server.models import AdminUpdateGroupQuery
+from dinofw.rest.server.models import CreateGroupQuery
+from dinofw.rest.server.models import GroupQuery
+from dinofw.rest.server.models import UpdateGroupQuery
+from dinofw.rest.server.models import UpdateUserGroupStats
 
 
 class RelationalHandler:

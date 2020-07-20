@@ -5,17 +5,17 @@ from typing import List, Optional
 import pytz
 from sqlalchemy.orm import Session
 
-from dinofw.rest.base import BaseResource
-from dinofw.rest.models import AbstractQuery, UpdateUserGroupStats, ActionLog, GroupJoinTime, GroupQuery
-from dinofw.rest.models import AdminUpdateGroupQuery
-from dinofw.rest.models import CreateGroupQuery
-from dinofw.rest.models import Group
-from dinofw.rest.models import GroupUsers
-from dinofw.rest.models import Histories
-from dinofw.rest.models import MessageQuery
-from dinofw.rest.models import SearchQuery
-from dinofw.rest.models import UpdateGroupQuery
-from dinofw.rest.models import UserGroupStats
+from dinofw.rest.server.base import BaseResource
+from dinofw.rest.server.models import AbstractQuery, UpdateUserGroupStats, ActionLog, GroupJoinTime, GroupQuery
+from dinofw.rest.server.models import AdminUpdateGroupQuery
+from dinofw.rest.server.models import CreateGroupQuery
+from dinofw.rest.server.models import Group
+from dinofw.rest.server.models import GroupUsers
+from dinofw.rest.server.models import Histories
+from dinofw.rest.server.models import MessageQuery
+from dinofw.rest.server.models import SearchQuery
+from dinofw.rest.server.models import UpdateGroupQuery
+from dinofw.rest.server.models import UserGroupStats
 
 logger = logging.getLogger(__name__)
 
