@@ -170,7 +170,7 @@ class GroupResource(BaseResource):
         return GroupResource.action_log_base_to_action_log(action_log[0])
 
     async def search(self, query: SearchQuery) -> List[Group]:
-        return [self._group()]
+        return list()  # TODO: implement
 
     async def delete_one_group_for_user(self, user_id: int, group_id: str) -> None:
         pass

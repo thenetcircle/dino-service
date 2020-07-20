@@ -1,13 +1,13 @@
 import logging
 from datetime import datetime
-from typing import List, Tuple
+from typing import List, Tuple, Dict, Any
 
 import pytz
 from sqlalchemy.orm import Session
 
 from dinofw.db.rdbms.schemas import GroupBase, UserGroupStatsBase
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import Group
+from dinofw.rest.models import Group, GroupJoinTime
 from dinofw.rest.models import GroupQuery
 from dinofw.rest.models import UserStats
 
@@ -19,10 +19,19 @@ class UserResource(BaseResource):
         groups_stats_and_users = self.env.db.get_groups_for_user(user_id, query, db)
         groups = list()
 
-        for group, user_group_stats, users in groups_stats_and_users:
+        for group, user_group_stats, users, user_count in groups_stats_and_users:
             group_dict = group.dict()
 
-            group_dict["users"] = users
+            user_joins = [
+                GroupJoinTime(
+                    user_id=one_user_id,
+                    join_time=join_time
+                )
+                for one_user_id, join_time in users.items()
+            ]
+
+            group_dict["users"] = user_joins
+            group_dict["user_count"] = user_count
             group_dict["last_read"] = GroupQuery.to_ts(user_group_stats.last_read)
 
             group_dict["created_at"] = GroupQuery.to_ts(group_dict["created_at"])
@@ -38,8 +47,8 @@ class UserResource(BaseResource):
         # with messages in them even if the user has more than 1k groups
         query = GroupQuery(per_page=1_000)
 
-        groups_stats_and_users: List[Tuple[GroupBase, UserGroupStatsBase, List[int]]] = \
-            self.env.db.get_groups_for_user(user_id, query, db)
+        groups_stats_and_users: List[Tuple[GroupBase, UserGroupStatsBase, Any, Any]] = \
+            self.env.db.get_groups_for_user(user_id, query, db, count_users=False)
 
         unread_groups = 0
         owner_amount = 0
@@ -48,7 +57,7 @@ class UserResource(BaseResource):
         last_read_group_id = None
         last_sent_group_id = None
 
-        for group, stats, _ in groups_stats_and_users:
+        for group, stats, _, _ in groups_stats_and_users:
             last_message = group.last_message_time
             last_read = stats.last_read
             last_sent = stats.last_sent

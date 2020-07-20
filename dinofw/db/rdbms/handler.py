@@ -50,8 +50,9 @@ class RelationalHandler:
             self,
             user_id: int,
             query: GroupQuery,
-            db: Session
-    ) -> List[Tuple[GroupBase, UserGroupStatsBase, List[int]]]:
+            db: Session,
+            count_users: bool = True
+    ) -> List[Tuple[GroupBase, UserGroupStatsBase, Dict[int, float], int]]:
         until = GroupQuery.to_dt(query.until)
         hide_before = GroupQuery.to_dt(query.hide_before, default=self.long_ago)
 
@@ -72,13 +73,20 @@ class RelationalHandler:
         )
 
         groups = list()
+        sub_query = GroupQuery(per_page=50)
 
         for group_entity, user_group_stats_entity in results:
             group = GroupBase(**group_entity.__dict__)
             user_group_stats = UserGroupStatsBase(**user_group_stats_entity.__dict__)
-            users = self.get_user_ids_and_join_times_in_group(group_entity.group_id, db)
 
-            groups.append((group, user_group_stats, users))
+            users = self.get_user_ids_and_join_times_in_group(group_entity.group_id, sub_query, db)
+
+            if count_users:
+                user_count = self.count_users_in_group(group_entity.group_id, db)
+            else:
+                user_count = 0
+
+            groups.append((group, user_group_stats, users, user_count))
 
         return groups
 
