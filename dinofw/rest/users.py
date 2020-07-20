@@ -68,12 +68,8 @@ class UserResource(BaseResource):
                 max_last_sent = last_sent
                 last_sent_group_id = group.group_id
 
-        now = datetime.utcnow()
-        now = now.replace(tzinfo=pytz.UTC)
-
         return UserStats(
             user_id=user_id,
-            message_amount=0,
             unread_amount=unread_groups,
             group_amount=len(groups_stats_and_users),
             owned_group_amount=owner_amount,
@@ -81,6 +77,4 @@ class UserResource(BaseResource):
             last_read_group_id=last_read_group_id,
             last_send_time=GroupQuery.to_ts(max_last_sent),
             last_send_group_id=last_sent_group_id,
-            last_group_join_time=GroupQuery.to_ts(now),
-            last_group_join_sent_time=GroupQuery.to_ts(now),
         )

@@ -115,7 +115,6 @@ class GroupUsers(AbstractQuery):
 
 class UserStats(AbstractQuery):
     user_id: int
-    message_amount: int  # TODO: number of messages user has sent? is this needed?
     unread_amount: int
     group_amount: int
     owned_group_amount: int
@@ -123,10 +122,6 @@ class UserStats(AbstractQuery):
     last_read_group_id: str
     last_send_time: float
     last_send_group_id: str
-
-    # TODO: are these two needed? tricky to restrict by user_id in cassandra
-    last_group_join_time: float
-    last_group_join_sent_time: float
 
 
 class UserGroupStats(AbstractQuery):
