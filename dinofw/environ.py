@@ -355,10 +355,6 @@ def initialize_env(dino_env):
     init_rest(dino_env)
     init_producer(dino_env)
 
-    # init_pub_sub(dino_env)
-    # init_enrichment_service(dino_env)
-    # init_storage_engine(dino_env)
-
 
 ENV_KEY_ENVIRONMENT = "DINO_ENVIRONMENT"
 gn_environment = os.getenv(ENV_KEY_ENVIRONMENT)
