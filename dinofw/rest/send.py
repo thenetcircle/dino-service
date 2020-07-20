@@ -1,29 +1,26 @@
 import logging
 import sys
 import traceback
+from abc import ABC
 
 import eventlet
 from flask import request
 
 from dinofw import environ
 from dinofw import utils
-from dinofw.rest.base import BaseResource
 from dinofw.utils.activity import ActivityBuilder
 
-logger = logging.getLogger(__name__)
 
-
-def fail(error_message):
-    return {"status": "FAIL", "message": error_message}
-
-
-class SendResource(BaseResource):
-    def __init__(self):
-        super(SendResource, self).__init__()
+class BaseClientResource(ABC):
+    def __init__(self, env):
+        self.env = env
         self.request = request
+        self.logger = logging.getLogger(__name__)
 
+
+class SendResource(BaseClientResource):
     def async_post(self, json):
-        logger.debug(f"POST request: {str(json)}")
+        self.logger.debug(f"POST request: {str(json)}")
 
         if "content" not in json:
             raise RuntimeError("no key [content] in json message")
@@ -32,46 +29,46 @@ class SendResource(BaseResource):
         if msg_content is None or len(msg_content.strip()) == 0:
             raise RuntimeError("content may not be blank")
 
+        target_ids = json.get("users")
+        group_id = json.get("group_id")
+        group_name = json.get("group_name")
+
         user_id = str(json.get("user_id", 0))
         user_name = utils.b64d(json.get("user_name", utils.b64e("admin")))
-        object_type = json.get("object_type")
-        target_id = str(json.get("target_id"))
-        namespace = json.get("namespace", "/ws")
-        target_name = json.get("target_name")
+        namespace = json.get("namespace", "/")
 
         data = ActivityBuilder.activity_for_message(user_id, user_name)
         data["target"] = {
-            "objectType": object_type,
-            "id": target_id,
-            "displayName": target_name,
+            "objectType": "group",
+            "id": group_id,
+            "displayName": group_name,
             "url": namespace,
         }
-        data["object"] = {"content": msg_content}
 
-        # TODO: save to db
+        data["object"] = {
+            "objectType": "message",
+            "content": msg_content
+        }
 
-        if not environ.env.cache.user_is_in_multicast(target_id):
-            logger.info(f"user {target_id} is offline, dropping message: {str(json)}")
-            return
-
-        try:
-            environ.env.out_of_scope_emit(
-                "message",
-                data,
-                room=target_id,
-                json=True,
-                namespace="/ws",
-                broadcast=True,
-            )
-        except Exception as e:
-            logger.error(f"could not /send message to target {target_id}: {str(e)}")
-            logger.exception(traceback.format_exc())
-            environ.env.capture_exception(sys.exc_info())
+        for target_id in target_ids:
+            try:
+                environ.env.out_of_scope_emit(
+                    "message",
+                    data,
+                    room=target_id,
+                    json=True,
+                    namespace="/",
+                    broadcast=True,
+                )
+            except Exception as e:
+                self.logger.error(f"could not /send message to target {target_id}: {str(e)}")
+                self.logger.exception(traceback.format_exc())
+                environ.env.capture_exception(sys.exc_info())
 
     def do_post(self):
         is_valid, msg, json = self.validate_json(self.request, silent=False)
         if not is_valid:
-            logger.error(f"invalid json: {msg}")
+            self.logger.error(f"invalid json: {msg}")
             raise RuntimeError("invalid json")
 
         if json is None:
@@ -80,3 +77,14 @@ class SendResource(BaseResource):
             raise RuntimeError("need a dict")
 
         eventlet.spawn_n(self.async_post, dict(json))
+
+    def validate_json(self, req, silent: bool):
+        try:
+            data = req.get_data()
+        except Exception as e:
+            self.logger.error(f"could not get data from request: {str(e)}")
+            self.logger.exception(traceback.format_exc())
+            environ.env.capture_exception(sys.exc_info())
+            return False, str(e), None
+
+        return True, "", data

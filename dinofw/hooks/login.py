@@ -20,6 +20,7 @@ class OnLoginHooks:
         environ.env.session[S.user_id.value] = user_id
         environ.env.session[S.user_name.value] = user_name
 
+        """
         try:
             user_agent_string = environ.env.request.user_agent.string or ""
             user_agent_platform = environ.env.request.user_agent.platform or ""
@@ -47,31 +48,10 @@ class OnLoginHooks:
         session[S.user_agent_language.value] = user_agent_language
 
         user_info = {
-            S.avatar.value: session.get(S.avatar.value) or "",
-            S.app_avatar.value: session.get(S.app_avatar.value) or "",
-            S.app_avatar_safe.value: session.get(S.app_avatar_safe.value) or "",
-            S.age.value: session.get(S.age.value) or "",
-            S.gender.value: session.get(S.gender.value) or "",
-            S.membership.value: session.get(S.membership.value) or "",
-            S.group.value: session.get(S.group.value) or "",
-            S.country.value: session.get(S.country.value) or "",
-            S.has_webcam.value: session.get(S.has_webcam.value) or "",
-            S.fake_checked.value: session.get(S.fake_checked.value) or "",
-            S.is_streaming.value: session.get(S.is_streaming.value) or "",
-            S.enabled_safe.value: session.get(S.enabled_safe.value) or "",
             "last_login": dt.utcnow(),
         }
-
         environ.env.db.set_user_info(user_id, user_info)
-
-        if activity.actor.image is None:
-            environ.env.session["image_url"] = ""
-            environ.env.session[S.image.value] = "n"
-        else:
-            environ.env.session["image_url"] = activity.actor.image.url
-            environ.env.session[S.image.value] = "y"
-
-        utils.create_or_update_user(user_id, user_name)
+        """
 
         environ.env.join_room(user_id)
 

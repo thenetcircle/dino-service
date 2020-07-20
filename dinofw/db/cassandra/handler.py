@@ -53,6 +53,7 @@ class CassandraHandler:
         until = MessageQuery.to_dt(query.until)
 
         # TODO: get default hide_before from user stats in db/cache if not in query
+        # TODO: we don't know which user it is for this api
         hide_before = MessageQuery.to_dt(query.hide_before, default=self.long_ago)
 
         # TODO: add message_type and status filter from MessageQuery

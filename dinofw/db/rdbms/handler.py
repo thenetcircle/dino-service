@@ -102,7 +102,7 @@ class RelationalHandler:
             return None
 
         group.last_message_time = sent_time
-        group.last_message_overview = message.message_payload  # TODO: trim somehow, maybe has a schema
+        group.last_message_overview = message.message_payload
 
         db.add(group)
         db.commit()
