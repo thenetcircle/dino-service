@@ -277,6 +277,6 @@ async def update_user_statistics_in_group(
 @app.get("/v1/userstats/{user_id}", response_model=UserStats)
 async def get_user_statistics(user_id: int, db: Session = Depends(get_db)) -> UserStats:
     """
-    TODO: get user statistic data
+    get user statistic data
     """
     return await environ.env.rest.user.get_user_stats(user_id, db)
