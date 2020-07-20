@@ -156,7 +156,8 @@ class RelationalHandler:
         db.commit()
 
         if should_update_cached_user_ids_in_group:
-            self.get_user_ids_and_join_times_in_group(group_id, db, skip_cache=True)
+            sub_query = GroupQuery(per_page=5_000)
+            self.get_user_ids_and_join_times_in_group(group_id, sub_query, db, skip_cache=True)
 
     def admin_update_group_information(
             self,
