@@ -333,6 +333,12 @@ def init_rest(gn_env: GNEnvironment) -> None:
     gn_env.rest.message = MessageResource(gn_env)
 
 
+def init_producer(gn_env: GNEnvironment) -> None:
+    from dinofw.utils.publisher import Publisher
+
+    gn_env.publisher = Publisher(gn_env, mock=True)  # TODO: don't mock
+
+
 def initialize_env(dino_env):
     logging.basicConfig(level="DEBUG", format=ConfigKeys.DEFAULT_LOG_FORMAT)
 
@@ -347,6 +353,7 @@ def initialize_env(dino_env):
     init_request_validators(dino_env)
     init_observer(dino_env)
     init_rest(dino_env)
+    init_producer(dino_env)
 
     # init_pub_sub(dino_env)
     # init_enrichment_service(dino_env)

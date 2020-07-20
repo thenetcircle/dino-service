@@ -2,12 +2,14 @@ import logging
 import traceback
 import sys
 from datetime import datetime
+from typing import List
 from uuid import uuid4 as uuid
 from activitystreams import parse as as_parser
 
 from dinofw import environ
 from dinofw import utils
 from dinofw.config import ConfigKeys
+from dinofw.db.cassandra.schemas import MessageBase
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +56,36 @@ class ActivityBuilder:
         return response
 
     @staticmethod
+    def activity_for_client_api_send(
+            group_id: str,
+            user_id: int,
+            message: MessageBase,
+            user_ids: List[int]
+    ) -> dict:
+        return ActivityBuilder.enrich(
+            {
+                "actor": {
+                    "id": str(user_id),
+                },
+                "object": {
+                    "id": message.message_id,
+                    "content": message.message_payload,
+                },
+                "target": {
+                    "id": group_id,
+                    "content": ",".join([str(uid) for uid in user_ids])
+                },
+                "published": message.created_at.strftime("%s.%f"),
+                "verb": "send",
+            }
+        )
+
+    @staticmethod
+    def activity_for_message_from_queue(data: dict):
+        del data["target"]["content"]
+        return data
+
+    @staticmethod
     def format_group_attachments(groups: list):
         # TODO: dino handles read/unread or do communities?
         attachments = list()
@@ -75,19 +107,13 @@ class ActivityBuilder:
         return attachments
 
     @staticmethod
-    def activity_for_message(user_id, user_name):
-        return dict()
-
-    @staticmethod
     def enrich(extra: dict) -> dict:
         if "id" in extra:
             ActivityBuilder.warn_field("id", extra)
         else:
             extra["id"] = str(uuid())
 
-        if "published" in extra:
-            ActivityBuilder.warn_field("published", extra)
-        else:
+        if "published" not in extra:
             extra["published"] = datetime.utcnow().strftime(
                 ConfigKeys.DEFAULT_DATE_FORMAT
             )

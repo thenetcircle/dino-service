@@ -167,6 +167,9 @@ class ConfigKeys:
 
     URI = "uri"
 
+    KAFKA = "kafka"
+    TOPIC = "topic"
+
 
 class ErrorCodes(object):
     OK = 200

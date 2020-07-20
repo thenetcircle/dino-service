@@ -6,7 +6,7 @@ import pytz
 from sqlalchemy.orm import Session
 
 from dinofw.rest.server.base import BaseResource
-from dinofw.rest.server.models import AdminQuery
+from dinofw.rest.server.models import AdminQuery, GroupQuery
 from dinofw.rest.server.models import EditMessageQuery
 from dinofw.rest.server.models import Message
 from dinofw.rest.server.models import MessageQuery
@@ -26,7 +26,9 @@ class MessageResource(BaseResource):
         self.env.db.update_group_new_message(message, now, db)
         self.env.db.update_last_read_and_sent_in_group_for_user(user_id, group_id, now, db)
 
-        # TODO: call dino client rest api /send to broadcast to WS clients
+        sub_query = GroupQuery(per_page=5_000)
+        user_ids = self.env.db.get_user_ids_and_join_times_in_group(group_id, sub_query, db)
+        self.env.publisher.message(group_id, user_id, message, user_ids)
 
         return MessageResource.message_base_to_message(message)
 

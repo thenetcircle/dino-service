@@ -102,7 +102,8 @@ class CacheRedis(ICache):
             for user_id, join_time in users.items()
         ]
 
-        return self.redis.sadd(key, *values)
+        self.redis.sadd(key, *values)
+        self.redis.expire(key, FIVE_MINUTES)  # TODO: maybe expire quicker
 
     def get_user_stats_group(self, group_id: str, user_id: int) -> Optional[UserGroupStatsBase]:
         """
