@@ -155,7 +155,7 @@ class ActionLog(AbstractQuery):
 
 class Group(AbstractQuery):
     group_id: str
-    users: List[int]
+    users: List[GroupJoinTime]
     last_read: float
     name: str
     description: Optional[str]

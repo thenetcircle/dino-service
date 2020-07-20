@@ -1,10 +1,10 @@
 from abc import ABC
 from datetime import datetime as dt
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 from dinofw.db.cassandra.schemas import MessageBase, ActionLogBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase, GroupBase
-from dinofw.rest.models import Group, Message, AbstractQuery, UserGroupStats, ActionLog
+from dinofw.rest.models import Group, Message, AbstractQuery, UserGroupStats, ActionLog, GroupJoinTime
 
 
 class BaseResource(ABC):
@@ -26,8 +26,17 @@ class BaseResource(ABC):
         return Message(**message_dict)
 
     @staticmethod
-    def group_base_to_group(group: GroupBase, users: List[int], last_read: Optional[dt]) -> Group:
+    def group_base_to_group(group: GroupBase, users: Dict[int, float], last_read: Optional[dt]) -> Group:
         group_dict = group.dict()
+
+        users = [
+            GroupJoinTime(
+                user_id=user_id,
+                join_time=join_time,
+            )
+            for user_id, join_time in users.items()
+        ]
+        users.sort(key=lambda user: user.join_time, reverse=True)
 
         group_dict["updated_at"] = AbstractQuery.to_ts(group_dict["updated_at"], allow_none=True)
         group_dict["created_at"] = AbstractQuery.to_ts(group_dict["created_at"])

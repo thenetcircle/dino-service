@@ -42,12 +42,12 @@ class GroupResource(BaseResource):
             users=users
         )
 
-    async def get_group(self, group_id: str, db: Session):
-        group, user_ids = self.env.db.get_users_in_group(group_id, db)
+    async def get_group(self, group_id: str, db: Session) -> Group:
+        group, users = self.env.db.get_users_in_group(group_id, db)
 
         return GroupResource.group_base_to_group(
             group,
-            users=user_ids,
+            users=users,
             last_read=None
         )
 
@@ -100,26 +100,28 @@ class GroupResource(BaseResource):
 
     async def create_new_group(self, user_id: int, query: CreateGroupQuery, db: Session) -> Group:
         group = self.env.db.create_group(user_id, query, db)
-        user_ids = {user_id}
+
+        now = dt.utcnow()
+        now = now.replace(tzinfo=pytz.UTC)
+        now_ts = CreateGroupQuery.to_ts(now)
+
+        users = {user_id: now_ts}
 
         if query.users is not None and query.users:
-            user_ids.update(query.users)
+            users.update({user_id: now_ts for user_id in query.users})
 
         self.env.db.update_last_read_in_group_for_user(
             group.group_id,
-            user_ids,
+            users,
             group.created_at,
             db
         )
 
-        now = dt.utcnow()
-        now = now.replace(tzinfo=pytz.UTC)
-
-        self.env.storage.create_join_action_log(group.group_id, list(user_ids), now)
+        self.env.storage.create_join_action_log(group.group_id, users, now)
 
         return GroupResource.group_base_to_group(
             group,
-            users=list(user_ids),
+            users=users,
             last_read=group.created_at
         )
 

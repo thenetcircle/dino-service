@@ -1,6 +1,6 @@
 from datetime import datetime as dt
 from time import time
-from typing import List, Optional
+from typing import List, Optional, Dict
 from uuid import uuid4 as uuid
 
 import pytz
@@ -223,7 +223,8 @@ class CassandraHandler:
             callback=callback
         )
 
-    def create_join_action_log(self, group_id: str, user_ids: List[int], action_time: dt) -> List[ActionLogBase]:
+    def create_join_action_log(self, group_id: str, users: Dict[int, float], action_time: dt) -> List[ActionLogBase]:
+        user_ids = [user_id for user_id, _ in users.items()]
         return self._create_action_log(group_id, user_ids, action_time, CassandraHandler.ACTION_TYPE_JOIN)
 
     def create_leave_action_log(self, group_id: str, user_ids: [int], action_time: dt) -> List[ActionLogBase]:
