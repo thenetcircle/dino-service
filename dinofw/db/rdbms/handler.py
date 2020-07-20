@@ -283,12 +283,13 @@ class RelationalHandler:
         db.commit()
         db.refresh(user_stats)
 
-        base = UserGroupStatsBase(**user_stats)
+        base = UserGroupStatsBase(**user_stats.__dict__)
         self.env.cache.set_user_stats_group(group_id, user_id, base)
 
         # update the cached user ids for this group (might have a new one)
         if should_update_cached_user_ids_in_group:
-            self.get_user_ids_and_join_times_in_group(group_id, db, skip_cache=True)
+            sub_query = GroupQuery(per_page=5_000)
+            self.get_user_ids_and_join_times_in_group(group_id, sub_query, db, skip_cache=True)
 
         return base
 
