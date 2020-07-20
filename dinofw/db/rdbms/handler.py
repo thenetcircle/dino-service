@@ -249,8 +249,8 @@ class RelationalHandler:
             .first()
         )
 
-        last_read = query.last_read_time
-        hide_before = query.hide_before
+        last_read = UpdateUserGroupStats.to_dt(query.last_read_time, allow_none=True)
+        hide_before = UpdateUserGroupStats.to_dt(query.hide_before, allow_none=True)
 
         should_update_cached_user_ids_in_group = False
 
