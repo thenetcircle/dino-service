@@ -34,6 +34,7 @@ class GroupResource(BaseResource):
             )
             for user_id, join_time in users.items()
         ]
+        users.sort(key=lambda user: user.join_time, reverse=True)
 
         return GroupUsers(
             group_id=group_id,
