@@ -2,7 +2,9 @@ auth:
     type: "allowall"
 
 cache:
-    type: "memory"
+    type: "redis"
+    host: "$DINO_REDIS_HOST"
+    db: $DINO_REDIS_DB
 
 db:
     uri: "$DINO_DB_URI"
