@@ -116,6 +116,11 @@ class RelationalHandler:
         )
         db.commit()
 
+        query = GroupQuery(per_page=5_000)
+        self.get_user_ids_and_join_times_in_group(
+            group_id, query, db, skip_cache=True
+        )
+
     def update_last_read_in_group_for_user(
         self, group_id: str, users: Dict[int, float], last_read_time: dt, db: Session
     ) -> None:
