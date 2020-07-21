@@ -19,7 +19,7 @@ class AbstractQuery(BaseModel):
             s = s.replace(tzinfo=pytz.UTC)
         else:
             s = int(s)
-            s = dt.fromtimestamp(s)
+            s = dt.utcfromtimestamp(s)
 
         return s
 
