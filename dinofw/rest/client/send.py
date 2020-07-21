@@ -45,10 +45,7 @@ class SendResource(BaseClientResource):
             "url": namespace,
         }
 
-        data["object"] = {
-            "objectType": "message",
-            "content": msg_content
-        }
+        data["object"] = {"objectType": "message", "content": msg_content}
 
         for target_id in target_ids:
             try:
@@ -61,7 +58,9 @@ class SendResource(BaseClientResource):
                     broadcast=True,
                 )
             except Exception as e:
-                self.logger.error(f"could not /send message to target {target_id}: {str(e)}")
+                self.logger.error(
+                    f"could not /send message to target {target_id}: {str(e)}"
+                )
                 self.logger.exception(traceback.format_exc())
                 environ.env.capture_exception(sys.exc_info())
 

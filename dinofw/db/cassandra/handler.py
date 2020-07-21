@@ -40,16 +40,15 @@ class CassandraHandler:
         hosts = hosts.split(",")
 
         connection.setup(
-            hosts,
-            default_keyspace=key_space,
-            protocol_version=3,
-            retry_connect=True
+            hosts, default_keyspace=key_space, protocol_version=3, retry_connect=True
         )
 
         sync_table(MessageModel)
         sync_table(ActionLogModel)
 
-    def get_messages_in_group(self, group_id: str, query: MessageQuery) -> List[MessageBase]:
+    def get_messages_in_group(
+        self, group_id: str, query: MessageQuery
+    ) -> List[MessageBase]:
         until = MessageQuery.to_dt(query.until)
 
         # TODO: get default hide_before from user stats in db/cache if not in query
@@ -74,7 +73,9 @@ class CassandraHandler:
 
         return messages
 
-    def get_messages_in_group_for_user(self, group_id: str, user_id: int, query: MessageQuery) -> List[MessageBase]:
+    def get_messages_in_group_for_user(
+        self, group_id: str, user_id: int, query: MessageQuery
+    ) -> List[MessageBase]:
         until = MessageQuery.to_dt(query.until)
         hide_before = MessageQuery.to_dt(query.hide_before, default=self.long_ago)
 
@@ -102,25 +103,22 @@ class CassandraHandler:
         # TODO: count all or only after `hide_before`?
 
         return (
-            MessageModel.objects(
-                MessageModel.group_id == group_id
-            )
-            .limit(None)
-            .count()
+            MessageModel.objects(MessageModel.group_id == group_id).limit(None).count()
         )
 
     def count_messages_in_group_since(self, group_id: str, since: dt) -> int:
         # TODO: count all or only after `hide_before`?
         return (
             MessageModel.objects(
-                MessageModel.group_id == group_id,
-                MessageModel.created_at > since,
+                MessageModel.group_id == group_id, MessageModel.created_at > since,
             )
             .limit(None)
             .count()
         )
 
-    def get_message(self, group_id: str, user_id: int, message_id: str) -> Optional[MessageBase]:
+    def get_message(
+        self, group_id: str, user_id: int, message_id: str
+    ) -> Optional[MessageBase]:
         # TODO: use `hide_before` here?
 
         message = (
@@ -138,7 +136,9 @@ class CassandraHandler:
 
         return CassandraHandler.message_base_from_entity(message)
 
-    def delete_message(self, group_id: str, user_id: int, message_id: str, query: AdminQuery) -> None:
+    def delete_message(
+        self, group_id: str, user_id: int, message_id: str, query: AdminQuery
+    ) -> None:
         message = (
             MessageModel.objects(
                 MessageModel.group_id == group_id,
@@ -150,7 +150,9 @@ class CassandraHandler:
         )
 
         if message is None:
-            self.logger.warning(f"no message found for user {user_id}, group {group_id}, message {message_id}")
+            self.logger.warning(
+                f"no message found for user {user_id}, group {group_id}, message {message_id}"
+            )
             return
 
         removed_at = dt.utcnow()
@@ -163,7 +165,7 @@ class CassandraHandler:
         )
 
     def edit_message(
-            self, group_id: str, user_id: int, message_id: str, query: EditMessageQuery
+        self, group_id: str, user_id: int, message_id: str, query: EditMessageQuery
     ) -> Optional[MessageBase]:
         message = (
             MessageModel.objects(
@@ -176,7 +178,9 @@ class CassandraHandler:
         )
 
         if message is None:
-            self.logger.warning(f"no message found for user {user_id}, group {group_id}, message {message_id}")
+            self.logger.warning(
+                f"no message found for user {user_id}, group {group_id}, message {message_id}"
+            )
             return None
 
         message.update(
@@ -190,19 +194,16 @@ class CassandraHandler:
         def callback(message: MessageModel) -> None:
             message.status = query.status
 
-        self._update_all_messages_in_group(
-            group_id=group_id,
-            callback=callback
-        )
+        self._update_all_messages_in_group(group_id=group_id, callback=callback)
 
-    def update_messages_in_group_for_user(self, group_id: str, user_id: int, query: MessageQuery) -> None:
+    def update_messages_in_group_for_user(
+        self, group_id: str, user_id: int, query: MessageQuery
+    ) -> None:
         def callback(message: MessageModel) -> None:
             message.status = query.status
 
         self._update_all_messages_in_group(
-            group_id=group_id,
-            callback=callback,
-            user_id=user_id,
+            group_id=group_id, callback=callback, user_id=user_id,
         )
 
     def delete_messages_in_group(self, group_id: str, query: MessageQuery) -> None:
@@ -219,20 +220,25 @@ class CassandraHandler:
         removed_at = dt.utcnow()
         removed_at = removed_at.replace(tzinfo=pytz.UTC)
 
-        self._update_all_messages_in_group(
-            group_id=group_id,
-            callback=callback
+        self._update_all_messages_in_group(group_id=group_id, callback=callback)
+
+    def create_join_action_log(
+        self, group_id: str, users: Dict[int, float], action_time: dt
+    ) -> List[ActionLogBase]:
+        user_ids = [user_id for user_id, _ in users.items()]
+        return self._create_action_log(
+            group_id, user_ids, action_time, CassandraHandler.ACTION_TYPE_JOIN
         )
 
-    def create_join_action_log(self, group_id: str, users: Dict[int, float], action_time: dt) -> List[ActionLogBase]:
-        user_ids = [user_id for user_id, _ in users.items()]
-        return self._create_action_log(group_id, user_ids, action_time, CassandraHandler.ACTION_TYPE_JOIN)
-
-    def create_leave_action_log(self, group_id: str, user_ids: [int], action_time: dt) -> List[ActionLogBase]:
-        return self._create_action_log(group_id, user_ids, action_time, CassandraHandler.ACTION_TYPE_LEAVE)
+    def create_leave_action_log(
+        self, group_id: str, user_ids: [int], action_time: dt
+    ) -> List[ActionLogBase]:
+        return self._create_action_log(
+            group_id, user_ids, action_time, CassandraHandler.ACTION_TYPE_LEAVE
+        )
 
     def _create_action_log(
-            self, group_id: str, user_ids: List[int], action_time: dt, action_type: int
+        self, group_id: str, user_ids: List[int], action_time: dt, action_type: int
     ) -> List[ActionLogBase]:
         logs = list()
 
@@ -242,14 +248,16 @@ class CassandraHandler:
                 user_id=user_id,
                 created_at=action_time,
                 action_type=action_type,
-                action_id=uuid()
+                action_id=uuid(),
             )
 
             logs.append(CassandraHandler.action_log_base_from_entity(log))
 
         return logs
 
-    def delete_messages_in_group_for_user(self, group_id: str, user_id: int, query: MessageQuery) -> None:
+    def delete_messages_in_group_for_user(
+        self, group_id: str, user_id: int, query: MessageQuery
+    ) -> None:
         # TODO: copy messages to another table `messages_deleted` and then remove the rows for `messages`
 
         def callback(message: MessageModel):
@@ -266,9 +274,7 @@ class CassandraHandler:
         removed_at = removed_at.replace(tzinfo=pytz.UTC)
 
         self._update_all_messages_in_group(
-            group_id=group_id,
-            callback=callback,
-            user_id=user_id,
+            group_id=group_id, callback=callback, user_id=user_id,
         )
 
     def store_message(self, group_id: str, user_id: int, query: SendMessageQuery):
@@ -301,9 +307,13 @@ class CassandraHandler:
             .all()
         )
 
-        return [CassandraHandler.action_log_base_from_entity(log) for log in action_logs]
+        return [
+            CassandraHandler.action_log_base_from_entity(log) for log in action_logs
+        ]
 
-    def _update_all_messages_in_group(self, group_id: str, callback: callable, user_id: int = None):
+    def _update_all_messages_in_group(
+        self, group_id: str, callback: callable, user_id: int = None
+    ):
         until = dt.utcnow()
         until = until.replace(tzinfo=pytz.UTC)
         start = time()
@@ -311,21 +321,23 @@ class CassandraHandler:
 
         while True:
             messages = self._get_batch_of_messages_in_group(
-                group_id=group_id,
-                until=until,
-                user_id=user_id,
+                group_id=group_id, until=until, user_id=user_id,
             )
 
             if not len(messages):
                 end = time()
                 elapsed = (end - start) / 1000
-                self.logger.info(f"finished batch updating {amount} messages in group {group_id} after {elapsed:.2f}s")
+                self.logger.info(
+                    f"finished batch updating {amount} messages in group {group_id} after {elapsed:.2f}s"
+                )
                 break
 
             amount += len(messages)
             until = self._update_messages(messages, callback)
 
-    def _update_messages(self, messages: List[MessageModel], callback: callable) -> Optional[dt]:
+    def _update_messages(
+        self, messages: List[MessageModel], callback: callable
+    ) -> Optional[dt]:
         until = None
 
         with BatchQuery() as b:
@@ -337,12 +349,13 @@ class CassandraHandler:
 
         return until
 
-    def _get_batch_of_messages_in_group(self, group_id: str, until: dt, user_id: int = None) -> List[MessageModel]:
+    def _get_batch_of_messages_in_group(
+        self, group_id: str, until: dt, user_id: int = None
+    ) -> List[MessageModel]:
         if user_id is None:
             return (
                 MessageModel.objects(
-                    MessageModel.group_id == group_id,
-                    MessageModel.created_at < until,
+                    MessageModel.group_id == group_id, MessageModel.created_at < until,
                 )
                 .limit(500)
                 .all()

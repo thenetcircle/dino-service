@@ -57,23 +57,18 @@ class ActivityBuilder:
 
     @staticmethod
     def activity_for_client_api_send(
-            group_id: str,
-            user_id: int,
-            message: MessageBase,
-            user_ids: List[int]
+        group_id: str, user_id: int, message: MessageBase, user_ids: List[int]
     ) -> dict:
         return ActivityBuilder.enrich(
             {
-                "actor": {
-                    "id": str(user_id),
-                },
+                "actor": {"id": str(user_id),},
                 "object": {
                     "id": message.message_id,
                     "content": message.message_payload,
                 },
                 "target": {
                     "id": group_id,
-                    "content": ",".join([str(uid) for uid in user_ids])
+                    "content": ",".join([str(uid) for uid in user_ids]),
                 },
                 "published": message.created_at.strftime("%s.%f"),
                 "verb": "send",

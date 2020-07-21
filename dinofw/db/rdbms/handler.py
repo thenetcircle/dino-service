@@ -25,10 +25,7 @@ class RelationalHandler:
         self.long_ago = dt.utcfromtimestamp(beginning_of_1995)
 
     def get_users_in_group(
-            self,
-            group_id: str,
-            query: GroupQuery,
-            db: Session
+        self, group_id: str, query: GroupQuery, db: Session
     ) -> (Optional[GroupBase], Optional[Dict[int, float]], Optional[int]):
         group_entity = (
             db.query(models.GroupEntity)
@@ -47,11 +44,7 @@ class RelationalHandler:
         return group, users, user_count
 
     def get_groups_for_user(
-            self,
-            user_id: int,
-            query: GroupQuery,
-            db: Session,
-            count_users: bool = True
+        self, user_id: int, query: GroupQuery, db: Session, count_users: bool = True
     ) -> List[Tuple[GroupBase, UserGroupStatsBase, Dict[int, float], int]]:
         until = GroupQuery.to_dt(query.until)
         hide_before = GroupQuery.to_dt(query.hide_before, default=self.long_ago)
@@ -79,7 +72,9 @@ class RelationalHandler:
             group = GroupBase(**group_entity.__dict__)
             user_group_stats = UserGroupStatsBase(**user_group_stats_entity.__dict__)
 
-            users = self.get_user_ids_and_join_times_in_group(group_entity.group_id, sub_query, db)
+            users = self.get_user_ids_and_join_times_in_group(
+                group_entity.group_id, sub_query, db
+            )
 
             if count_users:
                 user_count = self.count_users_in_group(group_entity.group_id, db)
@@ -90,7 +85,9 @@ class RelationalHandler:
 
         return groups
 
-    def update_group_new_message(self, message: MessageBase, sent_time: dt, db: Session) -> None:
+    def update_group_new_message(
+        self, message: MessageBase, sent_time: dt, db: Session
+    ) -> None:
         group = (
             db.query(models.GroupEntity)
             .filter(models.GroupEntity.group_id == message.group_id)
@@ -108,7 +105,9 @@ class RelationalHandler:
         db.commit()
         db.refresh(group)
 
-    def remove_last_read_in_group_for_user(self, group_id: str, user_id: int, db: Session) -> None:
+    def remove_last_read_in_group_for_user(
+        self, group_id: str, user_id: int, db: Session
+    ) -> None:
         _ = (
             db.query(models.UserGroupStatsEntity)
             .filter(models.UserGroupStatsEntity.user_id == user_id)
@@ -118,11 +117,7 @@ class RelationalHandler:
         db.commit()
 
     def update_last_read_in_group_for_user(
-            self,
-            group_id: str,
-            users: Dict[int, float],
-            last_read_time: dt,
-            db: Session
+        self, group_id: str, users: Dict[int, float], last_read_time: dt, db: Session
     ) -> None:
         """
         TODO: should we update last read for sender? or sender also acks?
@@ -157,13 +152,12 @@ class RelationalHandler:
 
         if should_update_cached_user_ids_in_group:
             sub_query = GroupQuery(per_page=5_000)
-            self.get_user_ids_and_join_times_in_group(group_id, sub_query, db, skip_cache=True)
+            self.get_user_ids_and_join_times_in_group(
+                group_id, sub_query, db, skip_cache=True
+            )
 
     def admin_update_group_information(
-            self,
-            group_id: str,
-            query: AdminUpdateGroupQuery,
-            db: Session
+        self, group_id: str, query: AdminUpdateGroupQuery, db: Session
     ) -> Optional[GroupBase]:
         group_entity = (
             db.query(models.GroupEntity)
@@ -187,10 +181,7 @@ class RelationalHandler:
         return GroupBase(**group_entity)
 
     def update_group_information(
-            self,
-            group_id: str,
-            query: UpdateGroupQuery,
-            db: Session
+        self, group_id: str, query: UpdateGroupQuery, db: Session
     ) -> Optional[GroupBase]:
         group_entity = (
             db.query(models.GroupEntity)
@@ -215,7 +206,9 @@ class RelationalHandler:
 
         return GroupBase(**group_entity.__dict__)
 
-    def get_user_stats_in_group(self, group_id: str, user_id: int, db: Session) -> Optional[UserGroupStatsBase]:
+    def get_user_stats_in_group(
+        self, group_id: str, user_id: int, db: Session
+    ) -> Optional[UserGroupStatsBase]:
         user_stats = self.env.cache.get_user_stats_group(group_id, user_id)
         if user_stats is not None:
             return user_stats
@@ -236,11 +229,7 @@ class RelationalHandler:
         return base
 
     def update_user_group_stats(
-            self,
-            group_id: str,
-            user_id: int,
-            query: UpdateUserGroupStats,
-            db: Session
+        self, group_id: str, user_id: int, query: UpdateUserGroupStats, db: Session
     ) -> UserGroupStatsBase:
         user_stats = (
             db.query(models.UserGroupStatsEntity)
@@ -289,16 +278,14 @@ class RelationalHandler:
         # update the cached user ids for this group (might have a new one)
         if should_update_cached_user_ids_in_group:
             sub_query = GroupQuery(per_page=5_000)
-            self.get_user_ids_and_join_times_in_group(group_id, sub_query, db, skip_cache=True)
+            self.get_user_ids_and_join_times_in_group(
+                group_id, sub_query, db, skip_cache=True
+            )
 
         return base
 
     def update_last_read_and_sent_in_group_for_user(
-            self,
-            user_id: int,
-            group_id: str,
-            created_at: dt,
-            db: Session
+        self, user_id: int, group_id: str, created_at: dt, db: Session
     ) -> None:
         user_stats = (
             db.query(models.UserGroupStatsEntity)
@@ -336,7 +323,9 @@ class RelationalHandler:
         if should_update_cached_user_ids_in_group:
             self.get_user_ids_and_join_times_in_group(group_id, db, skip_cache=True)
 
-    def create_group(self, owner_id: int, query: CreateGroupQuery, db: Session) -> GroupBase:
+    def create_group(
+        self, owner_id: int, query: CreateGroupQuery, db: Session
+    ) -> GroupBase:
         created_at = dt.utcnow()
         created_at = created_at.replace(tzinfo=pytz.UTC)
 
@@ -373,11 +362,7 @@ class RelationalHandler:
         return user_count
 
     def get_user_ids_and_join_times_in_group(
-            self,
-            group_id: str,
-            query: GroupQuery,
-            db: Session,
-            skip_cache: bool = False
+        self, group_id: str, query: GroupQuery, db: Session, skip_cache: bool = False
     ) -> Dict[int, float]:
         # users in a group shouldn't change that often
         if skip_cache:

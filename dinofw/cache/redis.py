@@ -88,12 +88,11 @@ class CacheRedis(ICache):
         users = self.redis.smembers(RedisKeys.user_in_group(group_id))
         users = [str(user, "utf-8").split("|") for user in users]
 
-        return {
-            int(user_id): float(join_time)
-            for user_id, join_time in users
-        }
+        return {int(user_id): float(join_time) for user_id, join_time in users}
 
-    def set_user_ids_and_join_time_in_group(self, group_id: str, users: Dict[int, float]):
+    def set_user_ids_and_join_time_in_group(
+        self, group_id: str, users: Dict[int, float]
+    ):
         key = RedisKeys.user_in_group(group_id)
         self.redis.delete(key)
 
@@ -105,10 +104,13 @@ class CacheRedis(ICache):
         self.redis.sadd(key, *values)
         self.redis.expire(key, FIVE_MINUTES)  # TODO: maybe expire quicker
 
-    def get_user_stats_group(self, group_id: str, user_id: int) -> Optional[UserGroupStatsBase]:
+    def get_user_stats_group(
+        self, group_id: str, user_id: int
+    ) -> Optional[UserGroupStatsBase]:
         """
         :return: [last_read, last_sent, hide_before]
         """
+
         def to_dt(byte_ts):
             int_ts = float(byte_ts)
             return dt.fromtimestamp(int_ts)
@@ -120,8 +122,7 @@ class CacheRedis(ICache):
             return None
 
         last_read, last_sent, hide_before = [
-            to_dt(timestamp)
-            for timestamp in str(user_stats, "utf-8").split("|")
+            to_dt(timestamp) for timestamp in str(user_stats, "utf-8").split("|")
         ]
 
         return UserGroupStatsBase(
@@ -129,10 +130,12 @@ class CacheRedis(ICache):
             user_id=user_id,
             last_read=last_read,
             last_sent=last_sent,
-            hide_before=hide_before
+            hide_before=hide_before,
         )
 
-    def set_user_stats_group(self, group_id: str, user_id: int, stats: UserGroupStatsBase) -> None:
+    def set_user_stats_group(
+        self, group_id: str, user_id: int, stats: UserGroupStatsBase
+    ) -> None:
         def to_ts(datetime: dt):
             return datetime.strftime("%s.%f")
 

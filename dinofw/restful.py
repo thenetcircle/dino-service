@@ -54,7 +54,9 @@ async def search_for_groups(query: SearchQuery) -> List[Group]:
 
 
 @app.post("/v1/groups/{group_id}/histories", response_model=List[Histories])
-async def get_group_history_for_user(group_id: str, query: MessageQuery) -> List[Histories]:
+async def get_group_history_for_user(
+    group_id: str, query: MessageQuery
+) -> List[Histories]:
     """
     get user visible history in a group sort by time in descendent, messages and action log.
     """
@@ -85,7 +87,9 @@ async def batch_delete_messages_in_group(group_id: str, query: MessageQuery):
     return await environ.env.rest.message.delete_messages(group_id, query)
 
 
-@app.post("/v1/groups/{group_id}/users/{user_id}/messages", response_model=List[Message])
+@app.post(
+    "/v1/groups/{group_id}/users/{user_id}/messages", response_model=List[Message]
+)
 async def get_messages_for_user_in_group(
     group_id: str, user_id: int, query: MessageQuery
 ) -> List[Message]:
@@ -137,7 +141,10 @@ async def send_message_to_group(
     return await environ.env.rest.message.save_new_message(group_id, user_id, query, db)
 
 
-@app.get("/v1/groups/{group_id}/users/{user_id}/messages/{message_id}", response_model=Message)
+@app.get(
+    "/v1/groups/{group_id}/users/{user_id}/messages/{message_id}",
+    response_model=Message,
+)
 async def get_message_details(group_id: str, user_id: int, message_id: str) -> Message:
     """
     get message details
@@ -145,7 +152,10 @@ async def get_message_details(group_id: str, user_id: int, message_id: str) -> M
     return await environ.env.rest.message.message_details(group_id, user_id, message_id)
 
 
-@app.put("/v1/groups/{group_id}/users/{user_id}/messages/{message_id}", response_model=Message)
+@app.put(
+    "/v1/groups/{group_id}/users/{user_id}/messages/{message_id}",
+    response_model=Message,
+)
 async def edit_a_message(
     group_id: str, user_id: int, message_id: str, query: EditMessageQuery
 ) -> Message:
@@ -153,7 +163,9 @@ async def edit_a_message(
     edit a group message
     """
     # TODO: handle no such message error
-    return await environ.env.rest.message.edit_message(group_id, user_id, message_id, query)
+    return await environ.env.rest.message.edit_message(
+        group_id, user_id, message_id, query
+    )
 
 
 @app.delete("/v1/groups/{group_id}/users/{user_id}/messages/{message_id}")
@@ -164,11 +176,15 @@ async def delete_a_message(
     delete a message in group (hard delete)
     """
     # TODO: handle no such message error
-    return await environ.env.rest.message.delete_message(group_id, user_id, message_id, query)
+    return await environ.env.rest.message.delete_message(
+        group_id, user_id, message_id, query
+    )
 
 
 @app.get("/v1/groups/{group_id}/users", response_model=GroupUsers)
-async def get_users_in_group(group_id: str, db: Session = Depends(get_db)) -> GroupUsers:
+async def get_users_in_group(
+    group_id: str, db: Session = Depends(get_db)
+) -> GroupUsers:
     """
     get users in group
     """
@@ -193,7 +209,9 @@ async def edit_group_information(group_id, query: AdminUpdateGroupQuery) -> Grou
 
 
 @app.post("/v1/users/{user_id}/groups", response_model=List[Group])
-async def get_groups_for_user(user_id: int, query: GroupQuery, db: Session = Depends(get_db)) -> List[Group]:
+async def get_groups_for_user(
+    user_id: int, query: GroupQuery, db: Session = Depends(get_db)
+) -> List[Group]:
     """
     get user's group sort by latest message update
     """
@@ -201,7 +219,9 @@ async def get_groups_for_user(user_id: int, query: GroupQuery, db: Session = Dep
 
 
 @app.post("/v1/users/{user_id}/groups/create", response_model=Group)
-async def create_a_new_group(user_id: int, query: CreateGroupQuery, db: Session = Depends(get_db)) -> Group:
+async def create_a_new_group(
+    user_id: int, query: CreateGroupQuery, db: Session = Depends(get_db)
+) -> Group:
     """
     create a group
     """
@@ -215,7 +235,9 @@ async def update_group_information(
     """
     update a group
     """
-    return await environ.env.rest.group.update_group_information(user_id, group_id, query, db)
+    return await environ.env.rest.group.update_group_information(
+        user_id, group_id, query, db
+    )
 
 
 @app.delete("/v1/users/{user_id}/groups/{group_id}")
@@ -237,7 +259,9 @@ async def delete_all_groups_for_user(user_id: int) -> Group:
 
 
 @app.put("/v1/groups/{group_id}/users/{user_id}/join", response_model=ActionLog)
-async def join_group(group_id: str, user_id: int, db: Session = Depends(get_db)) -> ActionLog:
+async def join_group(
+    group_id: str, user_id: int, db: Session = Depends(get_db)
+) -> ActionLog:
     """
     join a group
     """
@@ -245,7 +269,9 @@ async def join_group(group_id: str, user_id: int, db: Session = Depends(get_db))
 
 
 @app.delete("/v1/groups/{group_id}/users/{user_id}/join")
-async def leave_group(user_id: int, group_id: str, db: Session = Depends(get_db)) -> None:
+async def leave_group(
+    user_id: int, group_id: str, db: Session = Depends(get_db)
+) -> None:
     """
     leave a group
     """
@@ -254,9 +280,7 @@ async def leave_group(user_id: int, group_id: str, db: Session = Depends(get_db)
 
 @app.get("/v1/groups/{group_id}/userstats/{user_id}", response_model=UserGroupStats)
 async def get_user_statistics_in_group(
-        group_id: str,
-        user_id: int,
-        db: Session = Depends(get_db)
+    group_id: str, user_id: int, db: Session = Depends(get_db)
 ) -> UserGroupStats:
     """
     get user statistic in group
@@ -266,15 +290,17 @@ async def get_user_statistics_in_group(
 
 @app.put("/v1/groups/{group_id}/userstats/{user_id}")
 async def update_user_statistics_in_group(
-        group_id: str,
-        user_id: int,
-        query: UpdateUserGroupStats,
-        db: Session = Depends(get_db)
+    group_id: str,
+    user_id: int,
+    query: UpdateUserGroupStats,
+    db: Session = Depends(get_db),
 ) -> None:
     """
     update user statistic in group
     """
-    return await environ.env.rest.group.update_user_group_stats(group_id, user_id, query, db)
+    return await environ.env.rest.group.update_user_group_stats(
+        group_id, user_id, query, db
+    )
 
 
 @app.get("/v1/userstats/{user_id}", response_model=UserStats)

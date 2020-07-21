@@ -4,7 +4,14 @@ from typing import Optional, Dict
 
 from dinofw.db.cassandra.schemas import MessageBase, ActionLogBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase, GroupBase
-from dinofw.rest.server.models import Group, Message, AbstractQuery, UserGroupStats, ActionLog, GroupJoinTime
+from dinofw.rest.server.models import (
+    Group,
+    Message,
+    AbstractQuery,
+    UserGroupStats,
+    ActionLog,
+    GroupJoinTime,
+)
 
 
 class BaseResource(ABC):
@@ -19,33 +26,40 @@ class BaseResource(ABC):
     def message_base_to_message(message: MessageBase) -> Message:
         message_dict = message.dict()
 
-        message_dict["removed_at"] = AbstractQuery.to_ts(message_dict["removed_at"], allow_none=True)
-        message_dict["updated_at"] = AbstractQuery.to_ts(message_dict["updated_at"], allow_none=True)
-        message_dict["created_at"] = AbstractQuery.to_ts(message_dict["created_at"], allow_none=True)
+        message_dict["removed_at"] = AbstractQuery.to_ts(
+            message_dict["removed_at"], allow_none=True
+        )
+        message_dict["updated_at"] = AbstractQuery.to_ts(
+            message_dict["updated_at"], allow_none=True
+        )
+        message_dict["created_at"] = AbstractQuery.to_ts(
+            message_dict["created_at"], allow_none=True
+        )
 
         return Message(**message_dict)
 
     @staticmethod
     def group_base_to_group(
-            group: GroupBase,
-            users: Dict[int, float],
-            last_read: Optional[dt],
-            user_count: int
+        group: GroupBase,
+        users: Dict[int, float],
+        last_read: Optional[dt],
+        user_count: int,
     ) -> Group:
         group_dict = group.dict()
 
         users = [
-            GroupJoinTime(
-                user_id=user_id,
-                join_time=join_time,
-            )
+            GroupJoinTime(user_id=user_id, join_time=join_time,)
             for user_id, join_time in users.items()
         ]
         users.sort(key=lambda user: user.join_time, reverse=True)
 
-        group_dict["updated_at"] = AbstractQuery.to_ts(group_dict["updated_at"], allow_none=True)
+        group_dict["updated_at"] = AbstractQuery.to_ts(
+            group_dict["updated_at"], allow_none=True
+        )
         group_dict["created_at"] = AbstractQuery.to_ts(group_dict["created_at"])
-        group_dict["last_message_time"] = AbstractQuery.to_ts(group_dict["last_message_time"])
+        group_dict["last_message_time"] = AbstractQuery.to_ts(
+            group_dict["last_message_time"]
+        )
         group_dict["last_read"] = AbstractQuery.to_ts(last_read)
         group_dict["users"] = users
         group_dict["user_count"] = user_count

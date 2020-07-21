@@ -13,7 +13,9 @@ logger = logging.getLogger(__name__)
 
 
 class UserResource(BaseResource):
-    async def get_groups_for_user(self, user_id: int, query: GroupQuery, db: Session) -> List[Group]:
+    async def get_groups_for_user(
+        self, user_id: int, query: GroupQuery, db: Session
+    ) -> List[Group]:
         groups_stats_and_users = self.env.db.get_groups_for_user(user_id, query, db)
         groups = list()
 
@@ -21,10 +23,7 @@ class UserResource(BaseResource):
             group_dict = group.dict()
 
             user_joins = [
-                GroupJoinTime(
-                    user_id=one_user_id,
-                    join_time=join_time
-                )
+                GroupJoinTime(user_id=one_user_id, join_time=join_time)
                 for one_user_id, join_time in users.items()
             ]
 
@@ -34,7 +33,9 @@ class UserResource(BaseResource):
 
             group_dict["created_at"] = GroupQuery.to_ts(group_dict["created_at"])
             group_dict["updated_at"] = GroupQuery.to_ts(group_dict["updated_at"])
-            group_dict["last_message_time"] = GroupQuery.to_ts(group_dict["last_message_time"])
+            group_dict["last_message_time"] = GroupQuery.to_ts(
+                group_dict["last_message_time"]
+            )
 
             groups.append(Group(**group_dict))
 
@@ -45,8 +46,9 @@ class UserResource(BaseResource):
         # with messages in them even if the user has more than 1k groups
         query = GroupQuery(per_page=1_000)
 
-        groups_stats_and_users: List[Tuple[GroupBase, UserGroupStatsBase, Any, Any]] = \
-            self.env.db.get_groups_for_user(user_id, query, db, count_users=False)
+        groups_stats_and_users: List[
+            Tuple[GroupBase, UserGroupStatsBase, Any, Any]
+        ] = self.env.db.get_groups_for_user(user_id, query, db, count_users=False)
 
         unread_groups = 0
         owner_amount = 0

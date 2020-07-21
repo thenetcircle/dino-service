@@ -45,14 +45,20 @@ class Publisher(IPublisher):
 
         self.writer_factory = KafkaWriterFactory()
 
-        bootstrap_servers = self.env.config.get(ConfigKeys.HOST, domain=ConfigKeys.KAFKA).split(",")
+        bootstrap_servers = self.env.config.get(
+            ConfigKeys.HOST, domain=ConfigKeys.KAFKA
+        ).split(",")
         self.producer = self.writer_factory.create_producer(
             value_serializer=lambda v: json.dumps(v).encode("utf-8"),
             bootstrap_servers=bootstrap_servers,
         )
 
-    def message(self, group_id: str, user_id: int, message: MessageBase, user_ids: List[int]) -> None:
-        event = ActivityBuilder.activity_for_client_api_send(group_id, user_id, message, user_ids)
+    def message(
+        self, group_id: str, user_id: int, message: MessageBase, user_ids: List[int]
+    ) -> None:
+        event = ActivityBuilder.activity_for_client_api_send(
+            group_id, user_id, message, user_ids
+        )
 
         try:
             self.producer.send(self.topic, event, key=group_id)

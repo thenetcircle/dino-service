@@ -6,7 +6,13 @@ import pytz
 from sqlalchemy.orm import Session
 
 from dinofw.rest.server.base import BaseResource
-from dinofw.rest.server.models import AbstractQuery, UpdateUserGroupStats, ActionLog, GroupJoinTime, GroupQuery
+from dinofw.rest.server.models import (
+    AbstractQuery,
+    UpdateUserGroupStats,
+    ActionLog,
+    GroupJoinTime,
+    GroupQuery,
+)
 from dinofw.rest.server.models import AdminUpdateGroupQuery
 from dinofw.rest.server.models import CreateGroupQuery
 from dinofw.rest.server.models import Group
@@ -21,51 +27,50 @@ logger = logging.getLogger(__name__)
 
 
 class GroupResource(BaseResource):
-    async def get_users_in_group(self, group_id: str, db: Session) -> Optional[GroupUsers]:
+    async def get_users_in_group(
+        self, group_id: str, db: Session
+    ) -> Optional[GroupUsers]:
         # limit list of users/join times to first 50
         query = GroupQuery(per_page=50)
 
-        group, first_users, n_users = self.env.db.get_users_in_group(group_id, query, db)
+        group, first_users, n_users = self.env.db.get_users_in_group(
+            group_id, query, db
+        )
 
         if group is None:
             return None
 
         users = [
-            GroupJoinTime(
-                user_id=user_id,
-                join_time=join_time,
-            )
+            GroupJoinTime(user_id=user_id, join_time=join_time,)
             for user_id, join_time in first_users.items()
         ]
 
         return GroupUsers(
-            group_id=group_id,
-            owner_id=group.owner_id,
-            user_count=n_users,
-            users=users,
+            group_id=group_id, owner_id=group.owner_id, user_count=n_users, users=users,
         )
 
     async def get_group(self, group_id: str, db: Session) -> Group:
         # limit list of users/join times to first 50
         query = GroupQuery(per_page=50)
 
-        group, first_users, n_users = self.env.db.get_users_in_group(group_id, query, db)
-
-        return GroupResource.group_base_to_group(
-            group,
-            users=first_users,
-            last_read=None,
-            user_count=n_users,
+        group, first_users, n_users = self.env.db.get_users_in_group(
+            group_id, query, db
         )
 
-    async def histories(
-        self, group_id: str, query: MessageQuery
-    ) -> List[Histories]:
+        return GroupResource.group_base_to_group(
+            group, users=first_users, last_read=None, user_count=n_users,
+        )
+
+    async def histories(self, group_id: str, query: MessageQuery) -> List[Histories]:
         action_log = self.env.storage.get_action_log_in_group(group_id, query)
         messages = self.env.storage.get_messages_in_group(group_id, query)
 
-        messages = [GroupResource.message_base_to_message(message) for message in messages]
-        action_log = [GroupResource.action_log_base_to_action_log(log) for log in action_log]
+        messages = [
+            GroupResource.message_base_to_message(message) for message in messages
+        ]
+        action_log = [
+            GroupResource.action_log_base_to_action_log(log) for log in action_log
+        ]
 
         histories = [
             Histories(messages=messages),
@@ -74,7 +79,9 @@ class GroupResource(BaseResource):
 
         return histories
 
-    async def get_user_group_stats(self, group_id: str, user_id: int, db: Session) -> UserGroupStats:
+    async def get_user_group_stats(
+        self, group_id: str, user_id: int, db: Session
+    ) -> UserGroupStats:
         user_stats = self.env.db.get_user_stats_in_group(group_id, user_id, db)
         message_amount = self.env.storage.count_messages_in_group(group_id)
 
@@ -88,7 +95,9 @@ class GroupResource(BaseResource):
             hide_before = AbstractQuery.to_ts(user_stats.hide_before)
             last_read = AbstractQuery.to_ts(user_stats.last_read)
 
-            unread_amount = self.env.storage.count_messages_in_group_since(group_id, user_stats.last_read)
+            unread_amount = self.env.storage.count_messages_in_group_since(
+                group_id, user_stats.last_read
+            )
 
         return UserGroupStats(
             user_id=user_id,
@@ -101,15 +110,13 @@ class GroupResource(BaseResource):
         )
 
     async def update_user_group_stats(
-            self,
-            group_id: str,
-            user_id: int,
-            query: UpdateUserGroupStats,
-            db: Session
+        self, group_id: str, user_id: int, query: UpdateUserGroupStats, db: Session
     ) -> None:
         self.env.db.update_user_group_stats(group_id, user_id, query, db)
 
-    async def create_new_group(self, user_id: int, query: CreateGroupQuery, db: Session) -> Group:
+    async def create_new_group(
+        self, user_id: int, query: CreateGroupQuery, db: Session
+    ) -> Group:
         group = self.env.db.create_group(user_id, query, db)
 
         now = dt.utcnow()
@@ -122,22 +129,18 @@ class GroupResource(BaseResource):
             users.update({user_id: now_ts for user_id in query.users})
 
         self.env.db.update_last_read_in_group_for_user(
-            group.group_id,
-            users,
-            group.created_at,
-            db
+            group.group_id, users, group.created_at, db
         )
 
         self.env.storage.create_join_action_log(group.group_id, users, now)
 
         return GroupResource.group_base_to_group(
-            group,
-            users=users,
-            last_read=group.created_at,
-            user_count=len(users),
+            group, users=users, last_read=group.created_at, user_count=len(users),
         )
 
-    async def admin_update_group_information(self, group_id, query: AdminUpdateGroupQuery, db: Session) -> bool:
+    async def admin_update_group_information(
+        self, group_id, query: AdminUpdateGroupQuery, db: Session
+    ) -> bool:
         group_base = self.env.db.admin_update_group_information(group_id, query, db)
 
         if group_base is None:
@@ -146,7 +149,9 @@ class GroupResource(BaseResource):
 
         return True
 
-    async def update_group_information(self, user_id: int, group_id: str, query: UpdateGroupQuery, db: Session) -> None:
+    async def update_group_information(
+        self, user_id: int, group_id: str, query: UpdateGroupQuery, db: Session
+    ) -> None:
         group_base = self.env.db.update_group_information(group_id, query, db)
 
         if group_base is None:
@@ -161,8 +166,12 @@ class GroupResource(BaseResource):
 
         user_id_and_last_read = {user_id: now}
 
-        self.env.db.update_last_read_in_group_for_user(group_id, user_id_and_last_read, now, db)
-        action_log = self.env.storage.create_join_action_log(group_id, user_id_and_last_read, now)
+        self.env.db.update_last_read_in_group_for_user(
+            group_id, user_id_and_last_read, now, db
+        )
+        action_log = self.env.storage.create_join_action_log(
+            group_id, user_id_and_last_read, now
+        )
 
         return GroupResource.action_log_base_to_action_log(action_log[0])
 

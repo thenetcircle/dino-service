@@ -17,7 +17,7 @@ class GroupEntity(env.Base):
     name = Column(String(128), nullable=False)
 
     status = Column(Integer, nullable=True)
-    group_type = Column(Integer, nullable=False, server_default='0')
+    group_type = Column(Integer, nullable=False, server_default="0")
     last_message_time = Column(DATETIME(fsp=3), nullable=False, index=True)
     created_at = Column(DATETIME(fsp=3), nullable=False)
     owner_id = Column(Integer, nullable=False)

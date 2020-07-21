@@ -16,7 +16,9 @@ logger = logging.getLogger(__name__)
 
 
 class MessageResource(BaseResource):
-    async def save_new_message(self, group_id: str, user_id: int, query: SendMessageQuery, db: Session) -> Message:
+    async def save_new_message(
+        self, group_id: str, user_id: int, query: SendMessageQuery, db: Session
+    ) -> Message:
         message = self.env.storage.store_message(group_id, user_id, query)
 
         # cassandra DT is different from python DT
@@ -24,15 +26,21 @@ class MessageResource(BaseResource):
         now = now.replace(tzinfo=pytz.UTC)
 
         self.env.db.update_group_new_message(message, now, db)
-        self.env.db.update_last_read_and_sent_in_group_for_user(user_id, group_id, now, db)
+        self.env.db.update_last_read_and_sent_in_group_for_user(
+            user_id, group_id, now, db
+        )
 
         sub_query = GroupQuery(per_page=5_000)
-        user_ids = self.env.db.get_user_ids_and_join_times_in_group(group_id, sub_query, db)
+        user_ids = self.env.db.get_user_ids_and_join_times_in_group(
+            group_id, sub_query, db
+        )
         self.env.publisher.message(group_id, user_id, message, user_ids)
 
         return MessageResource.message_base_to_message(message)
 
-    async def messages_in_group(self, group_id: str, query: MessageQuery) -> List[Message]:
+    async def messages_in_group(
+        self, group_id: str, query: MessageQuery
+    ) -> List[Message]:
         raw_messages = self.env.storage.get_messages_in_group(group_id, query)
         messages = list()
 
@@ -45,7 +53,9 @@ class MessageResource(BaseResource):
     async def messages_for_user(
         self, group_id: str, user_id: int, query: MessageQuery
     ) -> List[Message]:
-        raw_messages = self.env.storage.get_messages_in_group_for_user(group_id, user_id, query)
+        raw_messages = self.env.storage.get_messages_in_group_for_user(
+            group_id, user_id, query
+        )
         messages = list()
 
         for message_base in raw_messages:
@@ -54,23 +64,35 @@ class MessageResource(BaseResource):
 
         return messages
 
-    async def edit_message(self, group_id: str, user_id: int, message_id: str, query: EditMessageQuery) -> Message:
-        message_base = self.env.storage.edit_message(group_id, user_id, message_id, query)
+    async def edit_message(
+        self, group_id: str, user_id: int, message_id: str, query: EditMessageQuery
+    ) -> Message:
+        message_base = self.env.storage.edit_message(
+            group_id, user_id, message_id, query
+        )
 
         return MessageResource.message_base_to_message(message_base)
 
-    async def delete_message(self, group_id: str, user_id: int, message_id: str, query: AdminQuery) -> None:
+    async def delete_message(
+        self, group_id: str, user_id: int, message_id: str, query: AdminQuery
+    ) -> None:
         self.env.storage.delete_message(group_id, user_id, message_id, query)
 
-    async def message_details(self, group_id: str, user_id: int, message_id: str) -> Message:
+    async def message_details(
+        self, group_id: str, user_id: int, message_id: str
+    ) -> Message:
         message_base = self.env.storage.get_message(group_id, user_id, message_id)
 
         return MessageResource.message_base_to_message(message_base)
 
-    async def update_messages_for_user_in_group(self, group_id: str, user_id: int, query: MessageQuery) -> None:
+    async def update_messages_for_user_in_group(
+        self, group_id: str, user_id: int, query: MessageQuery
+    ) -> None:
         self.env.storage.update_messages_in_group_for_user(group_id, user_id, query)
 
-    async def delete_messages_for_user_in_group(self, group_id: str, user_id: int, query: MessageQuery) -> None:
+    async def delete_messages_for_user_in_group(
+        self, group_id: str, user_id: int, query: MessageQuery
+    ) -> None:
         self.env.storage.update_messages_in_group_for_user(group_id, user_id, query)
 
     async def update_messages(self, group_id: str, query: MessageQuery):
