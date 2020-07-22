@@ -45,7 +45,7 @@ class GroupResource(BaseResource):
         users = [
             GroupJoinTime(
                 user_id=user_id,
-                join_time=AbstractQuery.to_ts(join_time)
+                join_time=join_time,
             )
             for user_id, join_time in first_users.items()
         ]

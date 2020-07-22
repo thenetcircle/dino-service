@@ -238,7 +238,7 @@ class FakeDatabase:
             if len(response) > query.per_page:
                 break
 
-        return response
+        return response  # nowa
 
 
 class FakePublisher:
