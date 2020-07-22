@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from dinofw.rest.server.message import MessageResource
-from dinofw.rest.server.models import SendMessageQuery, MessageQuery, EditMessageQuery
+from dinofw.rest.server.models import SendMessageQuery, MessageQuery, EditMessageQuery, Message
 from test.base import async_test, BaseTest
 from test.mocks import FakeEnv
 
@@ -26,6 +26,7 @@ class TestMessageResource(BaseTest):
             db=None  # noqa
         )
         self.assertEqual(1, len(self.resource.env.publisher.sent_messages[BaseTest.GROUP_ID]))
+        self.assertEqual(type(message), Message)
 
         self.assertIsNotNone(message.message_id)
 
@@ -73,6 +74,7 @@ class TestMessageResource(BaseTest):
 
         messages = await self.resource.messages_in_group(BaseTest.GROUP_ID, message_query)
         self.assertEqual(1, len(messages))
+        self.assertEqual(type(messages[0]), Message)
 
     @async_test
     async def test_messages_for_user(self):
@@ -104,6 +106,7 @@ class TestMessageResource(BaseTest):
             message_query
         )
         self.assertEqual(1, len(messages))
+        self.assertEqual(type(messages[0]), Message)
 
     @async_test
     async def test_edit_message(self):

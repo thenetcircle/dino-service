@@ -42,8 +42,6 @@ class GroupResource(BaseResource):
         if group is None:
             return None
 
-        print(first_users)
-
         users = [
             GroupJoinTime(
                 user_id=user_id,
@@ -56,13 +54,17 @@ class GroupResource(BaseResource):
             group_id=group_id, owner_id=group.owner_id, user_count=n_users, users=users,
         )
 
-    async def get_group(self, group_id: str, db: Session) -> Group:
+    async def get_group(self, group_id: str, db: Session) -> Optional[Group]:
         # limit list of users/join times to first 50
         query = GroupQuery(per_page=50)
 
         group, first_users, n_users = self.env.db.get_users_in_group(
             group_id, query, db
         )
+
+        if group is None:
+            # TODO: handle missing
+            return None
 
         return GroupResource.group_base_to_group(
             group, users=first_users, last_read=None, user_count=n_users,
@@ -142,7 +144,7 @@ class GroupResource(BaseResource):
         self.env.storage.create_join_action_log(group.group_id, users, now)
 
         return GroupResource.group_base_to_group(
-            group, users=users, last_read=group.created_at, user_count=len(users),
+            group, users=users, last_read=now, user_count=len(users),
         )
 
     async def admin_update_group_information(

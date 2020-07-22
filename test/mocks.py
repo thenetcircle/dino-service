@@ -7,7 +7,7 @@ import pytz
 from dinofw.db.cassandra.schemas import MessageBase, ActionLogBase
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
-from dinofw.rest.server.models import CreateGroupQuery, MessageQuery, EditMessageQuery
+from dinofw.rest.server.models import CreateGroupQuery, MessageQuery, EditMessageQuery, AbstractQuery
 from dinofw.rest.server.models import GroupQuery
 from dinofw.rest.server.models import SendMessageQuery
 
@@ -233,7 +233,7 @@ class FakeDatabase:
 
         for _, stat in self.stats.items():
             if stat.group_id == group_id:
-                response[stat.user_id] = stat.join_time
+                response[stat.user_id] = AbstractQuery.to_ts(stat.join_time)
 
             if len(response) > query.per_page:
                 break

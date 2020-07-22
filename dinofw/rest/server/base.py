@@ -48,7 +48,10 @@ class BaseResource(ABC):
         group_dict = group.dict()
 
         users = [
-            GroupJoinTime(user_id=user_id, join_time=join_time,)
+            GroupJoinTime(
+                user_id=user_id,
+                join_time=join_time,
+            )
             for user_id, join_time in users.items()
         ]
         users.sort(key=lambda user: user.join_time, reverse=True)
