@@ -66,7 +66,7 @@ class CreateGroupQuery(AbstractQuery):
     group_type: str
     users: List[int]
     description: Optional[str]
-    group_meta: Optional[int]  # TODO: int or str?
+    group_meta: Optional[int]
     group_context: Optional[str]
 
 

@@ -30,6 +30,8 @@ class GroupResource(BaseResource):
     async def get_users_in_group(
         self, group_id: str, db: Session
     ) -> Optional[GroupUsers]:
+        # TODO: this should have pagination
+
         # limit list of users/join times to first 50
         query = GroupQuery(per_page=50)
 
@@ -40,8 +42,13 @@ class GroupResource(BaseResource):
         if group is None:
             return None
 
+        print(first_users)
+
         users = [
-            GroupJoinTime(user_id=user_id, join_time=join_time,)
+            GroupJoinTime(
+                user_id=user_id,
+                join_time=AbstractQuery.to_ts(join_time)
+            )
             for user_id, join_time in first_users.items()
         ]
 
@@ -129,7 +136,7 @@ class GroupResource(BaseResource):
             users.update({user_id: now_ts for user_id in query.users})
 
         self.env.db.update_last_read_in_group_for_user(
-            group.group_id, users, group.created_at, db
+            group.group_id, users, now, db
         )
 
         self.env.storage.create_join_action_log(group.group_id, users, now)

@@ -1,23 +1,12 @@
 from unittest import TestCase
 
-import asyncio
-
 from dinofw.rest.server.message import MessageResource
 from dinofw.rest.server.models import SendMessageQuery, MessageQuery, EditMessageQuery
+from test.base import async_test, BaseTest
 from test.mocks import FakeEnv
 
 
-def async_test(coroutine):
-    def wrapper(*args, **kwargs):
-        loop = asyncio.new_event_loop()
-        return loop.run_until_complete(coroutine(*args, **kwargs))
-    return wrapper
-
-
-class TestMessageResource(TestCase):
-    GROUP_ID = '8888-7777-6666'
-    USER_ID = 1234
-
+class TestMessageResource(BaseTest):
     def setUp(self) -> None:
         self.resource = MessageResource(FakeEnv())
 
@@ -28,36 +17,36 @@ class TestMessageResource(TestCase):
             message_type="text"
         )
 
-        self.assertNotIn(TestMessageResource.GROUP_ID, self.resource.env.publisher.sent_messages)
+        self.assertNotIn(BaseTest.GROUP_ID, self.resource.env.publisher.sent_messages)
 
         message = await self.resource.save_new_message(
-            group_id=TestMessageResource.GROUP_ID,
-            user_id=TestMessageResource.USER_ID,
+            group_id=BaseTest.GROUP_ID,
+            user_id=BaseTest.USER_ID,
             query=query,
             db=None  # noqa
         )
-        self.assertEqual(1, len(self.resource.env.publisher.sent_messages[TestMessageResource.GROUP_ID]))
+        self.assertEqual(1, len(self.resource.env.publisher.sent_messages[BaseTest.GROUP_ID]))
 
         self.assertIsNotNone(message.message_id)
 
-        last_sent = self.resource.env.db.stats[TestMessageResource.USER_ID].last_sent
-        last_read = self.resource.env.db.stats[TestMessageResource.USER_ID].last_read
-        join_time = self.resource.env.db.stats[TestMessageResource.USER_ID].join_time
+        last_sent = self.resource.env.db.stats[BaseTest.USER_ID].last_sent
+        last_read = self.resource.env.db.stats[BaseTest.USER_ID].last_read
+        join_time = self.resource.env.db.stats[BaseTest.USER_ID].join_time
         self.assertIsNotNone(last_sent)
         self.assertIsNotNone(last_read)
         self.assertIsNotNone(join_time)
 
         await self.resource.save_new_message(
-            group_id=TestMessageResource.GROUP_ID,
-            user_id=TestMessageResource.USER_ID,
+            group_id=BaseTest.GROUP_ID,
+            user_id=BaseTest.USER_ID,
             query=query,
             db=None  # noqa
         )
-        self.assertEqual(2, len(self.resource.env.publisher.sent_messages[TestMessageResource.GROUP_ID]))
+        self.assertEqual(2, len(self.resource.env.publisher.sent_messages[BaseTest.GROUP_ID]))
 
-        new_last_sent = self.resource.env.db.stats[TestMessageResource.USER_ID].last_sent
-        new_last_read = self.resource.env.db.stats[TestMessageResource.USER_ID].last_read
-        new_join_time = self.resource.env.db.stats[TestMessageResource.USER_ID].join_time
+        new_last_sent = self.resource.env.db.stats[BaseTest.USER_ID].last_sent
+        new_last_read = self.resource.env.db.stats[BaseTest.USER_ID].last_read
+        new_join_time = self.resource.env.db.stats[BaseTest.USER_ID].join_time
         self.assertNotEqual(last_sent, new_last_sent)
         self.assertNotEqual(last_read, new_last_read)
         self.assertEqual(join_time, new_join_time)
@@ -72,17 +61,17 @@ class TestMessageResource(TestCase):
             message_type="text"
         )
 
-        messages = await self.resource.messages_in_group(TestMessageResource.GROUP_ID, message_query)
+        messages = await self.resource.messages_in_group(BaseTest.GROUP_ID, message_query)
         self.assertEqual(0, len(messages))
 
         await self.resource.save_new_message(
-            group_id=TestMessageResource.GROUP_ID,
-            user_id=TestMessageResource.USER_ID,
+            group_id=BaseTest.GROUP_ID,
+            user_id=BaseTest.USER_ID,
             query=send_query,
             db=None  # noqa
         )
 
-        messages = await self.resource.messages_in_group(TestMessageResource.GROUP_ID, message_query)
+        messages = await self.resource.messages_in_group(BaseTest.GROUP_ID, message_query)
         self.assertEqual(1, len(messages))
 
     @async_test
@@ -96,22 +85,22 @@ class TestMessageResource(TestCase):
         )
 
         messages = await self.resource.messages_for_user(
-            TestMessageResource.GROUP_ID,
-            TestMessageResource.USER_ID,
+            BaseTest.GROUP_ID,
+            BaseTest.USER_ID,
             message_query
         )
         self.assertEqual(0, len(messages))
 
         await self.resource.save_new_message(
-            group_id=TestMessageResource.GROUP_ID,
-            user_id=TestMessageResource.USER_ID,
+            group_id=BaseTest.GROUP_ID,
+            user_id=BaseTest.USER_ID,
             query=send_query,
             db=None  # noqa
         )
 
         messages = await self.resource.messages_for_user(
-            TestMessageResource.GROUP_ID,
-            TestMessageResource.USER_ID,
+            BaseTest.GROUP_ID,
+            BaseTest.USER_ID,
             message_query
         )
         self.assertEqual(1, len(messages))
@@ -133,29 +122,29 @@ class TestMessageResource(TestCase):
         )
 
         message = await self.resource.save_new_message(
-            group_id=TestMessageResource.GROUP_ID,
-            user_id=TestMessageResource.USER_ID,
+            group_id=BaseTest.GROUP_ID,
+            user_id=BaseTest.USER_ID,
             query=send_query,
             db=None  # noqa
         )
         messages = await self.resource.messages_for_user(
-            TestMessageResource.GROUP_ID,
-            TestMessageResource.USER_ID,
+            BaseTest.GROUP_ID,
+            BaseTest.USER_ID,
             message_query
         )
         self.assertEqual(messages[0].message_payload, old_text)
         self.assertIsNone(messages[0].updated_at)
 
         await self.resource.edit_message(
-            TestMessageResource.GROUP_ID,
-            TestMessageResource.USER_ID,
+            BaseTest.GROUP_ID,
+            BaseTest.USER_ID,
             message.message_id,
             edit_query
         )
 
         messages = await self.resource.messages_for_user(
-            TestMessageResource.GROUP_ID,
-            TestMessageResource.USER_ID,
+            BaseTest.GROUP_ID,
+            BaseTest.USER_ID,
             message_query
         )
         self.assertEqual(messages[0].message_payload, new_text)
