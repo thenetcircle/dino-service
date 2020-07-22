@@ -12,3 +12,4 @@ def async_test(coroutine):
 class BaseTest(TestCase):
     GROUP_ID = '8888-7777-6666'
     USER_ID = 1234
+    OTHER_USER_ID = 8888

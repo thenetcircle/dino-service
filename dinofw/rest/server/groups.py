@@ -90,23 +90,21 @@ class GroupResource(BaseResource):
 
     async def get_user_group_stats(
         self, group_id: str, user_id: int, db: Session
-    ) -> UserGroupStats:
+    ) -> Optional[UserGroupStats]:
         user_stats = self.env.db.get_user_stats_in_group(group_id, user_id, db)
+
+        if user_stats is None:
+            return None
+
         message_amount = self.env.storage.count_messages_in_group(group_id)
 
-        last_sent = 0
-        last_read = 0
-        hide_before = 0
-        unread_amount = message_amount
+        last_sent = AbstractQuery.to_ts(user_stats.last_sent)
+        hide_before = AbstractQuery.to_ts(user_stats.hide_before)
+        last_read = AbstractQuery.to_ts(user_stats.last_read)
 
-        if user_stats is not None:
-            last_sent = AbstractQuery.to_ts(user_stats.last_sent)
-            hide_before = AbstractQuery.to_ts(user_stats.hide_before)
-            last_read = AbstractQuery.to_ts(user_stats.last_read)
-
-            unread_amount = self.env.storage.count_messages_in_group_since(
-                group_id, user_stats.last_read
-            )
+        unread_amount = self.env.storage.count_messages_in_group_since(
+            group_id, user_stats.last_read
+        )
 
         return UserGroupStats(
             user_id=user_id,

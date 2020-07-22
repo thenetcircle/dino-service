@@ -150,6 +150,26 @@ class FakeStorage:
 
         return logs
 
+    def count_messages_in_group(self, group_id: str) -> int:
+        if group_id not in self.messages_by_group:
+            return 0
+
+        return len(self.messages_by_group[group_id])
+
+    def count_messages_in_group_since(self, group_id: str, since: dt) -> int:
+        if group_id not in self.messages_by_group:
+            return 0
+
+        messages = list()
+
+        for message in self.messages_by_group[group_id]:
+            if message.created_at < since:
+                continue
+
+            messages.append(message)
+
+        return len(messages)
+
 
 class FakeDatabase:
     def __init__(self):
@@ -253,6 +273,16 @@ class FakeDatabase:
                 break
 
         return response  # noqa
+
+    def get_user_stats_in_group(self, group_id: str, user_id: int, _) -> Optional[UserGroupStatsBase]:
+        if user_id not in self.stats:
+            return None
+
+        for user_id, stat in self.stats.items():
+            if stat.group_id == group_id:
+                return stat
+
+        return
 
 
 class FakePublisher:
