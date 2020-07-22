@@ -29,6 +29,7 @@ class UserGroupStatsBase(BaseModel):
     last_read: datetime
     last_sent: datetime
     hide_before: datetime
+    join_time: datetime
 
 
 class Group(GroupBase):

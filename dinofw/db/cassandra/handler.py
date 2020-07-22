@@ -277,7 +277,7 @@ class CassandraHandler:
             group_id=group_id, callback=callback, user_id=user_id,
         )
 
-    def store_message(self, group_id: str, user_id: int, query: SendMessageQuery):
+    def store_message(self, group_id: str, user_id: int, query: SendMessageQuery) -> MessageBase:
         created_at = dt.utcnow()
         created_at = created_at.replace(tzinfo=pytz.UTC)
         message_id = uuid()
