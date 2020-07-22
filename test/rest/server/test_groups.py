@@ -2,7 +2,7 @@ from dinofw.rest.server.groups import GroupResource
 from dinofw.rest.server.message import MessageResource
 from dinofw.rest.server.models import CreateGroupQuery, GroupUsers, Group, MessageQuery, SendMessageQuery
 from test.base import async_test, BaseTest
-from test.mocks import FakeEnv
+from test.mocks import FakeEnv, FakeStorage
 
 
 class TestGroupResource(BaseTest):
@@ -161,3 +161,66 @@ class TestGroupResource(BaseTest):
         stats = await self.group.get_user_group_stats(group.group_id, BaseTest.USER_ID, None)  # noqa
         self.assertEqual(2, stats.message_amount)
         self.assertEqual(1, stats.unread_amount)
+
+    @async_test
+    async def test_join_group(self):
+        create_query = CreateGroupQuery(
+            group_name="some group name",
+            group_type=0,
+            users=[BaseTest.USER_ID],
+        )
+
+        # create new group
+        group = await self.group.create_new_group(BaseTest.USER_ID, create_query, None)  # noqa
+
+        # check we only have one user in the group, the creator
+        group_users = await self.group.get_users_in_group(group.group_id, None)  # noqa
+        self.assertIsNotNone(group_users)
+        self.assertEqual(1, group_users.user_count)
+        self.assertEqual(1, len(group_users.users))
+        self.assertTrue(any((g.user_id == BaseTest.USER_ID for g in group_users.users)))
+
+        # other user joins it
+        log = await self.group.join_group(group.group_id, BaseTest.OTHER_USER_ID, None)  # noqa
+        self.assertIsNotNone(log)
+        self.assertEqual(BaseTest.OTHER_USER_ID, log.user_id)
+        self.assertEqual(FakeStorage.ACTION_TYPE_JOIN, log.action_type)
+
+        # check the other user is now in the group as well
+        group_users = await self.group.get_users_in_group(group.group_id, None)  # noqa
+        self.assertIsNotNone(group_users)
+        self.assertEqual(2, group_users.user_count)
+        self.assertEqual(2, len(group_users.users))
+        self.assertTrue(any((g.user_id == BaseTest.USER_ID for g in group_users.users)))
+        self.assertTrue(any((g.user_id == BaseTest.OTHER_USER_ID for g in group_users.users)))
+
+    @async_test
+    async def test_leave_group(self):
+        create_query = CreateGroupQuery(
+            group_name="some group name",
+            group_type=0,
+            users=[BaseTest.USER_ID],
+        )
+
+        # group doesn't exist yet
+        log = await self.group.leave_group(BaseTest.GROUP_ID, BaseTest.USER_ID, None)  # noqa
+        self.assertIsNone(log)
+
+        # create new group
+        group = await self.group.create_new_group(BaseTest.USER_ID, create_query, None)  # noqa
+
+        # check we only have one user in the group, the creator
+        group_users = await self.group.get_users_in_group(group.group_id, None)  # noqa
+        self.assertIsNotNone(group_users)
+        self.assertEqual(1, group_users.user_count)
+
+        # leave the group
+        log = await self.group.leave_group(group.group_id, BaseTest.USER_ID, None)  # noqa
+        self.assertIsNotNone(log)
+        self.assertEqual(BaseTest.USER_ID, log.user_id)
+        self.assertEqual(FakeStorage.ACTION_TYPE_LEAVE, log.action_type)
+
+        # check there's no users left in the group after leaving
+        group_users = await self.group.get_users_in_group(group.group_id, None)  # noqa
+        self.assertIsNotNone(group_users)
+        self.assertEqual(0, group_users.user_count)

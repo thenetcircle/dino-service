@@ -121,6 +121,15 @@ class RelationalHandler:
             group_id, query, db, skip_cache=True
         )
 
+    def group_exists(self, group_id: str, db: Session) -> bool:
+        group = (
+            db.query(models.GroupEntity)
+            .filter(models.GroupEntity.group_id == group_id)
+            .first()
+        )
+
+        return group is not None
+
     def update_last_read_in_group_for_user(
         self, group_id: str, users: Dict[int, float], last_read_time: dt, db: Session
     ) -> None:

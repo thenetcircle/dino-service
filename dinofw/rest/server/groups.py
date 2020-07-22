@@ -159,13 +159,7 @@ class GroupResource(BaseResource):
     async def update_group_information(
         self, user_id: int, group_id: str, query: UpdateGroupQuery, db: Session
     ) -> None:
-        group_base = self.env.db.update_group_information(group_id, query, db)
-
-        if group_base is None:
-            # TODO: return an error response instead
-            return None
-
-        return None
+        self.env.db.update_group_information(group_id, query, db)
 
     async def join_group(self, group_id: str, user_id: int, db: Session) -> ActionLog:
         now = dt.utcnow()
@@ -182,11 +176,14 @@ class GroupResource(BaseResource):
 
         return GroupResource.action_log_base_to_action_log(action_log[0])
 
-    async def leave_group(self, group_id: str, user_id: int, db: Session) -> ActionLog:
+    async def leave_group(self, group_id: str, user_id: int, db: Session) -> Optional[ActionLog]:
+        if not self.env.db.group_exists(group_id, db):
+            return None
+
         now = dt.utcnow()
         now = now.replace(tzinfo=pytz.UTC)
 
-        self.env.db.remove_last_read_in_group_for_user(group_id, [user_id], db)
+        self.env.db.remove_last_read_in_group_for_user(group_id, user_id, db)
         action_log = self.env.storage.create_leave_action_log(group_id, [user_id], now)
 
         return GroupResource.action_log_base_to_action_log(action_log[0])

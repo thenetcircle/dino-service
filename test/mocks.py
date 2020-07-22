@@ -260,6 +260,23 @@ class FakeDatabase:
                     join_time=join_time,
                 )
 
+    def remove_last_read_in_group_for_user(self, group_id: str, user_id: int, _) -> None:
+        # TODO: support multiple groups so we can test that too
+
+        if user_id not in self.stats.keys():
+            return
+
+        old_stat = self.stats[user_id]
+        del self.stats[user_id]
+
+        if old_stat != group_id:
+            return
+
+        self.stats[user_id] = old_stat
+
+    def group_exists(self, group_id: str, _) -> bool:
+        return group_id in self.groups
+
     def get_user_ids_and_join_times_in_group(
         self, group_id: str, query: GroupQuery, _, skip_cache: bool = False
     ) -> Dict[int, float]:
