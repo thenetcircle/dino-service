@@ -1,5 +1,5 @@
 from datetime import datetime as dt
-from typing import Dict
+from typing import Dict, List, Optional
 from uuid import uuid4 as uuid
 
 import pytz
@@ -7,7 +7,7 @@ import pytz
 from dinofw.db.cassandra.schemas import MessageBase
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
-from dinofw.rest.server.models import CreateGroupQuery
+from dinofw.rest.server.models import CreateGroupQuery, MessageQuery, EditMessageQuery
 from dinofw.rest.server.models import GroupQuery
 from dinofw.rest.server.models import SendMessageQuery
 
@@ -34,6 +34,65 @@ class FakeStorage:
         )
 
         self.messages_by_group[group_id].append(message)
+
+        return message
+
+    def get_messages_in_group(self, group_id: str, query: MessageQuery) -> List[MessageBase]:
+        if group_id not in self.messages_by_group:
+            return list()
+
+        messages = list()
+
+        for message in self.messages_by_group[group_id]:
+            messages.append(message)
+
+            if len(messages) > query.per_page:
+                break
+
+        return messages
+
+    def get_messages_in_group_for_user(
+        self, group_id: str, user_id: int, query: MessageQuery
+    ) -> List[MessageBase]:
+        if group_id not in self.messages_by_group:
+            return list()
+
+        messages = list()
+
+        for message in self.messages_by_group[group_id]:
+            if message.user_id == user_id:
+                messages.append(message)
+
+            if len(messages) > query.per_page:
+                break
+
+        return messages
+
+    def edit_message(
+        self, group_id: str, user_id: int, message_id: str, query: EditMessageQuery
+    ) -> Optional[MessageBase]:
+
+        message = None
+
+        for m in self.messages_by_group[group_id]:
+            if m.message_id == message_id:
+                message = m
+                break
+
+        if message is None:
+            return None
+
+        if query.message_payload is not None:
+            message.message_payload = query.message_payload
+        if query.message_type is not None:
+            message.message_type = query.message_type
+        if query.status is not None:
+            message.status = query.status
+
+        now = dt.utcnow()
+        now = now.replace(tzinfo=pytz.UTC)
+
+        message.updated_at = now
 
         return message
 

@@ -183,9 +183,13 @@ class CassandraHandler:
             )
             return None
 
+        now = dt.utcnow()
+        now = now.replace(tzinfo=pytz.UTC)
+
         message.update(
             message_payload=query.message_payload or message.message_payload,
             status=query.status or message.status,
+            updated_at=now
         )
 
         return CassandraHandler.message_base_from_entity(message)
