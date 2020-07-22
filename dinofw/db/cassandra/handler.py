@@ -297,7 +297,7 @@ class CassandraHandler:
 
         return CassandraHandler.message_base_from_entity(message)
 
-    def get_action_log_in_group(self, group_id: str, query: MessageQuery):
+    def get_action_log_in_group(self, group_id: str, query: MessageQuery) -> List[ActionLogBase]:
         until = MessageQuery.to_dt(query.until)
         hide_before = MessageQuery.to_dt(query.hide_before, default=self.long_ago)
 

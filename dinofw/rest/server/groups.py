@@ -70,7 +70,7 @@ class GroupResource(BaseResource):
             group, users=first_users, last_read=None, user_count=n_users,
         )
 
-    async def histories(self, group_id: str, query: MessageQuery) -> List[Histories]:
+    async def histories(self, group_id: str, query: MessageQuery) -> Histories:
         action_log = self.env.storage.get_action_log_in_group(group_id, query)
         messages = self.env.storage.get_messages_in_group(group_id, query)
 
@@ -81,10 +81,10 @@ class GroupResource(BaseResource):
             GroupResource.action_log_base_to_action_log(log) for log in action_log
         ]
 
-        histories = [
-            Histories(messages=messages),
-            Histories(action_logs=action_log),
-        ]
+        histories = Histories(
+            messages=messages,
+            action_logs=action_log
+        )
 
         return histories
 

@@ -176,5 +176,5 @@ class Group(AbstractQuery):
 
 
 class Histories(AbstractQuery):
-    messages: Optional[List[Message]]
-    action_logs: Optional[List[ActionLog]]
+    messages: List[Message]
+    action_logs: List[ActionLog]

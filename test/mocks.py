@@ -136,6 +136,20 @@ class FakeStorage:
 
         return message
 
+    def get_action_log_in_group(self, group_id: str, query: MessageQuery) -> List[ActionLogBase]:
+        logs = list()
+
+        if group_id not in self.action_log:
+            return list()
+
+        for log in self.action_log[group_id]:
+            logs.append(log)
+
+            if len(logs) > query.per_page:
+                break
+
+        return logs
+
 
 class FakeDatabase:
     def __init__(self):
@@ -238,7 +252,7 @@ class FakeDatabase:
             if len(response) > query.per_page:
                 break
 
-        return response  # nowa
+        return response  # noqa
 
 
 class FakePublisher:
