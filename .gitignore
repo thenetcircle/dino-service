@@ -18,3 +18,6 @@ pytype_output/
 
 # ansible inventory files
 inv-*
+
+# test databases
+*.db

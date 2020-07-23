@@ -18,7 +18,6 @@ class AbstractQuery(BaseModel):
             s = dt.utcnow()
             s = s.replace(tzinfo=pytz.UTC)
         else:
-            s = int(s)
             s = dt.utcfromtimestamp(s)
 
         return s
@@ -63,7 +62,7 @@ class SendMessageQuery(AbstractQuery):
 
 class CreateGroupQuery(AbstractQuery):
     group_name: str
-    group_type: str
+    group_type: int
     users: List[int]
     description: Optional[str]
     group_meta: Optional[int]

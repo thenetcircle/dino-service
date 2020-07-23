@@ -73,11 +73,9 @@ def init_database(gn_env: GNEnvironment):
         return
 
     from dinofw.db.rdbms.database import init_db as init_sql_alchemy
-
     init_sql_alchemy(gn_env)
 
     from dinofw.db.rdbms.handler import RelationalHandler
-
     gn_env.db = RelationalHandler(gn_env)
 
 
@@ -360,4 +358,6 @@ ENV_KEY_ENVIRONMENT = "DINO_ENVIRONMENT"
 gn_environment = os.getenv(ENV_KEY_ENVIRONMENT)
 
 env = create_env(gn_environment)
-initialize_env(env)
+
+if not env.config.get(ConfigKeys.TESTING, False) and os.getenv(ConfigKeys.TESTING, "0") != "1":
+    initialize_env(env)

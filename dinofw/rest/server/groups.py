@@ -130,10 +130,10 @@ class GroupResource(BaseResource):
         now = now.replace(tzinfo=pytz.UTC)
         now_ts = CreateGroupQuery.to_ts(now)
 
-        users = {user_id: now_ts}
+        users = {user_id: float(now_ts)}
 
         if query.users is not None and query.users:
-            users.update({user_id: now_ts for user_id in query.users})
+            users.update({user_id: float(now_ts) for user_id in query.users})
 
         self.env.db.update_last_read_in_group_for_user(
             group.group_id, users, now, db
@@ -164,8 +164,9 @@ class GroupResource(BaseResource):
     async def join_group(self, group_id: str, user_id: int, db: Session) -> ActionLog:
         now = dt.utcnow()
         now = now.replace(tzinfo=pytz.UTC)
+        now_ts = AbstractQuery.to_ts(now)
 
-        user_id_and_last_read = {user_id: now}
+        user_id_and_last_read = {user_id: float(now_ts)}
 
         self.env.db.update_last_read_in_group_for_user(
             group_id, user_id_and_last_read, now, db

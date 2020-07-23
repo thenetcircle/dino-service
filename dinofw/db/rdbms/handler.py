@@ -9,7 +9,7 @@ from dinofw.db.cassandra.schemas import MessageBase
 from dinofw.db.rdbms import models
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
-from dinofw.rest.server.models import AdminUpdateGroupQuery
+from dinofw.rest.server.models import AdminUpdateGroupQuery, AbstractQuery
 from dinofw.rest.server.models import CreateGroupQuery
 from dinofw.rest.server.models import GroupQuery
 from dinofw.rest.server.models import UpdateGroupQuery
@@ -155,7 +155,7 @@ class RelationalHandler:
                     last_read=last_read_time,
                     hide_before=last_read_time,
                     last_sent=last_read_time,
-                    join_time=join_time,
+                    join_time=AbstractQuery.to_dt(join_time),
                 )
             else:
                 user_stats.last_read = last_read_time

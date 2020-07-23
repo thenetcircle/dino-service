@@ -356,6 +356,17 @@ class FakePublisher:
         self.sent_messages[group_id].append(message)
 
 
+class FakeCache:
+    def set_user_ids_and_join_time_in_group(self, group_id, users):
+        return
+
+    def get_user_ids_and_join_time_in_group(self, _):
+        return None
+
+    def get_user_count_in_group(self, _):
+        return None
+
+
 class FakeEnv:
     class Config:
         def __init__(self):
@@ -374,3 +385,18 @@ class FakeEnv:
         self.storage = FakeStorage()
         self.db = FakeDatabase()
         self.publisher = FakePublisher()
+        self.cache = FakeCache()
+
+        from dinofw.rest.server.groups import GroupResource
+        from dinofw.rest.server.users import UserResource
+        from dinofw.rest.server.message import MessageResource
+
+        class RestResources:
+            group: GroupResource
+            user: UserResource
+            message: MessageResource
+
+        self.rest = RestResources()
+        self.rest.group = GroupResource(self)
+        self.rest.user = UserResource(self)
+        self.rest.message = MessageResource(self)
