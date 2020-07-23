@@ -109,7 +109,7 @@ class TestGroupResource(BaseTest):
         self.assertEqual(0, len(histories.messages))
         self.assertEqual(0, len(histories.action_logs))
 
-        # create new group
+        # create a new group
         group = await self.group.create_new_group(BaseTest.USER_ID, create_query, None)  # noqa
 
         # send message and get histories
@@ -144,7 +144,7 @@ class TestGroupResource(BaseTest):
         stats = await self.group.get_user_group_stats(BaseTest.GROUP_ID, BaseTest.USER_ID, None)  # noqa
         self.assertIsNone(stats)
 
-        # create new group
+        # create a new group
         group = await self.group.create_new_group(BaseTest.USER_ID, create_query, None)  # noqa
         stats = await self.group.get_user_group_stats(group.group_id, BaseTest.USER_ID, None)  # noqa
         self.assertEqual(0, stats.message_amount)
@@ -170,7 +170,7 @@ class TestGroupResource(BaseTest):
             users=[BaseTest.USER_ID],
         )
 
-        # create new group
+        # create a new group
         group = await self.group.create_new_group(BaseTest.USER_ID, create_query, None)  # noqa
 
         # check we only have one user in the group, the creator
@@ -206,7 +206,7 @@ class TestGroupResource(BaseTest):
         log = await self.group.leave_group(BaseTest.GROUP_ID, BaseTest.USER_ID, None)  # noqa
         self.assertIsNone(log)
 
-        # create new group
+        # create a new group
         group = await self.group.create_new_group(BaseTest.USER_ID, create_query, None)  # noqa
 
         # check we only have one user in the group, the creator

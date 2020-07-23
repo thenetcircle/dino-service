@@ -1,5 +1,5 @@
 from datetime import datetime as dt
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 from uuid import uuid4 as uuid
 
 import pytz
@@ -205,6 +205,33 @@ class FakeDatabase:
 
         return group
 
+    def get_groups_for_user(
+        self, user_id: int, query: GroupQuery, _, count_users: bool = True
+    ) -> List[Tuple[GroupBase, UserGroupStatsBase, Dict[int, float], int]]:
+        groups = list()
+        sub_query = GroupQuery(per_page=50)
+
+        if user_id not in self.stats:
+            return list()
+
+        for stat in self.stats[user_id]:
+            users = self.get_user_ids_and_join_times_in_group(
+                stat.group_id, sub_query, None
+            )
+
+            if count_users:
+                user_count = self.count_users_in_group(stat.group_id, None)
+            else:
+                user_count = 0
+
+            group = self.groups[stat.group_id]
+            groups.append((group, stat, users, user_count))
+
+            if len(groups) > query.per_page:
+                break
+
+        return groups
+
     def get_users_in_group(
         self, group_id: str, query: GroupQuery, db
     ) -> (Optional[GroupBase], Optional[Dict[int, float]], Optional[int]):
@@ -220,9 +247,10 @@ class FakeDatabase:
     def count_users_in_group(self, group_id: str, _) -> int:
         users = list()
 
-        for user_id, stat in self.stats.items():
-            if stat.group_id == group_id:
-                users.append(user_id)
+        for user_id, stats in self.stats.items():
+            for stat in stats:
+                if stat.group_id == group_id:
+                    users.append(user_id)
 
         return len(users)
 
@@ -230,49 +258,62 @@ class FakeDatabase:
         self, user_id: int, group_id: str, created_at: dt, _
     ) -> None:
         if user_id in self.stats:
-            self.stats[user_id].last_read = created_at
-            self.stats[user_id].last_sent = created_at
-
+            for group_stats in self.stats[user_id]:
+                if group_stats.group_id == group_id:
+                    group_stats.last_read = created_at
+                    group_stats.last_sent = created_at
         else:
-            self.stats[user_id] = UserGroupStatsBase(
+            self.stats[user_id] = [UserGroupStatsBase(
                 group_id=group_id,
                 user_id=user_id,
                 last_read=created_at,
                 last_sent=created_at,
                 hide_before=created_at,
                 join_time=created_at,
-            )
+            )]
 
     def update_last_read_in_group_for_user(
             self, group_id: str, users: Dict[int, float], last_read_time: dt, _
     ) -> None:
+
         for user_id, join_time in users.items():
-            if user_id in self.stats:
-                self.stats[user_id].last_read = last_read_time
+            base_to_add = UserGroupStatsBase(
+                group_id=group_id,
+                user_id=user_id,
+                last_read=last_read_time,
+                hide_before=last_read_time,
+                last_sent=last_read_time,
+                join_time=join_time,
+            )
+
+            if user_id not in self.stats:
+                self.stats[user_id] = [base_to_add]
 
             else:
-                self.stats[user_id] = UserGroupStatsBase(
-                    group_id=group_id,
-                    user_id=user_id,
-                    last_read=last_read_time,
-                    hide_before=last_read_time,
-                    last_sent=last_read_time,
-                    join_time=join_time,
-                )
+                found_existing = False
+
+                for group_stats in self.stats[user_id]:
+                    if group_stats.group_id == group_id:
+                        found_existing = True
+                        group_stats.last_read = last_read_time
+
+                if not found_existing:
+                    self.stats[user_id].append(base_to_add)
 
     def remove_last_read_in_group_for_user(self, group_id: str, user_id: int, _) -> None:
-        # TODO: support multiple groups so we can test that too
-
-        if user_id not in self.stats.keys():
+        if user_id not in self.stats:
             return
 
-        old_stat = self.stats[user_id]
-        del self.stats[user_id]
+        old_stats = self.stats[user_id]
+        new_stats = list()
 
-        if old_stat != group_id:
-            return
+        for old_stat in old_stats:
+            if old_stat.group_id == group_id:
+                continue
 
-        self.stats[user_id] = old_stat
+            new_stats.append(old_stat)
+
+        self.stats[user_id] = new_stats
 
     def group_exists(self, group_id: str, _) -> bool:
         return group_id in self.groups
@@ -282,9 +323,11 @@ class FakeDatabase:
     ) -> Dict[int, float]:
         response = dict()
 
-        for _, stat in self.stats.items():
-            if stat.group_id == group_id:
-                response[stat.user_id] = AbstractQuery.to_ts(stat.join_time)
+        for _, stats in self.stats.items():
+            for stat in stats:
+                if stat.group_id == group_id:
+                    response[stat.user_id] = AbstractQuery.to_ts(stat.join_time)
+                    break
 
             if len(response) > query.per_page:
                 break
@@ -295,11 +338,11 @@ class FakeDatabase:
         if user_id not in self.stats:
             return None
 
-        for user_id, stat in self.stats.items():
+        for stat in self.stats[user_id]:
             if stat.group_id == group_id:
                 return stat
 
-        return
+        return None
 
 
 class FakePublisher:
