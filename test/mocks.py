@@ -366,6 +366,12 @@ class FakeCache:
     def get_user_count_in_group(self, _):
         return None
 
+    def set_user_stats_group(self, group_id, user_id, _):
+        pass
+
+    def get_user_stats_group(self, group_id, user_id):
+        return None
+
 
 class FakeEnv:
     class Config:

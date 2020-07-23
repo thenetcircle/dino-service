@@ -2,12 +2,36 @@ from sqlalchemy import Column
 from sqlalchemy import Integer
 from sqlalchemy import String
 
+import pytz
+from _datetime import datetime
 from sqlalchemy import DateTime
+from sqlalchemy.types import TypeDecorator
 # from sqlalchemy.dialects.mysql import DATETIME
 # from sqlalchemy.dialects.sqlite import DATETIME
-# DateTime() 
+# UTCDateTime() 
 
 from dinofw.environ import env
+
+from datetime import timezone
+
+import sqlalchemy as sa
+
+
+class UTCDateTime(sa.TypeDecorator):  # pylint:disable=W0223
+    impl = sa.DateTime
+
+    def process_bind_param(self, value, dialect):
+        if value is not None:
+            if not value.tzinfo:
+                value = value.replace(tzinfo=timezone.utc)
+            return value.astimezone(timezone.utc)
+
+        return None
+
+    def process_result_value(self, value, dialect):
+        if value:
+            return value.astimezone(timezone.utc).replace(tzinfo=None)
+        return None
 
 
 class GroupEntity(env.Base):
@@ -20,11 +44,11 @@ class GroupEntity(env.Base):
 
     status = Column(Integer, nullable=True)
     group_type = Column(Integer, nullable=False, server_default="0")
-    last_message_time = Column(DateTime(), nullable=False, index=True)
-    created_at = Column(DateTime(), nullable=False)
+    last_message_time = Column(UTCDateTime(), nullable=False, index=True)
+    created_at = Column(UTCDateTime(), nullable=False)
     owner_id = Column(Integer, nullable=False)
 
-    updated_at = Column(DateTime())
+    updated_at = Column(UTCDateTime())
     group_meta = Column(Integer)
     group_weight = Column(Integer)
     group_context = Column(String(512))
@@ -40,7 +64,7 @@ class UserGroupStatsEntity(env.Base):
     group_id = Column(String(36), index=True, nullable=False)
     user_id = Column(Integer, index=True, nullable=False)
 
-    last_read = Column(DateTime(), nullable=False)
-    last_sent = Column(DateTime(), nullable=False)
-    hide_before = Column(DateTime(), nullable=False)
-    join_time = Column(DateTime(), nullable=False)
+    last_read = Column(UTCDateTime(), nullable=False)
+    last_sent = Column(UTCDateTime(), nullable=False)
+    hide_before = Column(UTCDateTime(), nullable=False)
+    join_time = Column(UTCDateTime(), nullable=False)
