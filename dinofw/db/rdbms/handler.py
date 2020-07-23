@@ -378,22 +378,32 @@ class RelationalHandler:
     def get_user_ids_and_join_times_in_group(
         self, group_id: str, query: GroupQuery, db: Session, skip_cache: bool = False
     ) -> Dict[int, float]:
-        # users in a group shouldn't change that often
-        if skip_cache:
-            users = None
-        else:
-            users = self.env.cache.get_user_ids_and_join_time_in_group(group_id)
+        until = GroupQuery.to_dt(query.until)
+        hide_before = GroupQuery.to_dt(query.hide_before, default=self.long_ago)
 
-        if users is None or len(users) == 0:
+        # TODO: since we're doing doing pagination instead, maybe just skip caching? how often will people check?
+        users = None
+        # users in a group shouldn't change that often
+        # if skip_cache:
+        #     users = None
+        # else:
+        #     users = self.env.cache.get_user_ids_and_join_time_in_group(group_id)
+
+        if users is None:  # or len(users) == 0:
             users = (
                 db.query(models.UserGroupStatsEntity)
-                .filter(models.UserGroupStatsEntity.group_id == group_id)
+                .filter(
+                    models.UserGroupStatsEntity.group_id == group_id,
+                    models.UserGroupStatsEntity.join_time <= until,
+                    models.UserGroupStatsEntity.join_time > hide_before,
+                )
                 .distinct()
                 .order_by(models.UserGroupStatsEntity.join_time.desc())
                 .limit(query.per_page or 50)
                 .all()
             )
+
             users = {user.user_id: GroupQuery.to_ts(user.join_time) for user in users}
-            self.env.cache.set_user_ids_and_join_time_in_group(group_id, users)
+            # self.env.cache.set_user_ids_and_join_time_in_group(group_id, users)
 
         return users

@@ -1,6 +1,7 @@
 from dinofw.rest.server.groups import GroupResource
 from dinofw.rest.server.message import MessageResource
-from dinofw.rest.server.models import CreateGroupQuery, GroupUsers, Group, MessageQuery, SendMessageQuery
+from dinofw.rest.server.models import CreateGroupQuery, GroupUsers, Group, MessageQuery, SendMessageQuery, \
+    PaginationQuery
 from test.base import async_test, BaseTest
 from test.mocks import FakeEnv, FakeStorage
 
@@ -42,6 +43,8 @@ class TestGroupResource(BaseTest):
             group_type=0,
             users=[BaseTest.USER_ID],
         )
+        page_query = PaginationQuery(per_page=50)
+
         group = await self.group.create_new_group(
             user_id=BaseTest.USER_ID,
             query=query,
@@ -50,6 +53,7 @@ class TestGroupResource(BaseTest):
 
         group_users = await self.group.get_users_in_group(
             group_id=group.group_id,
+            query=page_query,
             db=None  # noqa
         )
 
@@ -169,12 +173,13 @@ class TestGroupResource(BaseTest):
             group_type=0,
             users=[BaseTest.USER_ID],
         )
+        page_query = PaginationQuery(per_page=50)
 
         # create a new group
         group = await self.group.create_new_group(BaseTest.USER_ID, create_query, None)  # noqa
 
         # check we only have one user in the group, the creator
-        group_users = await self.group.get_users_in_group(group.group_id, None)  # noqa
+        group_users = await self.group.get_users_in_group(group.group_id, page_query, None)  # noqa
         self.assertIsNotNone(group_users)
         self.assertEqual(1, group_users.user_count)
         self.assertEqual(1, len(group_users.users))
@@ -187,7 +192,7 @@ class TestGroupResource(BaseTest):
         self.assertEqual(FakeStorage.ACTION_TYPE_JOIN, log.action_type)
 
         # check the other user is now in the group as well
-        group_users = await self.group.get_users_in_group(group.group_id, None)  # noqa
+        group_users = await self.group.get_users_in_group(group.group_id, page_query, None)  # noqa
         self.assertIsNotNone(group_users)
         self.assertEqual(2, group_users.user_count)
         self.assertEqual(2, len(group_users.users))
@@ -201,6 +206,7 @@ class TestGroupResource(BaseTest):
             group_type=0,
             users=[BaseTest.USER_ID],
         )
+        page_query = PaginationQuery(per_page=50)
 
         # group doesn't exist yet
         log = await self.group.leave_group(BaseTest.GROUP_ID, BaseTest.USER_ID, None)  # noqa
@@ -210,7 +216,7 @@ class TestGroupResource(BaseTest):
         group = await self.group.create_new_group(BaseTest.USER_ID, create_query, None)  # noqa
 
         # check we only have one user in the group, the creator
-        group_users = await self.group.get_users_in_group(group.group_id, None)  # noqa
+        group_users = await self.group.get_users_in_group(group.group_id, page_query, None)  # noqa
         self.assertIsNotNone(group_users)
         self.assertEqual(1, group_users.user_count)
 
@@ -221,6 +227,6 @@ class TestGroupResource(BaseTest):
         self.assertEqual(FakeStorage.ACTION_TYPE_LEAVE, log.action_type)
 
         # check there's no users left in the group after leaving
-        group_users = await self.group.get_users_in_group(group.group_id, None)  # noqa
+        group_users = await self.group.get_users_in_group(group.group_id, page_query, None)  # noqa
         self.assertIsNotNone(group_users)
         self.assertEqual(0, group_users.user_count)

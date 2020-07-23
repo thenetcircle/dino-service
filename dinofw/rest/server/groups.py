@@ -11,7 +11,7 @@ from dinofw.rest.server.models import (
     UpdateUserGroupStats,
     ActionLog,
     GroupJoinTime,
-    GroupQuery,
+    GroupQuery, PaginationQuery,
 )
 from dinofw.rest.server.models import AdminUpdateGroupQuery
 from dinofw.rest.server.models import CreateGroupQuery
@@ -28,12 +28,9 @@ logger = logging.getLogger(__name__)
 
 class GroupResource(BaseResource):
     async def get_users_in_group(
-        self, group_id: str, db: Session
+        self, group_id: str, query: PaginationQuery, db: Session
     ) -> Optional[GroupUsers]:
         # TODO: this should have pagination
-
-        # limit list of users/join times to first 50
-        query = GroupQuery(per_page=50)
 
         group, first_users, n_users = self.env.db.get_users_in_group(
             group_id, query, db
@@ -51,7 +48,10 @@ class GroupResource(BaseResource):
         ]
 
         return GroupUsers(
-            group_id=group_id, owner_id=group.owner_id, user_count=n_users, users=users,
+            group_id=group_id,
+            owner_id=group.owner_id,
+            user_count=n_users,
+            users=users,
         )
 
     async def get_group(self, group_id: str, db: Session) -> Optional[Group]:
