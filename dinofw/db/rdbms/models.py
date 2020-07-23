@@ -1,20 +1,11 @@
+from datetime import timezone
+
+import sqlalchemy as sa
 from sqlalchemy import Column
 from sqlalchemy import Integer
 from sqlalchemy import String
 
-import pytz
-from _datetime import datetime
-from sqlalchemy import DateTime
-from sqlalchemy.types import TypeDecorator
-# from sqlalchemy.dialects.mysql import DATETIME
-# from sqlalchemy.dialects.sqlite import DATETIME
-# UTCDateTime() 
-
 from dinofw.environ import env
-
-from datetime import timezone
-
-import sqlalchemy as sa
 
 
 class UTCDateTime(sa.TypeDecorator):  # pylint:disable=W0223

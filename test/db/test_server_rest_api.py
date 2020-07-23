@@ -58,9 +58,6 @@ class TestServerRestApi(BaseDatabaseTest):
         now_ts = self.update_user_stats_to_now(group_id, BaseTest.USER_ID)
         user_stats = self.get_user_stats(group_id, BaseTest.USER_ID)
 
-        print("now_ts:", now_ts, type(now_ts))
-        print("stats:", user_stats["last_read_time"], type(user_stats["last_read_time"]))
-
         self.assertEqual(group_id, user_stats["group_id"])
         self.assertEqual(BaseTest.USER_ID, user_stats["user_id"])
         self.assertEqual(now_ts, user_stats["last_read_time"])
