@@ -69,11 +69,11 @@ class UserResource(BaseResource):
             if group.owner_id == user_id:
                 owner_amount += 1
 
-            if last_read > max_last_read:
+            if last_read is not None and last_read > max_last_read:
                 max_last_read = last_read
                 last_read_group_id = group.group_id
 
-            if last_sent > max_last_sent:
+            if last_sent is not None and last_sent > max_last_sent:
                 max_last_sent = last_sent
                 last_sent_group_id = group.group_id
 

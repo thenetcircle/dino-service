@@ -30,9 +30,9 @@ class TestMessageResource(BaseTest):
 
         self.assertIsNotNone(message.message_id)
 
-        last_sent = self.resource.env.db.stats[BaseTest.USER_ID].last_sent
-        last_read = self.resource.env.db.stats[BaseTest.USER_ID].last_read
-        join_time = self.resource.env.db.stats[BaseTest.USER_ID].join_time
+        last_sent = self.resource.env.db.stats[BaseTest.USER_ID][0].last_sent
+        last_read = self.resource.env.db.stats[BaseTest.USER_ID][0].last_read
+        join_time = self.resource.env.db.stats[BaseTest.USER_ID][0].join_time
         self.assertIsNotNone(last_sent)
         self.assertIsNotNone(last_read)
         self.assertIsNotNone(join_time)
@@ -45,9 +45,9 @@ class TestMessageResource(BaseTest):
         )
         self.assertEqual(2, len(self.resource.env.publisher.sent_messages[BaseTest.GROUP_ID]))
 
-        new_last_sent = self.resource.env.db.stats[BaseTest.USER_ID].last_sent
-        new_last_read = self.resource.env.db.stats[BaseTest.USER_ID].last_read
-        new_join_time = self.resource.env.db.stats[BaseTest.USER_ID].join_time
+        new_last_sent = self.resource.env.db.stats[BaseTest.USER_ID][0].last_sent
+        new_last_read = self.resource.env.db.stats[BaseTest.USER_ID][0].last_read
+        new_join_time = self.resource.env.db.stats[BaseTest.USER_ID][0].join_time
         self.assertNotEqual(last_sent, new_last_sent)
         self.assertNotEqual(last_read, new_last_read)
         self.assertEqual(join_time, new_join_time)

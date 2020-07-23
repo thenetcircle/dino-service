@@ -125,10 +125,10 @@ class UserStats(AbstractQuery):
     unread_amount: int
     group_amount: int
     owned_group_amount: int
-    last_read_time: float
-    last_read_group_id: str
-    last_send_time: float
-    last_send_group_id: str
+    last_read_time: Optional[float]
+    last_read_group_id: Optional[str]
+    last_send_time: Optional[float]
+    last_send_group_id: Optional[str]
 
 
 class UserGroupStats(AbstractQuery):

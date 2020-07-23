@@ -2,6 +2,8 @@ from abc import ABC
 from datetime import datetime as dt
 from typing import Optional, Dict
 
+import pytz
+
 from dinofw.db.cassandra.schemas import MessageBase, ActionLogBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase, GroupBase
 from dinofw.rest.server.models import (
@@ -21,6 +23,7 @@ class BaseResource(ABC):
         # used when no `hide_before` is specified in a query
         beginning_of_1995 = 789_000_000
         self.long_ago = dt.utcfromtimestamp(beginning_of_1995)
+        self.long_ago = self.long_ago.replace(tzinfo=pytz.UTC)
 
     @staticmethod
     def message_base_to_message(message: MessageBase) -> Message:
