@@ -21,10 +21,10 @@ class BaseDatabaseTest(BaseTest):
         from gnenv.environ import find_config
         from gnenv.environ import load_secrets_file
 
-        config_dict, config_path = find_config("../..")
+        config_dict, config_path = find_config("..")
         config_dict = load_secrets_file(
             config_dict,
-            secrets_path="../../secrets",
+            secrets_path="../secrets",
             env_name="test"
         )
         config = ConfigDict(config_dict)

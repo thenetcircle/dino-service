@@ -2,12 +2,13 @@ from datetime import datetime as dt
 from typing import Optional, List
 
 import pytz
+import arrow
 from pydantic import BaseModel
 
 
 class AbstractQuery(BaseModel):
     @staticmethod
-    def to_dt(s, allow_none: bool = False, default: dt = None):
+    def to_dt(s, allow_none: bool = False, default: dt = None) -> Optional[dt]:
         if s is None and default is not None:
             return default
 
@@ -15,10 +16,9 @@ class AbstractQuery(BaseModel):
             return None
 
         if s is None:
-            s = dt.utcnow()
-            s = s.replace(tzinfo=pytz.UTC)
+            s = arrow.utcnow().datetime
         else:
-            s = dt.utcfromtimestamp(s)
+            s = dt.fromtimestamp(s).replace(tzinfo=pytz.UTC)
 
         return s
 
@@ -28,8 +28,7 @@ class AbstractQuery(BaseModel):
             return None
 
         if ds is None:
-            ds = dt.utcnow()
-            ds = ds.replace(tzinfo=pytz.UTC)
+            ds = arrow.utcnow().datetime
 
         return ds.strftime("%s.%f")
 

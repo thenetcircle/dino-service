@@ -2,7 +2,7 @@ import logging
 from datetime import datetime as dt
 from typing import List
 
-import pytz
+import arrow
 from sqlalchemy.orm import Session
 
 from dinofw.rest.server.base import BaseResource
@@ -22,8 +22,7 @@ class MessageResource(BaseResource):
         message = self.env.storage.store_message(group_id, user_id, query)
 
         # cassandra DT is different from python DT
-        now = dt.utcnow()
-        now = now.replace(tzinfo=pytz.UTC)
+        now = arrow.utcnow().datetime
 
         self.env.db.update_group_new_message(message, now, db)
         self.env.db.update_last_read_and_sent_in_group_for_user(

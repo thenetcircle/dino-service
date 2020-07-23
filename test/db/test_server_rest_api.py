@@ -58,6 +58,9 @@ class TestServerRestApi(BaseDatabaseTest):
         now_ts = self.update_user_stats_to_now(group_id, BaseTest.USER_ID)
         user_stats = self.get_user_stats(group_id, BaseTest.USER_ID)
 
+        print("now_ts:", now_ts, type(now_ts))
+        print("stats:", user_stats["last_read_time"], type(user_stats["last_read_time"]))
+
         self.assertEqual(group_id, user_stats["group_id"])
         self.assertEqual(BaseTest.USER_ID, user_stats["user_id"])
         self.assertEqual(now_ts, user_stats["last_read_time"])
@@ -84,7 +87,7 @@ class TestServerRestApi(BaseDatabaseTest):
         )
         self.assertEqual(raw_response.status_code, 200)
 
-        return now_ts
+        return float(now_ts)
 
     def get_user_stats(self, group_id: str, user_id: int = None):
         if user_id is None:

@@ -2,7 +2,7 @@ import logging
 from datetime import datetime as dt
 from typing import List, Optional
 
-import pytz
+import arrow
 from sqlalchemy.orm import Session
 
 from dinofw.rest.server.base import BaseResource
@@ -126,8 +126,7 @@ class GroupResource(BaseResource):
     ) -> Group:
         group = self.env.db.create_group(user_id, query, db)
 
-        now = dt.utcnow()
-        now = now.replace(tzinfo=pytz.UTC)
+        now = arrow.utcnow().datetime
         now_ts = CreateGroupQuery.to_ts(now)
 
         users = {user_id: float(now_ts)}
@@ -162,8 +161,7 @@ class GroupResource(BaseResource):
         self.env.db.update_group_information(group_id, query, db)
 
     async def join_group(self, group_id: str, user_id: int, db: Session) -> ActionLog:
-        now = dt.utcnow()
-        now = now.replace(tzinfo=pytz.UTC)
+        now = arrow.utcnow().datetime
         now_ts = AbstractQuery.to_ts(now)
 
         user_id_and_last_read = {user_id: float(now_ts)}
@@ -181,8 +179,7 @@ class GroupResource(BaseResource):
         if not self.env.db.group_exists(group_id, db):
             return None
 
-        now = dt.utcnow()
-        now = now.replace(tzinfo=pytz.UTC)
+        now = arrow.utcnow().datetime
 
         self.env.db.remove_last_read_in_group_for_user(group_id, user_id, db)
         action_log = self.env.storage.create_leave_action_log(group_id, [user_id], now)

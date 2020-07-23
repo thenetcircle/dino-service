@@ -2,7 +2,7 @@ from datetime import datetime as dt
 from typing import List, Tuple, Optional, Dict
 from uuid import uuid4 as uuid
 
-import pytz
+import arrow
 from sqlalchemy.orm import Session
 
 from dinofw.db.cassandra.schemas import MessageBase
@@ -182,8 +182,7 @@ class RelationalHandler:
         if group_entity is None:
             return None
 
-        now = dt.utcnow()
-        now = now.replace(tzinfo=pytz.UTC)
+        now = arrow.utcnow().datetime
 
         group_entity.status = query.group_status
         group_entity.updated_at = now
@@ -206,8 +205,7 @@ class RelationalHandler:
         if group_entity is None:
             return None
 
-        now = dt.utcnow()
-        now = now.replace(tzinfo=pytz.UTC)
+        now = arrow.utcnow().datetime
 
         group_entity.name = query.group_name
         group_entity.group_weight = query.group_weight
@@ -340,8 +338,7 @@ class RelationalHandler:
     def create_group(
         self, owner_id: int, query: CreateGroupQuery, db: Session
     ) -> GroupBase:
-        created_at = dt.utcnow()
-        created_at = created_at.replace(tzinfo=pytz.UTC)
+        created_at = arrow.utcnow().datetime
 
         group_entity = models.GroupEntity(
             group_id=str(uuid()),
