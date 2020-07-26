@@ -77,10 +77,7 @@ class TestServerRestApi(BaseDatabaseTest):
 
         raw_response = self.client.put(
             f"/v1/groups/{group_id}/userstats/{user_id}",
-            json={
-                "last_read_time": now_ts,
-                "hide_before": long_ago_ts,
-            },
+            json={"last_read_time": now_ts, "hide_before": long_ago_ts,},
         )
         self.assertEqual(raw_response.status_code, 200)
 
@@ -100,8 +97,7 @@ class TestServerRestApi(BaseDatabaseTest):
             user_id = BaseTest.USER_ID
 
         raw_response = self.client.post(
-            f"/v1/users/{user_id}/groups",
-            json={"per_page": "10"},
+            f"/v1/users/{user_id}/groups", json={"per_page": "10"},
         )
         self.assertEqual(raw_response.status_code, 200)
         self.assertEqual(amount_of_groups, len(raw_response.json()))
@@ -123,16 +119,12 @@ class TestServerRestApi(BaseDatabaseTest):
         if user_id is None:
             user_id = BaseTest.USER_ID
 
-        raw_response = self.client.delete(
-            f"/v1/groups/{group_id}/users/{user_id}/join"
-        )
+        raw_response = self.client.delete(f"/v1/groups/{group_id}/users/{user_id}/join")
         self.assertEqual(raw_response.status_code, 200)
 
     def user_joins_group(self, group_id: str, user_id: int = None) -> None:
         if user_id is None:
             user_id = BaseTest.USER_ID
 
-        raw_response = self.client.put(
-            f"/v1/groups/{group_id}/users/{user_id}/join"
-        )
+        raw_response = self.client.put(f"/v1/groups/{group_id}/users/{user_id}/join")
         self.assertEqual(raw_response.status_code, 200)

@@ -7,7 +7,12 @@ import pytz
 from dinofw.db.cassandra.schemas import MessageBase, ActionLogBase
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
-from dinofw.rest.server.models import CreateGroupQuery, MessageQuery, EditMessageQuery, AbstractQuery
+from dinofw.rest.server.models import (
+    CreateGroupQuery,
+    MessageQuery,
+    EditMessageQuery,
+    AbstractQuery,
+)
 from dinofw.rest.server.models import GroupQuery
 from dinofw.rest.server.models import SendMessageQuery
 
@@ -20,7 +25,9 @@ class FakeStorage:
         self.messages_by_group = dict()
         self.action_log = dict()
 
-    def store_message(self, group_id: str, user_id: int, query: SendMessageQuery) -> MessageBase:
+    def store_message(
+        self, group_id: str, user_id: int, query: SendMessageQuery
+    ) -> MessageBase:
         if group_id not in self.messages_by_group:
             self.messages_by_group[group_id] = list()
 
@@ -77,7 +84,9 @@ class FakeStorage:
 
         return new_logs
 
-    def get_messages_in_group(self, group_id: str, query: MessageQuery) -> List[MessageBase]:
+    def get_messages_in_group(
+        self, group_id: str, query: MessageQuery
+    ) -> List[MessageBase]:
         if group_id not in self.messages_by_group:
             return list()
 
@@ -136,7 +145,9 @@ class FakeStorage:
 
         return message
 
-    def get_action_log_in_group(self, group_id: str, query: MessageQuery) -> List[ActionLogBase]:
+    def get_action_log_in_group(
+        self, group_id: str, query: MessageQuery
+    ) -> List[ActionLogBase]:
         logs = list()
 
         if group_id not in self.action_log:
@@ -183,9 +194,7 @@ class FakeDatabase:
         self.groups[message.group_id].last_message_time = sent_time
         self.groups[message.group_id].last_message_overview = message.message_payload
 
-    def create_group(
-        self, owner_id: int, query: CreateGroupQuery, _
-    ) -> GroupBase:
+    def create_group(self, owner_id: int, query: CreateGroupQuery, _) -> GroupBase:
         created_at = dt.utcnow()
         created_at = created_at.replace(tzinfo=pytz.UTC)
 
@@ -263,17 +272,19 @@ class FakeDatabase:
                     group_stats.last_read = created_at
                     group_stats.last_sent = created_at
         else:
-            self.stats[user_id] = [UserGroupStatsBase(
-                group_id=group_id,
-                user_id=user_id,
-                last_read=created_at,
-                last_sent=created_at,
-                hide_before=created_at,
-                join_time=created_at,
-            )]
+            self.stats[user_id] = [
+                UserGroupStatsBase(
+                    group_id=group_id,
+                    user_id=user_id,
+                    last_read=created_at,
+                    last_sent=created_at,
+                    hide_before=created_at,
+                    join_time=created_at,
+                )
+            ]
 
     def update_last_read_in_group_for_user(
-            self, group_id: str, users: Dict[int, float], last_read_time: dt, _
+        self, group_id: str, users: Dict[int, float], last_read_time: dt, _
     ) -> None:
 
         for user_id, join_time in users.items():
@@ -300,7 +311,9 @@ class FakeDatabase:
                 if not found_existing:
                     self.stats[user_id].append(base_to_add)
 
-    def remove_last_read_in_group_for_user(self, group_id: str, user_id: int, _) -> None:
+    def remove_last_read_in_group_for_user(
+        self, group_id: str, user_id: int, _
+    ) -> None:
         if user_id not in self.stats:
             return
 
@@ -334,7 +347,9 @@ class FakeDatabase:
 
         return response  # noqa
 
-    def get_user_stats_in_group(self, group_id: str, user_id: int, _) -> Optional[UserGroupStatsBase]:
+    def get_user_stats_in_group(
+        self, group_id: str, user_id: int, _
+    ) -> Optional[UserGroupStatsBase]:
         if user_id not in self.stats:
             return None
 
@@ -379,7 +394,7 @@ class FakeEnv:
             self.config = {
                 "storage": {
                     "key_space": "dinofw",
-                    "host": "maggie-cassandra-1,maggie-cassandra-2"
+                    "host": "maggie-cassandra-1,maggie-cassandra-2",
                 }
             }
 

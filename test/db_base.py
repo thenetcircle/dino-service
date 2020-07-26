@@ -23,9 +23,7 @@ class BaseDatabaseTest(BaseTest):
 
         config_dict, config_path = find_config("..")
         config_dict = load_secrets_file(
-            config_dict,
-            secrets_path="../secrets",
-            env_name="test"
+            config_dict, secrets_path="../secrets", env_name="test"
         )
         config = ConfigDict(config_dict)
 
@@ -36,12 +34,15 @@ class BaseDatabaseTest(BaseTest):
 
         # need to replace the global environ.env with our FakeEnv, db model files import it directly
         from dinofw import environ
+
         environ.env = self.env
 
         # init with our sqlite test db
         init_db(self.env, engine)
 
-        TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+        TestingSessionLocal = sessionmaker(
+            autocommit=False, autoflush=False, bind=engine
+        )
 
         def override_get_db():
             try:

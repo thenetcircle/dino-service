@@ -16,7 +16,7 @@ class FakeEnv:
             self.config = {
                 "storage": {
                     "key_space": "dinofw",
-                    "host": "maggie-cassandra-1,maggie-cassandra-2"
+                    "host": "maggie-cassandra-1,maggie-cassandra-2",
                 }
             }
 
@@ -35,9 +35,7 @@ class TestCassandraHandler(TestCase):
     def setUp(self) -> None:
         config_dict, config_path = find_config("../..")
         config_dict = load_secrets_file(
-            config_dict,
-            secrets_path="../../secrets",
-            env_name="test"
+            config_dict, secrets_path="../../secrets", env_name="test"
         )
 
         env = FakeEnv()
@@ -64,7 +62,6 @@ class TestCassandraHandler(TestCase):
     def _test_get_messages_for_group(self):
         query = MessageQuery(per_page=10, since=1594064834)
         messages = self.handler.get_messages_in_group(
-            'df82fea8-bffe-11ea-8bf5-f72fbcad0196',
-            query
+            "df82fea8-bffe-11ea-8bf5-f72fbcad0196", query
         )
         self.assertEqual(0, len(messages))
