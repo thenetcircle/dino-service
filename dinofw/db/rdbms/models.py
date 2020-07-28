@@ -35,16 +35,18 @@ class GroupEntity(env.Base):
 
     status = Column(Integer, nullable=True)
     group_type = Column(Integer, nullable=False, server_default="0")
-    last_message_time = Column(UTCDateTime(), nullable=False, index=True)
     created_at = Column(UTCDateTime(), nullable=False)
     owner_id = Column(Integer, nullable=False)
+
+    last_message_time = Column(UTCDateTime(), nullable=False, index=True)
+    last_message_id = Column(String(36))
+    last_message_overview = Column(String(512))
 
     updated_at = Column(UTCDateTime())
     group_meta = Column(Integer)
     group_weight = Column(Integer)
     group_context = Column(String(512))
     description = Column(String(256))
-    last_message_overview = Column(String(256))
 
 
 class UserGroupStatsEntity(env.Base):

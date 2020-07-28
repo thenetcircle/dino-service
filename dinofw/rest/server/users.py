@@ -16,6 +16,18 @@ class UserResource(BaseResource):
     async def get_groups_for_user(
         self, user_id: int, query: GroupQuery, db: Session
     ) -> List[Group]:
+        """
+        TODO: could give full list of of groups with unread messages in them:
+
+        select
+            g.group_id, g.last_message_time, u.last_read_time
+        from groups g
+            inner join user_group_stats u on g.group_id = u.group_id
+        where
+            user_id = 1234 and
+            last_read < last_message_time;
+        """
+
         groups_stats_and_users = self.env.db.get_groups_for_user(user_id, query, db)
         groups = list()
 
