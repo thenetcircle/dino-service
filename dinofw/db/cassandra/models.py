@@ -28,16 +28,13 @@ class MessageModel(Model):
         required=True,
         default=uuid.uuid4
     )
-    message_payload = Text(
-        required=True
-    )
+
+    # not required; if deleted we clear the body first  # TODO: maybe just remove the row?
+    message_payload = Text()
 
     status = Integer()
     message_type = Text()
     updated_at = DateTime()
-    removed_at = DateTime()
-    removed_by_user = Integer()
-    last_action_log_id = UUID()
 
 
 class ActionLogModel(Model):
@@ -66,4 +63,3 @@ class ActionLogModel(Model):
     )
 
     admin_id = Integer()
-    message_id = UUID()

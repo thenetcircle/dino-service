@@ -14,9 +14,6 @@ class MessageBase(BaseModel):
     status: Optional[int]
     message_type: Optional[str]
     updated_at: Optional[datetime]
-    removed_at: Optional[datetime]
-    removed_by_user: Optional[int]
-    last_action_log_id: Optional[str]
 
 
 class ActionLogBase(BaseModel):
@@ -27,4 +24,3 @@ class ActionLogBase(BaseModel):
     action_type: int
 
     admin_id: Optional[int]
-    message_id: Optional[int]

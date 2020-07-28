@@ -386,9 +386,6 @@ class CassandraHandler:
             status=message.status,
             message_type=message.message_type,
             updated_at=message.updated_at,
-            removed_at=message.removed_at,
-            removed_by_user=message.removed_by_user,
-            last_action_log_id=message.last_action_log_id,
         )
 
     @staticmethod
@@ -400,5 +397,4 @@ class CassandraHandler:
             action_id=str(log.action_id),
             action_type=log.action_type,
             admin_id=log.admin_id,
-            message_id=str(log.message_id) if log.message_id is not None else None,
         )
