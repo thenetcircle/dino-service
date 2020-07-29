@@ -64,7 +64,8 @@ class TestServerRestApi(BaseDatabaseTest):
         self.assertEqual(now_ts, user_stats["last_read_time"])
 
     def test_group_unhidden_on_new_message_for_all_users(self):
-        group_id = self.create_and_join_group()
+        # both users join a new group
+        group_id = self.create_and_join_group(BaseTest.USER_ID)
         self.user_joins_group(group_id, BaseTest.OTHER_USER_ID)
 
         # the group should not be hidden for either user at this time
@@ -164,13 +165,16 @@ class TestServerRestApi(BaseDatabaseTest):
         self.assertEqual(raw_response.status_code, 200)
         self.assertEqual(amount_of_groups, len(raw_response.json()))
 
-    def create_and_join_group(self) -> str:
+    def create_and_join_group(self, user_id: int = None) -> str:
+        if user_id is None:
+            user_id = BaseTest.USER_ID
+
         raw_response = self.client.post(
-            f"/v1/users/{BaseTest.USER_ID}/groups/create",
+            f"/v1/users/{user_id}/groups/create",
             json={
                 "group_name": "a new group",
                 "group_type": 0,
-                "users": [BaseTest.USER_ID],
+                "users": [user_id],
             },
         )
         self.assertEqual(raw_response.status_code, 200)
