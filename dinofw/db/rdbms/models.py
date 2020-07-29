@@ -60,4 +60,5 @@ class UserGroupStatsEntity(env.Base):
     last_read = Column(UTCDateTime(), nullable=False)
     last_sent = Column(UTCDateTime(), nullable=False)
     hide_before = Column(UTCDateTime(), nullable=False)
+    delete_before = Column(UTCDateTime(), nullable=False)
     join_time = Column(UTCDateTime(), nullable=False)

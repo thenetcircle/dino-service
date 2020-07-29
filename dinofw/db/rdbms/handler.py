@@ -251,19 +251,14 @@ class RelationalHandler:
             .first()
         )
 
-        last_read = UpdateUserGroupStats.to_dt(query.last_read_time, allow_none=True)
-        hide_before = UpdateUserGroupStats.to_dt(query.hide_before, allow_none=True)
+        last_read = UpdateUserGroupStats.to_dt(query.last_read_time, default=self.long_ago)
+        hide_before = UpdateUserGroupStats.to_dt(query.hide_before, default=self.long_ago)
+        delete_before = UpdateUserGroupStats.to_dt(query.delete_before, default=self.long_ago)
 
         should_update_cached_user_ids_in_group = False
 
         if user_stats is None:
             should_update_cached_user_ids_in_group = True
-
-            if last_read is None:
-                last_read = self.long_ago
-
-            if hide_before is None:
-                hide_before = self.long_ago
 
             user_stats = models.UserGroupStatsEntity(
                 group_id=group_id,
@@ -271,15 +266,14 @@ class RelationalHandler:
                 last_read=last_read,
                 last_sent=self.long_ago,
                 hide_before=hide_before,
+                delete_before=delete_before,
                 join_time=last_read,
             )
 
         else:
-            if last_read is not None:
-                user_stats.last_read = last_read
-
-            if hide_before is not None:
-                user_stats.hide_before = hide_before
+            user_stats.last_read = last_read
+            user_stats.hide_before = hide_before
+            user_stats.delete_before = delete_before
 
         db.add(user_stats)
         db.commit()
