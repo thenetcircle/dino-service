@@ -28,7 +28,7 @@ class BaseDatabaseTest(BaseTest):
         config = ConfigDict(config_dict)
 
         db_uri = config.get(ConfigKeys.URI, domain=ConfigKeys.DB)
-        engine = create_engine(db_uri)
+        engine = create_engine(db_uri, connect_args={"options": "-c timezone=utc"})
 
         self.env = FakeEnv()
 

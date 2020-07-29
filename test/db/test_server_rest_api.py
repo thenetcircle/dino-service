@@ -1,5 +1,6 @@
 from datetime import datetime as dt
 
+import arrow
 import pytz
 
 from dinofw.rest.server.models import UpdateUserGroupStats, AbstractQuery
@@ -123,18 +124,12 @@ class TestServerRestApi(BaseDatabaseTest):
         if user_id is None:
             user_id = BaseTest.USER_ID
 
-        now = dt.utcnow()
-        now = now.replace(tzinfo=pytz.UTC)
+        now = arrow.utcnow().datetime
         now_ts = AbstractQuery.to_ts(now)
-
-        beginning_of_1995 = 789_000_000
-        long_ago = dt.utcfromtimestamp(beginning_of_1995)
-        long_ago = long_ago.replace(tzinfo=pytz.UTC)
-        long_ago_ts = AbstractQuery.to_ts(long_ago)
 
         raw_response = self.client.put(
             f"/v1/groups/{group_id}/userstats/{user_id}",
-            json={"last_read_time": now_ts, "hide_before": long_ago_ts,},
+            json={"last_read_time": now_ts},
         )
         self.assertEqual(raw_response.status_code, 200)
 

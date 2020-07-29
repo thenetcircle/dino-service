@@ -12,6 +12,8 @@ def init_db(env, engine=None):
         connection_args = dict()
         if database_uri.startswith("sqlite"):
             connection_args = {"check_same_thread": False}
+        else:
+            connection_args = {"options": "-c timezone=utc"}
 
         engine = create_engine(database_uri, connect_args=connection_args)
 

@@ -101,9 +101,21 @@ class RelationalHandler:
         group.last_message_overview = message.message_payload
         group.last_message_id = message.message_id
 
+        user_stats = (
+            db.query(models.UserGroupStatsEntity)
+            .filter(
+                models.UserGroupStatsEntity.group_id == message.group_id,
+                models.UserGroupStatsEntity.hide.is_(True),
+            )
+            .all()
+        )
+
+        for user_stat in user_stats:
+            user_stat.hide = False
+            db.add(user_stat)
+
         db.add(group)
         db.commit()
-        db.refresh(group)
 
     def remove_last_read_in_group_for_user(
         self, group_id: str, user_id: int, db: Session
@@ -188,11 +200,12 @@ class RelationalHandler:
         group_entity.status = query.group_status
         group_entity.updated_at = now
 
+        base = GroupBase(**group_entity)
+
         db.add(group_entity)
         db.commit()
-        db.refresh(group_entity)
 
-        return GroupBase(**group_entity)
+        return base
 
     def update_group_information(
         self, group_id: str, query: UpdateGroupQuery, db: Session
@@ -213,11 +226,12 @@ class RelationalHandler:
         group_entity.group_context = query.group_context
         group_entity.updated_at = now
 
+        base = GroupBase(**group_entity.__dict__)
+
         db.add(group_entity)
         db.commit()
-        db.refresh(group_entity)
 
-        return GroupBase(**group_entity.__dict__)
+        return base
 
     def get_user_stats_in_group(
         self, group_id: str, user_id: int, db: Session
@@ -281,11 +295,19 @@ class RelationalHandler:
             if query.hide is not None:
                 user_stats.hide = query.hide
 
+        base = UserGroupStatsBase(
+            group_id=user_stats.group_id,
+            user_id=user_stats.user_id,
+            last_read=user_stats.last_read,
+            last_sent=user_stats.last_sent,
+            delete_before=user_stats.delete_before,
+            join_time=user_stats.join_time,
+            hide=user_stats.hide,
+        )
+
         db.add(user_stats)
         db.commit()
-        db.refresh(user_stats)
 
-        base = UserGroupStatsBase(**user_stats.__dict__)
         self.env.cache.set_user_stats_group(group_id, user_id, base)
 
         # update the cached user ids for this group (might have a new one)
@@ -326,11 +348,11 @@ class RelationalHandler:
             user_stats.last_read = created_at
             user_stats.last_sent = created_at
 
+        base = UserGroupStatsBase(**user_stats.__dict__)
+
         db.add(user_stats)
         db.commit()
-        db.refresh(user_stats)
 
-        base = UserGroupStatsBase(**user_stats.__dict__)
         self.env.cache.set_user_stats_group(group_id, user_id, base)
 
         # update the cached user ids for this group (might have a new one)
@@ -354,11 +376,12 @@ class RelationalHandler:
             description=query.description,
         )
 
+        base = GroupBase(**group_entity.__dict__)
+
         db.add(group_entity)
         db.commit()
-        db.refresh(group_entity)
 
-        return GroupBase(**group_entity.__dict__)
+        return base
 
     def count_users_in_group(self, group_id: str, db: Session) -> int:
         user_count = self.env.cache.get_user_count_in_group(group_id)
