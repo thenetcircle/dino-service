@@ -62,6 +62,63 @@ class TestServerRestApi(BaseDatabaseTest):
         self.assertEqual(BaseTest.USER_ID, user_stats["user_id"])
         self.assertEqual(now_ts, user_stats["last_read_time"])
 
+    def test_group_unhidden_on_new_message_for_all_users(self):
+        group_id = self.create_and_join_group()
+        self.user_joins_group(group_id, BaseTest.OTHER_USER_ID)
+
+        # the group should not be hidden for either user at this time
+        self.assert_hidden_for_user(False, group_id, BaseTest.USER_ID)
+        self.assert_hidden_for_user(False, group_id, BaseTest.OTHER_USER_ID)
+
+        # both users should have the group in the list
+        self.assert_groups_for_user(1, user_id=BaseTest.USER_ID)
+        self.assert_groups_for_user(1, user_id=BaseTest.OTHER_USER_ID)
+
+        # hide the group for the other user
+        self.update_hide_group_for(group_id, True, BaseTest.OTHER_USER_ID)
+
+        # make sure the group is hidden for the other user
+        self.assert_hidden_for_user(False, group_id, BaseTest.USER_ID)
+        self.assert_hidden_for_user(True, group_id, BaseTest.OTHER_USER_ID)
+
+        # other user doesn't have any groups since he hid it
+        self.assert_groups_for_user(1, user_id=BaseTest.USER_ID)
+        self.assert_groups_for_user(0, user_id=BaseTest.OTHER_USER_ID)
+
+        # sending a message should un-hide the group for all users in it
+        self.send_message_to_group_from(group_id, BaseTest.USER_ID)
+
+        # should not be hidden anymore for any user
+        self.assert_hidden_for_user(False, group_id, BaseTest.USER_ID)
+        self.assert_hidden_for_user(False, group_id, BaseTest.OTHER_USER_ID)
+
+        # both users have 1 group now since none is hidden anymore
+        self.assert_groups_for_user(1, user_id=BaseTest.USER_ID)
+        self.assert_groups_for_user(1, user_id=BaseTest.OTHER_USER_ID)
+
+    def send_message_to_group_from(self, group_id: str, user_id: int = None):
+        if user_id is None:
+            user_id = BaseTest.USER_ID
+
+        raw_response = self.client.post(
+            f"/v1/groups/{group_id}/users/{user_id}/send",
+            json={
+                "message_payload": "test message",
+                "message_type": "text",
+            },
+        )
+        self.assertEqual(raw_response.status_code, 200)
+
+    def update_hide_group_for(self, group_id: str, hide: bool, user_id: int = None):
+        if user_id is None:
+            user_id = BaseTest.USER_ID
+
+        raw_response = self.client.put(
+            f"/v1/groups/{group_id}/userstats/{user_id}",
+            json={"hide": hide},
+        )
+        self.assertEqual(raw_response.status_code, 200)
+
     def update_user_stats_to_now(self, group_id: str, user_id: int = None):
         if user_id is None:
             user_id = BaseTest.USER_ID
@@ -91,6 +148,16 @@ class TestServerRestApi(BaseDatabaseTest):
         self.assertEqual(raw_response.status_code, 200)
 
         return raw_response.json()
+
+    def assert_hidden_for_user(self, hidden: bool, group_id: str, user_id: int = None) -> None:
+        if user_id is None:
+            user_id = BaseTest.USER_ID
+
+        raw_response = self.client.get(
+            f"/v1/groups/{group_id}/userstats/{user_id}",
+        )
+        self.assertEqual(raw_response.status_code, 200)
+        self.assertEqual(hidden, raw_response.json()["hide"])
 
     def assert_groups_for_user(self, amount_of_groups, user_id: int = None) -> None:
         if user_id is None:

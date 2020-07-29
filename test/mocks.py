@@ -3,6 +3,7 @@ from typing import Dict, List, Optional, Tuple
 from uuid import uuid4 as uuid
 
 import pytz
+import arrow
 
 from dinofw.db.cassandra.schemas import MessageBase, ActionLogBase
 from dinofw.db.rdbms.schemas import GroupBase
@@ -31,8 +32,7 @@ class FakeStorage:
         if group_id not in self.messages_by_group:
             self.messages_by_group[group_id] = list()
 
-        now = dt.utcnow()
-        now = now.replace(tzinfo=pytz.UTC)
+        now = arrow.utcnow().datetime
 
         message = MessageBase(
             group_id=group_id,
@@ -282,6 +282,7 @@ class FakeDatabase:
             last_sent=created_at,
             delete_before=self.long_ago,
             join_time=created_at,
+            hide=False,
         )
 
         if user_id in self.stats:

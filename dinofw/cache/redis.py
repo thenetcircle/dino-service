@@ -121,8 +121,12 @@ class CacheRedis(ICache):
         if user_stats is None:
             return None
 
-        last_read, last_sent, hide_before = [
-            to_dt(timestamp) for timestamp in str(user_stats, "utf-8").split("|")
+        last_read, last_sent, delete_before, join_time, hide = str(user_stats, "utf-8").split("|")
+        hide = hide == "true"
+
+        last_read, last_sent, delete_before = [
+            to_dt(timestamp)
+            for timestamp in [last_read, last_sent, delete_before, join_time]
         ]
 
         return UserGroupStatsBase(
@@ -130,7 +134,7 @@ class CacheRedis(ICache):
             user_id=user_id,
             last_read=last_read,
             last_sent=last_sent,
-            hide_before=hide_before,
+            hide=hide,
         )
 
     def set_user_stats_group(
@@ -139,8 +143,11 @@ class CacheRedis(ICache):
         def to_ts(datetime: dt):
             return datetime.strftime("%s.%f")
 
-        stats_list = [stats.last_read, stats.last_sent, stats.hide_before]
-        user_stats = "|".join([to_ts(stat) for stat in stats_list])
+        stats_list = [stats.last_read, stats.last_sent, stats.delete_before]
+        stats_list = [to_ts(stat) for stat in stats_list]
+        stats_list.append("true" if stats.hide else "false")
+
+        user_stats = "|".join(stats_list)
 
         key = RedisKeys.user_stats_in_group(group_id)
         self.redis.hset(key, user_id, user_stats)

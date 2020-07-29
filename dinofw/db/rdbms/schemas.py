@@ -31,6 +31,7 @@ class UserGroupStatsBase(BaseModel):
     last_sent: datetime
     delete_before: datetime
     join_time: datetime
+    hide: bool
 
 
 class Group(GroupBase):

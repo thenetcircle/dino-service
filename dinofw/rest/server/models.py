@@ -35,7 +35,6 @@ class AbstractQuery(BaseModel):
 
 class PaginationQuery(AbstractQuery):
     until: Optional[float]
-    hide_before: Optional[float]
     per_page: int
 
 
@@ -137,11 +136,13 @@ class UserGroupStats(AbstractQuery):
     last_read_time: float
     last_send_time: float
     delete_before: float
+    hide: bool
 
 
 class UpdateUserGroupStats(AbstractQuery):
     last_read_time: Optional[float]
     delete_before: Optional[float]
+    hide: Optional[bool]
 
 
 class ActionLog(AbstractQuery):

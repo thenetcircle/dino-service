@@ -1,7 +1,7 @@
 from datetime import timezone
 
 import sqlalchemy as sa
-from sqlalchemy import Column
+from sqlalchemy import Column, Boolean, DateTime, TIMESTAMP
 from sqlalchemy import Integer
 from sqlalchemy import String
 
@@ -30,19 +30,19 @@ class GroupEntity(env.Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
 
-    group_id = Column(String(36), nullable=False, index=True)
-    name = Column(String(128), nullable=False)
+    group_id = Column(String(36), index=True)
+    name = Column(String(128))
 
     status = Column(Integer, nullable=True)
-    group_type = Column(Integer, nullable=False, server_default="0")
-    created_at = Column(UTCDateTime(), nullable=False)
-    owner_id = Column(Integer, nullable=False)
+    group_type = Column(Integer, server_default="0")
+    created_at = Column(DateTime(timezone=True))
+    owner_id = Column(Integer)
 
-    last_message_time = Column(UTCDateTime(), nullable=False, index=True)
+    last_message_time = Column(DateTime(timezone=True), index=True)
     last_message_id = Column(String(36))
     last_message_overview = Column(String(512))
 
-    updated_at = Column(UTCDateTime())
+    updated_at = Column(DateTime(timezone=True))
     group_meta = Column(Integer)
     group_weight = Column(Integer)
     group_context = Column(String(512))
@@ -54,10 +54,12 @@ class UserGroupStatsEntity(env.Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
 
-    group_id = Column(String(36), index=True, nullable=False)
-    user_id = Column(Integer, index=True, nullable=False)
+    group_id = Column(String(36), index=True)
+    user_id = Column(Integer, index=True)
 
-    last_read = Column(UTCDateTime(), nullable=False)
-    last_sent = Column(UTCDateTime(), nullable=False)
-    delete_before = Column(UTCDateTime(), nullable=False)
-    join_time = Column(UTCDateTime(), nullable=False)
+    last_read = Column(DateTime(timezone=True))
+    last_sent = Column(DateTime(timezone=True))
+    delete_before = Column(DateTime(timezone=True))
+    join_time = Column(DateTime(timezone=True))
+
+    hide = Column(Boolean())

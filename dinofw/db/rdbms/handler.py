@@ -47,7 +47,6 @@ class RelationalHandler:
         self, user_id: int, query: GroupQuery, db: Session, count_users: bool = True
     ) -> List[Tuple[GroupBase, UserGroupStatsBase, Dict[int, float], int]]:
         until = GroupQuery.to_dt(query.until)
-        hide_before = GroupQuery.to_dt(query.hide_before, default=self.long_ago)
 
         results = (
             db.query(models.GroupEntity, models.UserGroupStatsEntity)
@@ -57,9 +56,9 @@ class RelationalHandler:
             )
             .filter(
                 models.GroupEntity.last_message_time <= until,
-                models.GroupEntity.last_message_time > hide_before,
+                models.UserGroupStatsEntity.hide.is_(False),
+                models.UserGroupStatsEntity.user_id == user_id,
             )
-            .filter(models.UserGroupStatsEntity.user_id == user_id)
             .order_by(models.GroupEntity.last_message_time.desc())
             .limit(query.per_page)
             .all()
@@ -157,6 +156,7 @@ class RelationalHandler:
                     delete_before=now,
                     last_sent=now,
                     join_time=now,
+                    hide=False,
                 )
             else:
                 user_stats.last_read = now
@@ -266,6 +266,7 @@ class RelationalHandler:
                 hide_before=self.long_ago,
                 last_read=last_read or self.long_ago,
                 delete_before=delete_before or self.long_ago,
+                hide=query.hide or False,
                 join_time=last_read or self.long_ago,
             )
 
@@ -276,6 +277,9 @@ class RelationalHandler:
 
             if delete_before is not None:
                 user_stats.delete_before = delete_before
+
+            if query.hide is not None:
+                user_stats.hide = query.hide
 
         db.add(user_stats)
         db.commit()

@@ -114,6 +114,7 @@ class GroupResource(BaseResource):
             last_read_time=last_read,
             last_send_time=last_sent,
             delete_before=delete_before,
+            hide=user_stats.hide,
         )
 
     async def update_user_group_stats(
