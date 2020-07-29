@@ -251,9 +251,9 @@ class RelationalHandler:
             .first()
         )
 
-        last_read = UpdateUserGroupStats.to_dt(query.last_read_time, default=self.long_ago)
-        hide_before = UpdateUserGroupStats.to_dt(query.hide_before, default=self.long_ago)
-        delete_before = UpdateUserGroupStats.to_dt(query.delete_before, default=self.long_ago)
+        last_read = UpdateUserGroupStats.to_dt(query.last_read_time, allow_none=True)
+        hide_before = UpdateUserGroupStats.to_dt(query.hide_before, allow_none=True)
+        delete_before = UpdateUserGroupStats.to_dt(query.delete_before, allow_none=True)
 
         should_update_cached_user_ids_in_group = False
 
@@ -263,17 +263,23 @@ class RelationalHandler:
             user_stats = models.UserGroupStatsEntity(
                 group_id=group_id,
                 user_id=user_id,
-                last_read=last_read,
                 last_sent=self.long_ago,
-                hide_before=hide_before,
-                delete_before=delete_before,
-                join_time=last_read,
+                last_read=last_read or self.long_ago,
+                hide_before=hide_before or self.long_ago,
+                delete_before=delete_before or self.long_ago,
+                join_time=last_read or self.long_ago,
             )
 
+        # only update if query has new values
         else:
-            user_stats.last_read = last_read
-            user_stats.hide_before = hide_before
-            user_stats.delete_before = delete_before
+            if last_read is not None:
+                user_stats.last_read = last_read
+
+            if hide_before is not None:
+                user_stats.hide_before = hide_before
+
+            if delete_before is not None:
+                user_stats.delete_before = delete_before
 
         db.add(user_stats)
         db.commit()
@@ -312,6 +318,7 @@ class RelationalHandler:
                 last_read=created_at,
                 last_sent=created_at,
                 hide_before=self.long_ago,
+                delete_before=self.long_ago,
                 join_time=created_at,
             )
 
@@ -371,9 +378,8 @@ class RelationalHandler:
         self, group_id: str, query: GroupQuery, db: Session, skip_cache: bool = False
     ) -> Dict[int, float]:
         until = GroupQuery.to_dt(query.until)
-        hide_before = GroupQuery.to_dt(query.hide_before, default=self.long_ago)
 
-        # TODO: since we're doing doing pagination instead, maybe just skip caching? how often will people check?
+        # TODO: since we're doing pagination instead, maybe just skip caching? how often will people check?
         users = None
         # users in a group shouldn't change that often
         # if skip_cache:
@@ -387,7 +393,6 @@ class RelationalHandler:
                 .filter(
                     models.UserGroupStatsEntity.group_id == group_id,
                     models.UserGroupStatsEntity.join_time <= until,
-                    models.UserGroupStatsEntity.join_time > hide_before,
                 )
                 .distinct()
                 .order_by(models.UserGroupStatsEntity.join_time.desc())
