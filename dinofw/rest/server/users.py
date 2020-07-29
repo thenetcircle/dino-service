@@ -73,9 +73,9 @@ class UserResource(BaseResource):
             last_message = group.last_message_time
             last_read = stats.last_read
             last_sent = stats.last_sent
-            hide_before = stats.hide_before
+            delete_before = stats.delete_before
 
-            if last_message > last_read and last_message > hide_before:
+            if last_message > last_read and last_message > delete_before:
                 unread_groups += 1
 
             if group.owner_id == user_id:

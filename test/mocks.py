@@ -187,6 +187,9 @@ class FakeDatabase:
         self.groups = dict()
         self.stats = dict()
 
+        beginning_of_1995 = 789_000_000
+        self.long_ago = dt.utcfromtimestamp(beginning_of_1995)
+
     def update_group_new_message(self, message: MessageBase, sent_time: dt, _) -> None:
         if message.group_id not in self.groups:
             return
@@ -263,53 +266,37 @@ class FakeDatabase:
 
         return len(users)
 
+    def update_user_stats_on_join_or_create_group(
+        self, group_id: str, users: Dict[int, float], now: dt, _
+    ) -> None:
+        for user_id, _ in users.items():
+            self.update_last_read_and_sent_in_group_for_user(user_id, group_id, now, None)
+
     def update_last_read_and_sent_in_group_for_user(
         self, user_id: int, group_id: str, created_at: dt, _
     ) -> None:
+        to_add = UserGroupStatsBase(
+            group_id=group_id,
+            user_id=user_id,
+            last_read=created_at,
+            last_sent=created_at,
+            delete_before=self.long_ago,
+            join_time=created_at,
+        )
+
         if user_id in self.stats:
+            found_group = False
+
             for group_stats in self.stats[user_id]:
                 if group_stats.group_id == group_id:
                     group_stats.last_read = created_at
                     group_stats.last_sent = created_at
+                    found_group = True
+
+            if not found_group:
+                self.stats[user_id].append(to_add)
         else:
-            self.stats[user_id] = [
-                UserGroupStatsBase(
-                    group_id=group_id,
-                    user_id=user_id,
-                    last_read=created_at,
-                    last_sent=created_at,
-                    hide_before=created_at,
-                    join_time=created_at,
-                )
-            ]
-
-    def update_last_read_in_group_for_user(
-        self, group_id: str, users: Dict[int, float], last_read_time: dt, _
-    ) -> None:
-
-        for user_id, join_time in users.items():
-            base_to_add = UserGroupStatsBase(
-                group_id=group_id,
-                user_id=user_id,
-                last_read=last_read_time,
-                hide_before=last_read_time,
-                last_sent=last_read_time,
-                join_time=join_time,
-            )
-
-            if user_id not in self.stats:
-                self.stats[user_id] = [base_to_add]
-
-            else:
-                found_existing = False
-
-                for group_stats in self.stats[user_id]:
-                    if group_stats.group_id == group_id:
-                        found_existing = True
-                        group_stats.last_read = last_read_time
-
-                if not found_existing:
-                    self.stats[user_id].append(base_to_add)
+            self.stats[user_id] = [to_add]
 
     def remove_last_read_in_group_for_user(
         self, group_id: str, user_id: int, _

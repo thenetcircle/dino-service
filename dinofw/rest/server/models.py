@@ -136,13 +136,11 @@ class UserGroupStats(AbstractQuery):
     unread_amount: int
     last_read_time: float
     last_send_time: float
-    hide_before: float
     delete_before: float
 
 
 class UpdateUserGroupStats(AbstractQuery):
     last_read_time: Optional[float]
-    hide_before: Optional[float]
     delete_before: Optional[float]
 
 

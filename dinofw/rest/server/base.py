@@ -29,9 +29,6 @@ class BaseResource(ABC):
     def message_base_to_message(message: MessageBase) -> Message:
         message_dict = message.dict()
 
-        message_dict["removed_at"] = AbstractQuery.to_ts(
-            message_dict["removed_at"], allow_none=True
-        )
         message_dict["updated_at"] = AbstractQuery.to_ts(
             message_dict["updated_at"], allow_none=True
         )
@@ -78,7 +75,7 @@ class BaseResource(ABC):
 
         stats_dict["last_read"] = AbstractQuery.to_ts(stats_dict["last_read"])
         stats_dict["last_sent"] = AbstractQuery.to_ts(stats_dict["last_sent"])
-        stats_dict["hide_before"] = AbstractQuery.to_ts(stats_dict["hide_before"])
+        stats_dict["delete_before"] = AbstractQuery.to_ts(stats_dict["delete_before"])
 
         return UserGroupStats(**stats_dict)
 

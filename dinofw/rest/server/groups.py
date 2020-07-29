@@ -99,7 +99,7 @@ class GroupResource(BaseResource):
         message_amount = self.env.storage.count_messages_in_group(group_id)
 
         last_sent = AbstractQuery.to_ts(user_stats.last_sent)
-        hide_before = AbstractQuery.to_ts(user_stats.hide_before)
+        delete_before = AbstractQuery.to_ts(user_stats.delete_before)
         last_read = AbstractQuery.to_ts(user_stats.last_read)
 
         unread_amount = self.env.storage.count_messages_in_group_since(
@@ -113,7 +113,7 @@ class GroupResource(BaseResource):
             unread_amount=unread_amount,
             last_read_time=last_read,
             last_send_time=last_sent,
-            hide_before=hide_before,
+            delete_before=delete_before,
         )
 
     async def update_user_group_stats(
@@ -134,10 +134,9 @@ class GroupResource(BaseResource):
         if query.users is not None and query.users:
             users.update({user_id: float(now_ts) for user_id in query.users})
 
-        self.env.db.update_last_read_in_group_for_user(
+        self.env.db.update_user_stats_on_join_or_create_group(
             group.group_id, users, now, db
         )
-
         self.env.storage.create_join_action_log(group.group_id, users, now)
 
         return GroupResource.group_base_to_group(
@@ -166,7 +165,7 @@ class GroupResource(BaseResource):
 
         user_id_and_last_read = {user_id: float(now_ts)}
 
-        self.env.db.update_last_read_in_group_for_user(
+        self.env.db.update_user_stats_on_join_or_create_group(
             group_id, user_id_and_last_read, now, db
         )
         action_log = self.env.storage.create_join_action_log(

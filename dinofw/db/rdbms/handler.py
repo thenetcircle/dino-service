@@ -131,8 +131,8 @@ class RelationalHandler:
 
         return group is not None
 
-    def update_last_read_in_group_for_user(
-        self, group_id: str, users: Dict[int, float], last_read_time: dt, db: Session
+    def update_user_stats_on_join_or_create_group(
+        self, group_id: str, users: Dict[int, float], now: dt, db: Session
     ) -> None:
         """
         TODO: should we update last read for sender? or sender also acks?
@@ -153,13 +153,13 @@ class RelationalHandler:
                 user_stats = models.UserGroupStatsEntity(
                     group_id=group_id,
                     user_id=user_id,
-                    last_read=last_read_time,
-                    hide_before=last_read_time,
-                    last_sent=last_read_time,
-                    join_time=AbstractQuery.to_dt(join_time),
+                    last_read=now,
+                    delete_before=now,
+                    last_sent=now,
+                    join_time=now,
                 )
             else:
-                user_stats.last_read = last_read_time
+                user_stats.last_read = now
 
             db.add(user_stats)
 
@@ -252,7 +252,6 @@ class RelationalHandler:
         )
 
         last_read = UpdateUserGroupStats.to_dt(query.last_read_time, allow_none=True)
-        hide_before = UpdateUserGroupStats.to_dt(query.hide_before, allow_none=True)
         delete_before = UpdateUserGroupStats.to_dt(query.delete_before, allow_none=True)
 
         should_update_cached_user_ids_in_group = False
@@ -264,8 +263,8 @@ class RelationalHandler:
                 group_id=group_id,
                 user_id=user_id,
                 last_sent=self.long_ago,
+                hide_before=self.long_ago,
                 last_read=last_read or self.long_ago,
-                hide_before=hide_before or self.long_ago,
                 delete_before=delete_before or self.long_ago,
                 join_time=last_read or self.long_ago,
             )
@@ -274,9 +273,6 @@ class RelationalHandler:
         else:
             if last_read is not None:
                 user_stats.last_read = last_read
-
-            if hide_before is not None:
-                user_stats.hide_before = hide_before
 
             if delete_before is not None:
                 user_stats.delete_before = delete_before
