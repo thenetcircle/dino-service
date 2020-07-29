@@ -4,6 +4,8 @@ import sys
 from datetime import datetime
 from typing import List
 from uuid import uuid4 as uuid
+
+import arrow
 from activitystreams import parse as as_parser
 
 from dinofw import environ
@@ -56,12 +58,23 @@ class ActivityBuilder:
         return response
 
     @staticmethod
+    def activity_for_message(user_id: str):
+        return ActivityBuilder.enrich(
+            {
+                "actor": {
+                    "id": user_id,
+                },
+                "verb": "send",
+            }
+        )
+
+    @staticmethod
     def activity_for_client_api_send(
         group_id: str, user_id: int, message: MessageBase, user_ids: List[int]
     ) -> dict:
         return ActivityBuilder.enrich(
             {
-                "actor": {"id": str(user_id),},
+                "actor": {"id": str(user_id)},
                 "object": {
                     "id": message.message_id,
                     "content": message.message_payload,
@@ -109,7 +122,8 @@ class ActivityBuilder:
             extra["id"] = str(uuid())
 
         if "published" not in extra:
-            extra["published"] = datetime.utcnow().strftime(
+            now = arrow.utcnow().datetime
+            extra["published"] = now.strftime(
                 ConfigKeys.DEFAULT_DATE_FORMAT
             )
 

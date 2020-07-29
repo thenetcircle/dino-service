@@ -7,7 +7,6 @@ import eventlet
 from flask import request
 
 from dinofw import environ
-from dinofw import utils
 from dinofw.utils.activity import ActivityBuilder
 
 
@@ -31,21 +30,17 @@ class SendResource(BaseClientResource):
 
         target_ids = json.get("users")
         group_id = json.get("group_id")
-        group_name = json.get("group_name")
-
         user_id = str(json.get("user_id", 0))
-        user_name = utils.b64d(json.get("user_name", utils.b64e("admin")))
-        namespace = json.get("namespace", "/")
 
-        data = ActivityBuilder.activity_for_message(user_id, user_name)
+        data = ActivityBuilder.activity_for_message(user_id)
         data["target"] = {
             "objectType": "group",
             "id": group_id,
-            "displayName": group_name,
-            "url": namespace,
         }
-
-        data["object"] = {"objectType": "message", "content": msg_content}
+        data["object"] = {
+            "objectType": "message",
+            "content": msg_content,
+        }
 
         for target_id in target_ids:
             try:
