@@ -1,4 +1,3 @@
-from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.rest.server.groups import GroupResource
 from dinofw.rest.server.models import GroupQuery, CreateGroupQuery, Group
 from dinofw.rest.server.users import UserResource
@@ -8,9 +7,9 @@ from test.mocks import FakeEnv
 
 class TestUserResource(BaseTest):
     def setUp(self) -> None:
-        self.env = FakeEnv()
-        self.user = UserResource(self.env)
-        self.group = GroupResource(self.env)
+        super().setUp()
+        self.user = UserResource(self.fake_env)
+        self.group = GroupResource(self.fake_env)
 
     @async_test
     async def test_get_groups_for_user(self):

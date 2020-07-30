@@ -50,7 +50,7 @@ class OnLoginHooks:
         user_info = {
             "last_login": dt.utcnow(),
         }
-        environ.env.db.set_user_info(user_id, user_info)
+        environ.env.functional.set_user_info(user_id, user_info)
         """
 
         environ.env.join_room(user_id)

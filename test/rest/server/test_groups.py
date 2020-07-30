@@ -9,15 +9,14 @@ from dinofw.rest.server.models import (
     PaginationQuery,
 )
 from test.base import async_test, BaseTest
-from test.mocks import FakeEnv, FakeStorage
+from test.mocks import FakeStorage
 
 
 class TestGroupResource(BaseTest):
     def setUp(self) -> None:
-        env = FakeEnv()
-
-        self.group = GroupResource(env)
-        self.message = MessageResource(env)
+        super().setUp()
+        self.group = GroupResource(self.fake_env)
+        self.message = MessageResource(self.fake_env)
 
     @async_test
     async def test_create_new_group(self):
@@ -88,7 +87,7 @@ class TestGroupResource(BaseTest):
         )
         send_query = SendMessageQuery(message_payload="some text", message_type="text")
 
-        histories = await self.group.histories(BaseTest.GROUP_ID, message_query)
+        histories = await self.group.histories(BaseTest.GROUP_ID, BaseTest.USER_ID, message_query, db=None)  # noqa
 
         self.assertIsNotNone(histories)
         self.assertEqual(0, len(histories.messages))
@@ -103,7 +102,7 @@ class TestGroupResource(BaseTest):
         await self.message.save_new_message(
             group.group_id, BaseTest.USER_ID, send_query, None
         )  # noqa
-        histories = await self.group.histories(group.group_id, message_query)
+        histories = await self.group.histories(group.group_id, BaseTest.USER_ID, message_query, db=None)  # noqa
 
         # one join event and one message
         self.assertEqual(1, len(histories.messages))
@@ -113,7 +112,7 @@ class TestGroupResource(BaseTest):
         await self.message.save_new_message(
             group.group_id, BaseTest.USER_ID, send_query, None
         )  # noqa
-        histories = await self.group.histories(group.group_id, message_query)
+        histories = await self.group.histories(group.group_id, BaseTest.USER_ID, message_query, db=None)  # noqa
 
         # now we should have two messages but still only one join event
         self.assertEqual(2, len(histories.messages))
@@ -125,12 +124,6 @@ class TestGroupResource(BaseTest):
             group_name="some group name", group_type=0, users=[BaseTest.USER_ID],
         )
         send_query = SendMessageQuery(message_payload="some text", message_type="text")
-
-        # group doesn't exist
-        stats = await self.group.get_user_group_stats(
-            BaseTest.GROUP_ID, BaseTest.USER_ID, None
-        )  # noqa
-        self.assertIsNone(stats)
 
         # create a new group
         group = await self.group.create_new_group(

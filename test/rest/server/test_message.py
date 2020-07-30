@@ -1,19 +1,15 @@
-from unittest import TestCase
-
 from dinofw.rest.server.message import MessageResource
-from dinofw.rest.server.models import (
-    SendMessageQuery,
-    MessageQuery,
-    EditMessageQuery,
-    Message,
-)
+from dinofw.rest.server.models import EditMessageQuery
+from dinofw.rest.server.models import Message
+from dinofw.rest.server.models import MessageQuery
+from dinofw.rest.server.models import SendMessageQuery
 from test.base import async_test, BaseTest
-from test.mocks import FakeEnv
 
 
 class TestMessageResource(BaseTest):
     def setUp(self) -> None:
-        self.resource = MessageResource(FakeEnv())
+        super().setUp()
+        self.resource = MessageResource(self.fake_env)
 
     @async_test
     async def test_save_new_message(self):
@@ -91,7 +87,7 @@ class TestMessageResource(BaseTest):
         )
 
         messages = await self.resource.messages_for_user(
-            BaseTest.GROUP_ID, BaseTest.USER_ID, message_query
+            BaseTest.GROUP_ID, BaseTest.USER_ID, message_query, db=None  # noqa
         )
         self.assertEqual(0, len(messages))
 
@@ -103,7 +99,7 @@ class TestMessageResource(BaseTest):
         )
 
         messages = await self.resource.messages_for_user(
-            BaseTest.GROUP_ID, BaseTest.USER_ID, message_query
+            BaseTest.GROUP_ID, BaseTest.USER_ID, message_query, db=None  # noqa
         )
         self.assertEqual(1, len(messages))
         self.assertEqual(type(messages[0]), Message)
@@ -124,7 +120,7 @@ class TestMessageResource(BaseTest):
             db=None,  # noqa
         )
         messages = await self.resource.messages_for_user(
-            BaseTest.GROUP_ID, BaseTest.USER_ID, message_query
+            BaseTest.GROUP_ID, BaseTest.USER_ID, message_query, db=None  # noqa
         )
         self.assertEqual(messages[0].message_payload, old_text)
         self.assertIsNone(messages[0].updated_at)
@@ -134,7 +130,7 @@ class TestMessageResource(BaseTest):
         )
 
         messages = await self.resource.messages_for_user(
-            BaseTest.GROUP_ID, BaseTest.USER_ID, message_query
+            BaseTest.GROUP_ID, BaseTest.USER_ID, message_query, db=None  # noqa
         )
         self.assertEqual(messages[0].message_payload, new_text)
         self.assertIsNotNone(messages[0].updated_at)

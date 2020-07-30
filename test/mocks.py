@@ -214,6 +214,7 @@ class FakeDatabase:
 
         beginning_of_1995 = 789_000_000
         self.long_ago = dt.utcfromtimestamp(beginning_of_1995)
+        self.long_ago = self.long_ago.replace(tzinfo=pytz.UTC)
 
     def update_group_new_message(self, message: MessageBase, sent_time: dt, _) -> None:
         if message.group_id not in self.groups:
@@ -260,6 +261,9 @@ class FakeDatabase:
                 user_count = self.count_users_in_group(stat.group_id, None)
             else:
                 user_count = 0
+
+            if stat.group_id not in self.groups:
+                continue
 
             group = self.groups[stat.group_id]
             groups.append((group, stat, users, user_count))

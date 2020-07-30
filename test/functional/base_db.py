@@ -32,12 +32,12 @@ class BaseDatabaseTest(BaseTest):
 
         self.env = FakeEnv()
 
-        # need to replace the global environ.env with our FakeEnv, db model files import it directly
+        # need to replace the global environ.env with our FakeEnv, functional model files import it directly
         from dinofw import environ
 
         environ.env = self.env
 
-        # init with our sqlite test db
+        # init with our sqlite test functional
         init_db(self.env, engine)
 
         TestingSessionLocal = sessionmaker(

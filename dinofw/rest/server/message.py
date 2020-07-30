@@ -50,10 +50,15 @@ class MessageResource(BaseResource):
         return messages
 
     async def messages_for_user(
-        self, group_id: str, user_id: int, query: MessageQuery
+        self, group_id: str, user_id: int, query: MessageQuery, db: Session
     ) -> List[Message]:
+        user_stats = self.env.db.get_user_stats_in_group(group_id, user_id, db)
+
+        if user_stats.hide:
+            return list()
+
         raw_messages = self.env.storage.get_messages_in_group_for_user(
-            group_id, user_id, query
+            group_id, user_stats, query
         )
         messages = list()
 
