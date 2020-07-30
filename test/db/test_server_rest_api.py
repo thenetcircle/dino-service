@@ -1,9 +1,8 @@
-from datetime import datetime as dt
+import time
 
 import arrow
-import pytz
 
-from dinofw.rest.server.models import UpdateUserGroupStats, AbstractQuery
+from dinofw.rest.server.models import AbstractQuery, UpdateUserGroupStats
 from test.base import BaseTest
 from test.db_base import BaseDatabaseTest
 
@@ -98,18 +97,66 @@ class TestServerRestApi(BaseDatabaseTest):
         self.assert_groups_for_user(1, user_id=BaseTest.USER_ID)
         self.assert_groups_for_user(1, user_id=BaseTest.OTHER_USER_ID)
 
-    def send_message_to_group_from(self, group_id: str, user_id: int = None):
+    def test_one_user_deletes_some_history(self):
+        # both users join a new group
+        group_id = self.create_and_join_group(BaseTest.USER_ID)
+        self.user_joins_group(group_id, BaseTest.OTHER_USER_ID)
+
+        self.assert_messages_in_group(group_id, user_id=BaseTest.USER_ID, amount=0)
+        self.assert_messages_in_group(group_id, user_id=BaseTest.OTHER_USER_ID, amount=0)
+
+        # each user sends 4 messages each, then we delete some of them for one user
+        messages_to_send_each = 4
+
+        self.send_message_to_group_from(
+            group_id, user_id=BaseTest.USER_ID, amount=messages_to_send_each, delay=10
+        )
+        messages = self.send_message_to_group_from(
+            group_id, user_id=BaseTest.OTHER_USER_ID, amount=messages_to_send_each, delay=10
+        )
+
+        # first user deletes the first 5 messages in the group
+        self.update_delete_before(group_id, delete_before=messages[0]["created_at"], user_id=BaseTest.USER_ID)
+
+        # first user should have 3, since we deleted everything before the other user's
+        # first message (including that first message); second user should have all 8
+        # since he/she didn't delete anything
+        self.assert_messages_in_group(group_id, user_id=BaseTest.USER_ID, amount=messages_to_send_each - 1)
+        self.assert_messages_in_group(group_id, user_id=BaseTest.OTHER_USER_ID, amount=messages_to_send_each * 2)
+
+    def update_delete_before(self, group_id: str, delete_before: float, user_id: int = None):
         if user_id is None:
             user_id = BaseTest.USER_ID
 
-        raw_response = self.client.post(
-            f"/v1/groups/{group_id}/users/{user_id}/send",
+        raw_response = self.client.put(
+            f"/v1/groups/{group_id}/userstats/{user_id}",
             json={
-                "message_payload": "test message",
-                "message_type": "text",
+                "delete_before": delete_before,
             },
         )
         self.assertEqual(raw_response.status_code, 200)
+
+    def send_message_to_group_from(self, group_id: str, user_id: int = None, amount: int = 1, delay: int = 0) -> list:
+        if user_id is None:
+            user_id = BaseTest.USER_ID
+
+        messages = list()
+
+        for _ in range(amount):
+            raw_response = self.client.post(
+                f"/v1/groups/{group_id}/users/{user_id}/send",
+                json={
+                    "message_payload": "test message",
+                    "message_type": "text",
+                },
+            )
+            self.assertEqual(raw_response.status_code, 200)
+            messages.append(raw_response.json())
+
+            if delay > 0:
+                time.sleep(delay / 1000)
+
+        return messages
 
     def update_hide_group_for(self, group_id: str, hide: bool, user_id: int = None):
         if user_id is None:
@@ -144,6 +191,16 @@ class TestServerRestApi(BaseDatabaseTest):
         self.assertEqual(raw_response.status_code, 200)
 
         return raw_response.json()
+
+    def assert_messages_in_group(self, group_id: str, user_id: int = None, amount: int = 0):
+        raw_response = self.client.post(
+            f"/v1/groups/{group_id}/user/{user_id}/histories",
+            json={
+                "per_page": 100,
+            },
+        )
+        self.assertEqual(raw_response.status_code, 200)
+        self.assertEqual(amount, len(raw_response.json()["messages"]))
 
     def assert_hidden_for_user(self, hidden: bool, group_id: str, user_id: int = None) -> None:
         if user_id is None:

@@ -1,28 +1,8 @@
-from datetime import timezone
-
-import sqlalchemy as sa
-from sqlalchemy import Column, Boolean, DateTime, TIMESTAMP
+from sqlalchemy import Column, Boolean, DateTime
 from sqlalchemy import Integer
 from sqlalchemy import String
 
 from dinofw.environ import env
-
-
-class UTCDateTime(sa.TypeDecorator):  # pylint:disable=W0223
-    impl = sa.DateTime
-
-    def process_bind_param(self, value, dialect):
-        if value is not None:
-            if not value.tzinfo:
-                value = value.replace(tzinfo=timezone.utc)
-            return value.astimezone(timezone.utc)
-
-        return None
-
-    def process_result_value(self, value, dialect):
-        if value:
-            return value.astimezone(timezone.utc).replace(tzinfo=None)
-        return None
 
 
 class GroupEntity(env.Base):

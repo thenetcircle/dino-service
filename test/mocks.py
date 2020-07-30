@@ -101,7 +101,10 @@ class FakeStorage:
         return messages
 
     def get_messages_in_group_for_user(
-        self, group_id: str, user_id: int, query: MessageQuery
+            self,
+            group_id: str,
+            user_stats: UserGroupStatsBase,
+            query: MessageQuery,
     ) -> List[MessageBase]:
         if group_id not in self.messages_by_group:
             return list()
@@ -109,7 +112,7 @@ class FakeStorage:
         messages = list()
 
         for message in self.messages_by_group[group_id]:
-            if message.user_id == user_id:
+            if message.created_at > user_stats.delete_before:
                 messages.append(message)
 
             if len(messages) > query.per_page:
@@ -154,6 +157,28 @@ class FakeStorage:
             return list()
 
         for log in self.action_log[group_id]:
+            logs.append(log)
+
+            if len(logs) > query.per_page:
+                break
+
+        return logs
+
+    def get_action_log_in_group_for_user(
+            self,
+            group_id: str,
+            user_stats: UserGroupStatsBase,
+            query: MessageQuery,
+    ) -> List[ActionLogBase]:
+        logs = list()
+
+        if group_id not in self.action_log:
+            return list()
+
+        for log in self.action_log[group_id]:
+            if log.created_at <= user_stats.delete_before:
+                continue
+
             logs.append(log)
 
             if len(logs) > query.per_page:

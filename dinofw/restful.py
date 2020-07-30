@@ -53,20 +53,22 @@ async def search_for_groups(query: SearchQuery) -> List[Group]:
     return await environ.env.rest.group.search(query)
 
 
-@app.post("/v1/groups/{group_id}/histories", response_model=List[Histories])
+@app.post("/v1/groups/{group_id}/user/{user_id}/histories", response_model=Histories)
 async def get_group_history_for_user(
-    group_id: str, query: MessageQuery
-) -> List[Histories]:
+    group_id: str, user_id: int, query: MessageQuery, db: Session = Depends(get_db)
+) -> Histories:
     """
     get user visible history in a group sort by time in descendent, messages and action log.
     """
-    return await environ.env.rest.group.histories(group_id, query)
+    return await environ.env.rest.group.histories(group_id, user_id, query, db)
 
 
 @app.post("/v1/groups/{group_id}/messages", response_model=List[Message])
 async def get_messages_in_group(group_id: str, query: MessageQuery) -> List[Message]:
     """
     get messages in a group, order by time in descendent
+
+    # TODO: remove this? should probably always get with regards to one user (for hidden/deleted)
     """
     return await environ.env.rest.message.messages_in_group(group_id, query)
 

@@ -3,6 +3,7 @@ from time import time
 from typing import List, Optional, Dict
 from uuid import uuid4 as uuid
 
+import arrow
 import pytz
 from cassandra.cqlengine import connection
 from cassandra.cqlengine.query import BatchQuery
@@ -14,6 +15,7 @@ from dinofw.db.cassandra.models import ActionLogModel
 from dinofw.db.cassandra.models import MessageModel
 from dinofw.db.cassandra.schemas import ActionLogBase
 from dinofw.db.cassandra.schemas import MessageBase
+from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.rest.server.models import EditMessageQuery
 from dinofw.rest.server.models import AdminQuery
 from dinofw.rest.server.models import MessageQuery
@@ -47,20 +49,17 @@ class CassandraHandler:
         sync_table(ActionLogModel)
 
     def get_messages_in_group(
-        self, group_id: str, query: MessageQuery
+            self,
+            group_id: str,
+            query: MessageQuery
     ) -> List[MessageBase]:
         until = MessageQuery.to_dt(query.until)
-
-        # TODO: get default hide_before from user stats in db/cache if not in query
-        # TODO: we don't know which user it is for this api
-        hide_before = MessageQuery.to_dt(query.hide_before, default=self.long_ago)
 
         # TODO: add message_type and status filter from MessageQuery
         raw_messages = (
             MessageModel.objects(
                 MessageModel.group_id == group_id,
                 MessageModel.created_at <= until,
-                MessageModel.created_at > hide_before,
             )
             .limit(query.per_page or 100)
             .all()
@@ -74,18 +73,19 @@ class CassandraHandler:
         return messages
 
     def get_messages_in_group_for_user(
-        self, group_id: str, user_id: int, query: MessageQuery
+            self,
+            group_id: str,
+            user_stats: UserGroupStatsBase,
+            query: MessageQuery
     ) -> List[MessageBase]:
         until = MessageQuery.to_dt(query.until)
-        hide_before = MessageQuery.to_dt(query.hide_before, default=self.long_ago)
 
         # TODO: add message_type and status filter from MessageQuery
         raw_messages = (
             MessageModel.objects(
                 MessageModel.group_id == group_id,
-                MessageModel.user_id == user_id,
                 MessageModel.created_at <= until,
-                MessageModel.created_at > hide_before,
+                MessageModel.created_at > user_stats.delete_before,
             )
             .limit(query.per_page or 100)
             .all()
@@ -297,15 +297,39 @@ class CassandraHandler:
 
         return CassandraHandler.message_base_from_entity(message)
 
-    def get_action_log_in_group(self, group_id: str, query: MessageQuery) -> List[ActionLogBase]:
+    def get_action_log_in_group(
+            self,
+            group_id: str,
+            query: MessageQuery
+    ) -> List[ActionLogBase]:
         until = MessageQuery.to_dt(query.until)
-        hide_before = MessageQuery.to_dt(query.hide_before, default=self.long_ago)
 
         action_logs = (
             ActionLogModel.objects(
                 ActionLogModel.group_id == group_id,
                 ActionLogModel.created_at <= until,
-                ActionLogModel.created_at > hide_before,
+            )
+            .limit(query.per_page or 100)
+            .all()
+        )
+
+        return [
+            CassandraHandler.action_log_base_from_entity(log) for log in action_logs
+        ]
+
+    def get_action_log_in_group_for_user(
+            self,
+            group_id: str,
+            user_stats: UserGroupStatsBase,
+            query: MessageQuery
+    ) -> List[ActionLogBase]:
+        until = MessageQuery.to_dt(query.until)
+
+        action_logs = (
+            ActionLogModel.objects(
+                ActionLogModel.group_id == group_id,
+                ActionLogModel.created_at <= until,
+                ActionLogModel.created_at > user_stats.delete_before,
             )
             .limit(query.per_page or 100)
             .all()
