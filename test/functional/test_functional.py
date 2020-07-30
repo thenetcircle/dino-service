@@ -118,3 +118,22 @@ class TestServerRestApi(BaseServerRestApi):
         # since he/she didn't delete anything
         self.assert_messages_in_group(group_id, user_id=BaseTest.USER_ID, amount=messages_to_send_each - 1)
         self.assert_messages_in_group(group_id, user_id=BaseTest.OTHER_USER_ID, amount=messages_to_send_each * 2)
+
+    def test_joining_a_group_changes_last_update_time(self):
+        group_id = self.create_and_join_group(BaseTest.USER_ID)
+        group = self.get_group(group_id)
+        last_update_time = group["updated_at"]
+
+        # send a message
+        self.send_message_to_group_from(group_id, user_id=BaseTest.USER_ID, delay=10)
+
+        # update time should not have changed form a new message
+        group = self.get_group(group_id)
+        self.assertEqual(group["updated_at"], last_update_time)
+
+        # should change update time
+        self.user_joins_group(group_id, BaseTest.OTHER_USER_ID)
+
+        # update time should now have changed
+        group = self.get_group(group_id)
+        self.assertNotEqual(group["updated_at"], last_update_time)

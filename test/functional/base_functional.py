@@ -8,6 +8,21 @@ from test.functional.base_db import BaseDatabaseTest
 
 
 class BaseServerRestApi(BaseDatabaseTest):
+    def get_group(self, group_id: str, user_id: int = None) -> dict:
+        if user_id is None:
+            user_id = BaseTest.USER_ID
+
+        raw_response = self.client.post(
+            f"/v1/users/{user_id}/groups", json={"per_page": "10"},
+        )
+        self.assertEqual(raw_response.status_code, 200)
+
+        for group in raw_response.json():
+            if group["group_id"] == group_id:
+                return group
+
+        return dict()
+
     def update_delete_before(self, group_id: str, delete_before: float, user_id: int = None):
         if user_id is None:
             user_id = BaseTest.USER_ID

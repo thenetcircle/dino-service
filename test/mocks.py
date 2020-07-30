@@ -233,6 +233,7 @@ class FakeDatabase:
             group_type=query.group_type,
             last_message_time=created_at,
             created_at=created_at,
+            updated_at=created_at,
             owner_id=owner_id,
             group_meta=query.group_meta,
             group_context=query.group_context,
@@ -301,6 +302,12 @@ class FakeDatabase:
         for user_id, _ in users.items():
             self.update_last_read_and_sent_in_group_for_user(user_id, group_id, now, None)
 
+    def set_group_updated_at(self, group_id: str, now: dt, _) -> None:
+        if group_id not in self.groups:
+            return
+
+        self.groups[group_id].updated_at = now
+
     def update_last_read_and_sent_in_group_for_user(
         self, user_id: int, group_id: str, created_at: dt, _
     ) -> None:
@@ -312,6 +319,8 @@ class FakeDatabase:
             delete_before=self.long_ago,
             join_time=created_at,
             hide=False,
+            pin=False,
+            bookmark=False,
         )
 
         if user_id in self.stats:

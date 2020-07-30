@@ -120,6 +120,8 @@ class GroupResource(BaseResource):
             last_send_time=last_sent,
             delete_before=delete_before,
             hide=user_stats.hide,
+            pin=user_stats.pin,
+            bookmark=user_stats.bookmark,
         )
 
     async def update_user_group_stats(
@@ -171,6 +173,7 @@ class GroupResource(BaseResource):
 
         user_id_and_last_read = {user_id: float(now_ts)}
 
+        self.env.db.set_group_updated_at(group_id, now, db)
         self.env.db.update_user_stats_on_join_or_create_group(
             group_id, user_id_and_last_read, now, db
         )

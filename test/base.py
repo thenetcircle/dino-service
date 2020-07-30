@@ -35,4 +35,6 @@ class BaseTest(TestCase):
             delete_before=long_ago,
             join_time=long_ago,
             hide=False,
+            pin=False,
+            bookmark=False,
         )]

@@ -148,6 +148,8 @@ class UpdateUserGroupStats(AbstractQuery):
     last_read_time: Optional[float]
     delete_before: Optional[float]
     hide: Optional[bool]
+    bookmark: Optional[bool]
+    pin: Optional[bool]
 
 
 class ActionLog(AbstractQuery):
@@ -175,7 +177,6 @@ class Group(AbstractQuery):
     group_meta: Optional[int]
     group_context: Optional[str]
     last_message_overview: Optional[str]
-    # last_message_user_id: Optional[int]
     last_message_time: float
 
 

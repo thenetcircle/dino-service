@@ -9,8 +9,7 @@ class GroupBase(BaseModel):
     name: str
     description: Optional[str]
     created_at: datetime
-
-    last_update_time: datetime
+    updated_at: datetime
 
     last_message_time: datetime
     last_message_overview: Optional[str]
@@ -20,7 +19,6 @@ class GroupBase(BaseModel):
     group_type: int
     owner_id: int
 
-    updated_at: Optional[datetime]
     group_meta: Optional[int]
     group_weight: Optional[int]
     group_context: Optional[str]

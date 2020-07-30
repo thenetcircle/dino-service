@@ -142,6 +142,21 @@ class RelationalHandler:
 
         return group is not None
 
+    def set_group_updated_at(self, group_id: str, now: dt, db: Session) -> None:
+        group = (
+            db.query(models.GroupEntity)
+            .filter(models.GroupEntity.group_id == group_id)
+            .first()
+        )
+
+        if group is None:
+            return
+
+        group.updated_at = now
+
+        db.add(group)
+        db.commit()
+
     def update_user_stats_on_join_or_create_group(
         self, group_id: str, users: Dict[int, float], now: dt, db: Session
     ) -> None:
@@ -303,6 +318,8 @@ class RelationalHandler:
             delete_before=user_stats.delete_before,
             join_time=user_stats.join_time,
             hide=user_stats.hide,
+            bookmark=user_stats.bookmark,
+            pin=user_stats.pin,
         )
 
         db.add(user_stats)
@@ -339,7 +356,6 @@ class RelationalHandler:
                 user_id=user_id,
                 last_read=created_at,
                 last_sent=created_at,
-                hide_before=self.long_ago,
                 delete_before=self.long_ago,
                 join_time=created_at,
             )
@@ -369,6 +385,7 @@ class RelationalHandler:
             name=query.group_name,
             group_type=query.group_type,
             last_message_time=created_at,
+            updated_at=created_at,
             created_at=created_at,
             owner_id=owner_id,
             group_meta=query.group_meta,
