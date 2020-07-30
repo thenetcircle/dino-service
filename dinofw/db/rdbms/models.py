@@ -18,6 +18,10 @@ class GroupEntity(env.Base):
     created_at = Column(DateTime(timezone=True))
     owner_id = Column(Integer)
 
+    # used by clients to sync changed (new name, user left etc.)
+    last_update_time = Column(DateTime(timezone=True), index=True)
+
+    # users by clients to sort groups by recent messages
     last_message_time = Column(DateTime(timezone=True), index=True)
     last_message_id = Column(String(36))
     last_message_overview = Column(String(512))
@@ -42,4 +46,14 @@ class UserGroupStatsEntity(env.Base):
     delete_before = Column(DateTime(timezone=True))
     join_time = Column(DateTime(timezone=True))
 
+    # a user can highlight a 1-to-1 group for ANOTHER user
+    highlight_time = Column(DateTime(timezone=True), nullable=True)
+
+    # a user can hide a group (will be un-hidden as soon as a new message is sent in this group)
     hide = Column(Boolean())
+
+    # a user can pin groups he/she wants to keep on top, and will be sorted higher than last_message_time
+    pin = Column(Boolean())
+
+    # a user can bookmark a group, which makes it count as "one unread message in this group" (only for this user)
+    bookmark = Column(Boolean())

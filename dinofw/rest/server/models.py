@@ -122,6 +122,7 @@ class UserStats(AbstractQuery):
     unread_amount: int
     group_amount: int
     owned_group_amount: int
+    last_update_time: Optional[float]
     last_read_time: Optional[float]
     last_read_group_id: Optional[str]
     last_send_time: Optional[float]
@@ -136,7 +137,11 @@ class UserGroupStats(AbstractQuery):
     last_read_time: float
     last_send_time: float
     delete_before: float
+    highlight_time: Optional[float]
+
     hide: bool
+    pin: bool
+    bookmark: bool
 
 
 class UpdateUserGroupStats(AbstractQuery):

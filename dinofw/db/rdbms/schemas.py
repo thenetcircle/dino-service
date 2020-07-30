@@ -10,6 +10,8 @@ class GroupBase(BaseModel):
     description: Optional[str]
     created_at: datetime
 
+    last_update_time: datetime
+
     last_message_time: datetime
     last_message_overview: Optional[str]
     last_message_id: Optional[str]
@@ -27,11 +29,16 @@ class GroupBase(BaseModel):
 class UserGroupStatsBase(BaseModel):
     group_id: str
     user_id: int
+
     last_read: datetime
     last_sent: datetime
     delete_before: datetime
     join_time: datetime
+    highlight_time: Optional[datetime]
+
     hide: bool
+    pin: bool
+    bookmark: bool
 
 
 class Group(GroupBase):
