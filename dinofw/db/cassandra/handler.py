@@ -3,12 +3,10 @@ from time import time
 from typing import List, Optional, Dict
 from uuid import uuid4 as uuid
 
-import arrow
 import pytz
 from cassandra.cqlengine import connection
 from cassandra.cqlengine.query import BatchQuery
 from cassandra.cqlengine.management import sync_table
-from gnenv.environ import GNEnvironment
 
 from dinofw.config import ConfigKeys
 from dinofw.db.cassandra.models import ActionLogModel
@@ -28,7 +26,7 @@ class CassandraHandler:
     ACTION_TYPE_JOIN = 0
     ACTION_TYPE_LEAVE = 1
 
-    def __init__(self, env: GNEnvironment):
+    def __init__(self, env):
         self.env = env
         self.logger = logging.getLogger(__name__)
 
@@ -110,11 +108,22 @@ class CassandraHandler:
         # TODO: count all or only after `hide_before`?
         return (
             MessageModel.objects(
-                MessageModel.group_id == group_id, MessageModel.created_at > since,
+                MessageModel.group_id == group_id,
+                MessageModel.created_at > since,
             )
             .limit(None)
             .count()
         )
+
+    def get_unread_in_group(self, group_id: str, user_id: int, last_read: dt) -> int:
+        unread = self.env.cache.get_unread_in_group(group_id, user_id)
+        if unread is not None:
+            return unread
+
+        unread = self.count_messages_in_group_since(group_id, last_read)
+
+        self.env.cache.set_unread_in_group(group_id, user_id, unread)
+        return unread
 
     def get_message(
         self, group_id: str, user_id: int, message_id: str

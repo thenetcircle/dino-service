@@ -29,7 +29,8 @@ class MessageModel(Model):
         default=uuid.uuid4
     )
 
-    # not required; if deleted we clear the body first  # TODO: maybe just remove the row?
+    # not required; if deleted we clear the body first
+    # TODO: maybe just remove the row?
     message_payload = Text()
 
     status = Integer()

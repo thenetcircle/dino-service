@@ -5,6 +5,7 @@ from uuid import uuid4 as uuid
 import pytz
 import arrow
 
+from dinofw.config import RedisKeys
 from dinofw.db.cassandra.schemas import MessageBase, ActionLogBase
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
@@ -22,9 +23,25 @@ class FakeStorage:
     ACTION_TYPE_JOIN = 0
     ACTION_TYPE_LEAVE = 1
 
-    def __init__(self):
+    def __init__(self, env):
+        self.env = env
         self.messages_by_group = dict()
         self.action_log = dict()
+
+    def get_unread_in_group(self, group_id: str, user_id: int, last_read: dt) -> int:
+        unread = self.env.cache.get_unread_in_group(group_id, user_id)
+        if unread is not None:
+            return unread
+
+        unread = 0
+        if group_id not in self.messages_by_group:
+            return unread
+
+        for message in self.messages_by_group[group_id]:
+            if message.created_at > last_read:
+                unread += 1
+
+        return unread
 
     def store_message(
         self, group_id: str, user_id: int, query: SendMessageQuery
@@ -398,6 +415,9 @@ class FakePublisher:
 
 
 class FakeCache:
+    def __init__(self):
+        self.cache = dict()
+
     def set_user_ids_and_join_time_in_group(self, group_id, users):
         return
 
@@ -412,6 +432,20 @@ class FakeCache:
 
     def get_user_stats_group(self, group_id, user_id):
         return None
+
+    def set_unread_in_group(self, group_id: str, user_id: int, unread: int) -> None:
+        key = RedisKeys.unread_in_group(user_id)
+        if key not in self.cache:
+            self.cache[key] = dict()
+
+        self.cache[key][group_id] = unread
+
+    def get_unread_in_group(self, group_id: str, user_id: int) -> Optional[int]:
+        key = RedisKeys.unread_in_group(user_id)
+        if key not in self.cache:
+            return None
+
+        return self.cache[key].get(group_id, None)
 
 
 class FakeEnv:
@@ -429,7 +463,7 @@ class FakeEnv:
 
     def __init__(self):
         self.config = FakeEnv.Config()
-        self.storage = FakeStorage()
+        self.storage = FakeStorage(self)
         self.db = FakeDatabase()
         self.publisher = FakePublisher()
         self.cache = FakeCache()

@@ -9,7 +9,7 @@ from dinofw.db.cassandra.schemas import MessageBase
 from dinofw.db.rdbms import models
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
-from dinofw.rest.server.models import AdminUpdateGroupQuery, AbstractQuery
+from dinofw.rest.server.models import AdminUpdateGroupQuery
 from dinofw.rest.server.models import CreateGroupQuery
 from dinofw.rest.server.models import GroupQuery
 from dinofw.rest.server.models import UpdateGroupQuery
@@ -345,6 +345,8 @@ class RelationalHandler:
             .filter(models.UserGroupStatsEntity.group_id == group_id)
             .first()
         )
+
+        self.env.cache.set_unread_in_group(group_id, user_id, 0)
 
         should_update_cached_user_ids_in_group = False
 

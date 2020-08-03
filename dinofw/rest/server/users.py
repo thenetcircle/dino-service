@@ -62,7 +62,7 @@ class UserResource(BaseResource):
             Tuple[GroupBase, UserGroupStatsBase, Any, Any]
         ] = self.env.db.get_groups_for_user(user_id, query, db, count_users=False)
 
-        unread_groups = 0
+        unread_amount = 0
         owner_amount = 0
         max_last_read = self.long_ago
         max_last_sent = self.long_ago
@@ -76,7 +76,11 @@ class UserResource(BaseResource):
             delete_before = stats.delete_before
 
             if last_message > last_read and last_message > delete_before:
-                unread_groups += 1
+                unread_amount += self.env.storage.get_unread_in_group(
+                    group.group_id,
+                    user_id,
+                    stats.last_read
+                )
 
             if group.owner_id == user_id:
                 owner_amount += 1
@@ -91,7 +95,7 @@ class UserResource(BaseResource):
 
         return UserStats(
             user_id=user_id,
-            unread_amount=unread_groups,
+            unread_amount=unread_amount,
             group_amount=len(groups_stats_and_users),
             owned_group_amount=owner_amount,
             last_read_time=GroupQuery.to_ts(max_last_read),
