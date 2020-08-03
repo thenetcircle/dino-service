@@ -346,6 +346,7 @@ class RelationalHandler:
             .first()
         )
 
+        self.env.cache.increase_unread_in_group(group_id)
         self.env.cache.set_unread_in_group(group_id, user_id, 0)
 
         should_update_cached_user_ids_in_group = False

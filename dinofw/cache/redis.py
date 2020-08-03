@@ -75,10 +75,19 @@ class CacheRedis(ICache):
 
         self.listen_host = socket.gethostname().split(".")[0]
 
-    def get_unread_in_group(self, group_id: str, user_id: int) -> Optional[int]:
-        key = RedisKeys.unread_in_group(user_id)
+    def increase_unread_in_group(self, group_id: str):
+        key = RedisKeys.unread_in_group(group_id)
+        users = self.redis.hgetall(key)
 
-        n_unread = self.redis.hget(key, group_id)
+        for user_id, unread in users.items():
+            user_id = str(user_id, "utf-8")
+            unread = int(str(unread, "utf-8"))
+            self.redis.hset(key, user_id, unread + 1)
+
+    def get_unread_in_group(self, group_id: str, user_id: int) -> Optional[int]:
+        key = RedisKeys.unread_in_group(group_id)
+
+        n_unread = self.redis.hget(key, user_id)
         if n_unread is None:
             return None
 
@@ -88,8 +97,8 @@ class CacheRedis(ICache):
             return None
 
     def set_unread_in_group(self, group_id: str, user_id: int, unread: int) -> None:
-        key = RedisKeys.unread_in_group(user_id)
-        self.redis.hset(key, group_id, unread)
+        key = RedisKeys.unread_in_group(group_id)
+        self.redis.hset(key, user_id, unread)
 
     def get_user_count_in_group(self, group_id: str) -> Optional[int]:
         key = RedisKeys.user_in_group(group_id)

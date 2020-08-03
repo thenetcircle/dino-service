@@ -138,30 +138,37 @@ class TestServerRestApi(BaseServerRestApi):
         group = self.get_group(group_id)
         self.assertNotEqual(group["updated_at"], last_update_time)
 
-    def test_total_unread_count_changes_when_one_group_read_time_changes(self):
-        group_id = self.create_and_join_group(BaseTest.USER_ID)
+    def test_total_unread_count_changes_when_user_read_time_changes(self):
+        group_id1 = self.create_and_join_group(BaseTest.USER_ID)
 
-        self.user_joins_group(group_id, BaseTest.OTHER_USER_ID)
-        self.send_message_to_group_from(group_id, user_id=BaseTest.USER_ID, amount=10, delay=10)
+        self.user_joins_group(group_id1, BaseTest.OTHER_USER_ID)
+        self.send_message_to_group_from(group_id1, user_id=BaseTest.USER_ID, amount=10, delay=10)
 
         self.assert_total_unread_count(user_id=BaseTest.USER_ID, unread_count=0)
         self.assert_total_unread_count(user_id=BaseTest.OTHER_USER_ID, unread_count=10)
 
-        group_id = self.create_and_join_group(BaseTest.USER_ID)
+        group_id2 = self.create_and_join_group(BaseTest.USER_ID)
 
-        self.user_joins_group(group_id, BaseTest.OTHER_USER_ID)
-        self.send_message_to_group_from(group_id, user_id=BaseTest.USER_ID, amount=10, delay=10)
+        self.user_joins_group(group_id2, BaseTest.OTHER_USER_ID)
+        self.send_message_to_group_from(group_id2, user_id=BaseTest.USER_ID, amount=10, delay=10)
 
         self.assert_total_unread_count(user_id=BaseTest.USER_ID, unread_count=0)
         self.assert_total_unread_count(user_id=BaseTest.OTHER_USER_ID, unread_count=20)
 
         # sending a message should mark the group as "read"
-        self.send_message_to_group_from(group_id, BaseTest.OTHER_USER_ID)
+        self.send_message_to_group_from(group_id2, user_id=BaseTest.OTHER_USER_ID)
 
-        self.assert_total_unread_count(user_id=BaseTest.USER_ID, unread_count=0)
+        self.assert_total_unread_count(user_id=BaseTest.USER_ID, unread_count=1)
         self.assert_total_unread_count(user_id=BaseTest.OTHER_USER_ID, unread_count=10)
 
-    def assert_total_unread_count(self, user_id: int, unread_count: int):
-        raw_response = self.client.get(f"/v1/userstats/{user_id}")
-        self.assertEqual(raw_response.status_code, 200)
-        self.assertEqual(unread_count, raw_response.json()["unread_amount"])
+        # first user should now have 2 unread
+        self.send_message_to_group_from(group_id2, user_id=BaseTest.OTHER_USER_ID)
+
+        self.assert_total_unread_count(user_id=BaseTest.USER_ID, unread_count=2)
+        self.assert_total_unread_count(user_id=BaseTest.OTHER_USER_ID, unread_count=10)
+
+        # first user should now have 3 unread
+        self.send_message_to_group_from(group_id1, user_id=BaseTest.OTHER_USER_ID)
+
+        self.assert_total_unread_count(user_id=BaseTest.USER_ID, unread_count=3)
+        self.assert_total_unread_count(user_id=BaseTest.OTHER_USER_ID, unread_count=0)

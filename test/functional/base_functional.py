@@ -150,3 +150,8 @@ class BaseServerRestApi(BaseDatabaseTest):
         )
         self.assertEqual(raw_response.status_code, 200)
         self.assertEqual(amount_of_groups, len(raw_response.json()))
+
+    def assert_total_unread_count(self, user_id: int, unread_count: int):
+        raw_response = self.client.get(f"/v1/userstats/{user_id}")
+        self.assertEqual(raw_response.status_code, 200)
+        self.assertEqual(unread_count, raw_response.json()["unread_amount"])

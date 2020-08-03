@@ -433,19 +433,28 @@ class FakeCache:
     def get_user_stats_group(self, group_id, user_id):
         return None
 
+    def increase_unread_in_group(self, group_id: str):
+        key = RedisKeys.unread_in_group(group_id)
+
+        if key not in self.cache or self.cache[key] is None:
+            return
+
+        for user_id, amount in self.cache[key].items():
+            self.cache[key][user_id] = amount + 1
+
     def set_unread_in_group(self, group_id: str, user_id: int, unread: int) -> None:
-        key = RedisKeys.unread_in_group(user_id)
+        key = RedisKeys.unread_in_group(group_id)
         if key not in self.cache:
             self.cache[key] = dict()
 
-        self.cache[key][group_id] = unread
+        self.cache[key][user_id] = unread
 
     def get_unread_in_group(self, group_id: str, user_id: int) -> Optional[int]:
-        key = RedisKeys.unread_in_group(user_id)
+        key = RedisKeys.unread_in_group(group_id)
         if key not in self.cache:
             return None
 
-        return self.cache[key].get(group_id, None)
+        return self.cache[key].get(user_id, None)
 
 
 class FakeEnv:

@@ -57,7 +57,7 @@ class RedisKeys:
     RKEY_LAST_SEND_TIME = "group:lastsent:{}"  # group:lastsent:group_id
     RKEY_LAST_READ_TIME = "group:lastread:{}"  # group:lastread:group_id
     RKEY_USER_STATS_IN_GROUP = "group:stats:{}"  # group:stats:group_id
-    RKEY_UNREAD_IN_GROUP = "user:unread:{}"  # user:unread:user_id
+    RKEY_UNREAD_IN_GROUP = "group:unread:{}"  # user:unread:group_id
 
     @staticmethod
     def user_stats_in_group(group_id: str) -> str:
@@ -76,8 +76,8 @@ class RedisKeys:
         return RedisKeys.RKEY_USERS_IN_GROUP.format(group_id)
 
     @staticmethod
-    def unread_in_group(user_id: int) -> str:
-        return RedisKeys.RKEY_UNREAD_IN_GROUP.format(str(user_id))
+    def unread_in_group(group_id: str) -> str:
+        return RedisKeys.RKEY_UNREAD_IN_GROUP.format(group_id)
 
     @staticmethod
     def auth_key(user_id: str) -> str:
