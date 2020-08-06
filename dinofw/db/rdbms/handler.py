@@ -5,7 +5,7 @@ from uuid import uuid4 as uuid
 import arrow
 from sqlalchemy.orm import Session
 
-from dinofw.db.cassandra.schemas import MessageBase
+from dinofw.db.storage.schemas import MessageBase
 from dinofw.db.rdbms import models
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase

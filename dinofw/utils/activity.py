@@ -11,7 +11,7 @@ from activitystreams import parse as as_parser
 from dinofw import environ
 from dinofw import utils
 from dinofw.config import ConfigKeys
-from dinofw.db.cassandra.schemas import MessageBase
+from dinofw.db.storage.schemas import MessageBase
 
 logger = logging.getLogger(__name__)
 

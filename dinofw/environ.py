@@ -84,7 +84,7 @@ def init_cassandra(gn_env: GNEnvironment):
         # assume we're testing
         return
 
-    from dinofw.db.cassandra.handler import CassandraHandler
+    from dinofw.db.storage.handler import CassandraHandler
 
     gn_env.storage = CassandraHandler(gn_env)
     gn_env.storage.setup_tables()

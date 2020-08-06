@@ -4,7 +4,7 @@ from typing import Optional, Dict
 
 import pytz
 
-from dinofw.db.cassandra.schemas import MessageBase, ActionLogBase
+from dinofw.db.storage.schemas import MessageBase, ActionLogBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase, GroupBase
 from dinofw.rest.server.models import (
     Group,

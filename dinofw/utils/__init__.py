@@ -4,7 +4,7 @@ from base64 import b64decode
 from base64 import b64encode
 from typing import List
 
-from dinofw.db.cassandra.schemas import MessageBase
+from dinofw.db.storage.schemas import MessageBase
 from dinofw.utils.exceptions import UserExistsException
 
 logger = logging.getLogger(__name__)
