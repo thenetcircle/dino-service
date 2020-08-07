@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from sqlalchemy.orm import Session
 
 from dinofw import environ
-from dinofw.rest.server.models import AdminQuery
+from dinofw.rest.server.models import AdminQuery, CreateActionLogQuery
 from dinofw.rest.server.models import AdminUpdateGroupQuery
 from dinofw.rest.server.models import UpdateUserGroupStats
 from dinofw.rest.server.models import ActionLog
@@ -260,14 +260,22 @@ async def delete_all_groups_for_user(user_id: int) -> Group:
     return await environ.env.rest.groups.delete_all_groups_for_user(user_id)
 
 
-@app.put("/v1/groups/{group_id}/users/{user_id}/join", response_model=ActionLog)
+@app.put("/v1/groups/{group_id}/users/{user_id}/join")
 async def join_group(
     group_id: str, user_id: int, db: Session = Depends(get_db)
-) -> ActionLog:
+) -> None:
     """
     join a group
     """
     return await environ.env.rest.group.join_group(group_id, user_id, db)
+
+
+@app.put("/v1/groups/{group_id}/actions", response_model=List[ActionLog])
+async def create_action_logs(group_id: str, query: CreateActionLogQuery) -> None:
+    """
+    create actions logs in group
+    """
+    return await environ.env.rest.group.create_action_logs(group_id, query)
 
 
 @app.delete("/v1/groups/{group_id}/users/{user_id}/join")

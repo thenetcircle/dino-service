@@ -79,12 +79,15 @@ class TestGroupResource(BaseTest):
 
     @async_test
     async def test_histories(self):
+        send_query = SendMessageQuery(message_payload="some text", message_type="text")
         message_query = MessageQuery(per_page=10)
         create_query = CreateGroupQuery(
             group_name="some group name", group_type=0, users=[BaseTest.USER_ID],
         )
-        send_query = SendMessageQuery(message_payload="some text", message_type="text")
-        log_query = CreateActionLogQuery(action_type=0)
+        log_query = CreateActionLogQuery(
+            action_type=0,
+            user_ids=[BaseTest.USER_ID]
+        )
 
         histories = await self.group.histories(BaseTest.GROUP_ID, BaseTest.USER_ID, message_query, db=None)  # noqa
 
@@ -94,7 +97,7 @@ class TestGroupResource(BaseTest):
 
         # create a new group
         group = await self.group.create_new_group(BaseTest.USER_ID, create_query, None)  # noqa
-        await self.group.create_action_logs(group.group_id, [BaseTest.USER_ID], log_query)
+        await self.group.create_action_logs(group.group_id, log_query)
 
         # send message and get histories
         await self.message.save_new_message(group.group_id, BaseTest.USER_ID, send_query, None)  # noqa
@@ -155,10 +158,7 @@ class TestGroupResource(BaseTest):
         self.assertTrue(any((g.user_id == BaseTest.USER_ID for g in group_users.users)))
 
         # other user joins it
-        log = await self.group.join_group(group.group_id, BaseTest.OTHER_USER_ID, None)  # noqa
-        self.assertIsNotNone(log)
-        self.assertEqual(BaseTest.OTHER_USER_ID, log.user_id)
-        self.assertEqual(FakeStorage.ACTION_TYPE_JOIN, log.action_type)
+        await self.group.join_group(group.group_id, BaseTest.OTHER_USER_ID, None)  # noqa
 
         # check the other user is now in the group as well
         group_users = await self.group.get_users_in_group(group.group_id, page_query, None)  # noqa

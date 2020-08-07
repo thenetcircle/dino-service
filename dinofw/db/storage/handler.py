@@ -240,14 +240,13 @@ class CassandraHandler:
     def create_action_logs(
             self,
             group_id: str,
-            user_ids: List[int],
             query: CreateActionLogQuery
     ) -> List[ActionLogBase]:
         logs = list()
 
         action_time = arrow.utcnow().datetime
 
-        for user_id in user_ids:
+        for user_id in query.user_ids:
             log = ActionLogModel.create(
                 group_id=group_id,
                 user_id=user_id,

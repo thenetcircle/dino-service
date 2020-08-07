@@ -46,7 +46,6 @@ class FakeStorage:
     def create_action_logs(
             self,
             group_id: str,
-            user_ids: List[int],
             query: CreateActionLogQuery
     ) -> List[ActionLogBase]:
         if group_id not in self.action_log:
@@ -54,7 +53,7 @@ class FakeStorage:
 
         logs = list()
 
-        for user_id in user_ids:
+        for user_id in query.user_ids:
             log = ActionLogBase(
                 group_id=group_id,
                 created_at=arrow.utcnow().datetime,
