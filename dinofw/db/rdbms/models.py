@@ -52,7 +52,7 @@ class UserGroupStatsEntity(env.Base):
     hide = Column(Boolean, default=False)
 
     # a user can pin groups he/she wants to keep on top, and will be sorted higher than last_message_time
-    pin = Column(Boolean, default=False)
+    pin = Column(Boolean, default=False, index=True)
 
     # a user can bookmark a group, which makes it count as "one unread message in this group" (only for this user)
     bookmark = Column(Boolean, default=False)

@@ -59,7 +59,10 @@ class RelationalHandler:
                 models.UserGroupStatsEntity.hide.is_(False),
                 models.UserGroupStatsEntity.user_id == user_id,
             )
-            .order_by(models.GroupEntity.last_message_time.desc())
+            .order_by(
+                models.UserGroupStatsEntity.pin.desc(),
+                models.GroupEntity.last_message_time.desc()
+            )
             .limit(query.per_page)
             .all()
         )
@@ -297,6 +300,7 @@ class RelationalHandler:
                 delete_before=delete_before or self.long_ago,
                 hide=query.hide or False,
                 join_time=last_read or self.long_ago,
+                pin=query.pin or False,
             )
 
         # only update if query has new values
@@ -309,6 +313,9 @@ class RelationalHandler:
 
             if query.hide is not None:
                 user_stats.hide = query.hide
+
+            if query.pin is not None:
+                user_stats.pin = query.pin
 
         base = UserGroupStatsBase(
             group_id=user_stats.group_id,

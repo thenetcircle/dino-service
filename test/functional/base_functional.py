@@ -141,7 +141,7 @@ class BaseServerRestApi(BaseDatabaseTest):
         self.assertEqual(raw_response.status_code, 200)
         self.assertEqual(hidden, raw_response.json()["hide"])
 
-    def assert_groups_for_user(self, amount_of_groups, user_id: int = None) -> None:
+    def groups_for_user(self, user_id: int = None):
         if user_id is None:
             user_id = BaseTest.USER_ID
 
@@ -149,7 +149,31 @@ class BaseServerRestApi(BaseDatabaseTest):
             f"/v1/users/{user_id}/groups", json={"per_page": "10"},
         )
         self.assertEqual(raw_response.status_code, 200)
-        self.assertEqual(amount_of_groups, len(raw_response.json()))
+
+        return raw_response.json()
+
+    def pin_group_for(self, group_id: str, user_id: int = None) -> None:
+        self._set_pin_group_for(group_id, user_id, pinned=True)
+
+    def unpin_group_for(self, group_id: str, user_id: int = None) -> None:
+        self._set_pin_group_for(group_id, user_id, pinned=False)
+
+    def _set_pin_group_for(self, group_id: str, user_id: int = None, pinned: bool = False) -> None:
+        if user_id is None:
+            user_id = BaseTest.USER_ID
+
+        raw_response = self.client.put(
+            f"/v1/groups/{group_id}/userstats/{user_id}",
+            json={"pin": pinned}
+        )
+        self.assertEqual(raw_response.status_code, 200)
+
+    def assert_groups_for_user(self, amount_of_groups, user_id: int = None) -> None:
+        if user_id is None:
+            user_id = BaseTest.USER_ID
+
+        response = self.groups_for_user(user_id)
+        self.assertEqual(amount_of_groups, len(response))
 
     def assert_total_unread_count(self, user_id: int, unread_count: int):
         raw_response = self.client.get(f"/v1/userstats/{user_id}")

@@ -1,3 +1,5 @@
+import time
+
 from test.base import BaseTest
 from test.functional.base_functional import BaseServerRestApi
 
@@ -172,3 +174,34 @@ class TestServerRestApi(BaseServerRestApi):
 
         self.assert_total_unread_count(user_id=BaseTest.USER_ID, unread_count=3)
         self.assert_total_unread_count(user_id=BaseTest.OTHER_USER_ID, unread_count=0)
+
+    def test_pin_group_changes_ordering(self):
+        group_id1 = self.create_and_join_group(BaseTest.USER_ID)
+        group_id2 = self.create_and_join_group(BaseTest.USER_ID)
+
+        self.send_message_to_group_from(group_id1, user_id=BaseTest.USER_ID)
+        time.sleep(0.1)
+
+        # group 2 should now be on top
+        self.send_message_to_group_from(group_id2, user_id=BaseTest.USER_ID)
+        groups = self.groups_for_user(BaseTest.USER_ID)
+        self.assertEqual(groups[0]["group_id"], group_id2)
+        self.assertEqual(groups[1]["group_id"], group_id1)
+
+        # should be in the other order after pinning
+        self.pin_group_for(group_id1, BaseTest.USER_ID)
+        groups = self.groups_for_user(BaseTest.USER_ID)
+        self.assertEqual(groups[0]["group_id"], group_id1)
+        self.assertEqual(groups[1]["group_id"], group_id2)
+
+        # should not change order since group 1 is pinned
+        self.send_message_to_group_from(group_id2, user_id=BaseTest.USER_ID)
+        groups = self.groups_for_user(BaseTest.USER_ID)
+        self.assertEqual(groups[0]["group_id"], group_id1)
+        self.assertEqual(groups[1]["group_id"], group_id2)
+
+        # after unpinning the group with the latest message should be first
+        self.unpin_group_for(group_id1, BaseTest.USER_ID)
+        groups = self.groups_for_user(BaseTest.USER_ID)
+        self.assertEqual(groups[0]["group_id"], group_id2)
+        self.assertEqual(groups[1]["group_id"], group_id1)
