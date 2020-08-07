@@ -6,14 +6,14 @@ import pytz
 import arrow
 
 from dinofw.config import RedisKeys
-from dinofw.db.cassandra.schemas import MessageBase, ActionLogBase
+from dinofw.db.storage.schemas import MessageBase, ActionLogBase
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.rest.server.models import (
     CreateGroupQuery,
     MessageQuery,
     EditMessageQuery,
-    AbstractQuery,
+    AbstractQuery, CreateActionLogQuery,
 )
 from dinofw.rest.server.models import GroupQuery
 from dinofw.rest.server.models import SendMessageQuery
@@ -42,6 +42,23 @@ class FakeStorage:
                 unread += 1
 
         return unread
+
+    def create_action_log(self, group_id: str, user_id: int, query: CreateActionLogQuery) -> ActionLogBase:
+        if group_id not in self.action_log:
+            self.action_log[group_id] = list()
+
+        log = ActionLogBase(
+            group_id=group_id,
+            created_at=arrow.utcnow().datetime,
+            user_id=user_id,
+            action_id=str(uuid()),
+            action_type=query.action_type,
+            admin_id=query.admin_id,
+        )
+
+        self.action_log[group_id].append(log)
+
+        return log
 
     def store_message(
         self, group_id: str, user_id: int, query: SendMessageQuery

@@ -7,7 +7,7 @@ from gnenv.environ import ConfigDict
 
 from dinofw.config import ConfigKeys
 from dinofw.rest.server.models import MessageQuery
-from dinofw.db.cassandra.handler import CassandraHandler
+from dinofw.db.storage.handler import CassandraHandler
 
 
 class FakeEnv:

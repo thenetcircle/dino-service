@@ -11,7 +11,7 @@ from dinofw.rest.server.models import (
     UpdateUserGroupStats,
     ActionLog,
     GroupJoinTime,
-    GroupQuery, PaginationQuery,
+    GroupQuery, PaginationQuery, CreateActionLogQuery,
 )
 from dinofw.rest.server.models import AdminUpdateGroupQuery
 from dinofw.rest.server.models import CreateGroupQuery
@@ -129,7 +129,7 @@ class GroupResource(BaseResource):
     ) -> None:
         self.env.db.update_user_group_stats(group_id, user_id, query, db)
 
-    async def create_action_log(self, group_id: str, user_id: int, query: ActionLogQuery) -> ActionLog:
+    async def create_action_log(self, group_id: str, user_id: int, query: CreateActionLogQuery) -> ActionLog:
         log = self.env.storage.create_action_log(group_id, user_id, query)
 
         return GroupResource.action_log_base_to_action_log(log)

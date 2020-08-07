@@ -6,7 +6,7 @@ from dinofw.rest.server.models import (
     Group,
     MessageQuery,
     SendMessageQuery,
-    PaginationQuery,
+    PaginationQuery, CreateActionLogQuery,
 )
 from test.base import async_test, BaseTest
 from test.mocks import FakeStorage
@@ -34,8 +34,7 @@ class TestGroupResource(BaseTest):
         self.assertIsNotNone(group)
         self.assertEqual(type(group), Group)
         self.assertEqual(group_name, group.name)
-        self.assertEqual(1, len(self.group.env.storage.action_log))
-        self.assertEqual(1, len(self.group.env.storage.action_log[group.group_id]))
+        self.assertEqual(0, len(self.group.env.storage.action_log))
 
     @async_test
     async def test_get_users_in_group(self):
@@ -86,6 +85,7 @@ class TestGroupResource(BaseTest):
             group_name="some group name", group_type=0, users=[BaseTest.USER_ID],
         )
         send_query = SendMessageQuery(message_payload="some text", message_type="text")
+        log_query = CreateActionLogQuery(action_type=0)
 
         histories = await self.group.histories(BaseTest.GROUP_ID, BaseTest.USER_ID, message_query, db=None)  # noqa
 
@@ -95,7 +95,7 @@ class TestGroupResource(BaseTest):
 
         # create a new group
         group = await self.group.create_new_group(BaseTest.USER_ID, create_query, None)  # noqa
-        log = await self.group.create_join_action_log(BaseTest.USER_ID, create_query, None)  # noqa
+        await self.group.create_action_log(group.group_id, BaseTest.USER_ID, log_query)
 
         # send message and get histories
         await self.message.save_new_message(group.group_id, BaseTest.USER_ID, send_query, None)  # noqa
