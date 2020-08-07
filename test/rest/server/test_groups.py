@@ -1,13 +1,12 @@
 from dinofw.rest.server.groups import GroupResource
 from dinofw.rest.server.message import MessageResource
-from dinofw.rest.server.models import (
-    CreateGroupQuery,
-    GroupUsers,
-    Group,
-    MessageQuery,
-    SendMessageQuery,
-    PaginationQuery, CreateActionLogQuery,
-)
+from dinofw.rest.server.models import CreateActionLogQuery
+from dinofw.rest.server.models import CreateGroupQuery
+from dinofw.rest.server.models import Group
+from dinofw.rest.server.models import GroupUsers
+from dinofw.rest.server.models import MessageQuery
+from dinofw.rest.server.models import PaginationQuery
+from dinofw.rest.server.models import SendMessageQuery
 from test.base import async_test, BaseTest
 from test.mocks import FakeStorage
 
@@ -95,7 +94,7 @@ class TestGroupResource(BaseTest):
 
         # create a new group
         group = await self.group.create_new_group(BaseTest.USER_ID, create_query, None)  # noqa
-        await self.group.create_action_log(group.group_id, BaseTest.USER_ID, log_query)
+        await self.group.create_action_logs(group.group_id, [BaseTest.USER_ID], log_query)
 
         # send message and get histories
         await self.message.save_new_message(group.group_id, BaseTest.USER_ID, send_query, None)  # noqa

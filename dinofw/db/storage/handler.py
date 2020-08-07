@@ -237,7 +237,12 @@ class CassandraHandler:
 
         self._update_all_messages_in_group(group_id=group_id, callback=callback)
 
-    def create_action_logs(self, group_id: str, user_ids: List[int], query: CreateActionLogQuery) -> List[ActionLogBase]:
+    def create_action_logs(
+            self,
+            group_id: str,
+            user_ids: List[int],
+            query: CreateActionLogQuery
+    ) -> List[ActionLogBase]:
         logs = list()
 
         action_time = arrow.utcnow().datetime

@@ -43,22 +43,31 @@ class FakeStorage:
 
         return unread
 
-    def create_action_log(self, group_id: str, user_id: int, query: CreateActionLogQuery) -> ActionLogBase:
+    def create_action_logs(
+            self,
+            group_id: str,
+            user_ids: List[int],
+            query: CreateActionLogQuery
+    ) -> List[ActionLogBase]:
         if group_id not in self.action_log:
             self.action_log[group_id] = list()
 
-        log = ActionLogBase(
-            group_id=group_id,
-            created_at=arrow.utcnow().datetime,
-            user_id=user_id,
-            action_id=str(uuid()),
-            action_type=query.action_type,
-            admin_id=query.admin_id,
-        )
+        logs = list()
 
-        self.action_log[group_id].append(log)
+        for user_id in user_ids:
+            log = ActionLogBase(
+                group_id=group_id,
+                created_at=arrow.utcnow().datetime,
+                user_id=user_id,
+                action_id=str(uuid()),
+                action_type=query.action_type,
+                admin_id=query.admin_id,
+            )
 
-        return log
+            self.action_log[group_id].append(log)
+            logs.append(log)
+
+        return logs
 
     def store_message(
         self, group_id: str, user_id: int, query: SendMessageQuery
