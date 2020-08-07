@@ -355,9 +355,12 @@ class CassandraHandler:
             if not len(messages):
                 end = time()
                 elapsed = (end - start) / 1000
-                self.logger.info(
-                    f"finished batch updating {amount} messages in group {group_id} after {elapsed:.2f}s"
-                )
+
+                if elapsed > 5 or amount > 500:
+                    self.logger.info(
+                        f"finished batch updating {amount} messages in group {group_id} after {elapsed:.2f}s"
+                    )
+
                 break
 
             amount += len(messages)
@@ -383,7 +386,8 @@ class CassandraHandler:
         if user_id is None:
             return (
                 MessageModel.objects(
-                    MessageModel.group_id == group_id, MessageModel.created_at < until,
+                    MessageModel.group_id == group_id,
+                    MessageModel.created_at < until,
                 )
                 .limit(500)
                 .all()
