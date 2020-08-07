@@ -129,6 +129,11 @@ class GroupResource(BaseResource):
     ) -> None:
         self.env.db.update_user_group_stats(group_id, user_id, query, db)
 
+    async def create_action_log(self, group_id: str, user_id: int, query: ActionLogQuery) -> ActionLog:
+        log = self.env.storage.create_action_log(group_id, user_id, query)
+
+        return GroupResource.action_log_base_to_action_log(log)
+
     async def create_new_group(
         self, user_id: int, query: CreateGroupQuery, db: Session
     ) -> Group:
@@ -145,7 +150,7 @@ class GroupResource(BaseResource):
         self.env.db.update_user_stats_on_join_or_create_group(
             group.group_id, users, now, db
         )
-        self.env.storage.create_join_action_log(group.group_id, users, now)
+        # self.env.storage.create_join_action_log(group.group_id, users, now)
 
         return GroupResource.group_base_to_group(
             group, users=users, last_read=now, user_count=len(users),
@@ -183,16 +188,14 @@ class GroupResource(BaseResource):
 
         return GroupResource.action_log_base_to_action_log(action_log[0])
 
-    async def leave_group(self, group_id: str, user_id: int, db: Session) -> Optional[ActionLog]:
+    async def leave_group(self, group_id: str, user_id: int, db: Session) -> None:
         if not self.env.db.group_exists(group_id, db):
             return None
 
-        now = arrow.utcnow().datetime
-
         self.env.db.remove_last_read_in_group_for_user(group_id, user_id, db)
-        action_log = self.env.storage.create_leave_action_log(group_id, [user_id], now)
 
-        return GroupResource.action_log_base_to_action_log(action_log[0])
+        # action_log = self.env.storage.create_leave_action_log(group_id, [user_id], now)
+        # return GroupResource.action_log_base_to_action_log(action_log[0])
 
     async def search(self, query: SearchQuery) -> List[Group]:
         return list()  # TODO: implement

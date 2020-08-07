@@ -4,6 +4,7 @@ from typing import List, Optional, Dict
 from uuid import uuid4 as uuid
 
 import pytz
+import arrow
 from cassandra.cqlengine import connection
 from cassandra.cqlengine.query import BatchQuery
 from cassandra.cqlengine.management import sync_table
@@ -15,6 +16,7 @@ from dinofw.db.storage.schemas import ActionLogBase
 from dinofw.db.storage.schemas import MessageBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.rest.server.models import EditMessageQuery
+from dinofw.rest.server.models import CreateActionLogQuery
 from dinofw.rest.server.models import AdminQuery
 from dinofw.rest.server.models import MessageQuery
 from dinofw.rest.server.models import SendMessageQuery
@@ -235,32 +237,17 @@ class CassandraHandler:
 
         self._update_all_messages_in_group(group_id=group_id, callback=callback)
 
-    def create_join_action_log(
-        self, group_id: str, users: Dict[int, float], action_time: dt
-    ) -> List[ActionLogBase]:
-        user_ids = [user_id for user_id, _ in users.items()]
-        return self._create_action_log(
-            group_id, user_ids, action_time, CassandraHandler.ACTION_TYPE_JOIN
-        )
-
-    def create_leave_action_log(
-        self, group_id: str, user_ids: [int], action_time: dt
-    ) -> List[ActionLogBase]:
-        return self._create_action_log(
-            group_id, user_ids, action_time, CassandraHandler.ACTION_TYPE_LEAVE
-        )
-
-    def _create_action_log(
-        self, group_id: str, user_ids: List[int], action_time: dt, action_type: int
-    ) -> List[ActionLogBase]:
+    def create_action_logs(self, group_id: str, user_ids: List[int], query: CreateActionLogQuery) -> List[ActionLogBase]:
         logs = list()
+
+        action_time = arrow.utcnow().datetime
 
         for user_id in user_ids:
             log = ActionLogModel.create(
                 group_id=group_id,
                 user_id=user_id,
                 created_at=action_time,
-                action_type=action_type,
+                action_type=query.action_type,
                 action_id=uuid(),
             )
 

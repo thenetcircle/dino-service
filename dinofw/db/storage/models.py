@@ -41,6 +41,8 @@ class MessageModel(Model):
 class ActionLogModel(Model):
     __table_name__ = "action_logs"
 
+    # TODO: do we need a body here? or type is enough?
+
     group_id = UUID(
         required=True,
         primary_key=True,

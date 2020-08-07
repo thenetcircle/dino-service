@@ -47,6 +47,10 @@ class MessageQuery(PaginationQuery, AdminQuery):
     status: Optional[int]
 
 
+class CreateActionLogQuery(AdminQuery):
+    action_type: int
+
+
 class SearchQuery(PaginationQuery):
     keyword: Optional[str]
     group_type: Optional[int]
