@@ -79,10 +79,24 @@ class CacheRedis(ICache):
         key = RedisKeys.unread_in_group(group_id)
         users = self.redis.hgetall(key)
 
+        # TODO: use multiexec
         for user_id, unread in users.items():
             user_id = str(user_id, "utf-8")
             unread = int(str(unread, "utf-8"))
             self.redis.hset(key, user_id, unread + 1)
+
+    def get_last_read_in_group_for_user(self, group_id: str, user_id: int) -> Optional[float]:
+        key = RedisKeys.last_read_time(group_id)
+        last_read = self.redis.hget(key, user_id)
+
+        if last_read is None:
+            return None
+
+        return float(str(last_read, "utf-8"))
+
+    def set_last_read_in_group_for_user(self, group_id: str, user_id: int, last_read: float) -> None:
+        key = RedisKeys.last_read_time(group_id)
+        self.redis.hset(key, user_id, last_read)
 
     def get_unread_in_group(self, group_id: str, user_id: int) -> Optional[int]:
         key = RedisKeys.unread_in_group(group_id)

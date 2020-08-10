@@ -1,26 +1,25 @@
 import logging
-from datetime import datetime as dt
 from typing import List, Optional
 
 import arrow
 from sqlalchemy.orm import Session
 
 from dinofw.rest.server.base import BaseResource
-from dinofw.rest.server.models import (
-    AbstractQuery,
-    UpdateUserGroupStats,
-    ActionLog,
-    GroupJoinTime,
-    GroupQuery, PaginationQuery, CreateActionLogQuery,
-)
+from dinofw.rest.server.models import AbstractQuery
+from dinofw.rest.server.models import ActionLog
 from dinofw.rest.server.models import AdminUpdateGroupQuery
+from dinofw.rest.server.models import CreateActionLogQuery
 from dinofw.rest.server.models import CreateGroupQuery
 from dinofw.rest.server.models import Group
+from dinofw.rest.server.models import GroupJoinTime
+from dinofw.rest.server.models import GroupQuery
 from dinofw.rest.server.models import GroupUsers
 from dinofw.rest.server.models import Histories
 from dinofw.rest.server.models import MessageQuery
+from dinofw.rest.server.models import PaginationQuery
 from dinofw.rest.server.models import SearchQuery
 from dinofw.rest.server.models import UpdateGroupQuery
+from dinofw.rest.server.models import UpdateUserGroupStats
 from dinofw.rest.server.models import UserGroupStats
 
 logger = logging.getLogger(__name__)
@@ -78,6 +77,7 @@ class GroupResource(BaseResource):
 
         action_log = self.env.storage.get_action_log_in_group_for_user(group_id, user_stats, query)
         messages = self.env.storage.get_messages_in_group_for_user(group_id, user_stats, query)
+        last_reads = self.env.db.get_last_reads_in_group(group_id, db)
 
         messages = [
             GroupResource.message_base_to_message(message) for message in messages
@@ -85,6 +85,8 @@ class GroupResource(BaseResource):
         action_log = [
             GroupResource.action_log_base_to_action_log(log) for log in action_log
         ]
+
+        # TODO: include a list of user ids with last read times
 
         histories = Histories(
             messages=messages,

@@ -1,5 +1,4 @@
 import logging
-from datetime import datetime as dt
 from typing import List
 
 import arrow
@@ -29,6 +28,7 @@ class MessageResource(BaseResource):
             user_id, group_id, now, db
         )
 
+        # TODO: preferably we should cache this
         sub_query = GroupQuery(per_page=5_000)
         user_ids = self.env.db.get_user_ids_and_join_times_in_group(
             group_id, sub_query, db

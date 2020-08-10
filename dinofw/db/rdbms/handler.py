@@ -3,8 +3,9 @@ from typing import List, Tuple, Optional, Dict
 from uuid import uuid4 as uuid
 
 import arrow
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, load_only
 
+from dinofw.db.rdbms.models import UserGroupStatsEntity
 from dinofw.db.storage.schemas import MessageBase
 from dinofw.db.rdbms import models
 from dinofw.db.rdbms.schemas import GroupBase
@@ -119,6 +120,59 @@ class RelationalHandler:
 
         db.add(group)
         db.commit()
+
+    def get_last_reads_in_group(self, group_id: str, db: Session) -> List[UserGroupStatsBase]:
+        user_ids = self.get_user_ids_in_group(group_id, db)
+        stats = self.get_last_read_in_group_for_users(group_id, user_ids, db)
+
+        return [UserGroupStatsBase(**stat.__dict__) for stat in stats]
+
+    def get_last_read_in_group_for_users(self, group_id: str, user_ids: List[int], db: Session) -> Dict[int, float]:
+        not_cached = list()
+        last_reads = dict()
+
+        for user_id in user_ids:
+            last_read = self.env.cache.get_last_read_in_group_for_user(group_id, user_id)
+
+            if last_read is None:
+                not_cached.append(user_id)
+            else:
+                last_reads[user_id] = last_read
+
+        if len(not_cached):
+            reads = (
+                db.query(models.UserGroupStatsEntity)
+                .with_entities(
+                    models.UserGroupStatsEntity.user_id,
+                    models.UserGroupStatsEntity.last_read,
+                )
+                .filter(
+                    models.UserGroupStatsEntity.group_id == group_id,
+                    models.UserGroupStatsEntity.user_id.in_(user_ids)
+                )
+                .all()
+            )
+
+            for user_id, last_read in reads:
+                last_read_float = GroupQuery.to_ts(last_read)
+                last_reads[user_id] = last_read_float
+
+                self.env.cache.set_last_read_in_group_for_user(group_id, user_id, last_read_float)
+
+        return last_reads
+
+    def get_user_ids_in_group(self, group_id: str, db: Session):
+        user_ids = self.env.cache.get_user_ids_in_group(group_id)
+
+        if user_ids is None:
+            user_ids = (
+                db.query(models.UserGroupStatsEntity.user_id)
+                .filter(models.UserGroupStatsEntity.group_id == group_id)
+                .all()
+            )
+            self.env.cache.set_user_ids_in_group(group_id, user_ids)
+
+        return user_ids
 
     def remove_last_read_in_group_for_user(
         self, group_id: str, user_id: int, db: Session
@@ -356,10 +410,10 @@ class RelationalHandler:
         self.env.cache.increase_unread_in_group(group_id)
         self.env.cache.set_unread_in_group(group_id, user_id, 0)
 
-        should_update_cached_user_ids_in_group = False
+        # should_update_cached_user_ids_in_group = False
 
         if user_stats is None:
-            should_update_cached_user_ids_in_group = True
+            # should_update_cached_user_ids_in_group = True
 
             user_stats = models.UserGroupStatsEntity(
                 group_id=group_id,
@@ -381,9 +435,10 @@ class RelationalHandler:
 
         self.env.cache.set_user_stats_group(group_id, user_id, base)
 
+        # TODO: maybe remove, we don't cache it anymore, paginate instead
         # update the cached user ids for this group (might have a new one)
-        if should_update_cached_user_ids_in_group:
-            self.get_user_ids_and_join_times_in_group(group_id, db, skip_cache=True)
+        # if should_update_cached_user_ids_in_group:
+        #     self.get_user_ids_and_join_times_in_group(group_id, db, skip_cache=True)
 
     def create_group(
         self, owner_id: int, query: CreateGroupQuery, db: Session
