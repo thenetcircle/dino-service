@@ -51,7 +51,7 @@ class MemoryCache:
 
 class CacheRedis(ICache):
     def __init__(self, env, host: str, port: int = 6379, db: int = 0):
-        if env.config.get(ConfigKeys.TESTING, False) or host == "mock":
+        if env.config.get(ConfigKeys.TESTING, default=False) or host == "mock":
             from fakeredis import FakeStrictRedis
 
             self.redis_pool = None

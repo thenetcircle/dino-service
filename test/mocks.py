@@ -5,6 +5,7 @@ from uuid import uuid4 as uuid
 import pytz
 import arrow
 
+from dinofw.cache.redis import CacheRedis
 from dinofw.config import RedisKeys
 from dinofw.db.storage.schemas import MessageBase, ActionLogBase
 from dinofw.db.rdbms.schemas import GroupBase
@@ -439,7 +440,7 @@ class FakePublisher:
         self.sent_messages[group_id].append(message)
 
 
-class FakeCache:
+class FakeCache2:
     def __init__(self):
         self.cache = dict()
 
@@ -492,7 +493,15 @@ class FakeEnv:
                 }
             }
 
-        def get(self, key, domain):
+        def get(self, key, domain=None, default=None):
+            if domain is None:
+                if key not in self.config:
+                    return default
+                return self.config[key]
+
+            if key not in self.config[domain]:
+                return default
+
             return self.config[domain][key]
 
     def __init__(self):
@@ -500,7 +509,7 @@ class FakeEnv:
         self.storage = FakeStorage(self)
         self.db = FakeDatabase()
         self.publisher = FakePublisher()
-        self.cache = FakeCache()
+        self.cache = CacheRedis(self, host="mock")
 
         from dinofw.rest.server.groups import GroupResource
         from dinofw.rest.server.users import UserResource
