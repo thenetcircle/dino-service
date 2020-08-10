@@ -400,6 +400,16 @@ class FakeDatabase:
     def group_exists(self, group_id: str, _) -> bool:
         return group_id in self.groups
 
+    def get_last_reads_in_group(self, group_id: str, _) -> Dict[int, float]:
+        last_reads = dict()
+
+        for user_id in self.stats:
+            for group_stats in self.stats[user_id]:
+                if group_stats.group_id == group_id:
+                    last_reads[user_id] = AbstractQuery.to_ts(group_stats.last_read)
+
+        return last_reads
+
     def get_user_ids_and_join_times_in_group(
         self, group_id: str, query: GroupQuery, _, skip_cache: bool = False
     ) -> Dict[int, float]:
@@ -438,49 +448,6 @@ class FakePublisher:
             self.sent_messages[group_id] = list()
 
         self.sent_messages[group_id].append(message)
-
-
-class FakeCache2:
-    def __init__(self):
-        self.cache = dict()
-
-    def set_user_ids_and_join_time_in_group(self, group_id, users):
-        return
-
-    def get_user_ids_and_join_time_in_group(self, _):
-        return None
-
-    def get_user_count_in_group(self, _):
-        return None
-
-    def set_user_stats_group(self, group_id, user_id, _):
-        pass
-
-    def get_user_stats_group(self, group_id, user_id):
-        return None
-
-    def increase_unread_in_group(self, group_id: str):
-        key = RedisKeys.unread_in_group(group_id)
-
-        if key not in self.cache or self.cache[key] is None:
-            return
-
-        for user_id, amount in self.cache[key].items():
-            self.cache[key][user_id] = amount + 1
-
-    def set_unread_in_group(self, group_id: str, user_id: int, unread: int) -> None:
-        key = RedisKeys.unread_in_group(group_id)
-        if key not in self.cache:
-            self.cache[key] = dict()
-
-        self.cache[key][user_id] = unread
-
-    def get_unread_in_group(self, group_id: str, user_id: int) -> Optional[int]:
-        key = RedisKeys.unread_in_group(group_id)
-        if key not in self.cache:
-            return None
-
-        return self.cache[key].get(user_id, None)
 
 
 class FakeEnv:
