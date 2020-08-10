@@ -58,6 +58,11 @@ class RedisKeys:
     RKEY_LAST_READ_TIME = "group:lastread:{}"  # group:lastread:group_id
     RKEY_USER_STATS_IN_GROUP = "group:stats:{}"  # group:stats:group_id
     RKEY_UNREAD_IN_GROUP = "group:unread:{}"  # user:unread:group_id
+    RKEY_HIDE_GROUP = "group:hide:{}"  # group:hide:group_id
+
+    @staticmethod
+    def hide_group(group_id: str) -> str:
+        return RedisKeys.RKEY_HIDE_GROUP.format(group_id)
 
     @staticmethod
     def user_stats_in_group(group_id: str) -> str:

@@ -86,11 +86,10 @@ class GroupResource(BaseResource):
             GroupResource.action_log_base_to_action_log(log) for log in action_log
         ]
 
-        # TODO: include a list of user ids with last read times
-
         histories = Histories(
             messages=messages,
-            action_logs=action_log
+            action_logs=action_log,
+            last_reads=last_reads,
         )
 
         return histories

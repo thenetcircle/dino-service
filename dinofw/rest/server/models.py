@@ -1,5 +1,5 @@
 from datetime import datetime as dt
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 import pytz
 import arrow
@@ -188,3 +188,4 @@ class Group(AbstractQuery):
 class Histories(AbstractQuery):
     messages: List[Message]
     action_logs: List[ActionLog]
+    last_reads: Dict[int, float]

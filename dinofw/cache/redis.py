@@ -11,10 +11,12 @@ from datetime import timedelta
 from dinofw.cache import ICache
 from dinofw.config import ConfigKeys, RedisKeys
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
+from dinofw.rest.server.models import AbstractQuery
 
 logger = logging.getLogger(__name__)
 
 FIVE_MINUTES = 60 * 5
+ONE_HOUR = 60 * 60
 
 
 class MemoryCache:
@@ -135,61 +137,29 @@ class CacheRedis(ICache):
         key = RedisKeys.user_in_group(group_id)
         self.redis.delete(key)
 
+        self.add_user_ids_and_join_time_in_group(group_id, users)
+        self.redis.expire(key, ONE_HOUR)  # TODO: maybe expire quicker
+
+    def add_user_ids_and_join_time_in_group(self, group_id: str, users: Dict[int, float]) -> None:
+        key = RedisKeys.user_in_group(group_id)
+
         values = [
             "|".join([str(user_id), str(join_time)])
             for user_id, join_time in users.items()
         ]
 
         self.redis.sadd(key, *values)
-        self.redis.expire(key, FIVE_MINUTES)  # TODO: maybe expire quicker
 
-    def get_user_stats_group(
-        self, group_id: str, user_id: int
-    ) -> Optional[UserGroupStatsBase]:
-        """
-        :return: [last_read, last_sent, hide_before]
-        """
+    def set_hide_group(self, group_id: str, hide: bool, user_ids: List[int] = None) -> None:
+        key = RedisKeys.hide_group(group_id)
 
-        def to_dt(byte_ts):
-            int_ts = float(byte_ts)
-            return dt.fromtimestamp(int_ts)
+        if user_ids is None:
+            users = [str(user, "utf-8") for user in self.redis.hgetall(key)]
+        else:
+            users = user_ids
 
-        key = RedisKeys.user_stats_in_group(group_id)
-        user_stats = self.redis.hget(key, user_id)
-
-        if user_stats is None:
-            return None
-
-        last_read, last_sent, delete_before, join_time, hide = str(user_stats, "utf-8").split("|")
-        hide = hide == "true"
-
-        last_read, last_sent, delete_before = [
-            to_dt(timestamp)
-            for timestamp in [last_read, last_sent, delete_before, join_time]
-        ]
-
-        return UserGroupStatsBase(
-            group_id=group_id,
-            user_id=user_id,
-            last_read=last_read,
-            last_sent=last_sent,
-            hide=hide,
-        )
-
-    def set_user_stats_group(
-        self, group_id: str, user_id: int, stats: UserGroupStatsBase
-    ) -> None:
-        def to_ts(datetime: dt):
-            return datetime.strftime("%s.%f")
-
-        stats_list = [stats.last_read, stats.last_sent, stats.delete_before]
-        stats_list = [to_ts(stat) for stat in stats_list]
-        stats_list.append("true" if stats.hide else "false")
-
-        user_stats = "|".join(stats_list)
-
-        key = RedisKeys.user_stats_in_group(group_id)
-        self.redis.hset(key, user_id, user_stats)
+        for user in users:
+            self.redis.hset(key, user, "t" if hide else "f")
 
     @property
     def redis(self):
