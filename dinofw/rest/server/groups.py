@@ -73,7 +73,7 @@ class GroupResource(BaseResource):
         user_stats = self.env.db.get_user_stats_in_group(group_id, user_id, db)
 
         if user_stats.hide:
-            return Histories(messages=list(), action_logs=list())
+            return Histories(messages=list(), action_logs=list(), last_reads=list())
 
         action_log = self.env.storage.get_action_log_in_group_for_user(group_id, user_stats, query)
         messages = self.env.storage.get_messages_in_group_for_user(group_id, user_stats, query)
@@ -85,6 +85,12 @@ class GroupResource(BaseResource):
         action_log = [
             GroupResource.action_log_base_to_action_log(log) for log in action_log
         ]
+
+        # json doesn't allow integer keys, only string
+        last_reads = {
+            str(user_id): last_read
+            for user_id, last_read in last_reads.items()
+        }
 
         histories = Histories(
             messages=messages,

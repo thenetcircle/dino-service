@@ -188,4 +188,4 @@ class Group(AbstractQuery):
 class Histories(AbstractQuery):
     messages: List[Message]
     action_logs: List[ActionLog]
-    last_reads: Dict[int, float]
+    last_reads: Dict[str, float]

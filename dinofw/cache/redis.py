@@ -125,10 +125,13 @@ class CacheRedis(ICache):
 
         return n_users
 
-    def get_user_ids_and_join_time_in_group(self, group_id: str):
+    def get_user_ids_and_join_time_in_group(self, group_id: str) -> Optional[Dict[int, float]]:
         users = self.redis.smembers(RedisKeys.user_in_group(group_id))
-        users = [str(user, "utf-8").split("|") for user in users]
 
+        if not len(users):
+            return None
+
+        users = [str(user, "utf-8").split("|") for user in users]
         return {int(user_id): float(join_time) for user_id, join_time in users}
 
     def set_user_ids_and_join_time_in_group(

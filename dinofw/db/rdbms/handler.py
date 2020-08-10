@@ -181,7 +181,11 @@ class RelationalHandler:
                 user_ids_join_time
             )
 
-        return [user[0] for user in users]
+            user_ids = [user[0] for user in users]
+        else:
+            user_ids = list(users.keys())
+
+        return user_ids
 
     def remove_last_read_in_group_for_user(
         self, group_id: str, user_id: int, db: Session
@@ -398,7 +402,8 @@ class RelationalHandler:
         )
 
         self.env.cache.increase_unread_in_group(group_id)
-        self.env.cache.set_hide_group(group_id, False, [user_id])
+        self.env.cache.set_last_read_in_group_for_user(group_id, user_id, GroupQuery.to_ts(created_at))
+        self.env.cache.set_hide_group(group_id, False)
         self.env.cache.set_unread_in_group(group_id, user_id, 0)
 
         if user_stats is None:

@@ -205,3 +205,21 @@ class TestServerRestApi(BaseServerRestApi):
         groups = self.groups_for_user(BaseTest.USER_ID)
         self.assertEqual(groups[0]["group_id"], group_id2)
         self.assertEqual(groups[1]["group_id"], group_id1)
+
+    def test_last_read_updated_in_history_api(self):
+        group_id = self.create_and_join_group(BaseTest.USER_ID)
+        self.user_joins_group(group_id, BaseTest.OTHER_USER_ID)
+
+        histories = self.histories_for(group_id, BaseTest.USER_ID)
+        last_read_user_1_before = histories["last_reads"][str(BaseTest.USER_ID)]
+        last_read_user_2_before = histories["last_reads"][str(BaseTest.OTHER_USER_ID)]
+
+        time.sleep(0.1)
+        self.send_message_to_group_from(group_id, user_id=BaseTest.USER_ID)
+
+        histories = self.histories_for(group_id, BaseTest.USER_ID)
+        last_read_user_1_after = histories["last_reads"][str(BaseTest.USER_ID)]
+        last_read_user_2_after = histories["last_reads"][str(BaseTest.OTHER_USER_ID)]
+
+        self.assertNotEqual(last_read_user_1_before, last_read_user_1_after)
+        self.assertEqual(last_read_user_2_before, last_read_user_2_after)

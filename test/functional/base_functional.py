@@ -73,6 +73,17 @@ class BaseServerRestApi(BaseDatabaseTest):
 
         return raw_response.json()["group_id"]
 
+    def histories_for(self, group_id: str, user_id: int = None):
+        if user_id is None:
+            user_id = BaseTest.USER_ID
+
+        raw_response = self.client.post(
+            f"/v1/groups/{group_id}/user/{user_id}/histories", json={"per_page": "10"},
+        )
+        self.assertEqual(raw_response.status_code, 200)
+
+        return raw_response.json()
+
     def user_leaves_group(self, group_id: str, user_id: int = None) -> None:
         if user_id is None:
             user_id = BaseTest.USER_ID
