@@ -115,6 +115,11 @@ class GroupJoinTime(AbstractQuery):
     join_time: float
 
 
+class GroupLastRead(AbstractQuery):
+    user_id: int
+    last_read: float
+
+
 class GroupUsers(AbstractQuery):
     group_id: str
     owner_id: int
@@ -188,4 +193,4 @@ class Group(AbstractQuery):
 class Histories(AbstractQuery):
     messages: List[Message]
     action_logs: List[ActionLog]
-    last_reads: Dict[str, float]
+    last_reads: List[GroupLastRead]

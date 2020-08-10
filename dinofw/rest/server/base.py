@@ -1,6 +1,6 @@
 from abc import ABC
 from datetime import datetime as dt
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 
 import pytz
 
@@ -12,7 +12,7 @@ from dinofw.rest.server.models import (
     AbstractQuery,
     UserGroupStats,
     ActionLog,
-    GroupJoinTime,
+    GroupJoinTime, GroupLastRead,
 )
 
 
@@ -86,3 +86,10 @@ class BaseResource(ABC):
         action_dict["created_at"] = AbstractQuery.to_ts(action_dict["created_at"])
 
         return ActionLog(**action_dict)
+
+    @staticmethod
+    def to_last_read(user_id: int, last_read: float) -> GroupLastRead:
+        return GroupLastRead(
+            user_id=user_id,
+            last_read=last_read
+        )

@@ -223,3 +223,21 @@ class TestServerRestApi(BaseServerRestApi):
 
         self.assertNotEqual(last_read_user_1_before, last_read_user_1_after)
         self.assertEqual(last_read_user_2_before, last_read_user_2_after)
+
+    def test_last_read_removed_on_leave(self):
+        group_id = self.create_and_join_group(BaseTest.USER_ID)
+        self.user_joins_group(group_id, BaseTest.OTHER_USER_ID)
+
+        histories = self.histories_for(group_id, BaseTest.USER_ID)
+        self.assertTrue(any((BaseTest.USER_ID == user["user_id"] for user in histories["last_reads"])))
+        self.assertTrue(any((BaseTest.OTHER_USER_ID == user["user_id"] for user in histories["last_reads"])))
+
+        self.user_leaves_group(group_id, BaseTest.OTHER_USER_ID)
+
+        time.sleep(0.1)
+        self.send_message_to_group_from(group_id, user_id=BaseTest.USER_ID)
+
+        histories = self.histories_for(group_id, BaseTest.USER_ID)
+
+        self.assertTrue(any((BaseTest.USER_ID == user["user_id"] for user in histories["last_reads"])))
+        self.assertFalse(any((BaseTest.OTHER_USER_ID == user["user_id"] for user in histories["last_reads"])))

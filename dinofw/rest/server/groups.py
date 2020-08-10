@@ -85,12 +85,9 @@ class GroupResource(BaseResource):
         action_log = [
             GroupResource.action_log_base_to_action_log(log) for log in action_log
         ]
-
-        # json doesn't allow integer keys, only string
-        last_reads = {
-            str(user_id): last_read
-            for user_id, last_read in last_reads.items()
-        }
+        last_reads = [
+            GroupResource.to_last_read(user_id, last_read) for user_id, last_read in last_reads.items()
+        ]
 
         histories = Histories(
             messages=messages,
@@ -203,9 +200,6 @@ class GroupResource(BaseResource):
             return None
 
         self.env.db.remove_last_read_in_group_for_user(group_id, user_id, db)
-
-        # action_log = self.env.storage.create_leave_action_log(group_id, [user_id], now)
-        # return GroupResource.action_log_base_to_action_log(action_log[0])
 
     async def search(self, query: SearchQuery) -> List[Group]:
         return list()  # TODO: implement

@@ -198,10 +198,7 @@ class RelationalHandler:
         )
         db.commit()
 
-        query = GroupQuery(per_page=5_000)
-        self.get_user_ids_and_join_times_in_group(
-            group_id, query, db, skip_cache=True
-        )
+        self.env.cache.remove_last_read_in_group_for_user(group_id, user_id)
 
     def group_exists(self, group_id: str, db: Session) -> bool:
         group = (

@@ -100,6 +100,10 @@ class CacheRedis(ICache):
         key = RedisKeys.last_read_time(group_id)
         self.redis.hset(key, user_id, last_read)
 
+    def remove_last_read_in_group_for_user(self, group_id: str, user_id: int) -> None:
+        key = RedisKeys.last_read_time(group_id)
+        self.redis.hdel(key, user_id)
+
     def get_unread_in_group(self, group_id: str, user_id: int) -> Optional[int]:
         key = RedisKeys.unread_in_group(group_id)
 
