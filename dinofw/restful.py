@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from sqlalchemy.orm import Session
 
 from dinofw import environ
-from dinofw.rest.server.models import AdminQuery, CreateActionLogQuery
+from dinofw.rest.server.models import AdminQuery, CreateActionLogQuery, UpdateHighlightQuery
 from dinofw.rest.server.models import AdminUpdateGroupQuery
 from dinofw.rest.server.models import UpdateUserGroupStats
 from dinofw.rest.server.models import ActionLog
@@ -268,6 +268,31 @@ async def join_group(
     join a group
     """
     return await environ.env.rest.group.join_group(group_id, user_id, db)
+
+
+@app.put("/v1/groups/{group_id}/users/{user_id}/highlight")
+async def update_highlight_time(
+        group_id: str,
+        user_id: int,
+        query: UpdateHighlightQuery,
+        db: Session = Depends(get_db)
+) -> None:
+    """
+    update highlight time of a group for another user
+    """
+    return await environ.env.rest.user.update_highlight_time(group_id, user_id, query, db)
+
+
+@app.delete("/v1/groups/{group_id}/users/{user_id}/highlight")
+async def delete_highlight_time(
+        group_id: str,
+        user_id: int,
+        db: Session = Depends(get_db)
+) -> None:
+    """
+    update highlight time of a group for another user
+    """
+    return await environ.env.rest.user.delete_highlight_time(group_id, user_id, db)
 
 
 @app.put("/v1/groups/{group_id}/actions", response_model=List[ActionLog])

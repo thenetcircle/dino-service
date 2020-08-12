@@ -47,6 +47,21 @@ class RelationalHandler:
     def get_groups_for_user(
         self, user_id: int, query: GroupQuery, db: Session, count_users: bool = True
     ) -> List[Tuple[GroupBase, UserGroupStatsBase, Dict[int, float], int]]:
+        """
+        what we're doing:
+
+        select * from
+            groups g
+        inner join
+            user_group_stats u on u.group_id = g.group_id
+        where
+            user_id = 1234 and
+            u.hide = false
+        order by
+            u.highlight_time desc,
+            u.pin desc,
+            g.last_message_time desc
+        """
         until = GroupQuery.to_dt(query.until)
 
         results = (
@@ -61,8 +76,9 @@ class RelationalHandler:
                 models.UserGroupStatsEntity.user_id == user_id,
             )
             .order_by(
+                models.UserGroupStatsEntity.highlight_time.desc(),
                 models.UserGroupStatsEntity.pin.desc(),
-                models.GroupEntity.last_message_time.desc()
+                models.GroupEntity.last_message_time.desc(),
             )
             .limit(query.per_page)
             .all()
@@ -159,6 +175,22 @@ class RelationalHandler:
 
         return last_reads
 
+    def update_highlight_time(self, group_id: str, user_id: int, highlight_time: dt, db: Session):
+        user_stats = self._get_user_stats_for(group_id, user_id, db)
+
+        if user_stats is None:
+            now = arrow.utcnow().datetime
+            user_stats = self._create_user_stats(group_id, user_id, now)
+
+        user_stats.highlight_time = highlight_time
+        user_stats.hide = False  # always becomes unhidden if highlighted
+
+        db.add(user_stats)
+        db.commit()
+
+    def delete_highlight_time(self, group_id: str, user_id: int, db: Session):
+        self.update_highlight_time(group_id, user_id, self.long_ago, db)
+
     def get_user_ids_in_group(self, group_id: str, db: Session):
         users = self.env.cache.get_user_ids_and_join_time_in_group(group_id)
 
@@ -244,19 +276,9 @@ class RelationalHandler:
 
             if user_stats is None:
                 user_ids_for_cache.add(user_id)
+                user_stats = self._create_user_stats(group_id, user_id, now)
 
-                user_stats = models.UserGroupStatsEntity(
-                    group_id=group_id,
-                    user_id=user_id,
-                    last_read=now,
-                    delete_before=now,
-                    last_sent=now,
-                    join_time=now,
-                    hide=False,
-                )
-            else:
-                user_stats.last_read = now
-
+            user_stats.last_read = now
             db.add(user_stats)
 
         db.commit()
@@ -406,18 +428,10 @@ class RelationalHandler:
         self.env.cache.set_unread_in_group(group_id, user_id, 0)
 
         if user_stats is None:
-            user_stats = models.UserGroupStatsEntity(
-                group_id=group_id,
-                user_id=user_id,
-                last_read=created_at,
-                last_sent=created_at,
-                delete_before=self.long_ago,
-                join_time=created_at,
-            )
+            user_stats = self._create_user_stats(group_id, user_id, created_at)
 
-        else:
-            user_stats.last_read = created_at
-            user_stats.last_sent = created_at
+        user_stats.last_read = created_at
+        user_stats.last_sent = created_at
 
         db.add(user_stats)
         db.commit()
@@ -491,3 +505,26 @@ class RelationalHandler:
             # self.env.cache.set_user_ids_and_join_time_in_group(group_id, users)
 
         return users
+
+    def _get_user_stats_for(self, group_id: str, user_id: int, db: Session):
+        return (
+            db.query(models.UserGroupStatsEntity)
+            .filter(
+                models.UserGroupStatsEntity.group_id == group_id,
+                models.UserGroupStatsEntity.user_id == user_id,
+            )
+            .first()
+        )
+
+    def _create_user_stats(self, group_id: str, user_id: int, default_dt: dt) -> models.UserGroupStatsEntity:
+        return models.UserGroupStatsEntity(
+            group_id=group_id,
+            user_id=user_id,
+            last_read=default_dt,
+            delete_before=default_dt,
+            last_sent=default_dt,
+            join_time=default_dt,
+            hide=False,
+            pin=False,
+            highlight_time=self.long_ago,
+        )

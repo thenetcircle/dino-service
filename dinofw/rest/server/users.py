@@ -5,7 +5,9 @@ from sqlalchemy.orm import Session
 
 from dinofw.db.rdbms.schemas import GroupBase, UserGroupStatsBase
 from dinofw.rest.server.base import BaseResource
-from dinofw.rest.server.models import Group, GroupJoinTime
+from dinofw.rest.server.models import Group
+from dinofw.rest.server.models import GroupJoinTime
+from dinofw.rest.server.models import UpdateHighlightQuery
 from dinofw.rest.server.models import GroupQuery
 from dinofw.rest.server.models import UserStats
 
@@ -52,6 +54,14 @@ class UserResource(BaseResource):
             groups.append(Group(**group_dict))
 
         return groups
+
+    async def update_highlight_time(self, group_id: str, user_id: int, query: UpdateHighlightQuery, db: Session):
+        highlight_time = UpdateHighlightQuery.to_dt(query.highlight_time)
+
+        self.env.db.update_highlight_time(group_id, user_id, highlight_time, db)
+
+    async def delete_highlight_time(self, group_id: str, user_id: int, db: Session):
+        self.env.db.delete_highlight_time(group_id, user_id, db)
 
     async def get_user_stats(self, user_id: int, db: Session) -> UserStats:
         # ordered by last_message_time, so we're likely to get all groups

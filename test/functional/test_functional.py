@@ -1,5 +1,8 @@
 import time
 
+import arrow
+
+from dinofw.rest.server.models import AbstractQuery
 from test.base import BaseTest
 from test.functional.base_functional import BaseServerRestApi
 
@@ -211,15 +214,15 @@ class TestServerRestApi(BaseServerRestApi):
         self.user_joins_group(group_id, BaseTest.OTHER_USER_ID)
 
         histories = self.histories_for(group_id, BaseTest.USER_ID)
-        last_read_user_1_before = histories["last_reads"][str(BaseTest.USER_ID)]
-        last_read_user_2_before = histories["last_reads"][str(BaseTest.OTHER_USER_ID)]
+        last_read_user_1_before = self.last_read_in_histories_for(histories, BaseTest.USER_ID)
+        last_read_user_2_before = self.last_read_in_histories_for(histories, BaseTest.OTHER_USER_ID)
 
         time.sleep(0.1)
         self.send_message_to_group_from(group_id, user_id=BaseTest.USER_ID)
 
         histories = self.histories_for(group_id, BaseTest.USER_ID)
-        last_read_user_1_after = histories["last_reads"][str(BaseTest.USER_ID)]
-        last_read_user_2_after = histories["last_reads"][str(BaseTest.OTHER_USER_ID)]
+        last_read_user_1_after = self.last_read_in_histories_for(histories, BaseTest.USER_ID)
+        last_read_user_2_after = self.last_read_in_histories_for(histories, BaseTest.OTHER_USER_ID)
 
         self.assertNotEqual(last_read_user_1_before, last_read_user_1_after)
         self.assertEqual(last_read_user_2_before, last_read_user_2_after)
@@ -253,3 +256,67 @@ class TestServerRestApi(BaseServerRestApi):
 
         groups = self.groups_for_user(BaseTest.USER_ID)
         self.assertEqual(0, len(groups))
+
+    def test_highlight_group_for_other_user(self):
+        group_id1 = self.create_and_join_group(BaseTest.USER_ID)
+        self.user_joins_group(group_id1, BaseTest.OTHER_USER_ID)
+
+        group_id2 = self.create_and_join_group(BaseTest.USER_ID)
+        self.user_joins_group(group_id2, BaseTest.OTHER_USER_ID)
+
+        self.send_message_to_group_from(group_id1, user_id=BaseTest.USER_ID)
+        time.sleep(0.1)
+        self.send_message_to_group_from(group_id2, user_id=BaseTest.USER_ID)
+
+        groups = self.groups_for_user(BaseTest.USER_ID)
+        self.assertEqual(groups[0]["group_id"], group_id2)
+
+        self.highlight_group_for_user(group_id1, BaseTest.USER_ID)
+
+        groups = self.groups_for_user(BaseTest.USER_ID)
+        self.assertEqual(groups[0]["group_id"], group_id1)
+
+    def test_highlight_makes_group_unhidden(self):
+        group_id = self.create_and_join_group(BaseTest.USER_ID)
+        self.user_joins_group(group_id, BaseTest.OTHER_USER_ID)
+
+        # just joined a group, should have one
+        groups = self.groups_for_user(BaseTest.USER_ID)
+        self.assertEqual(1, len(groups))
+
+        self.update_hide_group_for(group_id, hide=True, user_id=BaseTest.USER_ID)
+
+        # after hiding we should not have any groups anymore
+        groups = self.groups_for_user(BaseTest.USER_ID)
+        self.assertEqual(0, len(groups))
+
+        self.highlight_group_for_user(group_id, BaseTest.USER_ID)
+
+        # make sure it becomes unhidden if highlighted by someone
+        groups = self.groups_for_user(BaseTest.USER_ID)
+        self.assertEqual(1, len(groups))
+
+    def test_delete_highlight_changes_order(self):
+        group_id1 = self.create_and_join_group(BaseTest.USER_ID)
+        self.user_joins_group(group_id1, BaseTest.OTHER_USER_ID)
+
+        group_id2 = self.create_and_join_group(BaseTest.USER_ID)
+        self.user_joins_group(group_id2, BaseTest.OTHER_USER_ID)
+
+        self.send_message_to_group_from(group_id1, user_id=BaseTest.USER_ID)
+        time.sleep(0.1)
+        self.send_message_to_group_from(group_id2, user_id=BaseTest.USER_ID)
+
+        groups = self.groups_for_user(BaseTest.USER_ID)
+        self.assertEqual(groups[0]["group_id"], group_id2)
+
+        self.highlight_group_for_user(group_id1, BaseTest.USER_ID)
+
+        groups = self.groups_for_user(BaseTest.USER_ID)
+        self.assertEqual(groups[0]["group_id"], group_id1)
+
+        self.delete_highlight_group_for_user(group_id1, BaseTest.USER_ID)
+
+        # back to normal
+        groups = self.groups_for_user(BaseTest.USER_ID)
+        self.assertEqual(groups[0]["group_id"], group_id2)

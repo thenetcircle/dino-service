@@ -73,6 +73,13 @@ class BaseServerRestApi(BaseDatabaseTest):
 
         return raw_response.json()["group_id"]
 
+    def last_read_in_histories_for(self, histories: dict, user_id: int):
+        return [
+            stat["last_read"]
+            for stat in histories["last_reads"]
+            if stat["user_id"] == user_id
+        ][0]
+
     def histories_for(self, group_id: str, user_id: int = None):
         if user_id is None:
             user_id = BaseTest.USER_ID
@@ -132,26 +139,6 @@ class BaseServerRestApi(BaseDatabaseTest):
 
         return raw_response.json()
 
-    def assert_messages_in_group(self, group_id: str, user_id: int = None, amount: int = 0):
-        raw_response = self.client.post(
-            f"/v1/groups/{group_id}/user/{user_id}/histories",
-            json={
-                "per_page": 100,
-            },
-        )
-        self.assertEqual(raw_response.status_code, 200)
-        self.assertEqual(amount, len(raw_response.json()["messages"]))
-
-    def assert_hidden_for_user(self, hidden: bool, group_id: str, user_id: int = None) -> None:
-        if user_id is None:
-            user_id = BaseTest.USER_ID
-
-        raw_response = self.client.get(
-            f"/v1/groups/{group_id}/userstats/{user_id}",
-        )
-        self.assertEqual(raw_response.status_code, 200)
-        self.assertEqual(hidden, raw_response.json()["hide"])
-
     def groups_for_user(self, user_id: int = None):
         if user_id is None:
             user_id = BaseTest.USER_ID
@@ -178,6 +165,44 @@ class BaseServerRestApi(BaseDatabaseTest):
             json={"pin": pinned}
         )
         self.assertEqual(raw_response.status_code, 200)
+
+    def highlight_group_for_user(self, group_id: str, user_id: int) -> None:
+        now_plus_2_days = arrow.utcnow().shift(days=2).datetime
+        now_plus_2_days = AbstractQuery.to_ts(now_plus_2_days)
+
+        raw_response = self.client.put(
+            f"/v1/groups/{group_id}/users/{user_id}/highlight",
+            json={
+                "highlight_time": now_plus_2_days,
+            },
+        )
+        self.assertEqual(raw_response.status_code, 200)
+
+    def delete_highlight_group_for_user(self, group_id: str, user_id: int) -> None:
+        raw_response = self.client.delete(
+            f"/v1/groups/{group_id}/users/{user_id}/highlight",
+        )
+        self.assertEqual(raw_response.status_code, 200)
+
+    def assert_messages_in_group(self, group_id: str, user_id: int = None, amount: int = 0):
+        raw_response = self.client.post(
+            f"/v1/groups/{group_id}/user/{user_id}/histories",
+            json={
+                "per_page": 100,
+            },
+        )
+        self.assertEqual(raw_response.status_code, 200)
+        self.assertEqual(amount, len(raw_response.json()["messages"]))
+
+    def assert_hidden_for_user(self, hidden: bool, group_id: str, user_id: int = None) -> None:
+        if user_id is None:
+            user_id = BaseTest.USER_ID
+
+        raw_response = self.client.get(
+            f"/v1/groups/{group_id}/userstats/{user_id}",
+        )
+        self.assertEqual(raw_response.status_code, 200)
+        self.assertEqual(hidden, raw_response.json()["hide"])
 
     def assert_groups_for_user(self, amount_of_groups, user_id: int = None) -> None:
         if user_id is None:

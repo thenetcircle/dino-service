@@ -46,13 +46,13 @@ class UserGroupStatsEntity(env.Base):
     join_time = Column(DateTime(timezone=True))
 
     # a user can highlight a 1-to-1 group for ANOTHER user
-    highlight_time = Column(DateTime(timezone=True), nullable=True)
-
-    # a user can hide a group (will be un-hidden as soon as a new message is sent in this group)
-    hide = Column(Boolean, default=False)
+    highlight_time = Column(DateTime(timezone=True), nullable=False, index=True)
 
     # a user can pin groups he/she wants to keep on top, and will be sorted higher than last_message_time
-    pin = Column(Boolean, default=False, index=True)
+    pin = Column(Boolean, default=False, nullable=False, index=True)
+
+    # a user can hide a group (will be un-hidden as soon as a new message is sent in this group)
+    hide = Column(Boolean, default=False, nullable=False)
 
     # a user can bookmark a group, which makes it count as "one unread message in this group" (only for this user)
-    bookmark = Column(Boolean, default=False)
+    bookmark = Column(Boolean, default=False, nullable=False)

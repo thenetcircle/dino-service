@@ -47,6 +47,10 @@ class MessageQuery(PaginationQuery, AdminQuery):
     status: Optional[int]
 
 
+class UpdateHighlightQuery(AbstractQuery):
+    highlight_time: float
+
+
 class CreateActionLogQuery(AdminQuery):
     user_ids: List[int]
     action_type: int
