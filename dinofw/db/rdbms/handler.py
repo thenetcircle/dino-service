@@ -3,6 +3,7 @@ from typing import List, Tuple, Optional, Dict
 from uuid import uuid4 as uuid
 
 import arrow
+from sqlalchemy import literal
 from sqlalchemy.orm import Session
 
 from dinofw.db.storage.schemas import MessageBase
@@ -201,8 +202,9 @@ class RelationalHandler:
         self.env.cache.remove_last_read_in_group_for_user(group_id, user_id)
 
     def group_exists(self, group_id: str, db: Session) -> bool:
+        # session.query(User.query.filter(User.id == 1).exists()).scalar()
         group = (
-            db.query(models.GroupEntity)
+            db.query(literal(True))
             .filter(models.GroupEntity.group_id == group_id)
             .first()
         )

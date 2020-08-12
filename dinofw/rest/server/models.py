@@ -1,5 +1,5 @@
 from datetime import datetime as dt
-from typing import Optional, List, Dict
+from typing import Optional, List
 
 import pytz
 import arrow

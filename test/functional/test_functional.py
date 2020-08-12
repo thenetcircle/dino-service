@@ -233,11 +233,23 @@ class TestServerRestApi(BaseServerRestApi):
         self.assertTrue(any((BaseTest.OTHER_USER_ID == user["user_id"] for user in histories["last_reads"])))
 
         self.user_leaves_group(group_id, BaseTest.OTHER_USER_ID)
-
-        time.sleep(0.1)
         self.send_message_to_group_from(group_id, user_id=BaseTest.USER_ID)
 
         histories = self.histories_for(group_id, BaseTest.USER_ID)
-
         self.assertTrue(any((BaseTest.USER_ID == user["user_id"] for user in histories["last_reads"])))
         self.assertFalse(any((BaseTest.OTHER_USER_ID == user["user_id"] for user in histories["last_reads"])))
+
+    def test_group_exists_when_leaving(self):
+        self.user_leaves_group(BaseTest.GROUP_ID)
+
+        groups = self.groups_for_user(BaseTest.USER_ID)
+        self.assertEqual(0, len(groups))
+
+        group_id = self.create_and_join_group(BaseTest.USER_ID)
+        groups = self.groups_for_user(BaseTest.USER_ID)
+        self.assertEqual(1, len(groups))
+
+        self.user_leaves_group(group_id)
+
+        groups = self.groups_for_user(BaseTest.USER_ID)
+        self.assertEqual(0, len(groups))
