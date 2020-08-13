@@ -1,7 +1,9 @@
 import sys
 import logging
 import socket
-from typing import List, Optional, Set, Dict
+from typing import List
+from typing import Optional
+from typing import Dict
 
 import redis
 
@@ -10,8 +12,6 @@ from datetime import timedelta
 
 from dinofw.cache import ICache
 from dinofw.config import ConfigKeys, RedisKeys
-from dinofw.db.rdbms.schemas import UserGroupStatsBase
-from dinofw.rest.server.models import AbstractQuery
 
 logger = logging.getLogger(__name__)
 

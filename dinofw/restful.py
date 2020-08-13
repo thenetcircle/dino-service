@@ -70,6 +70,7 @@ async def get_messages_in_group(group_id: str, query: MessageQuery) -> List[Mess
     get messages in a group, order by time in descendent
 
     # TODO: remove this? should probably always get with regards to one user (for hidden/deleted)
+    # TODO: maybe needed by supporters
     """
     return await environ.env.rest.message.messages_in_group(group_id, query)
 

@@ -182,11 +182,8 @@ class GroupResource(BaseResource):
         self.env.db.update_user_stats_on_join_or_create_group(
             group_id, user_id_and_last_read, now, db
         )
-        # action_log = self.env.storage.create_join_action_log(
-        #     group_id, user_id_and_last_read, now
-        # )
 
-        return None  # GroupResource.action_log_base_to_action_log(action_log[0])
+        return None
 
     async def leave_group(self, group_id: str, user_id: int, db: Session) -> None:
         if not self.env.db.group_exists(group_id, db):

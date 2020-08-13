@@ -337,8 +337,7 @@ class TestServerRestApi(BaseServerRestApi):
         self.edit_group(groups[0]["group_id"], name=new_name)
 
         groups = self.groups_for_user(BaseTest.USER_ID)
-        name = groups[0]["name"]
-        self.assertEqual(name, new_name)
+        self.assertEqual(groups[0]["name"], new_name)
         self.assertNotEqual(original_name, new_name)
 
     def test_change_group_owner(self):
