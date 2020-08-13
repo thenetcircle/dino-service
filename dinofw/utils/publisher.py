@@ -13,34 +13,26 @@ from dinofw.rest.server.models import AbstractQuery
 from dinofw.utils import IPublisher
 
 
-class IKafkaWriterFactory(ABC):
+class BasePublisher(ABC):
     @abstractmethod
-    def create_producer(self, *args, **kwargs):
-        """pass"""
+    def send(self, fields: dict) -> None:
+        """
+        published a bunch of fields to the configured stream
+
+        :param fields: a dict of values for the event
+        """
 
 
-class KafkaWriterFactory(IKafkaWriterFactory):
-    """
-    for mocking purposes
-    """
+class MockPublisher(BasePublisher):
+    def __init__(self):
+        self.stream = list()
 
-    def create_producer(self, **kwargs):
-        from kafka import KafkaProducer
-
-        return KafkaProducer(**kwargs)
+    def send(self, fields: dict) -> None:
+        self.stream.append(fields)
 
 
-class MockProducer:
-    def send(self, topic: str, event: dict, key: str = None):
-        pass
-
-
-class Publisher(IPublisher):
+class RedisPublisher(BasePublisher):
     def __init__(self, env, host: str, port: int = 6379, db: int = 0):
-        self.env = env
-        self.topic = self.env.config.get(ConfigKeys.TOPIC, domain=ConfigKeys.KAFKA)
-        self.logger = logging.getLogger(__name__)
-
         if env.config.get(ConfigKeys.TESTING, default=False) or host == "mock":
             from fakeredis import FakeStrictRedis
 
@@ -50,11 +42,32 @@ class Publisher(IPublisher):
             self.redis_pool = redis.ConnectionPool(host=host, port=port, db=db)
             self.redis_instance = None
 
-        self.consumer_stream = self.env.config.get(ConfigKeys.STREAM, domain=ConfigKeys.PUBLISHER)
-        self.consumer_group = self.env.config.get(ConfigKeys.GROUP, domain=ConfigKeys.PUBLISHER)
+        self.consumer_stream = env.config.get(ConfigKeys.STREAM, domain=ConfigKeys.PUBLISHER)
+        self.consumer_group = env.config.get(ConfigKeys.GROUP, domain=ConfigKeys.PUBLISHER)
 
         # TODO: check that we don't recreate stuff unnecessarily with this command
         self.redis.xgroup_create(self.consumer_stream, self.consumer_group, id="$", mkstream=True)
+
+    def send(self, fields: dict) -> None:
+        self.redis.xadd(self.consumer_stream, fields)
+
+    @property
+    def redis(self):
+        if self.redis_pool is None:
+            return self.redis_instance
+        return redis.Redis(connection_pool=self.redis_pool)
+
+
+class Publisher(IPublisher):
+    def __init__(self, env, host: str, port: int = 6379, db: int = 0):
+        self.env = env
+        self.topic = self.env.config.get(ConfigKeys.TOPIC, domain=ConfigKeys.KAFKA)
+        self.logger = logging.getLogger(__name__)
+
+        if host == "mock":
+            self.publisher = MockPublisher()
+        else:
+            self.publisher = RedisPublisher(env, host, port, db)
 
     def message(
         self, group_id: str, user_id: int, message: MessageBase, user_ids: List[int]
@@ -62,7 +75,7 @@ class Publisher(IPublisher):
         fields = Publisher.message_base_to_fields(message, user_ids)
 
         try:
-            self.redis.xadd(self.consumer_stream, fields)
+            self.publisher.send(fields)
         except Exception as e:
             self.logger.error(f"could not publish to redis stream: {str(e)}")
             self.logger.exception(e)
@@ -72,7 +85,7 @@ class Publisher(IPublisher):
         fields = Publisher.group_base_to_fields(group_base, user_ids)
 
         try:
-            self.redis.xadd(self.consumer_stream, fields)
+            self.publisher.send(fields)
         except Exception as e:
             self.logger.error(f"could not publish to redis stream: {str(e)}")
             self.logger.exception(e)
@@ -86,7 +99,7 @@ class Publisher(IPublisher):
         }
 
         try:
-            self.redis.xadd(self.consumer_stream, fields)
+            self.publisher.send(fields)
         except Exception as e:
             self.logger.error(f"could not publish to redis stream: {str(e)}")
             self.logger.exception(e)
@@ -100,17 +113,11 @@ class Publisher(IPublisher):
         }
 
         try:
-            self.redis.xadd(self.consumer_stream, fields)
+            self.publisher.send(fields)
         except Exception as e:
             self.logger.error(f"could not publish to redis stream: {str(e)}")
             self.logger.exception(e)
             self.env.capture_exception(sys.exc_info())
-
-    @property
-    def redis(self):
-        if self.redis_pool is None:
-            return self.redis_instance
-        return redis.Redis(connection_pool=self.redis_pool)
 
     @staticmethod
     def message_base_to_fields(message: MessageBase, user_ids: List[int]):
