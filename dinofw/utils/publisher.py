@@ -50,11 +50,10 @@ class Publisher(IPublisher):
             self.redis_pool = redis.ConnectionPool(host=host, port=port, db=db)
             self.redis_instance = None
 
-        self.consumer_stream = "dino_client_stream"
-        self.consumer_group = "dino_client_group"
+        self.consumer_stream = "dinoms_stream"
+        self.consumer_group = "dinoms_group"
 
         # TODO: check that we don't recreate stuff unnecessarily with this command
-        # XGROUP CREATE dino_client_stream dino_client_group $ MKSTREAM
         self.redis.xgroup_create(self.consumer_stream, self.consumer_group, id="$", mkstream=True)
 
     def message(
@@ -70,7 +69,42 @@ class Publisher(IPublisher):
             self.env.capture_exception(sys.exc_info())
 
     def group_change(self, group_base: GroupBase, user_ids: List[int]) -> None:
-        pass  # TODO: implement
+        fields = Publisher.group_base_to_fields(group_base, user_ids)
+
+        try:
+            self.redis.xadd(self.consumer_stream, fields)
+        except Exception as e:
+            self.logger.error(f"could not publish to redis stream: {str(e)}")
+            self.logger.exception(e)
+            self.env.capture_exception(sys.exc_info())
+
+    def join(self, group_id: str, user_id: int) -> None:
+        fields = {
+            "event_type": "join",
+            "group_id": group_id,
+            "user_id": user_id,
+        }
+
+        try:
+            self.redis.xadd(self.consumer_stream, fields)
+        except Exception as e:
+            self.logger.error(f"could not publish to redis stream: {str(e)}")
+            self.logger.exception(e)
+            self.env.capture_exception(sys.exc_info())
+
+    def leave(self, group_id: str, user_id: int) -> None:
+        fields = {
+            "event_type": "leave",
+            "group_id": group_id,
+            "user_id": user_id,
+        }
+
+        try:
+            self.redis.xadd(self.consumer_stream, fields)
+        except Exception as e:
+            self.logger.error(f"could not publish to redis stream: {str(e)}")
+            self.logger.exception(e)
+            self.env.capture_exception(sys.exc_info())
 
     @property
     def redis(self):
@@ -81,15 +115,37 @@ class Publisher(IPublisher):
     @staticmethod
     def message_base_to_fields(message: MessageBase, user_ids: List[int]):
         return {
+            "event_type": "message",
             "group_id": message.group_id,
             "sender_id": message.user_id,
             "message_id": message.message_id,
             "message_payload": message.message_payload,
             "message_type": message.message_type,
             "status": message.status,
-            "updated_at": AbstractQuery.to_ts(message.updated_at) or "",
+            "updated_at": AbstractQuery.to_ts(message.updated_at, allow_none=True) or "",
             "created_at": AbstractQuery.to_ts(message.created_at),
-            "user_ids": ",".join([str(user_id) for user_id in user_ids])
+            "user_ids": ",".join([str(user_id) for user_id in user_ids]),
+        }
+
+    @staticmethod
+    def group_base_to_fields(group: GroupBase, user_ids: List[int]):
+        return {
+            "event_type": "group",
+            "group_id": group.group_id,
+            "name": group.name,
+            "description": group.description,
+            "created_at": AbstractQuery.to_ts(group.created_at),
+            "updated_at": AbstractQuery.to_ts(group.updated_at, allow_none=True) or None,
+            "last_message_time": AbstractQuery.to_ts(group.last_message_time, allow_none=True) or None,
+            "last_message_overview": group.last_message_overview,
+            "last_message_id": group.last_message_id,
+            "status": group.status,
+            "group_type": group.group_type,
+            "owner_id": group.owner_id,
+            "group_meta": group.group_meta,
+            "group_weight": group.group_weight,
+            "group_context": group.group_context,
+            "user_ids": ",".join([str(user_id) for user_id in user_ids]),
         }
 
     @staticmethod

@@ -105,6 +105,7 @@ class ConfigKeys:
     KEY_SPACE = "key_space"
     AUTH_SERVICE = "auth"
     CACHE_SERVICE = "cache"
+    PUBLISHER = "publisher"
     STATS_SERVICE = "stats"
     HOST = "host"
     TYPE = "type"

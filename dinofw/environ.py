@@ -334,7 +334,13 @@ def init_rest(gn_env: GNEnvironment) -> None:
 def init_producer(gn_env: GNEnvironment) -> None:
     from dinofw.utils.publisher import Publisher
 
-    gn_env.publisher = Publisher(gn_env, mock=True)  # TODO: don't mock
+    pub_host, pub_port = gn_env.config.get(ConfigKeys.HOST, domain=ConfigKeys.PUBLISHER), None
+    pub_db = gn_env.config.get(ConfigKeys.DB, domain=ConfigKeys.PUBLISHER, default=0)
+
+    if ":" in pub_host:
+        pub_host, pub_port = pub_host.split(":", 1)
+
+    gn_env.publisher = Publisher(gn_env, host=pub_host, port=pub_port, db=pub_db)
 
 
 def initialize_env(dino_env):
