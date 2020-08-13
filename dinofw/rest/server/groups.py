@@ -156,11 +156,15 @@ class GroupResource(BaseResource):
         self.env.db.update_user_stats_on_join_or_create_group(
             group.group_id, users, now, db
         )
-        # self.env.storage.create_join_action_log(group.group_id, users, now)
 
-        return GroupResource.group_base_to_group(
+        group_base = GroupResource.group_base_to_group(
             group, users=users, last_read=now, user_count=len(users),
         )
+
+        # notify users they're in a new group
+        self.env.publisher.group_change(group_base, list(users.keys()))
+
+        return group_base
 
     async def update_group_information(
         self, group_id: str, query: UpdateGroupQuery, db: Session
@@ -182,6 +186,7 @@ class GroupResource(BaseResource):
         self.env.db.update_user_stats_on_join_or_create_group(
             group_id, user_id_and_last_read, now, db
         )
+        self.env.publisher.join(group_id, user_id)
 
         return None
 
@@ -190,6 +195,7 @@ class GroupResource(BaseResource):
             return None
 
         self.env.db.remove_last_read_in_group_for_user(group_id, user_id, db)
+        self.env.publisher.leave(group_id, user_id)
 
     async def search(self, query: SearchQuery) -> List[Group]:
         return list()  # TODO: implement
