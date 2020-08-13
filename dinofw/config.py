@@ -110,6 +110,8 @@ class ConfigKeys:
     HOST = "host"
     TYPE = "type"
     DRIVER = "driver"
+    STREAM = "stream"
+    GROUP = "group"
     COORDINATOR = "coordinator"
     STRATEGY = "strategy"
     REPLICATION = "replication"

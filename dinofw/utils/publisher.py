@@ -50,8 +50,8 @@ class Publisher(IPublisher):
             self.redis_pool = redis.ConnectionPool(host=host, port=port, db=db)
             self.redis_instance = None
 
-        self.consumer_stream = "dinoms_stream"
-        self.consumer_group = "dinoms_group"
+        self.consumer_stream = self.env.config.get(ConfigKeys.STREAM, domain=ConfigKeys.PUBLISHER)
+        self.consumer_group = self.env.config.get(ConfigKeys.GROUP, domain=ConfigKeys.PUBLISHER)
 
         # TODO: check that we don't recreate stuff unnecessarily with this command
         self.redis.xgroup_create(self.consumer_stream, self.consumer_group, id="$", mkstream=True)
