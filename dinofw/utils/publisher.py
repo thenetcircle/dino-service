@@ -6,6 +6,7 @@ from abc import abstractmethod
 from typing import List
 
 from dinofw.config import ConfigKeys
+from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.storage.schemas import MessageBase
 from dinofw.utils import IPublisher
 from dinofw.utils.activity import ActivityBuilder
@@ -60,9 +61,13 @@ class Publisher(IPublisher):
             group_id, user_id, message, user_ids
         )
 
+        # TODO: use redis queue instead of kafka/rest
         try:
             self.producer.send(self.topic, event, key=group_id)
         except Exception as e:
             self.logger.error("could not publish response: {}".format(str(e)))
             self.logger.exception(e)
             self.env.capture_exception(sys.exc_info())
+
+    def group_change(self, group_base: GroupBase, user_ids: List[int]) -> None:
+        pass  # TODO: implement

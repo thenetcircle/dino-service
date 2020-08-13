@@ -166,6 +166,28 @@ class BaseServerRestApi(BaseDatabaseTest):
         )
         self.assertEqual(raw_response.status_code, 200)
 
+    def edit_group(
+            self,
+            group_id: str,
+            name: str = "test name",
+            weight: int = 1,
+            context: str = "",
+            owner: int = None
+    ):
+        if owner is None:
+            owner = BaseTest.USER_ID
+
+        raw_response = self.client.put(
+            f"/v1/groups/{group_id}",
+            json={
+                "owner": owner,
+                "name": name,
+                "weight": weight,
+                "context": context,
+            }
+        )
+        self.assertEqual(raw_response.status_code, 200)
+
     def highlight_group_for_user(self, group_id: str, user_id: int) -> None:
         now_plus_2_days = arrow.utcnow().shift(days=2).datetime
         now_plus_2_days = AbstractQuery.to_ts(now_plus_2_days)

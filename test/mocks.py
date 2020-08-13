@@ -449,6 +449,9 @@ class FakePublisher:
 
         self.sent_messages[group_id].append(message)
 
+    def group_change(self, group_base: GroupBase, user_ids: List[int]) -> None:
+        pass  # TODO: implement
+
 
 class FakeEnv:
     class Config:

@@ -26,9 +26,9 @@ class GroupEntity(env.Base):
     last_message_id = Column(String(36))
     last_message_overview = Column(String(512))
 
-    group_meta = Column(Integer)
-    group_weight = Column(Integer)
-    group_context = Column(String(512))
+    meta = Column(Integer)
+    weight = Column(Integer)
+    context = Column(String(512))
     description = Column(String(256))
 
 

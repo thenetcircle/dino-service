@@ -7,7 +7,6 @@ from sqlalchemy.orm import Session
 from dinofw.rest.server.base import BaseResource
 from dinofw.rest.server.models import AbstractQuery
 from dinofw.rest.server.models import ActionLog
-from dinofw.rest.server.models import AdminUpdateGroupQuery
 from dinofw.rest.server.models import CreateActionLogQuery
 from dinofw.rest.server.models import CreateGroupQuery
 from dinofw.rest.server.models import Group
@@ -163,21 +162,15 @@ class GroupResource(BaseResource):
             group, users=users, last_read=now, user_count=len(users),
         )
 
-    async def admin_update_group_information(
-        self, group_id, query: AdminUpdateGroupQuery, db: Session
-    ) -> bool:
-        group_base = self.env.db.admin_update_group_information(group_id, query, db)
-
-        if group_base is None:
-            # TODO: return an error response instead
-            return False
-
-        return True
-
     async def update_group_information(
-        self, user_id: int, group_id: str, query: UpdateGroupQuery, db: Session
+        self, group_id: str, query: UpdateGroupQuery, db: Session
     ) -> None:
-        self.env.db.update_group_information(group_id, query, db)
+        group = self.env.db.update_group_information(group_id, query, db)
+
+        group_query = GroupQuery(per_page=1_000)
+        user_ids = self.env.db.get_user_ids_and_join_times_in_group(group.group_id, group_query, db)
+
+        self.env.publisher.group_change(group, user_ids)
 
     async def join_group(self, group_id: str, user_id: int, db: Session) -> None:
         now = arrow.utcnow().datetime

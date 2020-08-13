@@ -6,10 +6,9 @@ from fastapi import FastAPI
 from sqlalchemy.orm import Session
 
 from dinofw import environ
-from dinofw.rest.server.models import AdminQuery, CreateActionLogQuery, UpdateHighlightQuery
-from dinofw.rest.server.models import AdminUpdateGroupQuery
-from dinofw.rest.server.models import UpdateUserGroupStats
 from dinofw.rest.server.models import ActionLog
+from dinofw.rest.server.models import AdminQuery
+from dinofw.rest.server.models import CreateActionLogQuery
 from dinofw.rest.server.models import CreateGroupQuery
 from dinofw.rest.server.models import EditMessageQuery
 from dinofw.rest.server.models import Group
@@ -21,6 +20,8 @@ from dinofw.rest.server.models import MessageQuery
 from dinofw.rest.server.models import SearchQuery
 from dinofw.rest.server.models import SendMessageQuery
 from dinofw.rest.server.models import UpdateGroupQuery
+from dinofw.rest.server.models import UpdateHighlightQuery
+from dinofw.rest.server.models import UpdateUserGroupStats
 from dinofw.rest.server.models import UserGroupStats
 from dinofw.rest.server.models import UserStats
 
@@ -203,11 +204,11 @@ async def get_group_information(group_id, db: Session = Depends(get_db)) -> Grou
 
 
 @app.put("/v1/groups/{group_id}")
-async def edit_group_information(group_id, query: AdminUpdateGroupQuery) -> Group:
+async def edit_group_information(group_id, query: UpdateGroupQuery, db: Session = Depends(get_db)) -> Group:
     """
-    admin update group  TODO: failure/success response model
+    update group
     """
-    return await environ.env.rest.group.admin_update_group_information(group_id, query)
+    return await environ.env.rest.group.update_group_information(group_id, query, db)
 
 
 @app.post("/v1/users/{user_id}/groups", response_model=List[Group])
@@ -228,18 +229,6 @@ async def create_a_new_group(
     create a group
     """
     return await environ.env.rest.group.create_new_group(user_id, query, db)
-
-
-@app.put("/v1/users/{user_id}/groups/{group_id}")
-async def update_group_information(
-    user_id: int, group_id: str, query: UpdateGroupQuery, db: Session = Depends(get_db)
-) -> Group:
-    """
-    update a group
-    """
-    return await environ.env.rest.group.update_group_information(
-        user_id, group_id, query, db
-    )
 
 
 @app.delete("/v1/users/{user_id}/groups/{group_id}")

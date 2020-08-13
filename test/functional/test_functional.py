@@ -325,3 +325,28 @@ class TestServerRestApi(BaseServerRestApi):
         # pinning group 2 should not change anything since highlight has priority over pinning
         self.pin_group_for(group_2, user_id=BaseTest.USER_ID)
         self.assert_order_of_groups(BaseTest.USER_ID, group_1, group_2, group_3)
+
+    def test_change_group_name(self):
+        self.create_and_join_group(BaseTest.USER_ID)
+
+        groups = self.groups_for_user(BaseTest.USER_ID)
+        original_name = groups[0]["name"]
+        self.assertIsNotNone(original_name)
+
+        new_name = "new test name for group"
+        self.edit_group(groups[0]["group_id"], name=new_name)
+
+        groups = self.groups_for_user(BaseTest.USER_ID)
+        name = groups[0]["name"]
+        self.assertEqual(name, new_name)
+        self.assertNotEqual(original_name, new_name)
+
+    def test_change_group_owner(self):
+        self.create_and_join_group(BaseTest.USER_ID)
+
+        groups = self.groups_for_user(BaseTest.USER_ID)
+        self.assertEqual(BaseTest.USER_ID, groups[0]["owner_id"])
+
+        self.edit_group(groups[0]["group_id"], owner=BaseTest.OTHER_USER_ID)
+        groups = self.groups_for_user(BaseTest.USER_ID)
+        self.assertEqual(BaseTest.OTHER_USER_ID, groups[0]["owner_id"])

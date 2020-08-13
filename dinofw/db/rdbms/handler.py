@@ -10,7 +10,6 @@ from dinofw.db.storage.schemas import MessageBase
 from dinofw.db.rdbms import models
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
-from dinofw.rest.server.models import AdminUpdateGroupQuery
 from dinofw.rest.server.models import CreateGroupQuery
 from dinofw.rest.server.models import GroupQuery
 from dinofw.rest.server.models import UpdateGroupQuery
@@ -287,30 +286,6 @@ class RelationalHandler:
         for user_id in user_ids_for_cache:
             self.env.cache.set_last_read_in_group_for_user(group_id, user_id, now_ts)
 
-    def admin_update_group_information(
-        self, group_id: str, query: AdminUpdateGroupQuery, db: Session
-    ) -> Optional[GroupBase]:
-        group_entity = (
-            db.query(models.GroupEntity)
-            .filter(models.GroupEntity.group_id == group_id)
-            .first()
-        )
-
-        if group_entity is None:
-            return None
-
-        now = arrow.utcnow().datetime
-
-        group_entity.status = query.group_status
-        group_entity.updated_at = now
-
-        base = GroupBase(**group_entity)
-
-        db.add(group_entity)
-        db.commit()
-
-        return base
-
     def update_group_information(
         self, group_id: str, query: UpdateGroupQuery, db: Session
     ) -> Optional[GroupBase]:
@@ -325,9 +300,18 @@ class RelationalHandler:
 
         now = arrow.utcnow().datetime
 
-        group_entity.name = query.group_name
-        group_entity.group_weight = query.group_weight
-        group_entity.group_context = query.group_context
+        if query.name is not None:
+            group_entity.name = query.name
+
+        if query.weight is not None:
+            group_entity.group_weight = query.weight
+
+        if query.context is not None:
+            group_entity.group_context = query.context
+
+        if query.owner is not None:
+            group_entity.owner_id = query.owner
+
         group_entity.updated_at = now
 
         base = GroupBase(**group_entity.__dict__)
@@ -449,8 +433,9 @@ class RelationalHandler:
             updated_at=created_at,
             created_at=created_at,
             owner_id=owner_id,
-            group_meta=query.group_meta,
-            group_context=query.group_context,
+            meta=query.meta,
+            context=query.context,
+            weight=query.weight,
             description=query.description,
         )
 
@@ -476,35 +461,23 @@ class RelationalHandler:
         return user_count
 
     def get_user_ids_and_join_times_in_group(
-        self, group_id: str, query: GroupQuery, db: Session, skip_cache: bool = False
+        self, group_id: str, query: GroupQuery, db: Session
     ) -> Dict[int, float]:
         until = GroupQuery.to_dt(query.until)
 
-        # TODO: since we're doing pagination instead, maybe just skip caching? how often will people check?
-        users = None
-        # users in a group shouldn't change that often
-        # if skip_cache:
-        #     users = None
-        # else:
-        #     users = self.env.cache.get_user_ids_and_join_time_in_group(group_id)
-
-        if users is None:  # or len(users) == 0:
-            users = (
-                db.query(models.UserGroupStatsEntity)
-                .filter(
-                    models.UserGroupStatsEntity.group_id == group_id,
-                    models.UserGroupStatsEntity.join_time <= until,
-                )
-                .distinct()
-                .order_by(models.UserGroupStatsEntity.join_time.desc())
-                .limit(query.per_page or 50)
-                .all()
+        users = (
+            db.query(models.UserGroupStatsEntity)
+            .filter(
+                models.UserGroupStatsEntity.group_id == group_id,
+                models.UserGroupStatsEntity.join_time <= until,
             )
+            .distinct()
+            .order_by(models.UserGroupStatsEntity.join_time.desc())
+            .limit(query.per_page or 50)
+            .all()
+        )
 
-            users = {user.user_id: GroupQuery.to_ts(user.join_time) for user in users}
-            # self.env.cache.set_user_ids_and_join_time_in_group(group_id, users)
-
-        return users
+        return {user.user_id: GroupQuery.to_ts(user.join_time) for user in users}
 
     def _get_user_stats_for(self, group_id: str, user_id: int, db: Session):
         return (

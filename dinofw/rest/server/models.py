@@ -72,8 +72,9 @@ class CreateGroupQuery(AbstractQuery):
     group_type: int
     users: List[int]
     description: Optional[str]
-    group_meta: Optional[int]
-    group_context: Optional[str]
+    meta: Optional[int]
+    context: Optional[str]
+    weight: Optional[int]
 
 
 class GroupQuery(PaginationQuery):
@@ -82,15 +83,12 @@ class GroupQuery(PaginationQuery):
     has_unread: Optional[int]
 
 
-class AdminUpdateGroupQuery(AdminQuery):
-    group_status: int
-
-
 class UpdateGroupQuery(AbstractQuery):
-    # TODO: update owner?
-    group_name: Optional[str]
-    group_weight: Optional[int]
-    group_context: Optional[str]
+    status: Optional[int]
+    owner: Optional[int]
+    name: Optional[str]
+    weight: Optional[int]
+    context: Optional[str]
 
 
 class EditMessageQuery(AdminQuery):
@@ -190,6 +188,7 @@ class Group(AbstractQuery):
     owner_id: int
     group_meta: Optional[int]
     group_context: Optional[str]
+    group_weight: Optional[str]
     last_message_overview: Optional[str]
     last_message_time: float
 
