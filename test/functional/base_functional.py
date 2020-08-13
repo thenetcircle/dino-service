@@ -215,3 +215,14 @@ class BaseServerRestApi(BaseDatabaseTest):
         raw_response = self.client.get(f"/v1/userstats/{user_id}")
         self.assertEqual(raw_response.status_code, 200)
         self.assertEqual(unread_count, raw_response.json()["unread_amount"])
+
+    def assert_order_of_groups(self, user_id: int, *group_ids):
+        groups = self.groups_for_user(user_id)
+        for i, group_id in enumerate(group_ids):
+            self.assertEqual(group_id, groups[i]["group_id"])
+
+    def assert_in_histories(self, user_id: int, histories, is_in: bool):
+        if is_in:
+            self.assertTrue(any((user_id == user["user_id"] for user in histories["last_reads"])))
+        else:
+            self.assertFalse(any((user_id == user["user_id"] for user in histories["last_reads"])))

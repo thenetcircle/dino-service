@@ -1,8 +1,3 @@
-import time
-
-import arrow
-
-from dinofw.rest.server.models import AbstractQuery
 from test.base import BaseTest
 from test.functional.base_functional import BaseServerRestApi
 
@@ -129,17 +124,13 @@ class TestServerRestApi(BaseServerRestApi):
         group = self.get_group(group_id)
         last_update_time = group["updated_at"]
 
-        # send a message
-        self.send_message_to_group_from(group_id, user_id=BaseTest.USER_ID, delay=10)
-
         # update time should not have changed form a new message
+        self.send_message_to_group_from(group_id, user_id=BaseTest.USER_ID, delay=10)
         group = self.get_group(group_id)
         self.assertEqual(group["updated_at"], last_update_time)
 
-        # should change update time
-        self.user_joins_group(group_id, BaseTest.OTHER_USER_ID)
-
         # update time should now have changed
+        self.user_joins_group(group_id, BaseTest.OTHER_USER_ID)
         group = self.get_group(group_id)
         self.assertNotEqual(group["updated_at"], last_update_time)
 
@@ -148,7 +139,6 @@ class TestServerRestApi(BaseServerRestApi):
 
         self.user_joins_group(group_id1, BaseTest.OTHER_USER_ID)
         self.send_message_to_group_from(group_id1, user_id=BaseTest.USER_ID, amount=10, delay=10)
-
         self.assert_total_unread_count(user_id=BaseTest.USER_ID, unread_count=0)
         self.assert_total_unread_count(user_id=BaseTest.OTHER_USER_ID, unread_count=10)
 
@@ -156,25 +146,21 @@ class TestServerRestApi(BaseServerRestApi):
 
         self.user_joins_group(group_id2, BaseTest.OTHER_USER_ID)
         self.send_message_to_group_from(group_id2, user_id=BaseTest.USER_ID, amount=10, delay=10)
-
         self.assert_total_unread_count(user_id=BaseTest.USER_ID, unread_count=0)
         self.assert_total_unread_count(user_id=BaseTest.OTHER_USER_ID, unread_count=20)
 
         # sending a message should mark the group as "read"
         self.send_message_to_group_from(group_id2, user_id=BaseTest.OTHER_USER_ID)
-
         self.assert_total_unread_count(user_id=BaseTest.USER_ID, unread_count=1)
         self.assert_total_unread_count(user_id=BaseTest.OTHER_USER_ID, unread_count=10)
 
         # first user should now have 2 unread
         self.send_message_to_group_from(group_id2, user_id=BaseTest.OTHER_USER_ID)
-
         self.assert_total_unread_count(user_id=BaseTest.USER_ID, unread_count=2)
         self.assert_total_unread_count(user_id=BaseTest.OTHER_USER_ID, unread_count=10)
 
         # first user should now have 3 unread
         self.send_message_to_group_from(group_id1, user_id=BaseTest.OTHER_USER_ID)
-
         self.assert_total_unread_count(user_id=BaseTest.USER_ID, unread_count=3)
         self.assert_total_unread_count(user_id=BaseTest.OTHER_USER_ID, unread_count=0)
 
@@ -182,32 +168,23 @@ class TestServerRestApi(BaseServerRestApi):
         group_id1 = self.create_and_join_group(BaseTest.USER_ID)
         group_id2 = self.create_and_join_group(BaseTest.USER_ID)
 
-        self.send_message_to_group_from(group_id1, user_id=BaseTest.USER_ID)
-        time.sleep(0.1)
+        self.send_message_to_group_from(group_id1, user_id=BaseTest.USER_ID, delay=50)
 
         # group 2 should now be on top
         self.send_message_to_group_from(group_id2, user_id=BaseTest.USER_ID)
-        groups = self.groups_for_user(BaseTest.USER_ID)
-        self.assertEqual(groups[0]["group_id"], group_id2)
-        self.assertEqual(groups[1]["group_id"], group_id1)
+        self.assert_order_of_groups(BaseTest.USER_ID, group_id2, group_id1)
 
         # should be in the other order after pinning
         self.pin_group_for(group_id1, BaseTest.USER_ID)
-        groups = self.groups_for_user(BaseTest.USER_ID)
-        self.assertEqual(groups[0]["group_id"], group_id1)
-        self.assertEqual(groups[1]["group_id"], group_id2)
+        self.assert_order_of_groups(BaseTest.USER_ID, group_id1, group_id2)
 
         # should not change order since group 1 is pinned
         self.send_message_to_group_from(group_id2, user_id=BaseTest.USER_ID)
-        groups = self.groups_for_user(BaseTest.USER_ID)
-        self.assertEqual(groups[0]["group_id"], group_id1)
-        self.assertEqual(groups[1]["group_id"], group_id2)
+        self.assert_order_of_groups(BaseTest.USER_ID, group_id1, group_id2)
 
         # after unpinning the group with the latest message should be first
         self.unpin_group_for(group_id1, BaseTest.USER_ID)
-        groups = self.groups_for_user(BaseTest.USER_ID)
-        self.assertEqual(groups[0]["group_id"], group_id2)
-        self.assertEqual(groups[1]["group_id"], group_id1)
+        self.assert_order_of_groups(BaseTest.USER_ID, group_id2, group_id1)
 
     def test_last_read_updated_in_history_api(self):
         group_id = self.create_and_join_group(BaseTest.USER_ID)
@@ -217,8 +194,7 @@ class TestServerRestApi(BaseServerRestApi):
         last_read_user_1_before = self.last_read_in_histories_for(histories, BaseTest.USER_ID)
         last_read_user_2_before = self.last_read_in_histories_for(histories, BaseTest.OTHER_USER_ID)
 
-        time.sleep(0.1)
-        self.send_message_to_group_from(group_id, user_id=BaseTest.USER_ID)
+        self.send_message_to_group_from(group_id, user_id=BaseTest.USER_ID, delay=50)
 
         histories = self.histories_for(group_id, BaseTest.USER_ID)
         last_read_user_1_after = self.last_read_in_histories_for(histories, BaseTest.USER_ID)
@@ -232,15 +208,15 @@ class TestServerRestApi(BaseServerRestApi):
         self.user_joins_group(group_id, BaseTest.OTHER_USER_ID)
 
         histories = self.histories_for(group_id, BaseTest.USER_ID)
-        self.assertTrue(any((BaseTest.USER_ID == user["user_id"] for user in histories["last_reads"])))
-        self.assertTrue(any((BaseTest.OTHER_USER_ID == user["user_id"] for user in histories["last_reads"])))
+        self.assert_in_histories(BaseTest.USER_ID, histories, is_in=True)
+        self.assert_in_histories(BaseTest.OTHER_USER_ID, histories, is_in=True)
 
         self.user_leaves_group(group_id, BaseTest.OTHER_USER_ID)
         self.send_message_to_group_from(group_id, user_id=BaseTest.USER_ID)
 
         histories = self.histories_for(group_id, BaseTest.USER_ID)
-        self.assertTrue(any((BaseTest.USER_ID == user["user_id"] for user in histories["last_reads"])))
-        self.assertFalse(any((BaseTest.OTHER_USER_ID == user["user_id"] for user in histories["last_reads"])))
+        self.assert_in_histories(BaseTest.USER_ID, histories, is_in=True)
+        self.assert_in_histories(BaseTest.OTHER_USER_ID, histories, is_in=False)
 
     def test_group_exists_when_leaving(self):
         self.user_leaves_group(BaseTest.GROUP_ID)
@@ -253,28 +229,22 @@ class TestServerRestApi(BaseServerRestApi):
         self.assertEqual(1, len(groups))
 
         self.user_leaves_group(group_id)
-
         groups = self.groups_for_user(BaseTest.USER_ID)
         self.assertEqual(0, len(groups))
 
     def test_highlight_group_for_other_user(self):
         group_id1 = self.create_and_join_group(BaseTest.USER_ID)
-        self.user_joins_group(group_id1, BaseTest.OTHER_USER_ID)
-
         group_id2 = self.create_and_join_group(BaseTest.USER_ID)
+
+        self.user_joins_group(group_id1, BaseTest.OTHER_USER_ID)
         self.user_joins_group(group_id2, BaseTest.OTHER_USER_ID)
 
-        self.send_message_to_group_from(group_id1, user_id=BaseTest.USER_ID)
-        time.sleep(0.1)
+        self.send_message_to_group_from(group_id1, user_id=BaseTest.USER_ID, delay=50)
         self.send_message_to_group_from(group_id2, user_id=BaseTest.USER_ID)
-
-        groups = self.groups_for_user(BaseTest.USER_ID)
-        self.assertEqual(groups[0]["group_id"], group_id2)
+        self.assert_order_of_groups(BaseTest.USER_ID, group_id2, group_id1)
 
         self.highlight_group_for_user(group_id1, BaseTest.USER_ID)
-
-        groups = self.groups_for_user(BaseTest.USER_ID)
-        self.assertEqual(groups[0]["group_id"], group_id1)
+        self.assert_order_of_groups(BaseTest.USER_ID, group_id1, group_id2)
 
     def test_highlight_makes_group_unhidden(self):
         group_id = self.create_and_join_group(BaseTest.USER_ID)
@@ -284,39 +254,74 @@ class TestServerRestApi(BaseServerRestApi):
         groups = self.groups_for_user(BaseTest.USER_ID)
         self.assertEqual(1, len(groups))
 
-        self.update_hide_group_for(group_id, hide=True, user_id=BaseTest.USER_ID)
-
         # after hiding we should not have any groups anymore
+        self.update_hide_group_for(group_id, hide=True, user_id=BaseTest.USER_ID)
         groups = self.groups_for_user(BaseTest.USER_ID)
         self.assertEqual(0, len(groups))
 
-        self.highlight_group_for_user(group_id, BaseTest.USER_ID)
-
         # make sure it becomes unhidden if highlighted by someone
+        self.highlight_group_for_user(group_id, BaseTest.USER_ID)
         groups = self.groups_for_user(BaseTest.USER_ID)
         self.assertEqual(1, len(groups))
 
     def test_delete_highlight_changes_order(self):
         group_id1 = self.create_and_join_group(BaseTest.USER_ID)
-        self.user_joins_group(group_id1, BaseTest.OTHER_USER_ID)
-
         group_id2 = self.create_and_join_group(BaseTest.USER_ID)
+
+        self.user_joins_group(group_id1, BaseTest.OTHER_USER_ID)
         self.user_joins_group(group_id2, BaseTest.OTHER_USER_ID)
 
-        self.send_message_to_group_from(group_id1, user_id=BaseTest.USER_ID)
-        time.sleep(0.1)
+        self.send_message_to_group_from(group_id1, user_id=BaseTest.USER_ID, delay=100)
         self.send_message_to_group_from(group_id2, user_id=BaseTest.USER_ID)
-
-        groups = self.groups_for_user(BaseTest.USER_ID)
-        self.assertEqual(groups[0]["group_id"], group_id2)
+        self.assert_order_of_groups(BaseTest.USER_ID, group_id2, group_id1)
 
         self.highlight_group_for_user(group_id1, BaseTest.USER_ID)
-
-        groups = self.groups_for_user(BaseTest.USER_ID)
-        self.assertEqual(groups[0]["group_id"], group_id1)
-
-        self.delete_highlight_group_for_user(group_id1, BaseTest.USER_ID)
+        self.assert_order_of_groups(BaseTest.USER_ID, group_id1, group_id2)
 
         # back to normal
-        groups = self.groups_for_user(BaseTest.USER_ID)
-        self.assertEqual(groups[0]["group_id"], group_id2)
+        self.delete_highlight_group_for_user(group_id1, BaseTest.USER_ID)
+        self.assert_order_of_groups(BaseTest.USER_ID, group_id2, group_id1)
+
+    def test_highlight_ordered_higher_than_pin(self):
+        group_1 = self.create_and_join_group(BaseTest.USER_ID)
+        group_2 = self.create_and_join_group(BaseTest.USER_ID)
+        group_3 = self.create_and_join_group(BaseTest.USER_ID)
+
+        # first send a message to each group with a short delay
+        for group_id in [group_1, group_2, group_3]:
+            self.send_message_to_group_from(group_id, user_id=BaseTest.USER_ID, delay=50)
+
+        # last group to receive a message should be on top
+        self.assert_order_of_groups(BaseTest.USER_ID, group_3, group_2, group_1)
+
+        # pinned a group should put it at the top
+        self.pin_group_for(group_2, user_id=BaseTest.USER_ID)
+        self.assert_order_of_groups(BaseTest.USER_ID, group_2, group_3, group_1)
+
+        # highlight has priority over pinning, so group 1 should be above group 2 now
+        self.highlight_group_for_user(group_1, user_id=BaseTest.USER_ID)
+        self.assert_order_of_groups(BaseTest.USER_ID, group_1, group_2, group_3)
+
+        # sending a message to group 3 should not change anything, since 1 and 2 are highlighted and pinned respectively
+        self.send_message_to_group_from(group_3, user_id=BaseTest.USER_ID, delay=50)
+        self.assert_order_of_groups(BaseTest.USER_ID, group_1, group_2, group_3)
+
+        # group 2 and 3 are pinned, but 3 has more recent message now
+        self.pin_group_for(group_3, user_id=BaseTest.USER_ID)
+        self.assert_order_of_groups(BaseTest.USER_ID, group_1, group_3, group_2)
+
+        # group 1 has now the older message and not highlighted so should be at the bottom
+        self.delete_highlight_group_for_user(group_1, BaseTest.USER_ID)
+        self.assert_order_of_groups(BaseTest.USER_ID, group_3, group_2, group_1)
+
+        # group 2 should be on top after highlighting it
+        self.highlight_group_for_user(group_2, user_id=BaseTest.USER_ID)
+        self.assert_order_of_groups(BaseTest.USER_ID, group_2, group_3, group_1)
+
+        # group 1 has a more recent highlight than group 2
+        self.highlight_group_for_user(group_1, user_id=BaseTest.USER_ID)
+        self.assert_order_of_groups(BaseTest.USER_ID, group_1, group_2, group_3)
+
+        # pinning group 2 should not change anything since highlight has priority over pinning
+        self.pin_group_for(group_2, user_id=BaseTest.USER_ID)
+        self.assert_order_of_groups(BaseTest.USER_ID, group_1, group_2, group_3)
