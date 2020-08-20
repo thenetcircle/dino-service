@@ -73,6 +73,13 @@ class RedisPublisher(BasePublisher):
 
 
 class Publisher(IPublisher):
+    """
+    TODO: might send directly to mqtt here; there's not a lot of
+    processing needed for splitting events per user; most messages
+    will likely be 1-to-1 anyway, or smaller groups of only a few
+    people
+    """
+
     def __init__(self, env, host: str, port: int = 6379, db: int = 0):
         self.env = env
         self.topic = self.env.config.get(ConfigKeys.TOPIC, domain=ConfigKeys.KAFKA)
