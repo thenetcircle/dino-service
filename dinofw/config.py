@@ -113,6 +113,8 @@ class ConfigKeys:
     DRIVER = "driver"
     STREAM = "stream"
     GROUP = "group"
+    TTL = "ttl"
+    BLOCK = "block"
     COORDINATOR = "coordinator"
     STRATEGY = "strategy"
     REPLICATION = "replication"

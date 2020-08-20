@@ -1,7 +1,10 @@
 import os
 import logging
+import signal
+
 from gnenv import create_env
 from gnenv.environ import GNEnvironment
+import asyncio
 
 from dinofw.config import ConfigKeys
 
@@ -331,16 +334,54 @@ def init_rest(gn_env: GNEnvironment) -> None:
     gn_env.rest.message = MessageResource(gn_env)
 
 
-def init_producer(gn_env: GNEnvironment) -> None:
-    from dinofw.utils.publisher import Publisher
-
+def _get_pub_host_port_db(gn_env: GNEnvironment) -> (str, int, int):
     pub_host, pub_port = gn_env.config.get(ConfigKeys.HOST, domain=ConfigKeys.PUBLISHER), None
     pub_db = gn_env.config.get(ConfigKeys.DB, domain=ConfigKeys.PUBLISHER, default=0)
 
     if ":" in pub_host:
         pub_host, pub_port = pub_host.split(":", 1)
 
+    return pub_host, pub_port, pub_db
+
+
+def init_producer(gn_env: GNEnvironment) -> None:
+    from dinofw.utils.publisher import Publisher
+
+    pub_host, pub_port, pub_db = _get_pub_host_port_db(gn_env)
     gn_env.publisher = Publisher(gn_env, host=pub_host, port=pub_port, db=pub_db)
+
+
+def init_stream_reader(gn_env: GNEnvironment) -> None:
+    from dinofw.endpoint.stream import StreamReader
+
+    pub_host, pub_port, pub_db = _get_pub_host_port_db(gn_env)
+    gn_env.stream = StreamReader(gn_env, host=pub_host, port=pub_port, db=pub_db)
+
+
+async def shutdown_coroutines(the_signal, loop) -> None:
+    """Cleanup tasks tied to the service's shutdown."""
+
+    # logging.info(f"Received exit signal {the_signal.name}...")
+
+    tasks = [
+        t for t in asyncio.all_tasks()
+        if t is not asyncio.current_task()
+    ]
+
+    [task.cancel() for task in tasks]
+
+    await asyncio.gather(*tasks)
+    # loop.stop()
+
+
+async def init_signal_handlers(loop) -> None:
+    signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)
+
+    for s in signals:
+        loop.add_signal_handler(
+            sig=s,
+            callback=lambda ss=s: asyncio.create_task(shutdown_coroutines(s, loop))
+        )
 
 
 def initialize_env(dino_env):
@@ -358,6 +399,10 @@ def initialize_env(dino_env):
     init_observer(dino_env)
     init_rest(dino_env)
     init_producer(dino_env)
+    init_stream_reader(dino_env)
+
+    event_loop = asyncio.get_event_loop()
+    asyncio.ensure_future(init_signal_handlers(event_loop), loop=event_loop)
 
 
 ENV_KEY_ENVIRONMENT = "DINO_ENVIRONMENT"

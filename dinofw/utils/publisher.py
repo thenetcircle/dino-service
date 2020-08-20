@@ -42,11 +42,19 @@ class RedisPublisher(BasePublisher):
             self.redis_pool = redis.ConnectionPool(host=host, port=port, db=db)
             self.redis_instance = None
 
-        self.consumer_stream = env.config.get(ConfigKeys.STREAM, domain=ConfigKeys.PUBLISHER)
-        self.consumer_group = env.config.get(ConfigKeys.GROUP, domain=ConfigKeys.PUBLISHER)
+        self.consumer_stream = env.config.get(ConfigKeys.STREAM, domain=ConfigKeys.PUBLISHER).encode()
+        self.consumer_group = env.config.get(ConfigKeys.GROUP, domain=ConfigKeys.PUBLISHER).encode()
 
-        # TODO: check that we don't recreate stuff unnecessarily with this command
-        self.redis.xgroup_create(self.consumer_stream, self.consumer_group, id="$", mkstream=True)
+        # the stream might not exist on first run
+        try:
+            self.redis.xgroup_create(
+                name=self.consumer_stream,
+                groupname=self.consumer_group,
+                id=b"$",
+                mkstream=False
+            )
+        except redis.exceptions.ResponseError:
+            pass
 
     def send(self, fields: dict) -> None:
         self.redis.xadd(self.consumer_stream, fields)

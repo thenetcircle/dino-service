@@ -23,3 +23,15 @@ stats:
 kafka:
     topic: "$DINO_KAFKA_TOPIC"
     host: "$DINO_KAFKA_HOSTS"
+
+mqtt:
+    host: "$DINO_MQTT_HOST"
+    port: "$DINO_MQTT_PORT"
+    ttl: "$DINO_MQTT_TTL"
+
+publisher:
+    host: "$DINO_PUB_HOST"
+    db: "$DINO_PUB_DB"
+    stream: "$DINO_PUB_STREAM"
+    group: "$DINO_PUB_GROUP"
+    block: "$DINO_PUB_BLOCK"
