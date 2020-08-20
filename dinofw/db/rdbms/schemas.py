@@ -19,9 +19,9 @@ class GroupBase(BaseModel):
     group_type: int
     owner_id: int
 
-    group_meta: Optional[int]
-    group_weight: Optional[int]
-    group_context: Optional[str]
+    meta: Optional[int]
+    weight: Optional[int]
+    context: Optional[str]
 
 
 class UserGroupStatsBase(BaseModel):

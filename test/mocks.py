@@ -278,8 +278,8 @@ class FakeDatabase:
             created_at=created_at,
             updated_at=created_at,
             owner_id=owner_id,
-            group_meta=query.group_meta,
-            group_context=query.group_context,
+            meta=query.meta,
+            context=query.context,
             description=query.description,
         )
 
@@ -450,6 +450,12 @@ class FakePublisher:
         self.sent_messages[group_id].append(message)
 
     def group_change(self, group_base: GroupBase, user_ids: List[int]) -> None:
+        pass  # TODO: implement
+
+    def join(self, group_id: str, user_id: int) -> None:
+        pass  # TODO: implement
+
+    def leave(self, group_id: str, user_id: int) -> None:
         pass  # TODO: implement
 
 

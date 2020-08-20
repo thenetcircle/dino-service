@@ -186,9 +186,9 @@ class Group(AbstractQuery):
     created_at: float
     updated_at: Optional[float]
     owner_id: int
-    group_meta: Optional[int]
-    group_context: Optional[str]
-    group_weight: Optional[str]
+    meta: Optional[int]
+    context: Optional[str]
+    weight: Optional[str]
     last_message_overview: Optional[str]
     last_message_time: float
 
