@@ -4,6 +4,7 @@ from abc import ABC
 from abc import abstractmethod
 from typing import List
 
+import arrow
 import redis
 
 from dinofw.config import ConfigKeys
@@ -104,9 +105,10 @@ class Publisher(IPublisher):
             self.logger.exception(e)
             self.env.capture_exception(sys.exc_info())
 
-    def join(self, group_id: str, user_id: int) -> None:
+    def join(self, group_id: str, user_id: int, now: float) -> None:
         fields = {
             "event_type": "join",
+            "created_at": now,
             "group_id": group_id,
             "user_id": user_id,
         }
@@ -118,9 +120,10 @@ class Publisher(IPublisher):
             self.logger.exception(e)
             self.env.capture_exception(sys.exc_info())
 
-    def leave(self, group_id: str, user_id: int) -> None:
+    def leave(self, group_id: str, user_id: int, now: float) -> None:
         fields = {
             "event_type": "leave",
+            "created_at": now,
             "group_id": group_id,
             "user_id": user_id,
         }

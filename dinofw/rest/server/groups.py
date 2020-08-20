@@ -186,7 +186,7 @@ class GroupResource(BaseResource):
         self.env.db.update_user_stats_on_join_or_create_group(
             group_id, user_id_and_last_read, now, db
         )
-        self.env.publisher.join(group_id, user_id)
+        self.env.publisher.join(group_id, user_id, now_ts)
 
         return None
 
@@ -194,8 +194,11 @@ class GroupResource(BaseResource):
         if not self.env.db.group_exists(group_id, db):
             return None
 
+        now = arrow.utcnow().datetime
+        now_ts = AbstractQuery.to_ts(now)
+
         self.env.db.remove_last_read_in_group_for_user(group_id, user_id, db)
-        self.env.publisher.leave(group_id, user_id)
+        self.env.publisher.leave(group_id, user_id, now_ts)
 
     async def search(self, query: SearchQuery) -> List[Group]:
         return list()  # TODO: implement
