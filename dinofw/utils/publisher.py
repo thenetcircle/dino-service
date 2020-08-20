@@ -96,8 +96,6 @@ class Publisher(IPublisher):
 
     def group_change(self, group_base: GroupBase, user_ids: List[int]) -> None:
         fields = Publisher.group_base_to_fields(group_base, user_ids)
-        print('fields:')
-        print(fields)
 
         try:
             self.publisher.send(fields)
