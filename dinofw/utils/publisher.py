@@ -165,9 +165,9 @@ class Publisher(IPublisher):
             "status": group.status,
             "group_type": group.group_type,
             "owner_id": group.owner_id,
-            "group_meta": group.group_meta,
-            "group_weight": group.group_weight,
-            "group_context": group.group_context,
+            "meta": group.meta,
+            "weight": group.weight,
+            "context": group.context,
             "user_ids": ",".join([str(user_id) for user_id in user_ids]),
         }
 
