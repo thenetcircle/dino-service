@@ -2,7 +2,6 @@ import asyncio
 import logging
 import sys
 from abc import ABC
-from contextlib import suppress
 from typing import Set
 
 import redis
@@ -14,7 +13,12 @@ from dinofw.config import ConfigKeys
 
 class RequestBuilder:
     @staticmethod
-    def parse(message: dict) -> (Set[str], dict):
+    def parse(raw_message: dict) -> (Set[str], dict):
+        message = {
+            str(key, "utf-8"): str(value, "utf-8")
+            for key, value in raw_message.items()
+        }
+
         user_ids = message["user_ids"]
         user_ids = set(user_ids.split(","))
         del message["user_ids"]
@@ -99,7 +103,9 @@ class StreamReader(IStreamReader):
             # TODO: remove
             await asyncio.sleep(0.1)
 
-    async def handle_message(self, message) -> None:
+    async def handle_message(self, event) -> None:
+        event_id, message = event
+
         try:
             user_ids, data = RequestBuilder.parse(message)
         except (InterruptedError, asyncio.CancelledError) as e:

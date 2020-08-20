@@ -143,7 +143,7 @@ class GroupResource(BaseResource):
     async def create_new_group(
         self, user_id: int, query: CreateGroupQuery, db: Session
     ) -> Group:
-        group = self.env.db.create_group(user_id, query, db)
+        group_base = self.env.db.create_group(user_id, query, db)
 
         now = arrow.utcnow().datetime
         now_ts = CreateGroupQuery.to_ts(now)
@@ -154,17 +154,17 @@ class GroupResource(BaseResource):
             users.update({user_id: float(now_ts) for user_id in query.users})
 
         self.env.db.update_user_stats_on_join_or_create_group(
-            group.group_id, users, now, db
+            group_base.group_id, users, now, db
         )
 
-        group_base = GroupResource.group_base_to_group(
-            group, users=users, last_read=now, user_count=len(users),
+        group = GroupResource.group_base_to_group(
+            group_base, users=users, last_read=now, user_count=len(users),
         )
 
         # notify users they're in a new group
         self.env.publisher.group_change(group_base, list(users.keys()))
 
-        return group_base
+        return group
 
     async def update_group_information(
         self, group_id: str, query: UpdateGroupQuery, db: Session

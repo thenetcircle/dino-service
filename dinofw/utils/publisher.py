@@ -57,7 +57,12 @@ class RedisPublisher(BasePublisher):
             pass
 
     def send(self, fields: dict) -> None:
-        self.redis.xadd(self.consumer_stream, fields)
+        values = {
+            key: value
+            for key, value in fields.items()
+            if value is not None
+        }
+        self.redis.xadd(self.consumer_stream, values)
 
     @property
     def redis(self):
@@ -91,6 +96,8 @@ class Publisher(IPublisher):
 
     def group_change(self, group_base: GroupBase, user_ids: List[int]) -> None:
         fields = Publisher.group_base_to_fields(group_base, user_ids)
+        print('fields:')
+        print(fields)
 
         try:
             self.publisher.send(fields)
