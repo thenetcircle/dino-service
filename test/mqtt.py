@@ -13,4 +13,3 @@ async def try_shit():
 
     client.publish('1972', str(time.time()), qos=1, message_expiry_interval=10)
     await client.disconnect()
-

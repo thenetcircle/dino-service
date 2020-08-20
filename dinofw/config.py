@@ -107,6 +107,7 @@ class ConfigKeys:
     CACHE_SERVICE = "cache"
     PUBLISHER = "publisher"
     STATS_SERVICE = "stats"
+    MQTT = "mqtt"
     HOST = "host"
     TYPE = "type"
     DRIVER = "driver"
