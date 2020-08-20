@@ -1,4 +1,4 @@
-# dino-framework
+# Dino Message System
 
 Framework for distributed notifications using websockets.
 
