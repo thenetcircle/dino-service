@@ -46,13 +46,14 @@ Event when a group you're part of has been created or updated:
 ```json
 {
     "event_type": "group",
-    "group_id": "6cbb3265-2a7f-494d-92ad-f4503d55d49f",
+    "group_id": "9d78163c-1144-485a-92c6-6015afc6cd40",
     "name": "a name",
-    "created_at": "1597876412.253081",
-    "updated_at": "1597876412.253081",
-    "last_message_time": "1597876412.253081",
-    "group_type": "0",
-    "owner_id": "1234"
+    "created_at": 1597877421.453804,
+    "updated_at": 1597877421.453804,
+    "last_message_time": 1597877421.453804,
+    "group_type": 0,
+    "owner_id": 1234,
+    "user_ids": [1234]
 }
 ```
 
@@ -62,11 +63,10 @@ Event when a new message is sent to a group you're part of:
 {
     "event_type": "message",
     "group_id": "6cbb3265-2a7f-494d-92ad-f4503d55d49f",
-    "sender_id": "1234",
-    "message_id": "f1981b36-cf65-4f24-af28-2c8c7e6f29db",
+    "sender_id": 1234,
+    "message_id": "c87efd18-8879-4c24-8b26-ccb7f40a0fe5",
     "message_payload": "test message from rest api",
     "message_type": "text",
-    "updated_at": "",
-    "created_at": "1597876440.172199"
+    "created_at": 1597877384.794828
 }
 ```

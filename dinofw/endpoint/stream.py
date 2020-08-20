@@ -18,10 +18,36 @@ class RequestBuilder:
             str(key, "utf-8"): str(value, "utf-8")
             for key, value in raw_message.items()
         }
+        message = {
+            key: (
+                float(value)
+                if key.endswith("_at") or key.endswith("_time")
+                else value
+            )
+            for key, value in message.items()
+            if value != ""
+        }
+        message = {
+            key: (
+                int(value)
+                if key in {
+                    "sender_id",
+                    "owner_id",
+                    "group_type",
+                    "user_id",
+                }
+                else value
+            )
+            for key, value in message.items()
+        }
 
         user_ids = message["user_ids"]
         user_ids = set(user_ids.split(","))
-        del message["user_ids"]
+
+        if message["event_type"] == "group":
+            message["user_ids"] = [int(user_id) for user_id in user_ids]
+        else:
+            del message["user_ids"]
 
         return user_ids, message
 
