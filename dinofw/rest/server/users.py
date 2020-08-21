@@ -43,13 +43,14 @@ class UserResource(BaseResource):
 
             group_dict["users"] = user_joins
             group_dict["user_count"] = user_count
-            group_dict["last_read"] = GroupQuery.to_ts(user_group_stats.last_read)
+            group_dict["pin"] = user_group_stats.pin
+            group_dict["bookmark"] = user_group_stats.bookmarks
 
+            group_dict["last_read"] = GroupQuery.to_ts(user_group_stats.last_read)
             group_dict["created_at"] = GroupQuery.to_ts(group_dict["created_at"])
             group_dict["updated_at"] = GroupQuery.to_ts(group_dict["updated_at"])
-            group_dict["last_message_time"] = GroupQuery.to_ts(
-                group_dict["last_message_time"]
-            )
+            group_dict["last_message_time"] = GroupQuery.to_ts(group_dict["last_message_time"])
+            group_dict["highlight_time"] = GroupQuery.to_ts(user_group_stats.highlight_time)
 
             groups.append(Group(**group_dict))
 

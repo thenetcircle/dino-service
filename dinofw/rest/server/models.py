@@ -97,7 +97,15 @@ class EditMessageQuery(AdminQuery):
     status: Optional[int]
 
 
-class Message(AbstractQuery):
+class UpdateUserGroupStats(AbstractQuery):
+    last_read_time: Optional[float]
+    delete_before: Optional[float]
+    hide: Optional[bool]
+    bookmark: Optional[bool]
+    pin: Optional[bool]
+
+
+class Message(BaseModel):
     group_id: str
     created_at: float
     user_id: int
@@ -112,24 +120,24 @@ class Message(AbstractQuery):
     last_action_log_id: Optional[str]
 
 
-class GroupJoinTime(AbstractQuery):
+class GroupJoinTime(BaseModel):
     user_id: int
     join_time: float
 
 
-class GroupLastRead(AbstractQuery):
+class GroupLastRead(BaseModel):
     user_id: int
     last_read: float
 
 
-class GroupUsers(AbstractQuery):
+class GroupUsers(BaseModel):
     group_id: str
     owner_id: int
     user_count: int
     users: List[GroupJoinTime]
 
 
-class UserStats(AbstractQuery):
+class UserStats(BaseModel):
     user_id: int
     unread_amount: int
     group_amount: int
@@ -141,7 +149,7 @@ class UserStats(AbstractQuery):
     last_send_group_id: Optional[str]
 
 
-class UserGroupStats(AbstractQuery):
+class UserGroupStats(BaseModel):
     group_id: str
     user_id: int
     message_amount: int
@@ -156,15 +164,7 @@ class UserGroupStats(AbstractQuery):
     bookmark: bool
 
 
-class UpdateUserGroupStats(AbstractQuery):
-    last_read_time: Optional[float]
-    delete_before: Optional[float]
-    hide: Optional[bool]
-    bookmark: Optional[bool]
-    pin: Optional[bool]
-
-
-class ActionLog(AbstractQuery):
+class ActionLog(BaseModel):
     action_id: str
     user_id: int
     group_id: str
@@ -174,7 +174,7 @@ class ActionLog(AbstractQuery):
     message_id: Optional[str]
 
 
-class Group(AbstractQuery):
+class Group(BaseModel):
     group_id: str
     users: List[GroupJoinTime]
     user_count: int
@@ -192,8 +192,12 @@ class Group(AbstractQuery):
     last_message_overview: Optional[str]
     last_message_time: float
 
+    highlight_time: Optional[float]
+    pin: Optional[bool]
+    bookmark: Optional[bool]
 
-class Histories(AbstractQuery):
+
+class Histories(BaseModel):
     messages: List[Message]
     action_logs: List[ActionLog]
     last_reads: List[GroupLastRead]
