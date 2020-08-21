@@ -26,13 +26,9 @@ logger = logging.getLogger(__name__)
 
 class GroupResource(BaseResource):
     async def get_users_in_group(
-        self, group_id: str, query: PaginationQuery, db: Session
+        self, group_id: str, db: Session
     ) -> Optional[GroupUsers]:
-        # TODO: this should have pagination
-
-        group, first_users, n_users = self.env.db.get_users_in_group(
-            group_id, query, db
-        )
+        group, first_users, n_users = self.env.db.get_users_in_group(group_id, db)
 
         if group is None:
             return None
@@ -53,12 +49,7 @@ class GroupResource(BaseResource):
         )
 
     async def get_group(self, group_id: str, db: Session) -> Optional[Group]:
-        # limit list of users/join times to first 50
-        query = GroupQuery(per_page=50)
-
-        group, first_users, n_users = self.env.db.get_users_in_group(
-            group_id, query, db
-        )
+        group, first_users, n_users = self.env.db.get_users_in_group(group_id, db)
 
         if group is None:
             # TODO: handle missing
@@ -171,8 +162,8 @@ class GroupResource(BaseResource):
     ) -> None:
         group = self.env.db.update_group_information(group_id, query, db)
 
-        group_query = GroupQuery(per_page=1_000)
-        user_ids = self.env.db.get_user_ids_and_join_times_in_group(group.group_id, group_query, db)
+        user_ids_and_join_times = self.env.db.get_user_ids_and_join_time_in_group(group.group_id, db)
+        user_ids = user_ids_and_join_times.keys()
 
         self.env.publisher.group_change(group, user_ids)
 
@@ -186,9 +177,10 @@ class GroupResource(BaseResource):
         self.env.db.update_user_stats_on_join_or_create_group(
             group_id, user_id_and_last_read, now, db
         )
-        self.env.publisher.join(group_id, user_id, now_ts)
 
-        return None
+        user_ids_and_join_times = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
+        user_ids_in_group = user_ids_and_join_times.keys()
+        self.env.publisher.join(group_id, user_ids_in_group, user_id, now_ts)
 
     async def leave_group(self, group_id: str, user_id: int, db: Session) -> None:
         if not self.env.db.group_exists(group_id, db):
@@ -198,7 +190,12 @@ class GroupResource(BaseResource):
         now_ts = AbstractQuery.to_ts(now)
 
         self.env.db.remove_last_read_in_group_for_user(group_id, user_id, db)
-        self.env.publisher.leave(group_id, user_id, now_ts)
+
+        # shouldn't send this event to the guy who left, so get from db/cache after removing the leaver id
+        user_ids_and_join_times = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
+        user_ids_in_group = user_ids_and_join_times.keys()
+
+        self.env.publisher.leave(group_id, user_ids_in_group, user_id, now_ts)
 
     async def search(self, query: SearchQuery) -> List[Group]:
         return list()  # TODO: implement

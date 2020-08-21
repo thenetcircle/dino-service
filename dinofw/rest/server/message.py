@@ -33,7 +33,7 @@ class MessageResource(BaseResource):
         user_ids = self.env.db.get_user_ids_and_join_times_in_group(
             group_id, sub_query, db
         )
-        self.env.publisher.message(group_id, user_id, message, user_ids)
+        self.env.publisher.message(group_id, message, user_ids)
 
         return MessageResource.message_base_to_message(message)
 

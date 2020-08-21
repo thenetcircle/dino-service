@@ -43,6 +43,6 @@ def b64e(s: str) -> str:
 class IPublisher(ABC):
     @abstractmethod
     def message(
-        self, group_id: str, user_id: int, message: MessageBase, user_ids: List[int]
+        self, group_id: str, message: MessageBase, user_ids: List[int]
     ) -> None:
         """pass"""

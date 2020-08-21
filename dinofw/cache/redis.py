@@ -156,6 +156,11 @@ class CacheRedis(ICache):
         ]
 
         self.redis.sadd(key, *values)
+        self.redis.expire(key, ONE_HOUR)
+
+    def clear_user_ids_and_join_time_in_group(self, group_id: str) -> None:
+        key = RedisKeys.user_in_group(group_id)
+        self.redis.delete(key)
 
     def set_hide_group(self, group_id: str, hide: bool, user_ids: List[int] = None) -> None:
         key = RedisKeys.hide_group(group_id)

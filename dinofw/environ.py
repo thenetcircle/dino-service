@@ -347,8 +347,7 @@ def _get_pub_host_port_db(gn_env: GNEnvironment) -> (str, int, int):
 def init_producer(gn_env: GNEnvironment) -> None:
     from dinofw.utils.publisher import Publisher
 
-    pub_host, pub_port, pub_db = _get_pub_host_port_db(gn_env)
-    gn_env.publisher = Publisher(gn_env, host=pub_host, port=pub_port, db=pub_db)
+    gn_env.publisher = Publisher(gn_env)
 
 
 def init_stream_reader(gn_env: GNEnvironment) -> None:

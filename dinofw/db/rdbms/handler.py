@@ -25,7 +25,7 @@ class RelationalHandler:
         self.long_ago = dt.utcfromtimestamp(beginning_of_1995)
 
     def get_users_in_group(
-        self, group_id: str, query: GroupQuery, db: Session
+        self, group_id: str, db: Session
     ) -> (Optional[GroupBase], Optional[Dict[int, float]], Optional[int]):
         group_entity = (
             db.query(models.GroupEntity)
@@ -38,10 +38,11 @@ class RelationalHandler:
             return None, None, None
 
         group = GroupBase(**group_entity.__dict__)
-        users = self.get_user_ids_and_join_times_in_group(group_id, query, db)
+        users_and_join_time = self.get_user_ids_and_join_time_in_group(group_id, db)
+        user_ids = users_and_join_time.keys()
         user_count = self.count_users_in_group(group_id, db)
 
-        return group, users, user_count
+        return group, user_ids, user_count
 
     def get_groups_for_user(
         self, user_id: int, query: GroupQuery, db: Session, count_users: bool = True
@@ -84,22 +85,20 @@ class RelationalHandler:
         )
 
         groups = list()
-        sub_query = GroupQuery(per_page=50)
 
         for group_entity, user_group_stats_entity in results:
             group = GroupBase(**group_entity.__dict__)
             user_group_stats = UserGroupStatsBase(**user_group_stats_entity.__dict__)
 
-            users = self.get_user_ids_and_join_times_in_group(
-                group_entity.group_id, sub_query, db
-            )
+            users_join_time = self.get_user_ids_and_join_time_in_group(group_entity.group_id, db)
+            user_ids = users_join_time.keys()
 
             if count_users:
                 user_count = self.count_users_in_group(group_entity.group_id, db)
             else:
                 user_count = 0
 
-            groups.append((group, user_group_stats, users, user_count))
+            groups.append((group, user_group_stats, user_ids, user_count))
 
         return groups
 
@@ -190,38 +189,37 @@ class RelationalHandler:
     def delete_highlight_time(self, group_id: str, user_id: int, db: Session):
         self.update_highlight_time(group_id, user_id, self.long_ago, db)
 
-    def get_user_ids_in_group(self, group_id: str, db: Session):
+    def get_user_ids_and_join_time_in_group(self, group_id: str, db: Session):
         users = self.env.cache.get_user_ids_and_join_time_in_group(group_id)
 
-        if users is None:
-            users = (
-                db.query(
-                    models.UserGroupStatsEntity.user_id,
-                    models.UserGroupStatsEntity.join_time,
-                )
-                .filter(models.UserGroupStatsEntity.group_id == group_id)
-                .all()
+        if users is not None:
+            return users
+
+        users = (
+            db.query(
+                models.UserGroupStatsEntity.user_id,
+                models.UserGroupStatsEntity.join_time,
             )
+            .filter(models.UserGroupStatsEntity.group_id == group_id)
+            .all()
+        )
 
-            user_ids_join_time = {
-                user[0]: GroupQuery.to_ts(user[1])
-                for user in users
-            }
+        user_ids_join_time = {
+            user[0]: GroupQuery.to_ts(user[1])
+            for user in users
+        }
 
-            self.env.cache.set_user_ids_and_join_time_in_group(
-                group_id,
-                user_ids_join_time
-            )
-
-            user_ids = [user[0] for user in users]
-        else:
-            user_ids = list(users.keys())
-
-        return user_ids
+        self.env.cache.set_user_ids_and_join_time_in_group(
+            group_id,
+            user_ids_join_time
+        )
 
     def remove_last_read_in_group_for_user(
         self, group_id: str, user_id: int, db: Session
     ) -> None:
+        """
+        called when a user leaves a group
+        """
         _ = (
             db.query(models.UserGroupStatsEntity)
             .filter(models.UserGroupStatsEntity.user_id == user_id)
@@ -231,9 +229,9 @@ class RelationalHandler:
         db.commit()
 
         self.env.cache.remove_last_read_in_group_for_user(group_id, user_id)
+        self.env.cache.clear_user_ids_and_join_time_in_group(group_id)
 
     def group_exists(self, group_id: str, db: Session) -> bool:
-        # session.query(User.query.filter(User.id == 1).exists()).scalar()
         group = (
             db.query(literal(True))
             .filter(models.GroupEntity.group_id == group_id)
@@ -284,6 +282,7 @@ class RelationalHandler:
 
         now_ts = GroupQuery.to_ts(now)
         for user_id in user_ids_for_cache:
+            self.env.cache.add_user_ids_and_join_time_in_group(group_id, {user_id: now_ts})
             self.env.cache.set_last_read_in_group_for_user(group_id, user_id, now_ts)
 
     def update_group_information(
@@ -459,25 +458,6 @@ class RelationalHandler:
         )
 
         return user_count
-
-    def get_user_ids_and_join_times_in_group(
-        self, group_id: str, query: GroupQuery, db: Session
-    ) -> Dict[int, float]:
-        until = GroupQuery.to_dt(query.until)
-
-        users = (
-            db.query(models.UserGroupStatsEntity)
-            .filter(
-                models.UserGroupStatsEntity.group_id == group_id,
-                models.UserGroupStatsEntity.join_time <= until,
-            )
-            .distinct()
-            .order_by(models.UserGroupStatsEntity.join_time.desc())
-            .limit(query.per_page or 50)
-            .all()
-        )
-
-        return {user.user_id: GroupQuery.to_ts(user.join_time) for user in users}
 
     def _get_user_stats_for(self, group_id: str, user_id: int, db: Session):
         return (

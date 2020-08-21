@@ -335,3 +335,8 @@ async def get_user_statistics(user_id: int, db: Session = Depends(get_db)) -> Us
     get user statistic data
     """
     return await environ.env.rest.user.get_user_stats(user_id, db)
+
+
+@app.on_event("startup")
+async def startup():
+    await environ.env.publisher.setup()

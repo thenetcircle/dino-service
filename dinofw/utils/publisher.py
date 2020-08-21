@@ -4,8 +4,8 @@ from abc import ABC
 from abc import abstractmethod
 from typing import List
 
-import arrow
-import redis
+from gmqtt import Client as MQTTClient
+from gmqtt.mqtt.constants import MQTTv50
 
 from dinofw.config import ConfigKeys
 from dinofw.db.rdbms.schemas import GroupBase
@@ -16,11 +16,9 @@ from dinofw.utils import IPublisher
 
 class BasePublisher(ABC):
     @abstractmethod
-    def send(self, fields: dict) -> None:
+    def send(self, user_id: int, fields: dict) -> None:
         """
-        published a bunch of fields to the configured stream
-
-        :param fields: a dict of values for the event
+        publish a bunch of fields to the configured stream
         """
 
 
@@ -28,115 +26,88 @@ class MockPublisher(BasePublisher):
     def __init__(self):
         self.stream = list()
 
-    def send(self, fields: dict) -> None:
+    def send(self, user_id: int, fields: dict) -> None:
         self.stream.append(fields)
 
 
-class RedisPublisher(BasePublisher):
-    def __init__(self, env, host: str, port: int = 6379, db: int = 0):
-        if env.config.get(ConfigKeys.TESTING, default=False) or host == "mock":
-            from fakeredis import FakeStrictRedis
+class MqttPublisher(BasePublisher):
+    def __init__(self, env):
+        self.env = env
+        self.mqtt_host = env.config.get(ConfigKeys.HOST, domain=ConfigKeys.MQTT)
+        self.mqtt_port = env.config.get(ConfigKeys.PORT, domain=ConfigKeys.MQTT)
+        self.mqtt_ttl = int(env.config.get(ConfigKeys.TTL, domain=ConfigKeys.MQTT))
 
-            self.redis_pool = None
-            self.redis_instance = FakeStrictRedis(host=host, port=port, db=db)
-        else:
-            self.redis_pool = redis.ConnectionPool(host=host, port=port, db=db)
-            self.redis_instance = None
+        # TODO: unique client id
+        self.mqtt = MQTTClient("client-id")
 
-        self.consumer_stream = env.config.get(ConfigKeys.STREAM, domain=ConfigKeys.PUBLISHER).encode()
-        self.consumer_group = env.config.get(ConfigKeys.GROUP, domain=ConfigKeys.PUBLISHER).encode()
+    async def setup(self):
+        await self.mqtt.connect(
+            self.mqtt_host,
+            port=self.mqtt_port,
+            version=MQTTv50
+        )
 
-        # the stream might not exist on first run
-        try:
-            self.redis.xgroup_create(
-                name=self.consumer_stream,
-                groupname=self.consumer_group,
-                id=b"$",
-                mkstream=False
-            )
-        except redis.exceptions.ResponseError:
-            pass
-
-    def send(self, fields: dict) -> None:
-        values = {
+    def send(self, user_id: int, fields: dict) -> None:
+        data = {
             key: value
             for key, value in fields.items()
             if value is not None
         }
-        self.redis.xadd(self.consumer_stream, values)
-
-    @property
-    def redis(self):
-        if self.redis_pool is None:
-            return self.redis_instance
-        return redis.Redis(connection_pool=self.redis_pool)
+        self.mqtt.publish(
+            message_or_topic=str(user_id),
+            payload=data,
+            qos=1,
+            message_expiry_interval=self.mqtt_ttl
+        )
 
 
 class Publisher(IPublisher):
-    def __init__(self, env, host: str, port: int = 6379, db: int = 0):
+    def __init__(self, env):
         self.env = env
         self.topic = self.env.config.get(ConfigKeys.TOPIC, domain=ConfigKeys.KAFKA)
         self.logger = logging.getLogger(__name__)
+        self.publisher = MqttPublisher(env)
 
-        if host == "mock":
-            self.publisher = MockPublisher()
-        else:
-            self.publisher = RedisPublisher(env, host, port, db)
+    async def setup(self):
+        await self.publisher.setup()
 
-    def message(
-        self, group_id: str, user_id: int, message: MessageBase, user_ids: List[int]
-    ) -> None:
-        fields = Publisher.message_base_to_fields(message, user_ids)
-
-        try:
-            self.publisher.send(fields)
-        except Exception as e:
-            self.logger.error(f"could not publish to redis stream: {str(e)}")
-            self.logger.exception(e)
-            self.env.capture_exception(sys.exc_info())
+    def message(self, group_id: str, message: MessageBase, user_ids: List[int]) -> None:
+        data = Publisher.message_base_to_fields(message)
+        self.send(user_ids, data)
 
     def group_change(self, group_base: GroupBase, user_ids: List[int]) -> None:
-        fields = Publisher.group_base_to_fields(group_base, user_ids)
+        data = Publisher.group_base_to_fields(group_base, user_ids)
+        self.send(user_ids, data)
 
-        try:
-            self.publisher.send(fields)
-        except Exception as e:
-            self.logger.error(f"could not publish to redis stream: {str(e)}")
-            self.logger.exception(e)
-            self.env.capture_exception(sys.exc_info())
-
-    def join(self, group_id: str, user_id: int, now: float) -> None:
-        fields = {
+    def join(self, group_id: str, user_ids: List[int], joiner_id: int, now: float) -> None:
+        data = {
             "event_type": "join",
             "created_at": now,
             "group_id": group_id,
-            "user_id": user_id,
+            "user_id": joiner_id,
         }
+        self.send(user_ids, data)
 
-        try:
-            self.publisher.send(fields)
-        except Exception as e:
-            self.logger.error(f"could not publish to redis stream: {str(e)}")
-            self.logger.exception(e)
-            self.env.capture_exception(sys.exc_info())
-
-    def leave(self, group_id: str, user_id: int, now: float) -> None:
-        fields = {
+    def leave(self, group_id: str, user_ids: List[int], leaver_id: int, now: float) -> None:
+        data = {
             "event_type": "leave",
             "created_at": now,
             "group_id": group_id,
-            "user_id": user_id,
+            "user_id": leaver_id,
         }
+        self.send(user_ids, data)
 
-        try:
-            self.publisher.send(fields)
-        except Exception as e:
-            self.logger.error(f"could not publish to redis stream: {str(e)}")
-            self.logger.exception(e)
-            self.env.capture_exception(sys.exc_info())
+    def send(self, user_ids, data):
+        for user_id in user_ids:
+            try:
+                self.publisher.send(user_id, data)
+            except Exception as e:
+                self.logger.error(f"could not handle message: {str(e)}")
+                self.logger.exception(e)
+                self.env.capture_exception(sys.exc_info())
 
     @staticmethod
-    def message_base_to_fields(message: MessageBase, user_ids: List[int]):
+    def message_base_to_fields(message: MessageBase):
         return {
             "event_type": "message",
             "group_id": message.group_id,
@@ -147,7 +118,6 @@ class Publisher(IPublisher):
             "status": message.status,
             "updated_at": AbstractQuery.to_ts(message.updated_at, allow_none=True) or "",
             "created_at": AbstractQuery.to_ts(message.created_at),
-            "user_ids": ",".join([str(user_id) for user_id in user_ids]),
         }
 
     @staticmethod
@@ -170,19 +140,3 @@ class Publisher(IPublisher):
             "context": group.context,
             "user_ids": ",".join([str(user_id) for user_id in user_ids]),
         }
-
-    @staticmethod
-    def fields_to_message_base(fields: dict):
-        # TODO: maybe we don't need to convert; just send the fields to the client, less bloated requests/resposes
-        user_ids = [int(user_id) for user_id in fields["user_ids"].split(",")]
-
-        return user_ids, MessageBase(
-            group_id=fields["group_id"],
-            user_id=fields["user_id"],
-            message_id=fields["message_id"],
-            message_payload=fields["message_payload"],
-            status=fields["status"],
-            message_type=fields["message_type"],
-            created_at=AbstractQuery.to_dt(fields["created_at"]),
-            updated_at=AbstractQuery.to_dt(fields["updated_at"], allow_none=True),
-        )
