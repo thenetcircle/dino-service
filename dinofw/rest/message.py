@@ -4,12 +4,12 @@ from typing import List
 import arrow
 from sqlalchemy.orm import Session
 
-from dinofw.rest.server.base import BaseResource
-from dinofw.rest.server.models import AdminQuery, GroupQuery
-from dinofw.rest.server.models import EditMessageQuery
-from dinofw.rest.server.models import Message
-from dinofw.rest.server.models import MessageQuery
-from dinofw.rest.server.models import SendMessageQuery
+from dinofw.rest.base import BaseResource
+from dinofw.rest.models import AdminQuery
+from dinofw.rest.models import EditMessageQuery
+from dinofw.rest.models import Message
+from dinofw.rest.models import MessageQuery
+from dinofw.rest.models import SendMessageQuery
 
 logger = logging.getLogger(__name__)
 
@@ -28,11 +28,7 @@ class MessageResource(BaseResource):
             user_id, group_id, now, db
         )
 
-        # TODO: preferably we should cache this
-        sub_query = GroupQuery(per_page=5_000)
-        user_ids = self.env.db.get_user_ids_and_join_times_in_group(
-            group_id, sub_query, db
-        )
+        user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
         self.env.publisher.message(group_id, message, user_ids)
 
         return MessageResource.message_base_to_message(message)

@@ -2,7 +2,7 @@ import time
 
 import arrow
 
-from dinofw.rest.server.models import AbstractQuery
+from dinofw.rest.models import AbstractQuery
 from test.base import BaseTest
 from test.functional.base_db import BaseDatabaseTest
 

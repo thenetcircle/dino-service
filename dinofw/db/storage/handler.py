@@ -1,6 +1,6 @@
 from datetime import datetime as dt
 from time import time
-from typing import List, Optional, Dict
+from typing import List, Optional
 from uuid import uuid4 as uuid
 
 import pytz
@@ -15,11 +15,11 @@ from dinofw.db.storage.models import MessageModel
 from dinofw.db.storage.schemas import ActionLogBase
 from dinofw.db.storage.schemas import MessageBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
-from dinofw.rest.server.models import EditMessageQuery
-from dinofw.rest.server.models import CreateActionLogQuery
-from dinofw.rest.server.models import AdminQuery
-from dinofw.rest.server.models import MessageQuery
-from dinofw.rest.server.models import SendMessageQuery
+from dinofw.rest.models import EditMessageQuery
+from dinofw.rest.models import CreateActionLogQuery
+from dinofw.rest.models import AdminQuery
+from dinofw.rest.models import MessageQuery
+from dinofw.rest.models import SendMessageQuery
 
 import logging
 

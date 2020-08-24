@@ -1,19 +1,18 @@
 from abc import ABC
 from datetime import datetime as dt
-from typing import Optional, Dict, List
+from typing import Optional, Dict
 
 import pytz
 
-from dinofw.db.storage.schemas import MessageBase, ActionLogBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase, GroupBase
-from dinofw.rest.server.models import (
-    Group,
-    Message,
-    AbstractQuery,
-    UserGroupStats,
-    ActionLog,
-    GroupJoinTime, GroupLastRead,
-)
+from dinofw.db.storage.schemas import MessageBase, ActionLogBase
+from dinofw.rest.models import AbstractQuery
+from dinofw.rest.models import ActionLog
+from dinofw.rest.models import Group
+from dinofw.rest.models import GroupJoinTime
+from dinofw.rest.models import GroupLastRead
+from dinofw.rest.models import Message
+from dinofw.rest.models import UserGroupStats
 
 
 class BaseResource(ABC):

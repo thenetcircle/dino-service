@@ -1,14 +1,13 @@
-from dinofw.rest.server.groups import GroupResource
-from dinofw.rest.server.message import MessageResource
-from dinofw.rest.server.models import CreateActionLogQuery
-from dinofw.rest.server.models import CreateGroupQuery
-from dinofw.rest.server.models import Group
-from dinofw.rest.server.models import GroupUsers
-from dinofw.rest.server.models import MessageQuery
-from dinofw.rest.server.models import PaginationQuery
-from dinofw.rest.server.models import SendMessageQuery
+from dinofw.rest.groups import GroupResource
+from dinofw.rest.message import MessageResource
+from dinofw.rest.models import CreateActionLogQuery
+from dinofw.rest.models import CreateGroupQuery
+from dinofw.rest.models import Group
+from dinofw.rest.models import GroupUsers
+from dinofw.rest.models import MessageQuery
+from dinofw.rest.models import PaginationQuery
+from dinofw.rest.models import SendMessageQuery
 from test.base import async_test, BaseTest
-from test.mocks import FakeStorage
 
 
 class TestGroupResource(BaseTest):

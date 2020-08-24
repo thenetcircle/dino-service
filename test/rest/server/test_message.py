@@ -1,8 +1,8 @@
-from dinofw.rest.server.message import MessageResource
-from dinofw.rest.server.models import EditMessageQuery
-from dinofw.rest.server.models import Message
-from dinofw.rest.server.models import MessageQuery
-from dinofw.rest.server.models import SendMessageQuery
+from dinofw.rest.message import MessageResource
+from dinofw.rest.models import EditMessageQuery
+from dinofw.rest.models import Message
+from dinofw.rest.models import MessageQuery
+from dinofw.rest.models import SendMessageQuery
 from test.base import async_test, BaseTest
 
 

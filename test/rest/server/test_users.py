@@ -1,8 +1,7 @@
-from dinofw.rest.server.groups import GroupResource
-from dinofw.rest.server.models import GroupQuery, CreateGroupQuery, Group
-from dinofw.rest.server.users import UserResource
+from dinofw.rest.groups import GroupResource
+from dinofw.rest.models import GroupQuery, CreateGroupQuery, Group
+from dinofw.rest.users import UserResource
 from test.base import BaseTest, async_test
-from test.mocks import FakeEnv
 
 
 class TestUserResource(BaseTest):

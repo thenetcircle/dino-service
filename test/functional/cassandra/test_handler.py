@@ -1,12 +1,10 @@
 from unittest import TestCase
 
-from cassandra.cluster import Cluster
 from gnenv.environ import find_config
 from gnenv.environ import load_secrets_file
 from gnenv.environ import ConfigDict
 
-from dinofw.config import ConfigKeys
-from dinofw.rest.server.models import MessageQuery
+from dinofw.rest.models import MessageQuery
 from dinofw.db.storage.handler import CassandraHandler
 
 

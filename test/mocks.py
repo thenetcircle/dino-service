@@ -6,18 +6,18 @@ import pytz
 import arrow
 
 from dinofw.cache.redis import CacheRedis
-from dinofw.config import RedisKeys
 from dinofw.db.storage.schemas import MessageBase, ActionLogBase
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
-from dinofw.rest.server.models import (
+from dinofw.endpoint import IPublishHandler, IPublisher
+from dinofw.rest.models import (
     CreateGroupQuery,
     MessageQuery,
     EditMessageQuery,
     AbstractQuery, CreateActionLogQuery,
 )
-from dinofw.rest.server.models import GroupQuery
-from dinofw.rest.server.models import SendMessageQuery
+from dinofw.rest.models import GroupQuery
+from dinofw.rest.models import SendMessageQuery
 
 
 class FakeStorage:
@@ -297,9 +297,7 @@ class FakeDatabase:
             return list()
 
         for stat in self.stats[user_id]:
-            users = self.get_user_ids_and_join_times_in_group(
-                stat.group_id, sub_query, None
-            )
+            users = self.get_user_ids_and_join_time_in_group(stat.group_id, None)
 
             if count_users:
                 user_count = self.count_users_in_group(stat.group_id, None)
@@ -324,7 +322,7 @@ class FakeDatabase:
             return None, None, None
 
         group = self.groups[group_id]
-        users = self.get_user_ids_and_join_times_in_group(group_id, query, db)
+        users = self.get_user_ids_and_join_time_in_group(group_id, db)
         user_count = self.count_users_in_group(group_id, db)
 
         return group, users, user_count
@@ -410,9 +408,7 @@ class FakeDatabase:
 
         return last_reads
 
-    def get_user_ids_and_join_times_in_group(
-        self, group_id: str, query: GroupQuery, _, skip_cache: bool = False
-    ) -> Dict[int, float]:
+    def get_user_ids_and_join_time_in_group(self, group_id: str, _=None) -> Dict[int, float]:
         response = dict()
 
         for _, stats in self.stats.items():
@@ -420,9 +416,6 @@ class FakeDatabase:
                 if stat.group_id == group_id:
                     response[stat.user_id] = AbstractQuery.to_ts(stat.join_time)
                     break
-
-            if len(response) > query.per_page:
-                break
 
         return response  # noqa
 
@@ -439,11 +432,19 @@ class FakeDatabase:
         return None
 
 
-class FakePublisher:
+class MockPublisher(IPublisher):
+    def __init__(self):
+        self.stream = list()
+
+    def send(self, user_id: int, fields: dict) -> None:
+        self.stream.append(fields)
+
+
+class FakePublisherHandler(IPublishHandler):
     def __init__(self):
         self.sent_messages = dict()
 
-    def message(self, group_id, user_id, message, user_ids):
+    def message(self, group_id, message, user_ids):
         if group_id not in self.sent_messages:
             self.sent_messages[group_id] = list()
 
@@ -484,12 +485,12 @@ class FakeEnv:
         self.config = FakeEnv.Config()
         self.storage = FakeStorage(self)
         self.db = FakeDatabase()
-        self.publisher = FakePublisher()
+        self.publisher = FakePublisherHandler()
         self.cache = CacheRedis(self, host="mock")
 
-        from dinofw.rest.server.groups import GroupResource
-        from dinofw.rest.server.users import UserResource
-        from dinofw.rest.server.message import MessageResource
+        from dinofw.rest.groups import GroupResource
+        from dinofw.rest.users import UserResource
+        from dinofw.rest.message import MessageResource
 
         class RestResources:
             group: GroupResource

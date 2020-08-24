@@ -10,10 +10,10 @@ from dinofw.db.storage.schemas import MessageBase
 from dinofw.db.rdbms import models
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
-from dinofw.rest.server.models import CreateGroupQuery
-from dinofw.rest.server.models import GroupQuery
-from dinofw.rest.server.models import UpdateGroupQuery
-from dinofw.rest.server.models import UpdateUserGroupStats
+from dinofw.rest.models import CreateGroupQuery
+from dinofw.rest.models import GroupQuery
+from dinofw.rest.models import UpdateGroupQuery
+from dinofw.rest.models import UpdateUserGroupStats
 
 
 class RelationalHandler:

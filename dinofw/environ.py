@@ -319,9 +319,9 @@ def init_observer(gn_env: GNEnvironment) -> None:
 
 
 def init_rest(gn_env: GNEnvironment) -> None:
-    from dinofw.rest.server.groups import GroupResource
-    from dinofw.rest.server.users import UserResource
-    from dinofw.rest.server.message import MessageResource
+    from dinofw.rest.groups import GroupResource
+    from dinofw.rest.users import UserResource
+    from dinofw.rest.message import MessageResource
 
     class RestResources:
         group: GroupResource
@@ -345,7 +345,7 @@ def _get_pub_host_port_db(gn_env: GNEnvironment) -> (str, int, int):
 
 
 def init_producer(gn_env: GNEnvironment) -> None:
-    from dinofw.utils.publisher import Publisher
+    from dinofw.endpoint.publisher import Publisher
 
     gn_env.publisher = Publisher(gn_env)
 

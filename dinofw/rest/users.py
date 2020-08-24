@@ -4,12 +4,12 @@ from typing import List, Tuple, Any
 from sqlalchemy.orm import Session
 
 from dinofw.db.rdbms.schemas import GroupBase, UserGroupStatsBase
-from dinofw.rest.server.base import BaseResource
-from dinofw.rest.server.models import Group
-from dinofw.rest.server.models import GroupJoinTime
-from dinofw.rest.server.models import UpdateHighlightQuery
-from dinofw.rest.server.models import GroupQuery
-from dinofw.rest.server.models import UserStats
+from dinofw.rest.base import BaseResource
+from dinofw.rest.models import Group
+from dinofw.rest.models import GroupJoinTime
+from dinofw.rest.models import GroupQuery
+from dinofw.rest.models import UpdateHighlightQuery
+from dinofw.rest.models import UserStats
 
 logger = logging.getLogger(__name__)
 
