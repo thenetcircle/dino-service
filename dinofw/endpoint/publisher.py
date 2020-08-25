@@ -46,7 +46,6 @@ class MqttPublisher(IPublisher):
 class PublishHandler(IPublishHandler):
     def __init__(self, env):
         self.env = env
-        self.topic = self.env.config.get(ConfigKeys.TOPIC, domain=ConfigKeys.KAFKA)
         self.logger = logging.getLogger(__name__)
         self.publisher = MqttPublisher(env)
 
