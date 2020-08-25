@@ -70,13 +70,16 @@ class GroupResource(BaseResource):
         last_reads = self.env.db.get_last_reads_in_group(group_id, db)
 
         messages = [
-            GroupResource.message_base_to_message(message) for message in messages
+            GroupResource.message_base_to_message(message)
+            for message in messages
         ]
         action_log = [
-            GroupResource.action_log_base_to_action_log(log) for log in action_log
+            GroupResource.action_log_base_to_action_log(log)
+            for log in action_log
         ]
         last_reads = [
-            GroupResource.to_last_read(user_id, last_read) for user_id, last_read in last_reads.items()
+            GroupResource.to_last_read(user_id, last_read)
+            for user_id, last_read in last_reads.items()
         ]
 
         histories = Histories(
