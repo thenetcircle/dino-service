@@ -385,7 +385,9 @@ class RelationalHandler:
 
         last_read = UpdateUserGroupStats.to_dt(query.last_read_time, allow_none=True)
         delete_before = UpdateUserGroupStats.to_dt(query.delete_before, allow_none=True)
+        now = arrow.utcnow().datetime
 
+        # TODO: this should never be None; remove this instead and throw an exception
         if user_stats is None:
             user_stats = models.UserGroupStatsEntity(
                 group_id=group_id,
@@ -397,10 +399,13 @@ class RelationalHandler:
                 hide=query.hide or False,
                 join_time=last_read or self.long_ago,
                 pin=query.pin or False,
+                last_updated_time=now,
             )
 
         # only update if query has new values
         else:
+            user_stats.last_updated_time = now
+
             if last_read is not None:
                 user_stats.last_read = last_read
 
@@ -414,17 +419,7 @@ class RelationalHandler:
             if query.pin is not None:
                 user_stats.pin = query.pin
 
-        base = UserGroupStatsBase(
-            group_id=user_stats.group_id,
-            user_id=user_stats.user_id,
-            last_read=user_stats.last_read,
-            last_sent=user_stats.last_sent,
-            delete_before=user_stats.delete_before,
-            join_time=user_stats.join_time,
-            hide=user_stats.hide,
-            bookmark=user_stats.bookmark,
-            pin=user_stats.pin,
-        )
+        base = UserGroupStatsBase(**user_stats.__dict__)
 
         db.add(user_stats)
         db.commit()
@@ -506,6 +501,8 @@ class RelationalHandler:
         )
 
     def _create_user_stats(self, group_id: str, user_id: int, default_dt: dt) -> models.UserGroupStatsEntity:
+        now = arrow.utcnow().datetime
+
         return models.UserGroupStatsEntity(
             group_id=group_id,
             user_id=user_id,
@@ -513,6 +510,7 @@ class RelationalHandler:
             delete_before=default_dt,
             last_sent=default_dt,
             join_time=default_dt,
+            last_updated_time=now,
             hide=False,
             pin=False,
             highlight_time=self.long_ago,
