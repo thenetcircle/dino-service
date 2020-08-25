@@ -26,8 +26,8 @@ from dinofw.rest.models import UserGroupStats
 from dinofw.rest.models import UserStats
 
 logger = logging.getLogger(__name__)
-logging.getLogger("amqp").setLevel(logging.INFO)
-logging.getLogger("kafka.conn").setLevel(logging.INFO)
+logging.getLogger("cassandra").setLevel(logging.INFO)
+logging.getLogger("gmqtt").setLevel(logging.WARNING)
 
 
 def create_app():

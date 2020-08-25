@@ -1,21 +1,10 @@
-import os
 import logging
-import signal
+import os
 
 from gnenv import create_env
 from gnenv.environ import GNEnvironment
-import asyncio
 
 from dinofw.config import ConfigKeys
-
-from flask_socketio import emit as _flask_emit
-from flask_socketio import send as _flask_send
-from flask_socketio import join_room as _flask_join_room
-from flask_socketio import leave_room as _flask_leave_room
-from flask import request as _flask_request
-from flask import send_from_directory as _flask_send_from_directory
-from flask import render_template as _flask_render_template
-from flask import session as _flask_session
 
 logger = logging.getLogger(__name__)
 
@@ -93,48 +82,6 @@ def init_cassandra(gn_env: GNEnvironment):
     gn_env.storage.setup_tables()
 
 
-def init_auth_service(gn_env: GNEnvironment):
-    if len(gn_env.config) == 0 or gn_env.config.get(ConfigKeys.TESTING, False):
-        # assume we're testing
-        return
-
-    auth_engine = gn_env.config.get(ConfigKeys.AUTH_SERVICE, None)
-
-    if auth_engine is None:
-        raise RuntimeError("no auth service specified")
-
-    auth_type = auth_engine.get(ConfigKeys.TYPE, None)
-    if auth_type is None:
-        raise RuntimeError(
-            "no auth type specified, use one of [redis, nutcracker, allowall, denyall]"
-        )
-
-    if auth_type == "redis" or auth_type == "nutcracker":
-        from dinofw.auth.redis import AuthRedis
-
-        auth_host, auth_port = auth_engine.get(ConfigKeys.HOST), None
-        if ":" in auth_host:
-            auth_host, auth_port = auth_host.split(":", 1)
-
-        auth_db = auth_engine.get(ConfigKeys.DB, 0)
-        gn_env.auth = AuthRedis(host=auth_host, port=auth_port, db=auth_db, env=gn_env)
-
-    elif auth_type == "allowall":
-        from dinofw.auth.simple import AllowAllAuth
-
-        gn_env.auth = AllowAllAuth()
-
-    elif auth_type == "denyall":
-        from dinofw.auth.simple import DenyAllAuth
-
-        gn_env.auth = DenyAllAuth()
-
-    else:
-        raise RuntimeError(
-            f'unknown auth type "{auth_type}", use one of [redis, nutcracker, allowall, denyall]'
-        )
-
-
 def init_cache_service(gn_env: GNEnvironment):
     if len(gn_env.config) == 0 or gn_env.config.get(ConfigKeys.TESTING, False):
         # assume we're testing
@@ -177,20 +124,6 @@ def init_cache_service(gn_env: GNEnvironment):
         )
 
 
-def init_flask(gn_env: GNEnvironment):
-    # needs to be set later after socketio object has been created
-    gn_env.out_of_scope_emit = None
-
-    gn_env.emit = _flask_emit
-    gn_env.send = _flask_send
-    gn_env.join_room = _flask_join_room
-    gn_env.leave_room = _flask_leave_room
-    gn_env.render_template = _flask_render_template
-    gn_env.send_from_directory = _flask_send_from_directory
-    gn_env.session = _flask_session
-    gn_env.request = _flask_request
-
-
 def init_stats_service(gn_env: GNEnvironment) -> None:
     if len(gn_env.config) == 0 or gn_env.config.get(ConfigKeys.TESTING, False):
         # assume we're testing
@@ -220,104 +153,6 @@ def init_stats_service(gn_env: GNEnvironment) -> None:
         gn_env.stats.set("connections", 0)
 
 
-def init_response_formatter(gn_env: GNEnvironment):
-    if len(gn_env.config) == 0 or gn_env.config.get(ConfigKeys.TESTING, False):
-        # assume we're testing
-        return
-
-    def get_format_keys() -> list:
-        _def_keys = ["status_code", "data", "error"]
-
-        res_format = gn_env.config.get(ConfigKeys.RESPONSE_FORMAT, None)
-        if res_format is None:
-            logger.info("using default response format, no config specified")
-            return _def_keys
-
-        if type(res_format) != str:
-            logger.warning(
-                'configured response format is of type "%s", using default'
-                % str(type(res_format))
-            )
-            return _def_keys
-
-        if len(res_format.strip()) == 0:
-            logger.warning("configured response format is blank, using default")
-            return _def_keys
-
-        keys = res_format.split(",")
-        if len(keys) != 3:
-            logger.warning(
-                'configured response format not "<code>,<data>,<error>" but "%s", using default'
-                % res_format
-            )
-            return _def_keys
-
-        for i, key in enumerate(keys):
-            if len(key.strip()) == 0:
-                logger.warning(
-                    'response format key if index %s is blank in "%s", using default'
-                    % (str(i), keys)
-                )
-                return _def_keys
-        return keys
-
-    code_key, data_key, error_key = get_format_keys()
-
-    from dinofw.utils.formatter import SimpleResponseFormatter
-
-    gn_env.response_formatter = SimpleResponseFormatter(code_key, data_key, error_key)
-    logger.info("configured response formatting as %s" % str(gn_env.response_formatter))
-
-
-def init_request_validators(gn_env: GNEnvironment) -> None:
-    from yapsy.PluginManager import PluginManager
-
-    logging.getLogger("yapsy").setLevel(
-        gn_env.config.get(ConfigKeys.LOG_LEVEL, logging.INFO)
-    )
-
-    plugin_manager = PluginManager()
-    plugin_manager.setPluginPlaces(["dino/validation/events"])
-    plugin_manager.collectPlugins()
-
-    gn_env.event_validator_map = dict()
-    gn_env.event_validators = dict()
-
-    for pluginInfo in plugin_manager.getAllPlugins():
-        plugin_manager.activatePluginByName(pluginInfo.name)
-        gn_env.event_validators[pluginInfo.name] = pluginInfo.plugin_object
-
-    validation = gn_env.config.get(ConfigKeys.VALIDATION, None)
-    if validation is None:
-        return
-
-    for key in validation.keys():
-        if key not in gn_env.event_validator_map:
-            gn_env.event_validator_map[key] = list()
-        plugins = validation[key].copy()
-        validation[key] = dict()
-        for plugin_info in plugins:
-            plugin_name = plugin_info.get("name")
-            validation[key][plugin_name] = plugin_info
-            try:
-                gn_env.event_validator_map[key].append(
-                    gn_env.event_validators[plugin_name]
-                )
-            except KeyError:
-                raise KeyError('specified plugin "%s" does not exist' % key)
-
-    gn_env.config.set(ConfigKeys.VALIDATION, validation)
-
-    for pluginInfo in plugin_manager.getAllPlugins():
-        pluginInfo.plugin_object.setup(gn_env)
-
-
-def init_observer(gn_env: GNEnvironment) -> None:
-    from pymitter import EventEmitter
-
-    gn_env.observer = EventEmitter()
-
-
 def init_rest(gn_env: GNEnvironment) -> None:
     from dinofw.rest.groups import GroupResource
     from dinofw.rest.users import UserResource
@@ -345,63 +180,21 @@ def _get_pub_host_port_db(gn_env: GNEnvironment) -> (str, int, int):
 
 
 def init_producer(gn_env: GNEnvironment) -> None:
-    from dinofw.endpoint.publisher import Publisher
+    from dinofw.endpoint.publisher import PublishHandler
 
-    gn_env.publisher = Publisher(gn_env)
-
-
-def init_stream_reader(gn_env: GNEnvironment) -> None:
-    from dinofw.endpoint.stream import StreamReader
-
-    pub_host, pub_port, pub_db = _get_pub_host_port_db(gn_env)
-    gn_env.stream = StreamReader(gn_env, host=pub_host, port=pub_port, db=pub_db)
-
-
-async def shutdown_coroutines(the_signal, loop) -> None:
-    """Cleanup tasks tied to the service's shutdown."""
-
-    # logging.info(f"Received exit signal {the_signal.name}...")
-
-    tasks = [
-        t for t in asyncio.all_tasks()
-        if t is not asyncio.current_task()
-    ]
-
-    [task.cancel() for task in tasks]
-
-    await asyncio.gather(*tasks)
-    # loop.stop()
-
-
-async def init_signal_handlers(loop) -> None:
-    signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)
-
-    for s in signals:
-        loop.add_signal_handler(
-            sig=s,
-            callback=lambda ss=s: asyncio.create_task(shutdown_coroutines(s, loop))
-        )
+    gn_env.publisher = PublishHandler(gn_env)
 
 
 def initialize_env(dino_env):
     logging.basicConfig(level="DEBUG", format=ConfigKeys.DEFAULT_LOG_FORMAT)
 
-    init_flask(dino_env)
     init_logging(dino_env)
     init_database(dino_env)
     init_cassandra(dino_env)
-    init_auth_service(dino_env)
     init_cache_service(dino_env)
     init_stats_service(dino_env)
-    init_response_formatter(dino_env)
-    init_request_validators(dino_env)
-    init_observer(dino_env)
     init_rest(dino_env)
     init_producer(dino_env)
-    init_stream_reader(dino_env)
-
-    event_loop = asyncio.get_event_loop()
-    asyncio.ensure_future(init_signal_handlers(event_loop), loop=event_loop)
 
 
 ENV_KEY_ENVIRONMENT = "DINO_ENVIRONMENT"
