@@ -58,6 +58,8 @@ class GroupResource(BaseResource):
         )
 
     async def histories(self, group_id: str, user_id: int, query: MessageQuery, db: Session) -> Histories:
+        # TODO: clear the highlight time (if set) on the group for this user
+
         user_stats = self.env.db.get_user_stats_in_group(group_id, user_id, db)
 
         if user_stats.hide:

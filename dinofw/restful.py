@@ -195,18 +195,6 @@ async def update_highlight_time(
     return await environ.env.rest.user.update_highlight_time(group_id, user_id, query, db)
 
 
-@app.delete("/v1/groups/{group_id}/users/{user_id}/highlight")
-async def delete_highlight_time(
-        group_id: str,
-        user_id: int,
-        db: Session = Depends(get_db)
-) -> None:
-    """
-    update highlight time of a group for another user
-    """
-    return await environ.env.rest.user.delete_highlight_time(group_id, user_id, db)
-
-
 @app.put("/v1/groups/{group_id}/actions", response_model=List[ActionLog])
 async def create_action_logs(group_id: str, query: CreateActionLogQuery) -> None:
     """
