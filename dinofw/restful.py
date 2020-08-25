@@ -53,26 +53,6 @@ async def get_group_history_for_user(
     return await environ.env.rest.group.histories(group_id, user_id, query, db)
 
 
-@app.put("/v1/groups/{group_id}/messages")
-async def batch_update_messages_in_group(group_id: str, query: MessageQuery):
-    """
-    batch update messages in group
-
-    # TODO: remove? not needed?
-    """
-    return await environ.env.rest.message.update_messages(group_id, query)
-
-
-@app.delete("/v1/groups/{group_id}/messages")
-async def batch_delete_messages_in_group(group_id: str, query: MessageQuery):
-    """
-    batch delete messages in group
-
-    # TODO: remove? not needed?
-    """
-    return await environ.env.rest.message.delete_messages(group_id, query)
-
-
 @app.post("/v1/groups/{group_id}/users/{user_id}/send", response_model=Message)
 async def send_message_to_group(
     group_id: str, user_id: int, query: SendMessageQuery, db: Session = Depends(get_db)
@@ -154,24 +134,6 @@ async def create_a_new_group(
     create a group
     """
     return await environ.env.rest.group.create_new_group(user_id, query, db)
-
-
-@app.delete("/v1/users/{user_id}/groups/{group_id}")
-async def delete_one_group_for_user(user_id: int, group_id: str):
-    """
-    TODO: owner delete a group
-    """
-    # TODO: how would deletion work here for other users in the group?
-    return await environ.env.rest.group.delete_on_group_for_user(user_id, group_id)
-
-
-@app.delete("/v1/users/{user_id}/groups")
-async def delete_all_groups_for_user(user_id: int) -> Group:
-    """
-    TODO: batch delete user created group
-    """
-    # TODO: really delete all user's groups? what about other users in group?
-    return await environ.env.rest.groups.delete_all_groups_for_user(user_id)
 
 
 @app.put("/v1/groups/{group_id}/users/{user_id}/join")
@@ -351,4 +313,24 @@ async def batch_delete_messages_in_group_for_user(
 @app.post("/v1/groups", response_model=List[Group])
 async def search_for_groups(query: SearchQuery) -> List[Group]:
     return await environ.env.rest.group.search(query)
+"""
+
+
+"""
+@app.delete("/v1/users/{user_id}/groups/{group_id}")
+async def delete_one_group_for_user(user_id: int, group_id: str):
+    # TODO: owner delete a group
+    # TODO: this is just hiding right? use the update user group stats api instead
+    # TODO: how would deletion work here for other users in the group?
+    return await environ.env.rest.group.delete_on_group_for_user(user_id, group_id)
+"""
+
+
+"""
+@app.delete("/v1/users/{user_id}/groups")
+async def delete_all_groups_for_user(user_id: int) -> Group:
+    # TODO: batch delete user created group
+    # TODO: when would this ever be used?
+    # TODO: really delete all user's groups? what about other users in group?
+    return await environ.env.rest.groups.delete_all_groups_for_user(user_id)
 """
