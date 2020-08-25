@@ -78,7 +78,9 @@ async def send_message_to_group(
     group_id: str, user_id: int, query: SendMessageQuery, db: Session = Depends(get_db)
 ) -> List[Message]:
     """
-    user sends a message in a group
+    User sends a message in a group. This API should also be used for **1-to-1** conversations,
+    if the client knows the `group_id` for the **1-to-1** conversations; otherwise the
+    `POST /v1/users/{user_id}/send` API can be used to send a message and get the `group_id`.
     """
     return await environ.env.rest.message.send_message_to_group(group_id, user_id, query, db)
 
@@ -88,21 +90,21 @@ async def send_message_to_user(
     user_id: int, query: SendMessageQuery, db: Session = Depends(get_db)
 ) -> List[Message]:
     """
-    User sends a message in a 1-to-1 conversation. It is not always known on client side if a
-    1-to-1 group exists between two users, so this API can then be used; Dino will do a group
-    lookup and see if a group with group_type=1 exists for them, send a message to it and return
+    User sends a message in a **1-to-1** conversation. It is not always known on client side if a
+    **1-to-1** group exists between two users, so this API can then be used; Dino will do a group
+    lookup and see if a group with `group_type=1` exists for them, send a message to it and return
     the group_id.
 
-    If no group exists, Dino will create a new 1-to-1 group, send the message and return the
-    group_id.
+    If no group exists, Dino will create a __new__ **1-to-1** group, send the message and return the
+    `group_id`.
 
-    This API should NOT be used for EVERY 1-to-1 message. It should only be used if the client
+    This API should NOT be used for EVERY **1-to-1** message. It should only be used if the client
     doesn't know if a group exists for them or not. After this API has been called once, the client
-    should use the POST "/v1/groups/{group_id}/users/{user_id}/send" API for future messages as
+    should use the `POST /v1/groups/{group_id}/users/{user_id}/send` API for future messages as
     much as possible.
 
-    When listing recent history, the client will know the group_id for recent 1-to-1 conversations
-    (since the groups that are 1-to-1 have group_type=1), and should thus use the other send API.
+    When listing recent history, the client will know the group_id for recent **1-to-1** conversations
+    (since the groups that are **1-to-1** have `group_type=1`), and should thus use the other send API.
     """
     return await environ.env.rest.message.send_message_to_user(user_id, query, db)
 
