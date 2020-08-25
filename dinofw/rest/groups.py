@@ -191,9 +191,11 @@ class GroupResource(BaseResource):
 
         # shouldn't send this event to the guy who left, so get from db/cache after removing the leaver id
         user_ids_and_join_times = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
-        user_ids_in_group = user_ids_and_join_times.keys()
 
-        self.env.publisher.leave(group_id, user_ids_in_group, user_id, now_ts)
+        # if it's the last user we don't need to publish anything
+        if user_ids_and_join_times is not None:
+            user_ids_in_group = user_ids_and_join_times.keys()
+            self.env.publisher.leave(group_id, user_ids_in_group, user_id, now_ts)
 
     async def search(self, query: SearchQuery) -> List[Group]:
         return list()  # TODO: implement

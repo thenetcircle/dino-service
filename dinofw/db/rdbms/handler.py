@@ -91,14 +91,13 @@ class RelationalHandler:
             user_group_stats = UserGroupStatsBase(**user_group_stats_entity.__dict__)
 
             users_join_time = self.get_user_ids_and_join_time_in_group(group_entity.group_id, db)
-            user_ids = users_join_time.keys()
 
             if count_users:
                 user_count = self.count_users_in_group(group_entity.group_id, db)
             else:
                 user_count = 0
 
-            groups.append((group, user_group_stats, user_ids, user_count))
+            groups.append((group, user_group_stats, users_join_time, user_count))
 
         return groups
 
@@ -136,7 +135,8 @@ class RelationalHandler:
         db.commit()
 
     def get_last_reads_in_group(self, group_id: str, db: Session) -> Dict[int, float]:
-        user_ids = self.get_user_ids_in_group(group_id, db)
+        users = self.get_user_ids_and_join_time_in_group(group_id, db)
+        user_ids = list(users.keys())
         return self.get_last_read_in_group_for_users(group_id, user_ids, db)
 
     def get_last_read_in_group_for_users(self, group_id: str, user_ids: List[int], db: Session) -> Dict[int, float]:
@@ -189,7 +189,7 @@ class RelationalHandler:
     def delete_highlight_time(self, group_id: str, user_id: int, db: Session):
         self.update_highlight_time(group_id, user_id, self.long_ago, db)
 
-    def get_user_ids_and_join_time_in_group(self, group_id: str, db: Session):
+    def get_user_ids_and_join_time_in_group(self, group_id: str, db: Session) -> dict:
         users = self.env.cache.get_user_ids_and_join_time_in_group(group_id)
 
         if users is not None:

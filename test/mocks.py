@@ -316,7 +316,7 @@ class FakeDatabase:
         return groups
 
     def get_users_in_group(
-        self, group_id: str, query: GroupQuery, db
+        self, group_id: str, db
     ) -> (Optional[GroupBase], Optional[Dict[int, float]], Optional[int]):
         if group_id not in self.groups:
             return None, None, None
@@ -444,20 +444,20 @@ class FakePublisherHandler(IPublishHandler):
     def __init__(self):
         self.sent_messages = dict()
 
-    def message(self, group_id, message, user_ids):
+    def message(self, group_id: str, message: MessageBase, user_ids: List[int]) -> None:
         if group_id not in self.sent_messages:
             self.sent_messages[group_id] = list()
 
         self.sent_messages[group_id].append(message)
 
     def group_change(self, group_base: GroupBase, user_ids: List[int]) -> None:
-        pass  # TODO: implement
+        pass
 
-    def join(self, group_id: str, user_id: int) -> None:
-        pass  # TODO: implement
+    def join(self, group_id: str, user_ids: List[int], joiner_id: int, now: float) -> None:
+        pass
 
-    def leave(self, group_id: str, user_id: int) -> None:
-        pass  # TODO: implement
+    def leave(self, group_id: str, user_ids: List[int], leaver_id: int, now: float) -> None:
+        pass
 
 
 class FakeEnv:
