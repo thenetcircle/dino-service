@@ -26,10 +26,10 @@ class GroupEntity(env.Base):
     last_message_id = Column(String(36))
     last_message_overview = Column(String(512))
 
-    meta = Column(Integer)
-    weight = Column(Integer)
-    context = Column(String(512))
-    description = Column(String(256))
+    meta = Column(Integer, nullable=True)
+    weight = Column(Integer, nullable=True)
+    context = Column(String(512), nullable=True)
+    description = Column(String(256), nullable=True)
 
 
 class UserGroupStatsEntity(env.Base):

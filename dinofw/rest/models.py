@@ -65,6 +65,7 @@ class SearchQuery(PaginationQuery):
 class SendMessageQuery(AbstractQuery):
     message_payload: str
     message_type: str
+    receiver_id: Optional[int]
 
 
 class CreateGroupQuery(AbstractQuery):

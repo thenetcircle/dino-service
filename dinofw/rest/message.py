@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class MessageResource(BaseResource):
-    async def save_new_message(
+    async def send_message_to_group(
         self, group_id: str, user_id: int, query: SendMessageQuery, db: Session
     ) -> Message:
         message = self.env.storage.store_message(group_id, user_id, query)
@@ -32,6 +32,17 @@ class MessageResource(BaseResource):
         self.env.publisher.message(group_id, message, user_ids)
 
         return MessageResource.message_base_to_message(message)
+
+    async def send_message_to_user(
+        self, user_id: int, query: SendMessageQuery, db: Session
+    ) -> Message:
+        group_id = self.env.db.get_group_id_for_1to1(user_id, query.receiver_id, db)
+
+        if group_id is None:
+            group = self.env.db.create_group_for_1to1(user_id, query.receiver_id, db)
+            group_id = group.group_id
+
+        return await self.send_message_to_group(group_id, user_id, query, db)
 
     async def messages_in_group(
         self, group_id: str, query: MessageQuery

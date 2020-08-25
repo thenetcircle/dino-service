@@ -12,12 +12,12 @@ class TestMessageResource(BaseTest):
         self.resource = MessageResource(self.fake_env)
 
     @async_test
-    async def test_save_new_message(self):
+    async def test_send_message_to_group(self):
         query = SendMessageQuery(message_payload="a new message", message_type="text")
 
         self.assertNotIn(BaseTest.GROUP_ID, self.resource.env.publisher.sent_messages)
 
-        message = await self.resource.save_new_message(
+        message = await self.resource.send_message_to_group(
             group_id=BaseTest.GROUP_ID,
             user_id=BaseTest.USER_ID,
             query=query,
@@ -37,7 +37,7 @@ class TestMessageResource(BaseTest):
         self.assertIsNotNone(last_read)
         self.assertIsNotNone(join_time)
 
-        await self.resource.save_new_message(
+        await self.resource.send_message_to_group(
             group_id=BaseTest.GROUP_ID,
             user_id=BaseTest.USER_ID,
             query=query,
@@ -66,7 +66,7 @@ class TestMessageResource(BaseTest):
         )
         self.assertEqual(0, len(messages))
 
-        await self.resource.save_new_message(
+        await self.resource.send_message_to_group(
             group_id=BaseTest.GROUP_ID,
             user_id=BaseTest.USER_ID,
             query=send_query,
@@ -91,7 +91,7 @@ class TestMessageResource(BaseTest):
         )
         self.assertEqual(0, len(messages))
 
-        await self.resource.save_new_message(
+        await self.resource.send_message_to_group(
             group_id=BaseTest.GROUP_ID,
             user_id=BaseTest.USER_ID,
             query=send_query,
@@ -113,7 +113,7 @@ class TestMessageResource(BaseTest):
         edit_query = EditMessageQuery(message_payload=new_text,)
         message_query = MessageQuery(per_page=10,)
 
-        message = await self.resource.save_new_message(
+        message = await self.resource.send_message_to_group(
             group_id=BaseTest.GROUP_ID,
             user_id=BaseTest.USER_ID,
             query=send_query,

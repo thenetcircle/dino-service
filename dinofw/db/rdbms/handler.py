@@ -6,6 +6,7 @@ import arrow
 from sqlalchemy import literal
 from sqlalchemy.orm import Session
 
+from dinofw.config import GroupTypes
 from dinofw.db.storage.schemas import MessageBase
 from dinofw.db.rdbms import models
 from dinofw.db.rdbms.schemas import GroupBase
@@ -188,6 +189,41 @@ class RelationalHandler:
 
     def delete_highlight_time(self, group_id: str, user_id: int, db: Session):
         self.update_highlight_time(group_id, user_id, self.long_ago, db)
+
+    def get_group_id_for_1to1(self, user_a: int, user_b: int, db: Session) -> Optional[str]:
+        users = sorted([user_a, user_b])
+
+        group = (
+            db.query(
+                models.UserGroupStatsEntity
+            )
+            .join(
+                models.GroupEntity,
+                models.GroupEntity.group_id == models.UserGroupStatsEntity.group_id
+            )
+            .filter(
+                models.UserGroupStatsEntity.user_id.in_(users),
+                models.GroupEntity.group_type == GroupTypes.ONE_TO_ONE
+            )
+            .first()
+        )
+
+        if group is None:
+            return None
+
+        return group.group_id
+
+    def create_group_for_1to1(self, user_a: int, user_b: int, db: Session) -> GroupBase:
+        users = sorted([user_a, user_b])
+        group_name = ",".join([str(user_id) for user_id in users])
+
+        query = CreateGroupQuery(
+            group_name=group_name,
+            group_type=GroupTypes.ONE_TO_ONE,
+            users=users
+        )
+
+        return self.create_group(user_a, query, db)
 
     def get_user_ids_and_join_time_in_group(self, group_id: str, db: Session) -> dict:
         users = self.env.cache.get_user_ids_and_join_time_in_group(group_id)

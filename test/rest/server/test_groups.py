@@ -94,7 +94,7 @@ class TestGroupResource(BaseTest):
         await self.group.create_action_logs(group.group_id, log_query)
 
         # send message and get histories
-        await self.message.save_new_message(group.group_id, BaseTest.USER_ID, send_query, None)  # noqa
+        await self.message.send_message_to_group(group.group_id, BaseTest.USER_ID, send_query, None)  # noqa
         histories = await self.group.histories(group.group_id, BaseTest.USER_ID, message_query, db=None)  # noqa
 
         # one join event and one message
@@ -102,7 +102,7 @@ class TestGroupResource(BaseTest):
         self.assertEqual(1, len(histories.action_logs))
 
         # send another message
-        await self.message.save_new_message(group.group_id, BaseTest.USER_ID, send_query, None)  # noqa
+        await self.message.send_message_to_group(group.group_id, BaseTest.USER_ID, send_query, None)  # noqa
         histories = await self.group.histories(group.group_id, BaseTest.USER_ID, message_query, db=None)  # noqa
 
         # now we should have two messages but still only one join event
@@ -123,13 +123,13 @@ class TestGroupResource(BaseTest):
         self.assertEqual(0, stats.unread_amount)
 
         # send a message, should have 0 unread since we sent it
-        await self.message.save_new_message(group.group_id, BaseTest.USER_ID, send_query, None)  # noqa
+        await self.message.send_message_to_group(group.group_id, BaseTest.USER_ID, send_query, None)  # noqa
         stats = await self.group.get_user_group_stats(group.group_id, BaseTest.USER_ID, None)  # noqa
         self.assertEqual(1, stats.message_amount)
         self.assertEqual(0, stats.unread_amount)
 
         # another user sends a message, should have 1 unread now
-        await self.message.save_new_message(group.group_id, BaseTest.OTHER_USER_ID, send_query, None)  # noqa
+        await self.message.send_message_to_group(group.group_id, BaseTest.OTHER_USER_ID, send_query, None)  # noqa
         stats = await self.group.get_user_group_stats(group.group_id, BaseTest.USER_ID, None)  # noqa
         self.assertEqual(2, stats.message_amount)
         self.assertEqual(1, stats.unread_amount)
