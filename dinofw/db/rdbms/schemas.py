@@ -37,6 +37,7 @@ class UserGroupStatsBase(BaseModel):
     hide: bool
     pin: bool
     bookmark: bool
+    rating: Optional[int]
 
 
 class Group(GroupBase):

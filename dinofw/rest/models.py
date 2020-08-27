@@ -159,9 +159,10 @@ class UserGroupStats(BaseModel):
     delete_before: float
     highlight_time: Optional[float]
 
-    hide: bool
-    pin: bool
-    bookmark: bool
+    hide: Optional[bool]
+    pin: Optional[bool]
+    bookmark: Optional[bool]
+    rating: Optional[int]
 
 
 class ActionLog(BaseModel):
@@ -193,8 +194,9 @@ class Group(BaseModel):
     last_message_time: float
 
     highlight_time: Optional[float]
-    pin: Optional[bool]
-    bookmark: Optional[bool]
+    pin: bool
+    bookmark: bool
+    rating: Optional[int]
 
 
 class Histories(BaseModel):
