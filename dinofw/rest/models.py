@@ -194,6 +194,7 @@ class Group(BaseModel):
     last_message_time: float
 
     # personal fields, unique to every user
+    last_updated_time: float
     last_read: float
     highlight_time: Optional[float]
     pin: bool

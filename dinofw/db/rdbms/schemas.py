@@ -33,6 +33,7 @@ class UserGroupStatsBase(BaseModel):
     delete_before: datetime
     join_time: datetime
     highlight_time: Optional[datetime]
+    last_updated_time: datetime
 
     hide: bool
     pin: bool
