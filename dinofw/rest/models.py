@@ -194,12 +194,20 @@ class Group(BaseModel):
     last_message_time: float
 
     # personal fields, unique to every user
+    unread_count: int
     last_updated_time: float
     last_read: float
     highlight_time: Optional[float]
     pin: bool
     bookmark: bool
     rating: Optional[int]
+
+
+class UserGroup(BaseModel):
+    group: Group
+    stats: UserGroupStats
+    unread_count: int
+    user_count: int
 
 
 class Histories(BaseModel):

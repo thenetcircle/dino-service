@@ -77,16 +77,6 @@ class CacheRedis(ICache):
 
         self.listen_host = socket.gethostname().split(".")[0]
 
-    def increase_unread_in_group(self, group_id: str):
-        key = RedisKeys.unread_in_group(group_id)
-        users = self.redis.hgetall(key)
-
-        # TODO: use multiexec
-        for user_id, unread in users.items():
-            user_id = str(user_id, "utf-8")
-            unread = int(str(unread, "utf-8"))
-            self.redis.hset(key, user_id, unread + 1)
-
     def get_last_read_in_group_for_user(self, group_id: str, user_id: int) -> Optional[float]:
         key = RedisKeys.last_read_time(group_id)
         last_read = self.redis.hget(key, user_id)
@@ -103,6 +93,15 @@ class CacheRedis(ICache):
     def remove_last_read_in_group_for_user(self, group_id: str, user_id: int) -> None:
         key = RedisKeys.last_read_time(group_id)
         self.redis.hdel(key, user_id)
+
+    def increase_unread_in_group_for(self, group_id: str, user_ids: List[int]) -> None:
+        key = RedisKeys.unread_in_group(group_id)
+        p = self.redis.pipeline()
+
+        for user_id in user_ids:
+            p.hincrby(key, user_id, 1)
+
+        p.execute()
 
     def get_unread_in_group(self, group_id: str, user_id: int) -> Optional[int]:
         key = RedisKeys.unread_in_group(group_id)

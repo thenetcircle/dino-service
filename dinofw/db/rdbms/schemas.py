@@ -53,3 +53,11 @@ class UserGroupStats(UserGroupStatsBase):
 
     class Config:
         orm_mode = True
+
+
+class UserGroupBase(BaseModel):
+    group: GroupBase
+    user_stats: UserGroupStatsBase
+    user_join_times: dict
+    user_count: int
+    unread_count: int

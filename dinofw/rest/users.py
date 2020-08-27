@@ -30,21 +30,23 @@ class UserResource(BaseResource):
             last_read < last_message_time;
         """
 
-        groups_stats_and_users = self.env.db.get_groups_for_user(user_id, query, db)
+        user_groups = self.env.db.get_groups_for_user(user_id, query, db)
         groups = list()
 
-        for group, user_group_stats, users, user_count in groups_stats_and_users:
-            group_dict = group.dict()
+        for user_group in user_groups:
+            group_dict = user_group.group.dict()
+            user_group_stats = user_group.user_stats
 
             user_joins = [
                 GroupJoinTime(user_id=one_user_id, join_time=join_time)
-                for one_user_id, join_time in users.items()
+                for one_user_id, join_time in user_group.user_join_times.items()
             ]
 
             group_dict["users"] = user_joins
-            group_dict["user_count"] = user_count
+            group_dict["user_count"] = user_group.user_count
             group_dict["pin"] = user_group_stats.pin
             group_dict["bookmark"] = user_group_stats.bookmark
+            group_dict["unread_count"] = user_group_stats.unread_count
 
             group_dict["last_read"] = GroupQuery.to_ts(user_group_stats.last_read)
             group_dict["created_at"] = GroupQuery.to_ts(group_dict["created_at"])
