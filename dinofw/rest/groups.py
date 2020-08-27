@@ -58,6 +58,8 @@ class GroupResource(BaseResource):
         )
 
     async def histories(self, group_id: str, user_id: int, query: MessageQuery, db: Session) -> Histories:
+        # TODO: clear the highlight time (if set) on the group for this user
+
         user_stats = self.env.db.get_user_stats_in_group(group_id, user_id, db)
 
         if user_stats.hide:
@@ -68,13 +70,16 @@ class GroupResource(BaseResource):
         last_reads = self.env.db.get_last_reads_in_group(group_id, db)
 
         messages = [
-            GroupResource.message_base_to_message(message) for message in messages
+            GroupResource.message_base_to_message(message)
+            for message in messages
         ]
         action_log = [
-            GroupResource.action_log_base_to_action_log(log) for log in action_log
+            GroupResource.action_log_base_to_action_log(log)
+            for log in action_log
         ]
         last_reads = [
-            GroupResource.to_last_read(user_id, last_read) for user_id, last_read in last_reads.items()
+            GroupResource.to_last_read(user_id, last_read)
+            for user_id, last_read in last_reads.items()
         ]
 
         histories = Histories(
@@ -191,9 +196,11 @@ class GroupResource(BaseResource):
 
         # shouldn't send this event to the guy who left, so get from db/cache after removing the leaver id
         user_ids_and_join_times = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
-        user_ids_in_group = user_ids_and_join_times.keys()
 
-        self.env.publisher.leave(group_id, user_ids_in_group, user_id, now_ts)
+        # if it's the last user we don't need to publish anything
+        if user_ids_and_join_times is not None:
+            user_ids_in_group = user_ids_and_join_times.keys()
+            self.env.publisher.leave(group_id, user_ids_in_group, user_id, now_ts)
 
     async def search(self, query: SearchQuery) -> List[Group]:
         return list()  # TODO: implement

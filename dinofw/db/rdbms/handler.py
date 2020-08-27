@@ -6,6 +6,7 @@ import arrow
 from sqlalchemy import literal
 from sqlalchemy.orm import Session
 
+from dinofw.config import GroupTypes
 from dinofw.db.storage.schemas import MessageBase
 from dinofw.db.rdbms import models
 from dinofw.db.rdbms.schemas import GroupBase
@@ -91,14 +92,13 @@ class RelationalHandler:
             user_group_stats = UserGroupStatsBase(**user_group_stats_entity.__dict__)
 
             users_join_time = self.get_user_ids_and_join_time_in_group(group_entity.group_id, db)
-            user_ids = users_join_time.keys()
 
             if count_users:
                 user_count = self.count_users_in_group(group_entity.group_id, db)
             else:
                 user_count = 0
 
-            groups.append((group, user_group_stats, user_ids, user_count))
+            groups.append((group, user_group_stats, users_join_time, user_count))
 
         return groups
 
@@ -136,7 +136,8 @@ class RelationalHandler:
         db.commit()
 
     def get_last_reads_in_group(self, group_id: str, db: Session) -> Dict[int, float]:
-        user_ids = self.get_user_ids_in_group(group_id, db)
+        users = self.get_user_ids_and_join_time_in_group(group_id, db)
+        user_ids = list(users.keys())
         return self.get_last_read_in_group_for_users(group_id, user_ids, db)
 
     def get_last_read_in_group_for_users(self, group_id: str, user_ids: List[int], db: Session) -> Dict[int, float]:
@@ -189,7 +190,42 @@ class RelationalHandler:
     def delete_highlight_time(self, group_id: str, user_id: int, db: Session):
         self.update_highlight_time(group_id, user_id, self.long_ago, db)
 
-    def get_user_ids_and_join_time_in_group(self, group_id: str, db: Session):
+    def get_group_id_for_1to1(self, user_a: int, user_b: int, db: Session) -> Optional[str]:
+        users = sorted([user_a, user_b])
+
+        group = (
+            db.query(
+                models.UserGroupStatsEntity
+            )
+            .join(
+                models.GroupEntity,
+                models.GroupEntity.group_id == models.UserGroupStatsEntity.group_id
+            )
+            .filter(
+                models.UserGroupStatsEntity.user_id.in_(users),
+                models.GroupEntity.group_type == GroupTypes.ONE_TO_ONE
+            )
+            .first()
+        )
+
+        if group is None:
+            return None
+
+        return group.group_id
+
+    def create_group_for_1to1(self, user_a: int, user_b: int, db: Session) -> GroupBase:
+        users = sorted([user_a, user_b])
+        group_name = ",".join([str(user_id) for user_id in users])
+
+        query = CreateGroupQuery(
+            group_name=group_name,
+            group_type=GroupTypes.ONE_TO_ONE,
+            users=users
+        )
+
+        return self.create_group(user_a, query, db)
+
+    def get_user_ids_and_join_time_in_group(self, group_id: str, db: Session) -> dict:
         users = self.env.cache.get_user_ids_and_join_time_in_group(group_id)
 
         if users is not None:
@@ -349,7 +385,9 @@ class RelationalHandler:
 
         last_read = UpdateUserGroupStats.to_dt(query.last_read_time, allow_none=True)
         delete_before = UpdateUserGroupStats.to_dt(query.delete_before, allow_none=True)
+        now = arrow.utcnow().datetime
 
+        # TODO: this should never be None; remove this instead and throw an exception
         if user_stats is None:
             user_stats = models.UserGroupStatsEntity(
                 group_id=group_id,
@@ -361,10 +399,13 @@ class RelationalHandler:
                 hide=query.hide or False,
                 join_time=last_read or self.long_ago,
                 pin=query.pin or False,
+                last_updated_time=now,
             )
 
         # only update if query has new values
         else:
+            user_stats.last_updated_time = now
+
             if last_read is not None:
                 user_stats.last_read = last_read
 
@@ -378,17 +419,7 @@ class RelationalHandler:
             if query.pin is not None:
                 user_stats.pin = query.pin
 
-        base = UserGroupStatsBase(
-            group_id=user_stats.group_id,
-            user_id=user_stats.user_id,
-            last_read=user_stats.last_read,
-            last_sent=user_stats.last_sent,
-            delete_before=user_stats.delete_before,
-            join_time=user_stats.join_time,
-            hide=user_stats.hide,
-            bookmark=user_stats.bookmark,
-            pin=user_stats.pin,
-        )
+        base = UserGroupStatsBase(**user_stats.__dict__)
 
         db.add(user_stats)
         db.commit()
@@ -470,6 +501,8 @@ class RelationalHandler:
         )
 
     def _create_user_stats(self, group_id: str, user_id: int, default_dt: dt) -> models.UserGroupStatsEntity:
+        now = arrow.utcnow().datetime
+
         return models.UserGroupStatsEntity(
             group_id=group_id,
             user_id=user_id,
@@ -477,6 +510,7 @@ class RelationalHandler:
             delete_before=default_dt,
             last_sent=default_dt,
             join_time=default_dt,
+            last_updated_time=now,
             hide=False,
             pin=False,
             highlight_time=self.long_ago,

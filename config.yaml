@@ -20,10 +20,6 @@ coordinator:
 stats:
     type: "mock"
 
-kafka:
-    topic: "$DINO_KAFKA_TOPIC"
-    host: "$DINO_KAFKA_HOSTS"
-
 mqtt:
     host: "$DINO_MQTT_HOST"
     port: "$DINO_MQTT_PORT"

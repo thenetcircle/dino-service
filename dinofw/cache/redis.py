@@ -144,8 +144,9 @@ class CacheRedis(ICache):
         key = RedisKeys.user_in_group(group_id)
         self.redis.delete(key)
 
-        self.add_user_ids_and_join_time_in_group(group_id, users)
-        self.redis.expire(key, ONE_HOUR)  # TODO: maybe expire quicker
+        if len(users):
+            self.add_user_ids_and_join_time_in_group(group_id, users)
+            self.redis.expire(key, ONE_HOUR)  # TODO: maybe expire quicker
 
     def add_user_ids_and_join_time_in_group(self, group_id: str, users: Dict[int, float]) -> None:
         key = RedisKeys.user_in_group(group_id)

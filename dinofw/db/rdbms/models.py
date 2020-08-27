@@ -26,10 +26,10 @@ class GroupEntity(env.Base):
     last_message_id = Column(String(36))
     last_message_overview = Column(String(512))
 
-    meta = Column(Integer)
-    weight = Column(Integer)
-    context = Column(String(512))
-    description = Column(String(256))
+    meta = Column(Integer, nullable=True)
+    weight = Column(Integer, nullable=True)
+    context = Column(String(512), nullable=True)
+    description = Column(String(256), nullable=True)
 
 
 class UserGroupStatsEntity(env.Base):
@@ -45,8 +45,11 @@ class UserGroupStatsEntity(env.Base):
     delete_before = Column(DateTime(timezone=True))
     join_time = Column(DateTime(timezone=True))
 
+    # used to sync changes to apps
+    last_updated_time = Column(DateTime(timezone=True), nullable=False)
+
     # a user can highlight a 1-to-1 group for ANOTHER user
-    highlight_time = Column(DateTime(timezone=True), nullable=False, index=True)
+    highlight_time = Column(DateTime(timezone=True), nullable=False)
 
     # a user can pin groups he/she wants to keep on top, and will be sorted higher than last_message_time
     pin = Column(Boolean, default=False, nullable=False, index=True)

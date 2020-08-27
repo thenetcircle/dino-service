@@ -65,6 +65,7 @@ class SearchQuery(PaginationQuery):
 class SendMessageQuery(AbstractQuery):
     message_payload: str
     message_type: str
+    receiver_id: Optional[int]
 
 
 class CreateGroupQuery(AbstractQuery):
@@ -103,21 +104,6 @@ class UpdateUserGroupStats(AbstractQuery):
     hide: Optional[bool]
     bookmark: Optional[bool]
     pin: Optional[bool]
-
-
-class Message(BaseModel):
-    group_id: str
-    created_at: float
-    user_id: int
-    message_id: str
-    message_payload: str
-
-    status: Optional[int]
-    message_type: Optional[str]
-    updated_at: Optional[float]
-    removed_at: Optional[float]
-    removed_by_user: Optional[int]
-    last_action_log_id: Optional[str]
 
 
 class GroupJoinTime(BaseModel):
@@ -175,11 +161,25 @@ class ActionLog(BaseModel):
     message_id: Optional[str]
 
 
+class Message(BaseModel):
+    group_id: str
+    created_at: float
+    user_id: int
+    message_id: str
+    message_payload: str
+
+    status: Optional[int]
+    message_type: Optional[str]
+    updated_at: Optional[float]
+    removed_at: Optional[float]
+    removed_by_user: Optional[int]
+    last_action_log_id: Optional[str]
+
+
 class Group(BaseModel):
     group_id: str
     users: List[GroupJoinTime]
     user_count: int
-    last_read: float
     name: str
     description: Optional[str]
     status: Optional[int]
@@ -193,6 +193,8 @@ class Group(BaseModel):
     last_message_overview: Optional[str]
     last_message_time: float
 
+    # personal fields, unique to every user
+    last_read: float
     highlight_time: Optional[float]
     pin: bool
     bookmark: bool

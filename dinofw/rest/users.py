@@ -44,7 +44,7 @@ class UserResource(BaseResource):
             group_dict["users"] = user_joins
             group_dict["user_count"] = user_count
             group_dict["pin"] = user_group_stats.pin
-            group_dict["bookmark"] = user_group_stats.bookmarks
+            group_dict["bookmark"] = user_group_stats.bookmark
 
             group_dict["last_read"] = GroupQuery.to_ts(user_group_stats.last_read)
             group_dict["created_at"] = GroupQuery.to_ts(group_dict["created_at"])
