@@ -62,3 +62,10 @@ class UserGroupStatsEntity(env.Base):
 
     # a user can rate conversations
     rating = Column(Integer, nullable=True)
+
+
+class UserStatsEntity(env.Base):
+    __tablename__ = "user_stats"
+
+    user_id = Column(Integer, primary_key=True)
+    status = Column(Integer, nullable=False)

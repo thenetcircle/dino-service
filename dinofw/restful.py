@@ -382,6 +382,28 @@ async def get_user_statistics(user_id: int, db: Session = Depends(get_db)) -> Us
         log_error_and_raise(sys.exc_info(), e)
 
 
+@app.put("/v1/users/{user_id}/messages", response_model=List[Message])
+async def update_user_message_status(
+        user_id: int,
+        query: MessageQuery,
+        db: Session = Depends(get_db)
+) -> None:
+    """
+    Update user message status, e.g. because the user got blocked, is a bot,
+    was force fake-checked, etc.
+
+    * TODO: this is not easy to do in cassandra since created_at comes before user_id in the partition keys
+    * TODO: see if we can iterate over all to find the user's messages then batch update
+
+    **Potential error codes in response:**
+    * `250`: if an unknown error occurred.
+    """
+    try:
+        return await environ.env.rest.message.update_user_message_status(user_id, query, db)
+    except Exception as e:
+        log_error_and_raise(sys.exc_info(), e)
+
+
 @app.on_event("startup")
 async def startup():
     await environ.env.publisher.setup()
@@ -458,21 +480,6 @@ async def get_messages_for_user_in_group(
     return await environ.env.rest.message.messages_for_user(group_id, user_id, query)
 """
 
-
-"""
-# not useful; should not specify group_id when batch updating because of fakecheck etc.
-
-@app.put("/v1/groups/{group_id}/users/{user_id}/messages", response_model=List[Message])
-async def batch_update_messages_in_group_for_user(
-    group_id: str, user_id: int, query: MessageQuery
-) -> List[Message]:
-    # TODO: batch update user messages in a group (blocked, spammer, forcefakechecked)
-    # TODO: this is not easy to do in cassandra since created_at comes before user_id in the partition keys
-    # TODO: see if we can iterate over all to find the user's messages then batch update
-    return await environ.env.rest.message.update_messages_for_user_in_group(
-        group_id, user_id, query
-    )
-"""
 
 """
 # should not specify group, should be in all groups

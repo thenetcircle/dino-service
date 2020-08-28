@@ -13,7 +13,7 @@ from dinofw.db.rdbms import models
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.rdbms.schemas import UserGroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
-from dinofw.rest.models import CreateGroupQuery
+from dinofw.rest.models import CreateGroupQuery, MessageQuery
 from dinofw.rest.models import GroupQuery
 from dinofw.rest.models import UpdateGroupQuery
 from dinofw.rest.models import UpdateUserGroupStats
@@ -503,6 +503,30 @@ class RelationalHandler:
         )
 
         return user_count
+
+    def update_user_message_status(self, user_id: int, query: MessageQuery, db: Session) -> None:
+        user_stats = (
+            db.query(models.UserStatsEntity)
+            .filter(
+                models.UserGroupStatsEntity.user_id == user_id,
+            )
+            .first()
+        )
+
+        if user_stats is None:
+            user_stats = models.UserStatsEntity(
+                user_id=user_id,
+                status=query.status
+            )
+        else:
+            user_stats.status = query.status
+
+        db.add(user_stats)
+        db.commit()
+
+        self.env.cache.update_user_message_status(user_id, query.status)
+
+        # TODO: need to publish a message to all online users this user has contacted before...
 
     def _get_user_stats_for(self, group_id: str, user_id: int, db: Session):
         return (
