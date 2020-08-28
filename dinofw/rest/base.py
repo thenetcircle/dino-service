@@ -6,7 +6,7 @@ import pytz
 
 from dinofw.db.rdbms.schemas import UserGroupStatsBase, GroupBase
 from dinofw.db.storage.schemas import MessageBase, ActionLogBase
-from dinofw.rest.models import AbstractQuery
+from dinofw.rest.models import AbstractQuery, UserGroup
 from dinofw.rest.models import ActionLog
 from dinofw.rest.models import Group
 from dinofw.rest.models import GroupJoinTime
@@ -41,7 +41,6 @@ class BaseResource(ABC):
     def group_base_to_group(
         group: GroupBase,
         users: Dict[int, float],
-        last_read: Optional[dt],
         user_count: int,
     ) -> Group:
         group_dict = group.dict()
@@ -62,11 +61,36 @@ class BaseResource(ABC):
         group_dict["last_message_time"] = AbstractQuery.to_ts(
             group_dict["last_message_time"]
         )
-        group_dict["last_read"] = AbstractQuery.to_ts(last_read)
         group_dict["users"] = users
         group_dict["user_count"] = user_count
 
         return Group(**group_dict)
+
+    @staticmethod
+    def group_base_to_user_group(
+        group_base: GroupBase,
+        stats_base: UserGroupStatsBase,
+        users: Dict[int, float],
+        user_count: int,
+        unread_count: int,
+    ) -> UserGroup:
+        group = BaseResource.group_base_to_group(group_base, users, user_count)
+
+        stats_dict = stats_base.__dict__
+        stats_dict["unread_amount"] = unread_count
+
+        stats_dict["last_read_time"] = AbstractQuery.to_ts(stats_base.last_read)
+        stats_dict["last_sent_time"] = AbstractQuery.to_ts(stats_base.last_sent)
+        stats_dict["delete_before"] = AbstractQuery.to_ts(stats_base.delete_before)
+        stats_dict["highlight_time"] = AbstractQuery.to_ts(stats_base.highlight_time, allow_none=True)
+        stats_dict["last_updated_time"] = AbstractQuery.to_ts(stats_base.last_updated_time)
+
+        stats = UserGroupStats(**stats_dict)
+
+        return UserGroup(
+            group=group,
+            stats=stats,
+        )
 
     @staticmethod
     def user_group_stats_base_to_user_group_stats(user_stats: UserGroupStatsBase):

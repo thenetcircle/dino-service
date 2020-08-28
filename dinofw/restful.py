@@ -1,12 +1,13 @@
 import logging
 from typing import List
 
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 from fastapi import FastAPI
 from sqlalchemy.orm import Session
 
 from dinofw import environ
-from dinofw.rest.models import ActionLog
+from dinofw.config import ErrorCodes
+from dinofw.rest.models import ActionLog, UserGroup
 from dinofw.rest.models import CreateActionLogQuery
 from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import Group
@@ -21,6 +22,7 @@ from dinofw.rest.models import UpdateHighlightQuery
 from dinofw.rest.models import UpdateUserGroupStats
 from dinofw.rest.models import UserGroupStats
 from dinofw.rest.models import UserStats
+from dinofw.utils.exceptions import UserNotInGroupException
 
 logger = logging.getLogger(__name__)
 logging.getLogger("cassandra").setLevel(logging.INFO)
@@ -116,7 +118,7 @@ async def edit_group_information(group_id, query: UpdateGroupQuery, db: Session 
     return await environ.env.rest.group.update_group_information(group_id, query, db)
 
 
-@app.post("/v1/users/{user_id}/groups", response_model=List[Group])
+@app.post("/v1/users/{user_id}/groups", response_model=List[UserGroup])
 async def get_groups_for_user(
     user_id: int, query: GroupQuery, db: Session = Depends(get_db)
 ) -> List[Group]:
@@ -197,9 +199,15 @@ async def update_user_statistics_in_group(
     """
     update user statistic in group
     """
-    return await environ.env.rest.group.update_user_group_stats(
-        group_id, user_id, query, db
-    )
+    try:
+        return await environ.env.rest.group.update_user_group_stats(
+            group_id, user_id, query, db
+        )
+    except UserNotInGroupException as e:
+        raise HTTPException(
+            status_code=ErrorCodes.USER_NOT_IN_GROUP,
+            detail=e.message
+        )
 
 
 @app.get("/v1/userstats/{user_id}", response_model=UserStats)

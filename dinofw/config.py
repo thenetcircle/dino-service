@@ -91,3 +91,4 @@ class ConfigKeys:
 class ErrorCodes(object):
     OK = 200
     UNKNOWN_ERROR = 250
+    USER_NOT_IN_GROUP = 600

@@ -138,10 +138,9 @@ class UserStats(BaseModel):
 class UserGroupStats(BaseModel):
     group_id: str
     user_id: int
-    message_amount: int
     unread_amount: int
     last_read_time: float
-    last_send_time: float
+    last_sent_time: float
     delete_before: float
     highlight_time: Optional[float]
 
@@ -192,22 +191,12 @@ class Group(BaseModel):
     weight: Optional[str]
     last_message_overview: Optional[str]
     last_message_time: float
-
-    # personal fields, unique to every user
-    unread_count: int
-    last_updated_time: float
-    last_read: float
-    highlight_time: Optional[float]
-    pin: bool
-    bookmark: bool
-    rating: Optional[int]
+    user_count: int
 
 
 class UserGroup(BaseModel):
     group: Group
     stats: UserGroupStats
-    unread_count: int
-    user_count: int
 
 
 class Histories(BaseModel):

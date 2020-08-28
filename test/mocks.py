@@ -7,14 +7,14 @@ import arrow
 
 from dinofw.cache.redis import CacheRedis
 from dinofw.db.storage.schemas import MessageBase, ActionLogBase
-from dinofw.db.rdbms.schemas import GroupBase
+from dinofw.db.rdbms.schemas import GroupBase, UserGroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.endpoint import IPublishHandler, IPublisher
 from dinofw.rest.models import (
     CreateGroupQuery,
     MessageQuery,
     EditMessageQuery,
-    AbstractQuery, CreateActionLogQuery,
+    AbstractQuery, CreateActionLogQuery, UserGroup,
 )
 from dinofw.rest.models import GroupQuery
 from dinofw.rest.models import SendMessageQuery
@@ -288,10 +288,9 @@ class FakeDatabase:
         return group
 
     def get_groups_for_user(
-        self, user_id: int, query: GroupQuery, _, count_users: bool = True
-    ) -> List[Tuple[GroupBase, UserGroupStatsBase, Dict[int, float], int]]:
+        self, user_id: int, query: GroupQuery, _, count_users: bool = True, count_unread: bool = True,
+    ) -> List[UserGroupBase]:
         groups = list()
-        sub_query = GroupQuery(per_page=50)
 
         if user_id not in self.stats:
             return list()
@@ -308,7 +307,18 @@ class FakeDatabase:
                 continue
 
             group = self.groups[stat.group_id]
-            groups.append((group, stat, users, user_count))
+
+            user_join_times: dict
+            user_count: int
+            unread_count: int
+
+            groups.append(UserGroupBase(
+                group=group,
+                user_stats=stat,
+                user_count=user_count,
+                unread_count=0,  # TODO: get from storage mock
+                user_join_times=users,
+            ))
 
             if len(groups) > query.per_page:
                 break
@@ -359,6 +369,7 @@ class FakeDatabase:
             last_sent=created_at,
             delete_before=self.long_ago,
             join_time=created_at,
+            last_updated_time=created_at,
             hide=False,
             pin=False,
             bookmark=False,

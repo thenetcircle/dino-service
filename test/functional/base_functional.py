@@ -18,7 +18,7 @@ class BaseServerRestApi(BaseDatabaseTest):
         self.assertEqual(raw_response.status_code, 200)
 
         for group in raw_response.json():
-            if group["group_id"] == group_id:
+            if group["group"]["group_id"] == group_id:
                 return group
 
         return dict()
@@ -241,7 +241,7 @@ class BaseServerRestApi(BaseDatabaseTest):
     def assert_order_of_groups(self, user_id: int, *group_ids):
         groups = self.groups_for_user(user_id)
         for i, group_id in enumerate(group_ids):
-            self.assertEqual(group_id, groups[i]["group_id"])
+            self.assertEqual(group_id, groups[i]["group"]["group_id"])
 
     def assert_in_histories(self, user_id: int, histories, is_in: bool):
         if is_in:

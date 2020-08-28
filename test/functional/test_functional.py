@@ -122,17 +122,17 @@ class TestServerRestApi(BaseServerRestApi):
     def test_joining_a_group_changes_last_update_time(self):
         group_id = self.create_and_join_group(BaseTest.USER_ID)
         group = self.get_group(group_id)
-        last_update_time = group["updated_at"]
+        last_update_time = group["group"]["updated_at"]
 
         # update time should not have changed form a new message
         self.send_message_to_group_from(group_id, user_id=BaseTest.USER_ID, delay=10)
         group = self.get_group(group_id)
-        self.assertEqual(group["updated_at"], last_update_time)
+        self.assertEqual(group["group"]["updated_at"], last_update_time)
 
         # update time should now have changed
         self.user_joins_group(group_id, BaseTest.OTHER_USER_ID)
         group = self.get_group(group_id)
-        self.assertNotEqual(group["updated_at"], last_update_time)
+        self.assertNotEqual(group["group"]["updated_at"], last_update_time)
 
     def test_total_unread_count_changes_when_user_read_time_changes(self):
         group_id1 = self.create_and_join_group(BaseTest.USER_ID)
@@ -334,22 +334,22 @@ class TestServerRestApi(BaseServerRestApi):
         self.create_and_join_group(BaseTest.USER_ID)
 
         groups = self.groups_for_user(BaseTest.USER_ID)
-        original_name = groups[0]["name"]
+        original_name = groups[0]["group"]["name"]
         self.assertIsNotNone(original_name)
 
         new_name = "new test name for group"
-        self.edit_group(groups[0]["group_id"], name=new_name)
+        self.edit_group(groups[0]["group"]["group_id"], name=new_name)
 
         groups = self.groups_for_user(BaseTest.USER_ID)
-        self.assertEqual(groups[0]["name"], new_name)
+        self.assertEqual(groups[0]["group"]["name"], new_name)
         self.assertNotEqual(original_name, new_name)
 
     def test_change_group_owner(self):
         self.create_and_join_group(BaseTest.USER_ID)
 
         groups = self.groups_for_user(BaseTest.USER_ID)
-        self.assertEqual(BaseTest.USER_ID, groups[0]["owner_id"])
+        self.assertEqual(BaseTest.USER_ID, groups[0]["group"]["owner_id"])
 
-        self.edit_group(groups[0]["group_id"], owner=BaseTest.OTHER_USER_ID)
+        self.edit_group(groups[0]["group"]["group_id"], owner=BaseTest.OTHER_USER_ID)
         groups = self.groups_for_user(BaseTest.USER_ID)
-        self.assertEqual(BaseTest.OTHER_USER_ID, groups[0]["owner_id"])
+        self.assertEqual(BaseTest.OTHER_USER_ID, groups[0]["group"]["owner_id"])

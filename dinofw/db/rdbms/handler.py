@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime as dt
 from typing import List, Tuple, Optional, Dict
 from uuid import uuid4 as uuid
@@ -13,10 +14,10 @@ from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.rdbms.schemas import UserGroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.rest.models import CreateGroupQuery
-from dinofw.rest.models import UserGroup
 from dinofw.rest.models import GroupQuery
 from dinofw.rest.models import UpdateGroupQuery
 from dinofw.rest.models import UpdateUserGroupStats
+from dinofw.utils.exceptions import UserNotInGroupException
 
 
 class RelationalHandler:
@@ -26,6 +27,8 @@ class RelationalHandler:
         # used when no `hide_before` is specified in a query
         beginning_of_1995 = 789_000_000
         self.long_ago = dt.utcfromtimestamp(beginning_of_1995)
+
+        self.logger = logging.getLogger(__name__)
 
     def get_users_in_group(
         self, group_id: str, db: Session
@@ -48,9 +51,13 @@ class RelationalHandler:
         return group, user_ids, user_count
 
     def get_groups_for_user(
-        self, user_id: int, query: GroupQuery, db: Session, count_users: bool = True
+        self,
+        user_id: int,
+        query: GroupQuery,
+        db: Session,
+        count_users: bool = True,
+        count_unread: bool = True,
     ) -> List[UserGroupBase]:
-	# TODO: need unread_count for each group
         """
         what we're doing:
 
@@ -95,11 +102,15 @@ class RelationalHandler:
             user_group_stats = UserGroupStatsBase(**user_group_stats_entity.__dict__)
 
             users_join_time = self.get_user_ids_and_join_time_in_group(group_entity.group_id, db)
-            unread_count = self.env.storage.get_unread_in_group(
-                group_id=group.group_id,
-                user_id=user_id,
-                last_read=user_group_stats.last_read
-            )
+
+            if count_unread:
+                unread_count = self.env.storage.get_unread_in_group(
+                    group_id=group.group_id,
+                    user_id=user_id,
+                    last_read=user_group_stats.last_read
+                )
+            else:
+                unread_count = 0
 
             if count_users:
                 user_count = self.count_users_in_group(group_entity.group_id, db)
@@ -313,6 +324,7 @@ class RelationalHandler:
         TODO: should we update last read for sender? or sender also acks?
         """
         user_ids_for_cache = set()
+        user_stats = None
 
         for user_id, join_time in users.items():
             user_stats = (
@@ -390,7 +402,7 @@ class RelationalHandler:
 
     def update_user_group_stats(
         self, group_id: str, user_id: int, query: UpdateUserGroupStats, db: Session
-    ) -> UserGroupStatsBase:
+    ) -> Optional[UserGroupStatsBase]:
         user_stats = (
             db.query(models.UserGroupStatsEntity)
             .filter(models.UserGroupStatsEntity.user_id == user_id)
@@ -402,19 +414,9 @@ class RelationalHandler:
         delete_before = UpdateUserGroupStats.to_dt(query.delete_before, allow_none=True)
         now = arrow.utcnow().datetime
 
-        # TODO: this should never be None; remove this instead and throw an exception
         if user_stats is None:
-            user_stats = models.UserGroupStatsEntity(
-                group_id=group_id,
-                user_id=user_id,
-                last_sent=self.long_ago,
-                hide_before=self.long_ago,
-                last_read=last_read or self.long_ago,
-                delete_before=delete_before or self.long_ago,
-                hide=query.hide or False,
-                join_time=last_read or self.long_ago,
-                pin=query.pin or False,
-                last_updated_time=now,
+            raise UserNotInGroupException(
+                f"tried to update group stats for user {user_id} not in group {group_id}"
             )
 
         # only update if query has new values

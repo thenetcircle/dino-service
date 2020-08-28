@@ -54,7 +54,7 @@ class GroupResource(BaseResource):
             return None
 
         return GroupResource.group_base_to_group(
-            group, users=first_users, last_read=None, user_count=n_users,
+            group, users=first_users, user_count=n_users,
         )
 
     async def histories(self, group_id: str, user_id: int, query: MessageQuery, db: Session) -> Histories:
@@ -114,7 +114,7 @@ class GroupResource(BaseResource):
             message_amount=message_amount,
             unread_amount=unread_amount,
             last_read_time=last_read,
-            last_send_time=last_sent,
+            last_sent_time=last_sent,
             delete_before=delete_before,
             hide=user_stats.hide,
             pin=user_stats.pin,
@@ -152,7 +152,9 @@ class GroupResource(BaseResource):
         )
 
         group = GroupResource.group_base_to_group(
-            group_base, users=users, last_read=now, user_count=len(users),
+            group=group_base,
+            users=users,
+            user_count=len(users),
         )
 
         # notify users they're in a new group
