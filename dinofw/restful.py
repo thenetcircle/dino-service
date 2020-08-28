@@ -333,8 +333,11 @@ async def update_user_statistics_in_group(
     """
     Update user statistic in a group. Only values specified in the query
     will be updated (if a field is blank in the query it won't be updated).
-    This API should be used to update the last read time for when a user
-    opens a conversation.
+
+    This API should __NOT__ be used to update `last_read_time` when opening
+    a conversation. The `last_read_time` is updated automatically when a
+    user calls the `/v1/groups/{group_id}/user/{user_id}/histories` API for
+    a group.
 
     **Can be used for updating the following:**
 
