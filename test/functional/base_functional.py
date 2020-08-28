@@ -193,7 +193,7 @@ class BaseServerRestApi(BaseDatabaseTest):
         now_plus_2_days = AbstractQuery.to_ts(now_plus_2_days)
 
         raw_response = self.client.put(
-            f"/v1/groups/{group_id}/users/{user_id}/highlight",
+            f"/v1/groups/{group_id}/userstats/{user_id}",
             json={
                 "highlight_time": now_plus_2_days,
             },
@@ -201,8 +201,13 @@ class BaseServerRestApi(BaseDatabaseTest):
         self.assertEqual(raw_response.status_code, 200)
 
     def delete_highlight_group_for_user(self, group_id: str, user_id: int) -> None:
-        raw_response = self.client.delete(
-            f"/v1/groups/{group_id}/users/{user_id}/highlight",
+        now = arrow.utcnow().datetime
+
+        raw_response = self.client.put(
+            f"/v1/groups/{group_id}/userstats/{user_id}",
+            json={
+                "last_read_time": now,
+            },
         )
         self.assertEqual(raw_response.status_code, 200)
 

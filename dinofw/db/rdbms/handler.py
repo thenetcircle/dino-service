@@ -396,6 +396,7 @@ class RelationalHandler:
 
         last_read = UpdateUserGroupStats.to_dt(query.last_read_time, allow_none=True)
         delete_before = UpdateUserGroupStats.to_dt(query.delete_before, allow_none=True)
+        highlight_time = UpdateUserGroupStats.to_dt(query.highlight_time, allow_none=True)
         now = arrow.utcnow().datetime
 
         if user_stats is None:
@@ -421,8 +422,8 @@ class RelationalHandler:
                 user_stats.pin = query.pin
 
             # can't set highlight time if also setting last read time
-            if query.highlight_time is not None and last_read is None:
-                user_stats.highlight_time = query.highlight_time
+            if highlight_time is not None and last_read is None:
+                user_stats.highlight_time = highlight_time
                 user_stats.last_updated_time = now
 
                 # always becomes unhidden if highlighted

@@ -1,14 +1,12 @@
 import logging
-from typing import List, Tuple, Any
+from typing import List
 
 from sqlalchemy.orm import Session
 
-from dinofw.db.rdbms.schemas import GroupBase, UserGroupStatsBase, UserGroupBase
+from dinofw.db.rdbms.schemas import UserGroupBase
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import Group, UserGroup
-from dinofw.rest.models import GroupJoinTime
 from dinofw.rest.models import GroupQuery
-from dinofw.rest.models import UpdateHighlightQuery
+from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UserStats
 
 logger = logging.getLogger(__name__)
@@ -31,14 +29,6 @@ class UserResource(BaseResource):
             ))
 
         return groups
-
-    async def update_highlight_time(self, group_id: str, user_id: int, query: UpdateHighlightQuery, db: Session):
-        highlight_time = UpdateHighlightQuery.to_dt(query.highlight_time)
-
-        self.env.db.update_highlight_time(group_id, user_id, highlight_time, db)
-
-    async def delete_highlight_time(self, group_id: str, user_id: int, db: Session):
-        self.env.db.delete_highlight_time(group_id, user_id, db)
 
     async def get_user_stats(self, user_id: int, db: Session) -> UserStats:
         # ordered by last_message_time, so we're likely to get all groups
