@@ -360,7 +360,7 @@ class FakeDatabase:
         self, group_id: str, users: Dict[int, float], now: dt, _
     ) -> None:
         for user_id, _ in users.items():
-            self.update_last_read_and_sent_in_group_for_user(user_id, group_id, now, None)
+            self.update_last_read_and_sent_in_group_for_user(group_id, user_id, now, None)
 
     def set_group_updated_at(self, group_id: str, now: dt, _) -> None:
         if group_id not in self.groups:
