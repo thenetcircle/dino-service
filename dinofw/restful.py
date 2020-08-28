@@ -57,6 +57,9 @@ async def get_group_history_for_user(
     Response contains a list of messages sent in the group, a list of action logs, and a list
     the last read time for each user in the group.
 
+    Calling this API will update `last_read_time` in this group for this user, and
+    broadcast the new read time to every one else in the group that is online.
+
     History can be filtered by `message_type` to e.g. only list images sent in the group.
 
     **Potential error codes in response:**
