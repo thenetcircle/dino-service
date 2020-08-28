@@ -162,6 +162,7 @@ class RelationalHandler:
         db.commit()
 
     def get_last_reads_in_group(self, group_id: str, db: Session) -> Dict[int, float]:
+        # TODO: rethink this; some cached some not? maybe we don't have to do this twice
         users = self.get_user_ids_and_join_time_in_group(group_id, db)
         user_ids = list(users.keys())
         return self.get_last_read_in_group_for_users(group_id, user_ids, db)
@@ -260,6 +261,8 @@ class RelationalHandler:
             user_ids_join_time
         )
 
+        return user_ids_join_time
+
     def remove_last_read_in_group_for_user(
         self, group_id: str, user_id: int, db: Session
     ) -> None:
@@ -308,7 +311,6 @@ class RelationalHandler:
         TODO: should we update last read for sender? or sender also acks?
         """
         user_ids_for_cache = set()
-        user_stats = None
 
         for user_id, join_time in users.items():
             user_stats = (
@@ -441,8 +443,26 @@ class RelationalHandler:
 
         return base
 
+    def update_last_read_and_highlight_in_group_for_user(self, group_id: str, user_id: int, the_time: dt, db: Session) -> None:
+        user_stats = (
+            db.query(models.UserGroupStatsEntity)
+            .filter(models.UserGroupStatsEntity.user_id == user_id)
+            .filter(models.UserGroupStatsEntity.group_id == group_id)
+            .first()
+        )
+
+        if user_stats is None:
+            raise UserNotInGroupException(f"user {user_id} is not in group {group_id}")
+
+        user_stats.last_read = the_time
+        user_stats.last_updated_time = the_time
+        user_stats.highlight_time = self.long_ago
+
+        db.add(user_stats)
+        db.commit()
+
     def update_last_read_and_sent_in_group_for_user(
-        self, user_id: int, group_id: str, created_at: dt, db: Session
+        self, group_id: str, user_id: int, the_time: dt, db: Session
     ) -> None:
         user_stats = (
             db.query(models.UserGroupStatsEntity)
@@ -451,15 +471,16 @@ class RelationalHandler:
             .first()
         )
 
-        self.env.cache.set_last_read_in_group_for_user(group_id, user_id, GroupQuery.to_ts(created_at))
+        self.env.cache.set_last_read_in_group_for_user(group_id, user_id, GroupQuery.to_ts(the_time))
         self.env.cache.set_hide_group(group_id, False)
         self.env.cache.set_unread_in_group(group_id, user_id, 0)
 
         if user_stats is None:
-            user_stats = self._create_user_stats(group_id, user_id, created_at)
+            raise UserNotInGroupException(f"user {user_id} is not in group {group_id}")
 
-        user_stats.last_read = created_at
-        user_stats.last_sent = created_at
+        user_stats.last_read = the_time
+        user_stats.last_sent = the_time
+        user_stats.last_updated_time = the_time
 
         db.add(user_stats)
         db.commit()

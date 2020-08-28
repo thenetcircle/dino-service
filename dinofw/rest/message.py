@@ -19,21 +19,7 @@ class MessageResource(BaseResource):
         self, group_id: str, user_id: int, query: SendMessageQuery, db: Session
     ) -> Message:
         message = self.env.storage.store_message(group_id, user_id, query)
-
-        # cassandra DT is different from python DT
-        now = arrow.utcnow().datetime
-
-        self.env.db.update_group_new_message(message, now, db)
-        self.env.db.update_last_read_and_sent_in_group_for_user(
-            user_id, group_id, now, db
-        )
-
-        user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
-        self.env.publisher.message(group_id, message, user_ids)
-
-        # don't increase unread for the sender
-        del user_ids[user_id]
-        self.env.cache.increase_unread_in_group_for(group_id, user_ids)
+        self._user_sends_a_message(group_id, user_id, message, db)
 
         return MessageResource.message_base_to_message(message)
 

@@ -19,6 +19,7 @@ from dinofw.rest.models import SearchQuery
 from dinofw.rest.models import UpdateGroupQuery
 from dinofw.rest.models import UpdateUserGroupStats
 from dinofw.rest.models import UserGroupStats
+from dinofw.utils.exceptions import NoSuchGroupException
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +31,7 @@ class GroupResource(BaseResource):
         group, first_users, n_users = self.env.db.get_users_in_group(group_id, db)
 
         if group is None:
-            return None
+            raise NoSuchGroupException(f"no such group: {group_id}")
 
         users = [
             GroupJoinTime(
@@ -51,20 +52,18 @@ class GroupResource(BaseResource):
         group, first_users, n_users = self.env.db.get_users_in_group(group_id, db)
 
         if group is None:
-            # TODO: handle missing
-            return None
+            raise NoSuchGroupException(f"no such group: {group_id}")
 
         return GroupResource.group_base_to_group(
             group, users=first_users, user_count=n_users,
         )
 
     async def histories(self, group_id: str, user_id: int, query: MessageQuery, db: Session) -> Histories:
-        # TODO: clear the highlight time (if set) on the group for this user
-
         user_stats = self.env.db.get_user_stats_in_group(group_id, user_id, db)
-
         if user_stats.hide:
             return Histories(messages=list(), action_logs=list(), last_reads=list())
+
+        self._user_opens_conversation(group_id, user_id, db)
 
         action_log = self.env.storage.get_action_log_in_group_for_user(group_id, user_stats, query)
         messages = self.env.storage.get_messages_in_group_for_user(group_id, user_stats, query)
@@ -83,13 +82,11 @@ class GroupResource(BaseResource):
             for user_id, last_read in last_reads.items()
         ]
 
-        histories = Histories(
+        return Histories(
             messages=messages,
             action_logs=action_log,
             last_reads=last_reads,
         )
-
-        return histories
 
     async def get_user_group_stats(
         self, group_id: str, user_id: int, db: Session

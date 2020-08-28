@@ -2,6 +2,7 @@ from abc import ABC
 from datetime import datetime as dt
 from typing import Optional, Dict
 
+import arrow
 import pytz
 
 from dinofw.db.rdbms.schemas import UserGroupStatsBase, GroupBase
@@ -23,6 +24,36 @@ class BaseResource(ABC):
         beginning_of_1995 = 789_000_000
         self.long_ago = dt.utcfromtimestamp(beginning_of_1995)
         self.long_ago = self.long_ago.replace(tzinfo=pytz.UTC)
+
+    def _user_opens_conversation(self, group_id: str, user_id: int, db):
+        """
+        update database and cache with everything related to opening a conversation
+        """
+        now = arrow.utcnow().datetime
+        user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
+
+        self.env.db.update_last_read_and_highlight_in_group_for_user(user_id, group_id, now, db)
+        self.env.publisher.read(group_id, user_id, user_ids)
+        self.env.cache.set_unread_in_group(group_id, user_id, 0)
+
+    def _user_sends_a_message(self, group_id: str, user_id: int, message: MessageBase, db):
+        """
+        update database and cache with everything related to sending a message
+        """
+        # cassandra DT is different from python DT
+        now = arrow.utcnow().datetime
+
+        self.env.db.update_group_new_message(message, now, db)
+        self.env.db.update_last_read_and_sent_in_group_for_user(
+            group_id, user_id, now, db
+        )
+
+        user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
+        self.env.publisher.message(group_id, message, user_ids)
+
+        # don't increase unread for the sender
+        del user_ids[user_id]
+        self.env.cache.increase_unread_in_group_for(group_id, user_ids)
 
     @staticmethod
     def message_base_to_message(message: MessageBase) -> Message:

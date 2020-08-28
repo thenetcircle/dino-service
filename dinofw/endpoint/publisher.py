@@ -56,6 +56,10 @@ class PublishHandler(IPublishHandler):
         data = PublishHandler.message_base_to_event(message)
         self.send(user_ids, data)
 
+    def read(self, group_id: str, user_id: int, user_ids: List[int]) -> None:
+        # TODO: publish to clients
+        pass
+
     def group_change(self, group_base: GroupBase, user_ids: List[int]) -> None:
         data = PublishHandler.group_base_to_event(group_base, user_ids)
         self.send(user_ids, data)
