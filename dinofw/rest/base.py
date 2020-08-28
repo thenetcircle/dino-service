@@ -32,7 +32,7 @@ class BaseResource(ABC):
         now = arrow.utcnow().datetime
         user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
 
-        self.env.db.update_last_read_and_highlight_in_group_for_user(user_id, group_id, now, db)
+        self.env.db.update_last_read_and_highlight_in_group_for_user(group_id, user_id, now, db)
         self.env.publisher.read(group_id, user_id, user_ids)
         self.env.cache.set_unread_in_group(group_id, user_id, 0)
 

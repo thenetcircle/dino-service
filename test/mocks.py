@@ -266,6 +266,15 @@ class FakeDatabase:
         self.groups[message.group_id].last_message_time = sent_time
         self.groups[message.group_id].last_message_overview = message.message_payload
 
+    def update_last_read_and_highlight_in_group_for_user(
+            self,
+            group_id: str,
+            user_id: int,
+            the_time: dt,
+            _
+    ) -> None:
+        pass  # TODO
+
     def create_group(self, owner_id: int, query: CreateGroupQuery, _) -> GroupBase:
         created_at = dt.utcnow()
         created_at = created_at.replace(tzinfo=pytz.UTC)
@@ -360,7 +369,7 @@ class FakeDatabase:
         self.groups[group_id].updated_at = now
 
     def update_last_read_and_sent_in_group_for_user(
-        self, user_id: int, group_id: str, created_at: dt, _
+        self, group_id: str, user_id: int, created_at: dt, _
     ) -> None:
         to_add = UserGroupStatsBase(
             group_id=group_id,
@@ -460,6 +469,9 @@ class FakePublisherHandler(IPublishHandler):
             self.sent_messages[group_id] = list()
 
         self.sent_messages[group_id].append(message)
+
+    def read(self, group_id: str, user_id: int, user_ids: List[int]) -> None:
+        pass  # TODO
 
     def group_change(self, group_base: GroupBase, user_ids: List[int]) -> None:
         pass

@@ -443,7 +443,13 @@ class RelationalHandler:
 
         return base
 
-    def update_last_read_and_highlight_in_group_for_user(self, group_id: str, user_id: int, the_time: dt, db: Session) -> None:
+    def update_last_read_and_highlight_in_group_for_user(
+            self,
+            group_id: str,
+            user_id: int,
+            the_time: dt,
+            db: Session
+    ) -> None:
         user_stats = (
             db.query(models.UserGroupStatsEntity)
             .filter(models.UserGroupStatsEntity.user_id == user_id)

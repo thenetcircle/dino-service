@@ -7,6 +7,7 @@ from dinofw.rest.models import GroupUsers
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import PaginationQuery
 from dinofw.rest.models import SendMessageQuery
+from dinofw.utils.exceptions import NoSuchGroupException
 from test.base import async_test, BaseTest
 
 
@@ -52,9 +53,8 @@ class TestGroupResource(BaseTest):
 
     @async_test
     async def test_get_group(self):
-        group = await self.group.get_group(group_id=BaseTest.GROUP_ID, db=None)  # noqa
-
-        self.assertIsNone(group)
+        with self.assertRaises(NoSuchGroupException):
+            group = await self.group.get_group(group_id=BaseTest.GROUP_ID, db=None)  # noqa
 
         query = CreateGroupQuery(
             group_name="some group name", group_type=0, users=[BaseTest.USER_ID],
