@@ -48,6 +48,8 @@ class RelationalHandler:
     def get_groups_for_user(
         self, user_id: int, query: GroupQuery, db: Session, count_users: bool = True
     ) -> List[Tuple[GroupBase, UserGroupStatsBase, Dict[int, float], int]]:
+        # TODO: need unread_count for each group...
+
         """
         what we're doing:
 

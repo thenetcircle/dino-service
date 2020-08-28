@@ -117,6 +117,7 @@ class CacheRedis(ICache):
             return None
 
     def set_unread_in_group(self, group_id: str, user_id: int, unread: int) -> None:
+        # TODO: need to expire this or not?
         key = RedisKeys.unread_in_group(group_id)
         self.redis.hset(key, user_id, unread)
 
