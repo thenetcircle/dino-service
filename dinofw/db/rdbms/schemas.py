@@ -33,10 +33,12 @@ class UserGroupStatsBase(BaseModel):
     delete_before: datetime
     join_time: datetime
     highlight_time: Optional[datetime]
+    last_updated_time: datetime
 
     hide: bool
     pin: bool
     bookmark: bool
+    rating: Optional[int]
 
 
 class Group(GroupBase):
@@ -51,3 +53,11 @@ class UserGroupStats(UserGroupStatsBase):
 
     class Config:
         orm_mode = True
+
+
+class UserGroupBase(BaseModel):
+    group: GroupBase
+    user_stats: UserGroupStatsBase
+    user_join_times: dict
+    user_count: int
+    unread_count: int

@@ -6,7 +6,6 @@ cassandra-driver==3.24.0
 certifi==2020.6.20
 chardet==3.0.4
 click==7.1.2
-crc16==0.1.1
 fakeredis==1.4.3
 fastapi==0.61.0
 geomet==0.2.1.post1
@@ -21,7 +20,7 @@ pathspec==0.8.0
 psycopg2==2.8.5
 pydantic==1.6.1
 python-dateutil==2.8.1
-python-redis==0.2.2
+redis==3.5.3
 pytz==2020.1
 PyYAML==5.3.1
 raven==6.10.0

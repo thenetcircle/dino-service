@@ -59,3 +59,6 @@ class UserGroupStatsEntity(env.Base):
 
     # a user can bookmark a group, which makes it count as "one unread message in this group" (only for this user)
     bookmark = Column(Boolean, default=False, nullable=False)
+
+    # a user can rate conversations
+    rating = Column(Integer, nullable=True)

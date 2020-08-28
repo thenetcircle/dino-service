@@ -10,8 +10,10 @@ from dinofw.config import GroupTypes
 from dinofw.db.storage.schemas import MessageBase
 from dinofw.db.rdbms import models
 from dinofw.db.rdbms.schemas import GroupBase
+from dinofw.db.rdbms.schemas import UserGroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.rest.models import CreateGroupQuery
+from dinofw.rest.models import UserGroup
 from dinofw.rest.models import GroupQuery
 from dinofw.rest.models import UpdateGroupQuery
 from dinofw.rest.models import UpdateUserGroupStats
@@ -47,9 +49,8 @@ class RelationalHandler:
 
     def get_groups_for_user(
         self, user_id: int, query: GroupQuery, db: Session, count_users: bool = True
-    ) -> List[Tuple[GroupBase, UserGroupStatsBase, Dict[int, float], int]]:
-        # TODO: need unread_count for each group...
-
+    ) -> List[UserGroupBase]:
+	# TODO: need unread_count for each group
         """
         what we're doing:
 
@@ -94,13 +95,25 @@ class RelationalHandler:
             user_group_stats = UserGroupStatsBase(**user_group_stats_entity.__dict__)
 
             users_join_time = self.get_user_ids_and_join_time_in_group(group_entity.group_id, db)
+            unread_count = self.env.storage.get_unread_in_group(
+                group_id=group.group_id,
+                user_id=user_id,
+                last_read=user_group_stats.last_read
+            )
 
             if count_users:
                 user_count = self.count_users_in_group(group_entity.group_id, db)
             else:
                 user_count = 0
 
-            groups.append((group, user_group_stats, users_join_time, user_count))
+            user_group = UserGroupBase(
+                group=group,
+                user_stats=user_group_stats,
+                user_join_times=users_join_time,
+                user_count=user_count,
+                unread_count=unread_count
+            )
+            groups.append(user_group)
 
         return groups
 
@@ -438,7 +451,6 @@ class RelationalHandler:
             .first()
         )
 
-        self.env.cache.increase_unread_in_group(group_id)
         self.env.cache.set_last_read_in_group_for_user(group_id, user_id, GroupQuery.to_ts(created_at))
         self.env.cache.set_hide_group(group_id, False)
         self.env.cache.set_unread_in_group(group_id, user_id, 0)
