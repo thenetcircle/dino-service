@@ -42,10 +42,8 @@ class RedisKeys:
 
 
 class ConfigKeys:
-    REQ_LOG_LOC = "request_log_location"
     LOG_LEVEL = "log_level"
     LOG_FORMAT = "log_format"
-    RESPONSE_FORMAT = "response_format"
     LOGGING = "logging"
     DATE_FORMAT = "date_format"
     DEBUG = "debug"
@@ -58,15 +56,15 @@ class ConfigKeys:
     MQTT = "mqtt"
     HOST = "host"
     TYPE = "type"
-    DRIVER = "driver"
-    STREAM = "stream"
-    GROUP = "group"
+    # DRIVER = "driver"
+    # STREAM = "stream"
+    # GROUP = "group"
     TTL = "ttl"
     STRATEGY = "strategy"
     REPLICATION = "replication"
     DSN = "dsn"
     DATABASE = "database"
-    POOL_SIZE = "pool_size"
+    # POOL_SIZE = "pool_size"
     DB = "db"
     PORT = "port"
     USER = "user"
@@ -85,10 +83,10 @@ class ConfigKeys:
     DEFAULT_LOG_FORMAT = "%(asctime)s - %(name)-18s - %(levelname)-7s - %(message)s"
     DEFAULT_DATE_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
     DEFAULT_LOG_LEVEL = "INFO"
-    DEFAULT_REDIS_HOST = "localhost"
 
 
 class ErrorCodes(object):
     OK = 200
     UNKNOWN_ERROR = 250
     USER_NOT_IN_GROUP = 600
+    NO_SUCH_GROUP = 601

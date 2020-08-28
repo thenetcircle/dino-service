@@ -200,23 +200,6 @@ class RelationalHandler:
 
         return last_reads
 
-    def update_highlight_time(self, group_id: str, user_id: int, highlight_time: dt, db: Session):
-        user_stats = self._get_user_stats_for(group_id, user_id, db)
-        now = arrow.utcnow().datetime
-
-        if user_stats is None:
-            user_stats = self._create_user_stats(group_id, user_id, now)
-
-        user_stats.highlight_time = highlight_time
-        user_stats.last_updated_time = now
-        user_stats.hide = False  # always becomes unhidden if highlighted
-
-        db.add(user_stats)
-        db.commit()
-
-    def delete_highlight_time(self, group_id: str, user_id: int, db: Session):
-        self.update_highlight_time(group_id, user_id, self.long_ago, db)
-
     def get_group_id_for_1to1(self, user_a: int, user_b: int, db: Session) -> Optional[str]:
         users = sorted([user_a, user_b])
 
@@ -422,20 +405,33 @@ class RelationalHandler:
 
         # only update if query has new values
         else:
+            # used by apps to sync changes
             user_stats.last_updated_time = now
 
             if last_read is not None:
                 user_stats.last_read = last_read
 
+                # highlight time is removed if a user reads a conversation
+                user_stats.highlight_time = self.long_ago
+
             if delete_before is not None:
                 user_stats.delete_before = delete_before
 
-            if query.hide is not None:
-                user_stats.hide = query.hide
-                self.env.cache.set_hide_group(group_id, query.hide, [user_id])
-
             if query.pin is not None:
                 user_stats.pin = query.pin
+
+            # can't set highlight time if also setting last read time
+            if query.highlight_time is not None and last_read is None:
+                user_stats.highlight_time = query.highlight_time
+                user_stats.last_updated_time = now
+
+                # always becomes unhidden if highlighted
+                user_stats.hide = False
+                self.env.cache.set_hide_group(group_id, False, [user_id])
+
+            elif query.hide is not None:
+                user_stats.hide = query.hide
+                self.env.cache.set_hide_group(group_id, query.hide, [user_id])
 
         base = UserGroupStatsBase(**user_stats.__dict__)
 

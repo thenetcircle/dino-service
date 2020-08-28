@@ -47,10 +47,6 @@ class MessageQuery(PaginationQuery, AdminQuery):
     status: Optional[int]
 
 
-class UpdateHighlightQuery(AbstractQuery):
-    highlight_time: float
-
-
 class CreateActionLogQuery(AdminQuery):
     user_ids: List[int]
     action_type: int
@@ -80,7 +76,7 @@ class CreateGroupQuery(AbstractQuery):
 
 class GroupQuery(PaginationQuery):
     ownership: Optional[int]
-    weight: Optional[int]
+    # weight: Optional[int]
     has_unread: Optional[int]
 
 
@@ -101,6 +97,7 @@ class EditMessageQuery(AdminQuery):
 class UpdateUserGroupStats(AbstractQuery):
     last_read_time: Optional[float]
     delete_before: Optional[float]
+    highlight_time: Optional[float]
     hide: Optional[bool]
     bookmark: Optional[bool]
     pin: Optional[bool]
