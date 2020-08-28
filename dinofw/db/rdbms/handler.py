@@ -202,12 +202,13 @@ class RelationalHandler:
 
     def update_highlight_time(self, group_id: str, user_id: int, highlight_time: dt, db: Session):
         user_stats = self._get_user_stats_for(group_id, user_id, db)
+        now = arrow.utcnow().datetime
 
         if user_stats is None:
-            now = arrow.utcnow().datetime
             user_stats = self._create_user_stats(group_id, user_id, now)
 
         user_stats.highlight_time = highlight_time
+        user_stats.last_updated_time = now
         user_stats.hide = False  # always becomes unhidden if highlighted
 
         db.add(user_stats)
