@@ -4,6 +4,7 @@ from typing import List, Optional
 import arrow
 from sqlalchemy.orm import Session
 
+from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.rest.base import BaseResource
 from dinofw.rest.models import AbstractQuery
 from dinofw.rest.models import ActionLog
@@ -93,7 +94,7 @@ class GroupResource(BaseResource):
     async def get_user_group_stats(
         self, group_id: str, user_id: int, db: Session
     ) -> Optional[UserGroupStats]:
-        user_stats = self.env.db.get_user_stats_in_group(group_id, user_id, db)
+        user_stats: UserGroupStatsBase = self.env.db.get_user_stats_in_group(group_id, user_id, db)
 
         if user_stats is None:
             return None
@@ -103,6 +104,7 @@ class GroupResource(BaseResource):
         last_sent = AbstractQuery.to_ts(user_stats.last_sent)
         delete_before = AbstractQuery.to_ts(user_stats.delete_before)
         last_read = AbstractQuery.to_ts(user_stats.last_read)
+        last_updated_time = AbstractQuery.to_ts(user_stats.last_updated_time)
 
         unread_amount = self.env.storage.count_messages_in_group_since(
             group_id, user_stats.last_read
@@ -119,6 +121,7 @@ class GroupResource(BaseResource):
             hide=user_stats.hide,
             pin=user_stats.pin,
             bookmark=user_stats.bookmark,
+            last_updated_time=last_updated_time,
         )
 
     async def update_user_group_stats(

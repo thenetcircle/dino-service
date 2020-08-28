@@ -143,6 +143,7 @@ class UserGroupStats(BaseModel):
     last_sent_time: float
     delete_before: float
     highlight_time: Optional[float]
+    last_updated_time: float
 
     hide: Optional[bool]
     pin: Optional[bool]

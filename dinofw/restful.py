@@ -121,7 +121,7 @@ async def edit_group_information(group_id, query: UpdateGroupQuery, db: Session 
 @app.post("/v1/users/{user_id}/groups", response_model=List[UserGroup])
 async def get_groups_for_user(
     user_id: int, query: GroupQuery, db: Session = Depends(get_db)
-) -> List[Group]:
+) -> List[UserGroup]:
     """
     get user's group sort by latest message update
     """
