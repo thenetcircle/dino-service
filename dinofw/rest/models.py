@@ -189,6 +189,7 @@ class Group(BaseModel):
     weight: Optional[str]
     last_message_overview: Optional[str]
     last_message_time: float
+    last_message_type: Optional[str]
     user_count: int
 
 

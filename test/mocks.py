@@ -265,6 +265,7 @@ class FakeDatabase:
 
         self.groups[message.group_id].last_message_time = sent_time
         self.groups[message.group_id].last_message_overview = message.message_payload
+        self.groups[message.group_id].last_message_type = message.message_type
 
     def update_last_read_and_highlight_in_group_for_user(
             self,

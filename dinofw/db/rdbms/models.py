@@ -24,6 +24,7 @@ class GroupEntity(env.Base):
     # users by clients to sort groups by recent messages
     last_message_time = Column(DateTime(timezone=True), index=True)
     last_message_id = Column(String(36))
+    last_message_type = Column(String(36))
     last_message_overview = Column(String(512))
 
     meta = Column(Integer, nullable=True)
