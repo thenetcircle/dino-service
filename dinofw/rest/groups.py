@@ -30,9 +30,6 @@ class GroupResource(BaseResource):
     ) -> Optional[GroupUsers]:
         group, first_users, n_users = self.env.db.get_users_in_group(group_id, db)
 
-        if group is None:
-            raise NoSuchGroupException(f"no such group: {group_id}")
-
         users = [
             GroupJoinTime(
                 user_id=user_id,
@@ -50,9 +47,6 @@ class GroupResource(BaseResource):
 
     async def get_group(self, group_id: str, db: Session) -> Optional[Group]:
         group, first_users, n_users = self.env.db.get_users_in_group(group_id, db)
-
-        if group is None:
-            raise NoSuchGroupException(f"no such group: {group_id}")
 
         return GroupResource.group_base_to_group(
             group, users=first_users, user_count=n_users,

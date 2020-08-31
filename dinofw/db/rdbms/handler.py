@@ -17,7 +17,7 @@ from dinofw.rest.models import CreateGroupQuery, MessageQuery
 from dinofw.rest.models import GroupQuery
 from dinofw.rest.models import UpdateGroupQuery
 from dinofw.rest.models import UpdateUserGroupStats
-from dinofw.utils.exceptions import UserNotInGroupException
+from dinofw.utils.exceptions import UserNotInGroupException, NoSuchGroupException
 
 
 class RelationalHandler:
@@ -40,8 +40,7 @@ class RelationalHandler:
         )
 
         if group_entity is None:
-            # TODO: handle
-            return None, None, None
+            raise NoSuchGroupException(f"no such group: {group_id}")
 
         group = GroupBase(**group_entity.__dict__)
         users_and_join_time = self.get_user_ids_and_join_time_in_group(group_id, db)
@@ -138,8 +137,7 @@ class RelationalHandler:
         )
 
         if group is None:
-            # TODO: return error message
-            return None
+            raise NoSuchGroupException(f"no such group: {message.group_id}")
 
         group.last_message_time = sent_time
         group.last_message_overview = message.message_payload
