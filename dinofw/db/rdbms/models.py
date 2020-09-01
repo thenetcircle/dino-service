@@ -15,7 +15,7 @@ class GroupEntity(env.Base):
 
     status = Column(Integer, nullable=True)
     group_type = Column(Integer, server_default="0")
-    created_at = Column(DateTime(timezone=True))
+    created_at = Column(DateTime(timezone=True))  # TODO: during migration, set to time of first message sent
     owner_id = Column(Integer)
 
     # used by clients to sync changed (new name, user left etc.)

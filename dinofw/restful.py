@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from dinofw import environ
 from dinofw.config import ErrorCodes
-from dinofw.rest.models import ActionLog
+from dinofw.rest.models import ActionLog, GroupUpdatesQuery
 from dinofw.rest.models import UserGroup
 from dinofw.rest.models import CreateActionLogQuery
 from dinofw.rest.models import CreateGroupQuery
@@ -219,6 +219,23 @@ async def get_groups_for_user(
     """
     try:
         return await environ.env.rest.user.get_groups_for_user(user_id, query, db)
+    except Exception as e:
+        log_error_and_raise(sys.exc_info(), e)
+
+
+@app.post("/v1/users/{user_id}/groups/updates", response_model=List[UserGroup])
+async def get_groups_updated_since(
+    user_id: int, query: GroupUpdatesQuery, db: Session = Depends(get_db)
+) -> List[UserGroup]:
+    """
+    Get a list of groups for this user that has changed since a certain time, sorted
+    by last message sent. Used to sync changes to mobile apps.
+
+    **Potential error codes in response:**
+    * `250`: if an unknown error occurred.
+    """
+    try:
+        return await environ.env.rest.user.get_groups_updated_since(user_id, query, db)
     except Exception as e:
         log_error_and_raise(sys.exc_info(), e)
 

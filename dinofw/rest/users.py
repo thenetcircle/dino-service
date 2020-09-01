@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from dinofw.db.rdbms.schemas import UserGroupBase
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import GroupQuery
+from dinofw.rest.models import GroupQuery, GroupUpdatesQuery
 from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UserStats
 
@@ -29,6 +29,11 @@ class UserResource(BaseResource):
             ))
 
         return groups
+
+    async def get_groups_updated_since(
+        self, user_id: int, query: GroupUpdatesQuery, db: Session
+    ) -> List[UserGroup]:
+        pass  # TODO: implement
 
     async def get_user_stats(self, user_id: int, db: Session) -> UserStats:
         # ordered by last_message_time, so we're likely to get all groups
