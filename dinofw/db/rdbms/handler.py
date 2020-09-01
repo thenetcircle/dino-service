@@ -203,6 +203,8 @@ class RelationalHandler:
     def get_group_id_for_1to1(self, user_a: int, user_b: int, db: Session) -> Optional[str]:
         users = sorted([user_a, user_b])
 
+        # TODO: use the two fields, user_a and user_b (sorted) instead of an in() query
+
         group = (
             db.query(
                 models.UserGroupStatsEntity

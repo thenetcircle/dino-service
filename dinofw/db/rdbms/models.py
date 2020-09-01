@@ -18,6 +18,8 @@ class GroupEntity(env.Base):
     created_at = Column(DateTime(timezone=True))  # TODO: during migration, set to time of first message sent
     owner_id = Column(Integer)
 
+    # TODO: need a user A and user B field for 1v1 groups (group_type==1)
+
     # used by clients to sync changed (new name, user left etc.)
     updated_at = Column(DateTime(timezone=True), index=True)
 
@@ -43,6 +45,7 @@ class UserGroupStatsEntity(env.Base):
 
     last_read = Column(DateTime(timezone=True))
     last_sent = Column(DateTime(timezone=True))
+    first_sent = Column(DateTime(timezone=True))  # TODO: set this if not yet set
     delete_before = Column(DateTime(timezone=True))
     join_time = Column(DateTime(timezone=True))
 

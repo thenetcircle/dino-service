@@ -171,6 +171,8 @@ async def get_group_information(group_id, db: Session = Depends(get_db)) -> Grou
     """
     Get details about one group.
 
+    TODO: need another api for group info where the `group_id` might be unknown by clients; i.e. for 1v1 conversations
+
     **Potential error codes in response:**
     * `601`: if the group does not exist,
     * `250`: if an unknown error occurred.
