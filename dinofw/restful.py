@@ -423,10 +423,10 @@ async def update_user_message_status(
     **Potential error codes in response:**
     * `250`: if an unknown error occurred.
     """
-    try:
-        return await environ.env.rest.message.update_user_message_status(user_id, query, db)
-    except Exception as e:
-        log_error_and_raise(sys.exc_info(), e)
+    #try:
+    return await environ.env.rest.message.update_user_message_status(user_id, query, db)
+    #except Exception as e:
+    #    log_error_and_raise(sys.exc_info(), e)
 
 
 @app.on_event("startup")
