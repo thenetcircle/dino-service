@@ -201,6 +201,14 @@ class RelationalHandler:
         return last_reads
 
     def get_group_id_for_1to1(self, user_a: int, user_b: int, db: Session) -> Optional[str]:
+        group = self.get_group_for_1to1(user_a, user_b, db)
+
+        if group is None:
+            return None
+
+        return group.group_id
+
+    def get_group_for_1to1(self, user_a: int, user_b: int, db: Session) -> Optional[GroupBase]:
         users = sorted([user_a, user_b])
 
         group = (
@@ -218,7 +226,7 @@ class RelationalHandler:
         if group is None:
             return None
 
-        return group.group_id
+        return GroupBase(**group.__dict__)
 
     def create_group_for_1to1(self, user_a: int, user_b: int, db: Session) -> GroupBase:
         users = sorted([user_a, user_b])

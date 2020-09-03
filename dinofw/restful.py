@@ -5,11 +5,12 @@ import inspect
 
 from fastapi import Depends, HTTPException
 from fastapi import FastAPI
+from fastapi import status
 from sqlalchemy.orm import Session
 
 from dinofw import environ
 from dinofw.config import ErrorCodes
-from dinofw.rest.models import ActionLog, GroupUpdatesQuery
+from dinofw.rest.models import ActionLog, GroupUpdatesQuery, OneToOneStats
 from dinofw.rest.models import UserGroup
 from dinofw.rest.models import CreateActionLogQuery
 from dinofw.rest.models import CreateGroupQuery
@@ -71,13 +72,13 @@ async def get_group_history_for_user(
         return await environ.env.rest.group.histories(group_id, user_id, query, db)
     except NoSuchGroupException as e:
         raise HTTPException(
-            status_code=ErrorCodes.NO_SUCH_GROUP,
-            detail=e.message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"{ErrorCodes.NO_SUCH_GROUP}: {e.message}",
         )
     except UserNotInGroupException as e:
         raise HTTPException(
-            status_code=ErrorCodes.USER_NOT_IN_GROUP,
-            detail=e.message
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"{ErrorCodes.USER_NOT_IN_GROUP}: {e.message}",
         )
     except Exception as e:
         log_error_and_raise(sys.exc_info(), e)
@@ -101,13 +102,13 @@ async def send_message_to_group(
         return await environ.env.rest.message.send_message_to_group(group_id, user_id, query, db)
     except NoSuchGroupException as e:
         raise HTTPException(
-            status_code=ErrorCodes.NO_SUCH_GROUP,
-            detail=e.message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"{ErrorCodes.NO_SUCH_GROUP}: {e.message}",
         )
     except UserNotInGroupException as e:
         raise HTTPException(
-            status_code=ErrorCodes.USER_NOT_IN_GROUP,
-            detail=e.message
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"{ErrorCodes.USER_NOT_IN_GROUP}: {e.message}",
         )
     except Exception as e:
         log_error_and_raise(sys.exc_info(), e)
@@ -159,8 +160,8 @@ async def get_users_in_group(
         return await environ.env.rest.group.get_users_in_group(group_id, db)
     except NoSuchGroupException as e:
         raise HTTPException(
-            status_code=ErrorCodes.NO_SUCH_GROUP,
-            detail=e.message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"{ErrorCodes.NO_SUCH_GROUP}: {e.message}",
         )
     except Exception as e:
         log_error_and_raise(sys.exc_info(), e)
@@ -181,8 +182,28 @@ async def get_group_information(group_id, db: Session = Depends(get_db)) -> Grou
         return await environ.env.rest.group.get_group(group_id, db)
     except NoSuchGroupException as e:
         raise HTTPException(
-            status_code=ErrorCodes.NO_SUCH_GROUP,
-            detail=e.message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"{ErrorCodes.NO_SUCH_GROUP}: {e.message}",
+        )
+    except Exception as e:
+        log_error_and_raise(sys.exc_info(), e)
+
+
+@app.get("/v1/users/{user_id_a}/with/{user_id_b}", response_model=OneToOneStats)
+async def get_one_to_one_information(user_id_a: int, user_id_b: int, db: Session = Depends(get_db)) -> OneToOneStats:
+    """
+    Get details about a 1v1 group.
+
+    **Potential error codes in response:**
+    * `601`: if the group does not exist,
+    * `250`: if an unknown error occurred.
+    """
+    try:
+        return await environ.env.rest.group.get_1v1_info(user_id_a, user_id_b, db)
+    except NoSuchGroupException as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"{ErrorCodes.NO_SUCH_GROUP}: {e.message}",
         )
     except Exception as e:
         log_error_and_raise(sys.exc_info(), e)
@@ -201,8 +222,8 @@ async def edit_group_information(group_id, query: UpdateGroupQuery, db: Session 
         return await environ.env.rest.group.update_group_information(group_id, query, db)
     except NoSuchGroupException as e:
         raise HTTPException(
-            status_code=ErrorCodes.NO_SUCH_GROUP,
-            detail=e.message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"{ErrorCodes.NO_SUCH_GROUP}: {e.message}",
         )
     except Exception as e:
         log_error_and_raise(sys.exc_info(), e)
@@ -310,8 +331,8 @@ async def leave_group(
         return await environ.env.rest.group.leave_group(group_id, user_id, db)
     except NoSuchGroupException as e:
         raise HTTPException(
-            status_code=ErrorCodes.NO_SUCH_GROUP,
-            detail=e.message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"{ErrorCodes.NO_SUCH_GROUP}: {e.message}",
         )
     except Exception as e:
         log_error_and_raise(sys.exc_info(), e)
@@ -333,13 +354,13 @@ async def get_user_statistics_in_group(
         return await environ.env.rest.group.get_user_group_stats(group_id, user_id, db)
     except NoSuchGroupException as e:
         raise HTTPException(
-            status_code=ErrorCodes.NO_SUCH_GROUP,
-            detail=e.message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"{ErrorCodes.NO_SUCH_GROUP}: {e.message}",
         )
     except UserNotInGroupException as e:
         raise HTTPException(
-            status_code=ErrorCodes.USER_NOT_IN_GROUP,
-            detail=e.message
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"{ErrorCodes.USER_NOT_IN_GROUP}: {e.message}",
         )
     except Exception as e:
         log_error_and_raise(sys.exc_info(), e)
@@ -381,13 +402,13 @@ async def update_user_statistics_in_group(
         )
     except NoSuchGroupException as e:
         raise HTTPException(
-            status_code=ErrorCodes.NO_SUCH_GROUP,
-            detail=e.message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"{ErrorCodes.NO_SUCH_GROUP}: {e.message}",
         )
     except UserNotInGroupException as e:
         raise HTTPException(
-            status_code=ErrorCodes.USER_NOT_IN_GROUP,
-            detail=e.message
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"{ErrorCodes.USER_NOT_IN_GROUP}: {e.message}",
         )
     except Exception as e:
         log_error_and_raise(sys.exc_info(), e)
@@ -423,10 +444,10 @@ async def update_user_message_status(
     **Potential error codes in response:**
     * `250`: if an unknown error occurred.
     """
-    #try:
-    return await environ.env.rest.message.update_user_message_status(user_id, query, db)
-    #except Exception as e:
-    #    log_error_and_raise(sys.exc_info(), e)
+    try:
+        return await environ.env.rest.message.update_user_message_status(user_id, query, db)
+    except Exception as e:
+        log_error_and_raise(sys.exc_info(), e)
 
 
 @app.on_event("startup")
@@ -440,8 +461,8 @@ def log_error_and_raise(exc_info, e):
     logger.exception(e)
     environ.env.capture_exception(exc_info)
     raise HTTPException(
-        status_code=ErrorCodes.UNKNOWN_ERROR,
-        detail=f"unknown error occurred: {str(e)}",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"{ErrorCodes.UNKNOWN_ERROR}: {str(e)}",
     )
 
 

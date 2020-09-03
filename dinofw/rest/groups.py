@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import AbstractQuery
+from dinofw.rest.models import AbstractQuery, OneToOneStats
 from dinofw.rest.models import ActionLog
 from dinofw.rest.models import CreateActionLogQuery
 from dinofw.rest.models import CreateGroupQuery
@@ -50,6 +50,30 @@ class GroupResource(BaseResource):
 
         return GroupResource.group_base_to_group(
             group, users=first_users, user_count=n_users,
+        )
+
+    async def get_1v1_info(self, user_id_a: int, user_id_b: int, db: Session) -> OneToOneStats:
+        users = sorted([user_id_a, user_id_b])
+        group = self.env.db.get_group_for_1to1(users[0], users[1], db)
+
+        if group is None:
+            raise NoSuchGroupException(",".join([str(user_id) for user_id in users]))
+
+        group_id = group.group_id
+        users_and_join_time = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
+
+        user_stats = [
+            await self.get_user_group_stats(group_id, user_id, db)
+            for user_id in users
+        ]
+
+        return OneToOneStats(
+            stats=user_stats,
+            group=GroupResource.group_base_to_group(
+                group=group,
+                users=users_and_join_time,
+                user_count=len(users_and_join_time)
+            )
         )
 
     async def histories(self, group_id: str, user_id: int, query: MessageQuery, db: Session) -> Histories:

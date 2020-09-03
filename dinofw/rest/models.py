@@ -199,6 +199,11 @@ class Group(BaseModel):
     user_count: int
 
 
+class OneToOneStats(BaseModel):
+    group: Group
+    stats: List[UserGroupStats]
+
+
 class UserGroup(BaseModel):
     group: Group
     stats: UserGroupStats
