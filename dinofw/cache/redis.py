@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 FIVE_MINUTES = 60 * 5
 ONE_HOUR = 60 * 60
+ONE_DAY = 24 * ONE_HOUR
 
 
 class MemoryCache:
@@ -86,6 +87,15 @@ class CacheRedis(ICache):
 
         return float(str(last_read, "utf-8"))
 
+    def set_last_read_in_group_for_users(self, group_id: str, users: Dict[int, float]) -> None:
+        key = RedisKeys.last_read_time(group_id)
+        p = self.redis.pipeline()
+
+        for user_id, last_read in users.items():
+            p.hset(key, user_id, last_read)
+
+        p.execute()
+
     def set_last_read_in_group_for_user(self, group_id: str, user_id: int, last_read: float) -> None:
         key = RedisKeys.last_read_time(group_id)
         self.redis.hset(key, user_id, last_read)
@@ -135,7 +145,7 @@ class CacheRedis(ICache):
 
     def get_user_count_in_group(self, group_id: str) -> Optional[int]:
         key = RedisKeys.user_in_group(group_id)
-        n_users = self.redis.scard(key)
+        n_users = self.redis.hlen(key)
 
         if n_users is None:
             return None
@@ -143,13 +153,12 @@ class CacheRedis(ICache):
         return n_users
 
     def get_user_ids_and_join_time_in_group(self, group_id: str) -> Optional[Dict[int, float]]:
-        users = self.redis.smembers(RedisKeys.user_in_group(group_id))
+        users = self.redis.hgetall(RedisKeys.user_in_group(group_id))
 
         if not len(users):
             return None
 
-        users = [str(user, "utf-8").split("|") for user in users]
-        return {int(user_id): float(join_time) for user_id, join_time in users}
+        return {int(user_id): float(join_time) for user_id, join_time in users.items()}
 
     def set_user_ids_and_join_time_in_group(
         self, group_id: str, users: Dict[int, float]
@@ -163,14 +172,13 @@ class CacheRedis(ICache):
 
     def add_user_ids_and_join_time_in_group(self, group_id: str, users: Dict[int, float]) -> None:
         key = RedisKeys.user_in_group(group_id)
+        p = self.redis.pipeline()
 
-        values = [
-            "|".join([str(user_id), str(join_time)])
-            for user_id, join_time in users.items()
-        ]
+        for user_id, join_time in users.items():
+            p.hset(key, str(user_id), str(join_time))
 
-        self.redis.sadd(key, *values)
-        self.redis.expire(key, ONE_HOUR)
+        p.expire(key, ONE_DAY)
+        p.execute()
 
     def clear_user_ids_and_join_time_in_group(self, group_id: str) -> None:
         key = RedisKeys.user_in_group(group_id)

@@ -5,21 +5,6 @@ from sqlalchemy import String
 from dinofw.environ import env
 
 
-class OneToOneEntity(env.Base):
-    __tablename__ = "one_to_one"
-
-    # TODO: need a user A and user B field for 1v1 groups (group_type==1)
-
-    user_a = Column(Integer, nullable=False, index=True)
-    user_b = Column(Integer, nullable=False, index=True)
-
-    # TODO: maybe a new table for 1v1 convos; joins with userstats for big groups is heavy, most convos are 1v1
-    # TODO: complex primary key on (user_a, user_b)
-
-    # TODO: during migration, set to time of first message sent
-    created_at = Column(DateTime(timezone=True))
-
-
 class GroupEntity(env.Base):
     __tablename__ = "groups"
 
@@ -27,6 +12,9 @@ class GroupEntity(env.Base):
 
     group_id = Column(String(36), index=True)
     name = Column(String(128))
+
+    user_a = Column(Integer, index=True, nullable=True)
+    user_b = Column(Integer, index=True, nullable=True)
 
     owner_id = Column(Integer)
     status = Column(Integer, nullable=True)
@@ -60,8 +48,6 @@ class UserGroupStatsEntity(env.Base):
     last_sent = Column(DateTime(timezone=True))
     delete_before = Column(DateTime(timezone=True))
     join_time = Column(DateTime(timezone=True))
-
-    # TODO: set this if not yet set
     first_sent = Column(DateTime(timezone=True))
 
     # used to sync changes to apps

@@ -65,9 +65,10 @@ class SendMessageQuery(AbstractQuery):
 
 
 class CreateGroupQuery(AbstractQuery):
+    users: List[int]
+
     group_name: str
     group_type: int
-    users: List[int]
     description: Optional[str]
     meta: Optional[int]
     context: Optional[str]
@@ -145,6 +146,7 @@ class UserGroupStats(BaseModel):
     delete_before: float
     highlight_time: Optional[float]
     last_updated_time: float
+    first_sent: Optional[float]
 
     hide: Optional[bool]
     pin: Optional[bool]

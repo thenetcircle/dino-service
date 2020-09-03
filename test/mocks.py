@@ -18,6 +18,7 @@ from dinofw.rest.models import (
 )
 from dinofw.rest.models import GroupQuery
 from dinofw.rest.models import SendMessageQuery
+from dinofw.utils.exceptions import NoSuchGroupException
 
 
 class FakeStorage:
@@ -339,7 +340,7 @@ class FakeDatabase:
         self, group_id: str, db
     ) -> (Optional[GroupBase], Optional[Dict[int, float]], Optional[int]):
         if group_id not in self.groups:
-            return None, None, None
+            raise NoSuchGroupException(group_id)
 
         group = self.groups[group_id]
         users = self.get_user_ids_and_join_time_in_group(group_id, db)
@@ -525,3 +526,6 @@ class FakeEnv:
         self.rest.group = GroupResource(self)
         self.rest.user = UserResource(self)
         self.rest.message = MessageResource(self)
+
+    def capture_exception(self, _):
+        pass

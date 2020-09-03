@@ -203,19 +203,14 @@ class RelationalHandler:
     def get_group_id_for_1to1(self, user_a: int, user_b: int, db: Session) -> Optional[str]:
         users = sorted([user_a, user_b])
 
-        # TODO: use the two fields, user_a and user_b (sorted) instead of an in() query
-
         group = (
             db.query(
-                models.UserGroupStatsEntity
-            )
-            .join(
-                models.GroupEntity,
-                models.GroupEntity.group_id == models.UserGroupStatsEntity.group_id
+                models.GroupEntity
             )
             .filter(
-                models.UserGroupStatsEntity.user_id.in_(users),
-                models.GroupEntity.group_type == GroupTypes.ONE_TO_ONE
+                models.GroupEntity.group_type == GroupTypes.ONE_TO_ONE,
+                models.GroupEntity.user_a == users[0],
+                models.GroupEntity.user_b == users[1],
             )
             .first()
         )
@@ -308,32 +303,42 @@ class RelationalHandler:
     def update_user_stats_on_join_or_create_group(
         self, group_id: str, users: Dict[int, float], now: dt, db: Session
     ) -> None:
-        """
-        TODO: should we update last read for sender? or sender also acks?
-        """
         user_ids_for_cache = set()
+        user_ids_to_stats = dict()
+        user_ids = list(users.keys())
 
-        for user_id, join_time in users.items():
-            user_stats = (
-                db.query(models.UserGroupStatsEntity)
-                .filter(models.UserGroupStatsEntity.user_id == user_id)
-                .filter(models.UserGroupStatsEntity.group_id == group_id)
-                .first()
-            )
+        user_stats = (
+            db.query(models.UserGroupStatsEntity)
+            .filter(models.UserGroupStatsEntity.user_id.in_(user_ids))
+            .filter(models.UserGroupStatsEntity.group_id == group_id)
+            .all()
+        )
 
-            if user_stats is None:
+        for user_stat in user_stats:
+            user_ids_to_stats[user_stat.user_id] = user_stat
+
+        for user_id in user_ids:
+            if user_id not in user_ids_to_stats:
                 user_ids_for_cache.add(user_id)
-                user_stats = self._create_user_stats(group_id, user_id, now)
+                user_ids_to_stats[user_id] = self._create_user_stats(group_id, user_id, now)
 
-            user_stats.last_read = now
-            db.add(user_stats)
+            user_ids_to_stats[user_id].last_read = now
+            db.add(user_ids_to_stats[user_id])
 
         db.commit()
+        now_ts = GroupQuery.to_ts(arrow.utcnow().datetime)
 
-        now_ts = GroupQuery.to_ts(now)
-        for user_id in user_ids_for_cache:
-            self.env.cache.add_user_ids_and_join_time_in_group(group_id, {user_id: now_ts})
-            self.env.cache.set_last_read_in_group_for_user(group_id, user_id, now_ts)
+        join_times = {
+            user_id: GroupQuery.to_ts(stats.join_time)
+            for user_id, stats in user_ids_to_stats.items()
+        }
+        read_times = {
+            user_id: now_ts
+            for user_id in user_ids
+        }
+
+        self.env.cache.add_user_ids_and_join_time_in_group(group_id, join_times)
+        self.env.cache.set_last_read_in_group_for_users(group_id, read_times)
 
     def update_group_information(
         self, group_id: str, query: UpdateGroupQuery, db: Session
@@ -489,6 +494,9 @@ class RelationalHandler:
         user_stats.last_sent = the_time
         user_stats.last_updated_time = the_time
 
+        if user_stats.first_sent is None:
+            user_stats.first_sent = the_time
+
         db.add(user_stats)
         db.commit()
 
@@ -497,9 +505,18 @@ class RelationalHandler:
     ) -> GroupBase:
         created_at = arrow.utcnow().datetime
 
+        user_a, user_b = None, None
+
+        if query.group_type == GroupTypes.ONE_TO_ONE:
+            users = sorted(query.users)
+            user_a = users[0]
+            user_b = users[1]
+
         group_entity = models.GroupEntity(
             group_id=str(uuid()),
             name=query.group_name,
+            user_a=user_a,
+            user_b=user_b,
             group_type=query.group_type,
             last_message_time=created_at,
             updated_at=created_at,

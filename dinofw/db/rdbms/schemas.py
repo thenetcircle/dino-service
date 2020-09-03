@@ -34,6 +34,7 @@ class UserGroupStatsBase(BaseModel):
     join_time: datetime
     highlight_time: Optional[datetime]
     last_updated_time: datetime
+    first_sent: Optional[datetime]
 
     hide: bool
     pin: bool

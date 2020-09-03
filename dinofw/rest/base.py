@@ -114,6 +114,7 @@ class BaseResource(ABC):
         stats_dict["last_sent_time"] = AbstractQuery.to_ts(stats_base.last_sent)
         stats_dict["delete_before"] = AbstractQuery.to_ts(stats_base.delete_before)
         stats_dict["highlight_time"] = AbstractQuery.to_ts(stats_base.highlight_time, allow_none=True)
+        stats_dict["first_sent"] = AbstractQuery.to_ts(stats_base.first_sent, allow_none=True)
         stats_dict["last_updated_time"] = AbstractQuery.to_ts(stats_base.last_updated_time)
 
         stats = UserGroupStats(**stats_dict)
