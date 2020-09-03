@@ -141,9 +141,10 @@ class UserGroupStats(BaseModel):
     group_id: str
     user_id: int
     unread_amount: int
-    last_read_time: float
-    last_sent_time: float
+    last_read_time: Optional[float]
+    last_sent_time: Optional[float]
     delete_before: float
+    # TODO: add join time
     highlight_time: Optional[float]
     last_updated_time: float
     first_sent: Optional[float]
