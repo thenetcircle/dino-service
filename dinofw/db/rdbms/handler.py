@@ -511,6 +511,10 @@ class RelationalHandler:
             description=query.description,
         )
 
+        for user_id in query.users:
+            user_stats = self._create_user_stats(group_entity.group_id, user_id, created_at)
+            db.add(user_stats)
+
         base = GroupBase(**group_entity.__dict__)
 
         db.add(group_entity)
