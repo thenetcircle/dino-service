@@ -44,10 +44,9 @@ class RelationalHandler:
 
         group = GroupBase(**group_entity.__dict__)
         users_and_join_time = self.get_user_ids_and_join_time_in_group(group_id, db)
-        user_ids = users_and_join_time.keys()
         user_count = self.count_users_in_group(group_id, db)
 
-        return group, user_ids, user_count
+        return group, users_and_join_time, user_count
 
     def get_groups_for_user(
         self,
