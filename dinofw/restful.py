@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from dinofw import environ
 from dinofw.config import ErrorCodes
-from dinofw.rest.models import ActionLog, GroupUpdatesQuery, OneToOneStats
+from dinofw.rest.models import ActionLog, GroupUpdatesQuery, OneToOneStats, OneToOneQuery
 from dinofw.rest.models import UserGroup
 from dinofw.rest.models import CreateActionLogQuery
 from dinofw.rest.models import CreateGroupQuery
@@ -189,8 +189,12 @@ async def get_group_information(group_id, db: Session = Depends(get_db)) -> Grou
         log_error_and_raise(sys.exc_info(), e)
 
 
-@app.get("/v1/users/{user_id_a}/with/{user_id_b}", response_model=OneToOneStats)
-async def get_one_to_one_information(user_id_a: int, user_id_b: int, db: Session = Depends(get_db)) -> OneToOneStats:
+@app.get("/v1/users/{user_id}/group", response_model=OneToOneStats)
+async def get_one_to_one_information(
+        user_id: int,
+        query: OneToOneQuery,
+        db: Session = Depends(get_db)
+) -> OneToOneStats:
     """
     Get details about a 1v1 group.
 
@@ -199,7 +203,7 @@ async def get_one_to_one_information(user_id_a: int, user_id_b: int, db: Session
     * `250`: if an unknown error occurred.
     """
     try:
-        return await environ.env.rest.group.get_1v1_info(user_id_a, user_id_b, db)
+        return await environ.env.rest.group.get_1v1_info(user_id, query.receiver_id, db)
     except NoSuchGroupException as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
