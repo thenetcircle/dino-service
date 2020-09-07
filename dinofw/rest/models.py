@@ -18,7 +18,7 @@ class AbstractQuery(BaseModel):
         if s is None:
             s = arrow.utcnow().datetime
         else:
-            s = arrow.get(float(s))
+            s = arrow.get(float(s)).datetime
             # s = dt.fromtimestamp(s).replace(tzinfo=pytz.UTC)
 
         return s
