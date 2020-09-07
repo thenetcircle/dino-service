@@ -1,7 +1,6 @@
 from datetime import datetime as dt
 from typing import Optional, List
 
-import pytz
 import arrow
 from pydantic import BaseModel
 
@@ -19,19 +18,18 @@ class AbstractQuery(BaseModel):
             s = arrow.utcnow().datetime
         else:
             s = arrow.get(float(s)).datetime
-            # s = dt.fromtimestamp(s).replace(tzinfo=pytz.UTC)
 
         return s
 
     @staticmethod
-    def to_ts(ds, allow_none: bool = False) -> Optional[str]:
+    def to_ts(ds, allow_none: bool = False) -> Optional[float]:
         if ds is None and allow_none:
             return None
 
         if ds is None:
-            ds = arrow.utcnow().datetime
+            return arrow.utcnow().float_timestamp
 
-        return ds.strftime("%s.%f")
+        return arrow.get(ds).float_timestamp
 
 
 class PaginationQuery(AbstractQuery):
