@@ -393,7 +393,7 @@ class RelationalHandler:
         )
 
         if user_stats is None:
-            return None
+            raise UserNotInGroupException(f"user {user_id} is not in group {group_id}")
 
         base = UserGroupStatsBase(**user_stats.__dict__)
 
