@@ -81,7 +81,7 @@ async def get_group_history_for_user(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@app.post("/v1/groups/{group_id}/users/{user_id}/send", response_model=Message)
+@app.post("/v1/groups/{group_id}/user/{user_id}/send", response_model=Message)
 async def send_message_to_group(
     group_id: str, user_id: int, query: SendMessageQuery, db: Session = Depends(get_db)
 ) -> List[Message]:
