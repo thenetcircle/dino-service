@@ -82,6 +82,10 @@ class GroupQuery(PaginationQuery):
     has_unread: Optional[int]  # TODO: needed?
 
 
+class OneToOneQuery(AbstractQuery):
+    receiver_id: Optional[int]
+
+
 class GroupUpdatesQuery(PaginationQuery):
     since: Optional[float]
 
