@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime as dt
-from typing import List, Tuple, Optional, Dict
+from typing import List, Optional, Dict
 from uuid import uuid4 as uuid
 
 import arrow
@@ -8,16 +8,18 @@ from sqlalchemy import literal
 from sqlalchemy.orm import Session
 
 from dinofw.config import GroupTypes
-from dinofw.db.storage.schemas import MessageBase
 from dinofw.db.rdbms import models
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.rdbms.schemas import UserGroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
-from dinofw.rest.models import CreateGroupQuery, MessageQuery
+from dinofw.db.storage.schemas import MessageBase
+from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import GroupQuery
+from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import UpdateGroupQuery
 from dinofw.rest.models import UpdateUserGroupStats
-from dinofw.utils.exceptions import UserNotInGroupException, NoSuchGroupException
+from dinofw.utils.exceptions import NoSuchGroupException
+from dinofw.utils.exceptions import UserNotInGroupException
 
 
 class RelationalHandler:
@@ -203,7 +205,7 @@ class RelationalHandler:
         group = self.get_group_for_1to1(user_a, user_b, db)
 
         if group is None:
-            return None
+            raise NoSuchGroupException(",".join([str(user_id) for user_id in [user_a, user_b]]))
 
         return group.group_id
 
@@ -223,7 +225,7 @@ class RelationalHandler:
         )
 
         if group is None:
-            return None
+            raise NoSuchGroupException(",".join([str(user_id) for user_id in users]))
 
         return GroupBase(**group.__dict__)
 
@@ -401,7 +403,7 @@ class RelationalHandler:
 
     def update_user_group_stats(
         self, group_id: str, user_id: int, query: UpdateUserGroupStats, db: Session
-    ) -> Optional[UserGroupStatsBase]:
+    ) -> None:
         user_stats = (
             db.query(models.UserGroupStatsEntity)
             .filter(models.UserGroupStatsEntity.user_id == user_id)
@@ -436,6 +438,9 @@ class RelationalHandler:
             if query.pin is not None:
                 user_stats.pin = query.pin
 
+            if query.rating is not None:
+                user_stats.rating = query.rating
+
             # can't set highlight time if also setting last read time
             if highlight_time is not None and last_read is None:
                 user_stats.highlight_time = highlight_time
@@ -449,12 +454,8 @@ class RelationalHandler:
                 user_stats.hide = query.hide
                 self.env.cache.set_hide_group(group_id, query.hide, [user_id])
 
-        base = UserGroupStatsBase(**user_stats.__dict__)
-
         db.add(user_stats)
         db.commit()
-
-        return base
 
     def update_last_read_and_highlight_in_group_for_user(
             self,

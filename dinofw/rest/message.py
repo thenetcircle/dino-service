@@ -10,6 +10,7 @@ from dinofw.rest.models import EditMessageQuery
 from dinofw.rest.models import Message
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
+from dinofw.utils.exceptions import NoSuchGroupException
 
 logger = logging.getLogger(__name__)
 
@@ -26,9 +27,9 @@ class MessageResource(BaseResource):
     async def send_message_to_user(
         self, user_id: int, query: SendMessageQuery, db: Session
     ) -> Message:
-        group_id = self.env.db.get_group_id_for_1to1(user_id, query.receiver_id, db)
-
-        if group_id is None:
+        try:
+            group_id = self.env.db.get_group_id_for_1to1(user_id, query.receiver_id, db)
+        except NoSuchGroupException:
             group = self.env.db.create_group_for_1to1(user_id, query.receiver_id, db)
             group_id = group.group_id
 

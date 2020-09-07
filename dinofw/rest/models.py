@@ -109,6 +109,7 @@ class UpdateUserGroupStats(AbstractQuery):
     hide: Optional[bool]
     bookmark: Optional[bool]
     pin: Optional[bool]
+    rating: Optional[int]
 
 
 class GroupJoinTime(BaseModel):

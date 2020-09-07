@@ -337,7 +337,7 @@ async def get_user_statistics_in_group(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@app.put("/v1/groups/{group_id}/userstats/{user_id}")
+@app.put("/v1/groups/{group_id}/user/{user_id}/update")
 async def update_user_statistics_in_group(
     group_id: str,
     user_id: int,
@@ -360,7 +360,8 @@ async def update_user_statistics_in_group(
     * `highlight_time`: until when should this conversation be highlighted for this user,
     * `hide`: whether to hide/show a conversation,
     * `bookmark`: whether to bookmark a conversation or not,
-    * `pin`: whether to pin a conversation or not.
+    * `pin`: whether to pin a conversation or not,
+    * `rating`: a user can rate a conversation (1v1 usually).
 
     **Potential error codes in response:**
     * `600`: if the user is not in the group,

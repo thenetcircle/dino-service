@@ -28,7 +28,7 @@ class BaseServerRestApi(BaseDatabaseTest):
             user_id = BaseTest.USER_ID
 
         raw_response = self.client.put(
-            f"/v1/groups/{group_id}/userstats/{user_id}",
+            f"/v1/groups/{group_id}/user/{user_id}/update",
             json={
                 "delete_before": delete_before,
             },
@@ -110,7 +110,7 @@ class BaseServerRestApi(BaseDatabaseTest):
             user_id = BaseTest.USER_ID
 
         raw_response = self.client.put(
-            f"/v1/groups/{group_id}/userstats/{user_id}",
+            f"/v1/groups/{group_id}/user/{user_id}/update",
             json={"hide": hide},
         )
         self.assertEqual(raw_response.status_code, 200)
@@ -123,7 +123,7 @@ class BaseServerRestApi(BaseDatabaseTest):
         now_ts = AbstractQuery.to_ts(now)
 
         raw_response = self.client.put(
-            f"/v1/groups/{group_id}/userstats/{user_id}",
+            f"/v1/groups/{group_id}/user/{user_id}/update",
             json={"last_read_time": now_ts},
         )
         self.assertEqual(raw_response.status_code, 200)
@@ -161,7 +161,7 @@ class BaseServerRestApi(BaseDatabaseTest):
             user_id = BaseTest.USER_ID
 
         raw_response = self.client.put(
-            f"/v1/groups/{group_id}/userstats/{user_id}",
+            f"/v1/groups/{group_id}/user/{user_id}/update",
             json={"pin": pinned}
         )
         self.assertEqual(raw_response.status_code, 200)
@@ -193,7 +193,7 @@ class BaseServerRestApi(BaseDatabaseTest):
         now_plus_2_days = AbstractQuery.to_ts(now_plus_2_days)
 
         raw_response = self.client.put(
-            f"/v1/groups/{group_id}/userstats/{user_id}",
+            f"/v1/groups/{group_id}/user/{user_id}/update",
             json={
                 "highlight_time": now_plus_2_days,
             },
@@ -204,7 +204,7 @@ class BaseServerRestApi(BaseDatabaseTest):
         now = arrow.utcnow().datetime
 
         raw_response = self.client.put(
-            f"/v1/groups/{group_id}/userstats/{user_id}",
+            f"/v1/groups/{group_id}/user/{user_id}/update",
             json={
                 "last_read_time": now,
             },
