@@ -263,7 +263,7 @@ async def create_a_new_group(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@app.put("/v1/groups/{group_id}/users/{user_id}/join")
+@app.put("/v1/groups/{group_id}/user/{user_id}/join")
 async def join_group(
     group_id: str, user_id: int, db: Session = Depends(get_db)
 ) -> None:
@@ -296,7 +296,7 @@ async def create_action_logs(group_id: str, query: CreateActionLogQuery) -> None
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@app.delete("/v1/groups/{group_id}/users/{user_id}/join")
+@app.delete("/v1/groups/{group_id}/user/{user_id}/join")
 async def leave_group(
     user_id: int, group_id: str, db: Session = Depends(get_db)
 ) -> None:
