@@ -43,7 +43,7 @@ class BaseServerRestApi(BaseDatabaseTest):
 
         for _ in range(amount):
             raw_response = self.client.post(
-                f"/v1/groups/{group_id}/users/{user_id}/send",
+                f"/v1/groups/{group_id}/user/{user_id}/send",
                 json={
                     "message_payload": "test message",
                     "message_type": "text",
@@ -95,14 +95,14 @@ class BaseServerRestApi(BaseDatabaseTest):
         if user_id is None:
             user_id = BaseTest.USER_ID
 
-        raw_response = self.client.delete(f"/v1/groups/{group_id}/users/{user_id}/join")
+        raw_response = self.client.delete(f"/v1/groups/{group_id}/user/{user_id}/join")
         self.assertEqual(raw_response.status_code, 200)
 
     def user_joins_group(self, group_id: str, user_id: int = None) -> None:
         if user_id is None:
             user_id = BaseTest.USER_ID
 
-        raw_response = self.client.put(f"/v1/groups/{group_id}/users/{user_id}/join")
+        raw_response = self.client.put(f"/v1/groups/{group_id}/user/{user_id}/join")
         self.assertEqual(raw_response.status_code, 200)
 
     def update_hide_group_for(self, group_id: str, hide: bool, user_id: int = None):
@@ -134,7 +134,7 @@ class BaseServerRestApi(BaseDatabaseTest):
         if user_id is None:
             user_id = BaseTest.USER_ID
 
-        raw_response = self.client.get(f"/v1/groups/{group_id}/userstats/{user_id}")
+        raw_response = self.client.get(f"/v1/groups/{group_id}/user/{user_id}")
         self.assertEqual(raw_response.status_code, 200)
 
         return raw_response.json()
@@ -226,7 +226,7 @@ class BaseServerRestApi(BaseDatabaseTest):
             user_id = BaseTest.USER_ID
 
         raw_response = self.client.get(
-            f"/v1/groups/{group_id}/userstats/{user_id}",
+            f"/v1/groups/{group_id}/user/{user_id}",
         )
         self.assertEqual(raw_response.status_code, 200)
         self.assertEqual(hidden, raw_response.json()["hide"])

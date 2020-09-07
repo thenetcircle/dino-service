@@ -315,7 +315,7 @@ async def leave_group(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@app.get("/v1/groups/{group_id}/userstats/{user_id}", response_model=UserGroupStats)
+@app.get("/v1/groups/{group_id}/user/{user_id}", response_model=UserGroupStats)
 async def get_user_statistics_in_group(
     group_id: str, user_id: int, db: Session = Depends(get_db)
 ) -> UserGroupStats:
