@@ -1,7 +1,7 @@
+import inspect
 import logging
 import sys
 from typing import List
-import inspect
 
 from fastapi import Depends, HTTPException
 from fastapi import FastAPI
@@ -10,23 +10,26 @@ from sqlalchemy.orm import Session
 
 from dinofw import environ
 from dinofw.config import ErrorCodes
-from dinofw.rest.models import ActionLog, GroupUpdatesQuery, OneToOneStats, OneToOneQuery
-from dinofw.rest.models import UserGroup
+from dinofw.rest.models import ActionLog
 from dinofw.rest.models import CreateActionLogQuery
 from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import Group
 from dinofw.rest.models import GroupQuery
+from dinofw.rest.models import GroupUpdatesQuery
 from dinofw.rest.models import GroupUsers
 from dinofw.rest.models import Histories
 from dinofw.rest.models import Message
 from dinofw.rest.models import MessageQuery
+from dinofw.rest.models import OneToOneQuery
+from dinofw.rest.models import OneToOneStats
 from dinofw.rest.models import SendMessageQuery
 from dinofw.rest.models import UpdateGroupQuery
 from dinofw.rest.models import UpdateUserGroupStats
+from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UserGroupStats
 from dinofw.rest.models import UserStats
-from dinofw.utils.exceptions import UserNotInGroupException
 from dinofw.utils.exceptions import NoSuchGroupException
+from dinofw.utils.exceptions import UserNotInGroupException
 
 logger = logging.getLogger(__name__)
 logging.getLogger("cassandra").setLevel(logging.INFO)
