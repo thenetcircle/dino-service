@@ -14,6 +14,7 @@ class GroupBase(BaseModel):
     last_message_time: datetime
     last_message_overview: Optional[str]
     last_message_type: Optional[str]
+    last_message_user_id: Optional[int]
 
     status: Optional[int]
     group_type: int

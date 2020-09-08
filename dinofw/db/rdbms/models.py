@@ -24,11 +24,12 @@ class GroupEntity(env.Base):
     # used by clients to sync changed (new name, user left etc.)
     updated_at = Column(DateTime(timezone=True), index=True)
 
-    # users by clients to sort groups by recent messages
-    last_message_time = Column(DateTime(timezone=True), index=True)
-    last_message_id = Column(String(36))
-    last_message_type = Column(String(36))
-    last_message_overview = Column(String(512))
+    # used by clients to sort groups by recent messages
+    last_message_time = Column(DateTime(timezone=True), index=True, nullable=False)
+    last_message_user_id = Column(Integer, nullable=True)
+    last_message_id = Column(String(36), nullable=True)
+    last_message_type = Column(String(36), nullable=True)
+    last_message_overview = Column(String(512), nullable=True)
 
     meta = Column(Integer, nullable=True)
     weight = Column(Integer, nullable=True)
