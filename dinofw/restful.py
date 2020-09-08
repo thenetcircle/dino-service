@@ -174,7 +174,7 @@ async def get_group_information(group_id, db: Session = Depends(get_db)) -> Grou
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@app.put("/v1/users/{user_id}/group", response_model=OneToOneStats)
+@app.post("/v1/users/{user_id}/group", response_model=OneToOneStats)
 async def get_one_to_one_information(
         user_id: int,
         query: OneToOneQuery,
