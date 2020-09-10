@@ -16,17 +16,21 @@ class UserResource(BaseResource):
     async def get_groups_for_user(
         self, user_id: int, query: GroupQuery, db: Session
     ) -> List[UserGroup]:
-        user_groups: List[UserGroupBase] = self.env.db.get_groups_for_user(user_id, query, db)
+        user_groups: List[UserGroupBase] = self.env.db.get_groups_for_user(
+            user_id, query, db
+        )
         groups: List[UserGroup] = list()
 
         for user_group in user_groups:
-            groups.append(BaseResource.group_base_to_user_group(
-                group_base=user_group.group,
-                stats_base=user_group.user_stats,
-                unread_count=user_group.unread_count,
-                user_count=user_group.user_count,
-                users=user_group.user_join_times
-            ))
+            groups.append(
+                BaseResource.group_base_to_user_group(
+                    group_base=user_group.group,
+                    stats_base=user_group.user_stats,
+                    unread_count=user_group.unread_count,
+                    user_count=user_group.user_count,
+                    users=user_group.user_join_times,
+                )
+            )
 
         return groups
 
@@ -62,9 +66,7 @@ class UserResource(BaseResource):
 
             if last_message > last_read and last_message > delete_before:
                 unread_amount += self.env.storage.get_unread_in_group(
-                    group.group_id,
-                    user_id,
-                    last_read
+                    group.group_id, user_id, last_read
                 )
 
             if group.owner_id == user_id:

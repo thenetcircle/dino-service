@@ -31,18 +31,12 @@ class GroupResource(BaseResource):
         group, first_users, n_users = self.env.db.get_users_in_group(group_id, db)
 
         users = [
-            GroupJoinTime(
-                user_id=user_id,
-                join_time=join_time,
-            )
+            GroupJoinTime(user_id=user_id, join_time=join_time,)
             for user_id, join_time in first_users.items()
         ]
 
         return GroupUsers(
-            group_id=group_id,
-            owner_id=group.owner_id,
-            user_count=n_users,
-            users=users,
+            group_id=group_id, owner_id=group.owner_id, user_count=n_users, users=users,
         )
 
     async def get_group(self, group_id: str, db: Session) -> Optional[Group]:
@@ -52,7 +46,9 @@ class GroupResource(BaseResource):
             group, users=first_users, user_count=n_users,
         )
 
-    async def get_1v1_info(self, user_id_a: int, user_id_b: int, db: Session) -> OneToOneStats:
+    async def get_1v1_info(
+        self, user_id_a: int, user_id_b: int, db: Session
+    ) -> OneToOneStats:
         users = sorted([user_id_a, user_id_b])
         group = self.env.db.get_group_for_1to1(users[0], users[1], db)
 
@@ -60,11 +56,12 @@ class GroupResource(BaseResource):
             raise NoSuchGroupException(",".join([str(user_id) for user_id in users]))
 
         group_id = group.group_id
-        users_and_join_time = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
+        users_and_join_time = self.env.db.get_user_ids_and_join_time_in_group(
+            group_id, db
+        )
 
         user_stats = [
-            await self.get_user_group_stats(group_id, user_id, db)
-            for user_id in users
+            await self.get_user_group_stats(group_id, user_id, db) for user_id in users
         ]
 
         return OneToOneStats(
@@ -72,28 +69,32 @@ class GroupResource(BaseResource):
             group=GroupResource.group_base_to_group(
                 group=group,
                 users=users_and_join_time,
-                user_count=len(users_and_join_time)
-            )
+                user_count=len(users_and_join_time),
+            ),
         )
 
-    async def histories(self, group_id: str, user_id: int, query: MessageQuery, db: Session) -> Histories:
+    async def histories(
+        self, group_id: str, user_id: int, query: MessageQuery, db: Session
+    ) -> Histories:
         user_stats = self.env.db.get_user_stats_in_group(group_id, user_id, db)
         if user_stats.hide:
             return Histories(messages=list(), action_logs=list(), last_reads=list())
 
         self._user_opens_conversation(group_id, user_id, db)
 
-        action_log = self.env.storage.get_action_log_in_group_for_user(group_id, user_stats, query)
-        messages = self.env.storage.get_messages_in_group_for_user(group_id, user_stats, query)
+        action_log = self.env.storage.get_action_log_in_group_for_user(
+            group_id, user_stats, query
+        )
+        messages = self.env.storage.get_messages_in_group_for_user(
+            group_id, user_stats, query
+        )
         last_reads = self.env.db.get_last_reads_in_group(group_id, db)
 
         messages = [
-            GroupResource.message_base_to_message(message)
-            for message in messages
+            GroupResource.message_base_to_message(message) for message in messages
         ]
         action_log = [
-            GroupResource.action_log_base_to_action_log(log)
-            for log in action_log
+            GroupResource.action_log_base_to_action_log(log) for log in action_log
         ]
         last_reads = [
             GroupResource.to_last_read(user_id, last_read)
@@ -101,15 +102,15 @@ class GroupResource(BaseResource):
         ]
 
         return Histories(
-            messages=messages,
-            action_logs=action_log,
-            last_reads=last_reads,
+            messages=messages, action_logs=action_log, last_reads=last_reads,
         )
 
     async def get_user_group_stats(
         self, group_id: str, user_id: int, db: Session
     ) -> Optional[UserGroupStats]:
-        user_stats: UserGroupStatsBase = self.env.db.get_user_stats_in_group(group_id, user_id, db)
+        user_stats: UserGroupStatsBase = self.env.db.get_user_stats_in_group(
+            group_id, user_id, db
+        )
 
         if user_stats is None:
             return None
@@ -148,9 +149,7 @@ class GroupResource(BaseResource):
         self.env.db.update_user_group_stats(group_id, user_id, query, db)
 
     async def create_action_logs(
-            self,
-            group_id: str,
-            query: CreateActionLogQuery
+        self, group_id: str, query: CreateActionLogQuery
     ) -> List[ActionLog]:
         logs = self.env.storage.create_action_logs(group_id, query)
         return [GroupResource.action_log_base_to_action_log(log) for log in logs]
@@ -173,9 +172,7 @@ class GroupResource(BaseResource):
         )
 
         group = GroupResource.group_base_to_group(
-            group=group_base,
-            users=users,
-            user_count=len(users),
+            group=group_base, users=users, user_count=len(users),
         )
 
         # notify users they're in a new group
@@ -188,7 +185,9 @@ class GroupResource(BaseResource):
     ) -> None:
         group = self.env.db.update_group_information(group_id, query, db)
 
-        user_ids_and_join_times = self.env.db.get_user_ids_and_join_time_in_group(group.group_id, db)
+        user_ids_and_join_times = self.env.db.get_user_ids_and_join_time_in_group(
+            group.group_id, db
+        )
         user_ids = user_ids_and_join_times.keys()
 
         self.env.publisher.group_change(group, user_ids)
@@ -204,7 +203,9 @@ class GroupResource(BaseResource):
             group_id, user_id_and_last_read, now, db
         )
 
-        user_ids_and_join_times = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
+        user_ids_and_join_times = self.env.db.get_user_ids_and_join_time_in_group(
+            group_id, db
+        )
         user_ids_in_group = user_ids_and_join_times.keys()
         self.env.publisher.join(group_id, user_ids_in_group, user_id, now_ts)
 
@@ -218,7 +219,9 @@ class GroupResource(BaseResource):
         self.env.db.remove_last_read_in_group_for_user(group_id, user_id, db)
 
         # shouldn't send this event to the guy who left, so get from db/cache after removing the leaver id
-        user_ids_and_join_times = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
+        user_ids_and_join_times = self.env.db.get_user_ids_and_join_time_in_group(
+            group_id, db
+        )
 
         # if it's the last user we don't need to publish anything
         if user_ids_and_join_times is not None:

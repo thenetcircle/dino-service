@@ -96,7 +96,9 @@ async def send_message_to_group(
     * `250`: if an unknown error occurred.
     """
     try:
-        return await environ.env.rest.message.send_message_to_group(group_id, user_id, query, db)
+        return await environ.env.rest.message.send_message_to_group(
+            group_id, user_id, query, db
+        )
     except NoSuchGroupException as e:
         log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
     except UserNotInGroupException as e:
@@ -174,9 +176,7 @@ async def get_group_information(group_id, db: Session = Depends(get_db)) -> Grou
 
 @app.post("/v1/users/{user_id}/group", response_model=OneToOneStats)
 async def get_one_to_one_information(
-        user_id: int,
-        query: OneToOneQuery,
-        db: Session = Depends(get_db)
+    user_id: int, query: OneToOneQuery, db: Session = Depends(get_db)
 ) -> OneToOneStats:
     """
     Get details about a 1v1 group.
@@ -194,7 +194,9 @@ async def get_one_to_one_information(
 
 
 @app.put("/v1/groups/{group_id}")
-async def edit_group_information(group_id, query: UpdateGroupQuery, db: Session = Depends(get_db)) -> Group:
+async def edit_group_information(
+    group_id, query: UpdateGroupQuery, db: Session = Depends(get_db)
+) -> Group:
     """
     Update group details.
 
@@ -203,7 +205,9 @@ async def edit_group_information(group_id, query: UpdateGroupQuery, db: Session 
     * `250`: if an unknown error occurred.
     """
     try:
-        return await environ.env.rest.group.update_group_information(group_id, query, db)
+        return await environ.env.rest.group.update_group_information(
+            group_id, query, db
+        )
     except NoSuchGroupException as e:
         log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
     except Exception as e:
@@ -394,9 +398,7 @@ async def get_user_statistics(user_id: int, db: Session = Depends(get_db)) -> Us
 
 @app.put("/v1/users/{user_id}/messages", response_model=List[Message])
 async def update_user_message_status(
-        user_id: int,
-        query: MessageQuery,
-        db: Session = Depends(get_db)
+    user_id: int, query: MessageQuery, db: Session = Depends(get_db)
 ) -> None:
     """
     Update user message status, e.g. because the user got blocked, is a bot,
@@ -409,7 +411,9 @@ async def update_user_message_status(
     * `250`: if an unknown error occurred.
     """
     try:
-        return await environ.env.rest.message.update_user_message_status(user_id, query, db)
+        return await environ.env.rest.message.update_user_message_status(
+            user_id, query, db
+        )
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 
@@ -425,8 +429,8 @@ def log_error_and_raise_unknown(exc_info, e):
     logger.exception(e)
     environ.env.capture_exception(exc_info)
     raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"{ErrorCodes.UNKNOWN_ERROR}: {str(e)}",
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail=f"{ErrorCodes.UNKNOWN_ERROR}: {str(e)}",
     )
 
 
@@ -434,8 +438,7 @@ def log_error_and_raise_known(error_code, e):
     details = f"{error_code}: {e.message}"
     logger.error(details)
     raise HTTPException(
-        status_code=status.HTTP_400_BAD_REQUEST,
-        detail=f"{error_code}: {e.message}",
+        status_code=status.HTTP_400_BAD_REQUEST, detail=f"{error_code}: {e.message}",
     )
 
 
