@@ -32,11 +32,15 @@ class BaseResource(ABC):
         now = arrow.utcnow().datetime
         user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
 
-        self.env.db.update_last_read_and_highlight_in_group_for_user(group_id, user_id, now, db)
+        self.env.db.update_last_read_and_highlight_in_group_for_user(
+            group_id, user_id, now, db
+        )
         self.env.publisher.read(group_id, user_id, user_ids)
         self.env.cache.set_unread_in_group(group_id, user_id, 0)
 
-    def _user_sends_a_message(self, group_id: str, user_id: int, message: MessageBase, db):
+    def _user_sends_a_message(
+        self, group_id: str, user_id: int, message: MessageBase, db
+    ):
         """
         update database and cache with everything related to sending a message
         """
@@ -70,17 +74,12 @@ class BaseResource(ABC):
 
     @staticmethod
     def group_base_to_group(
-        group: GroupBase,
-        users: Dict[int, float],
-        user_count: int,
+        group: GroupBase, users: Dict[int, float], user_count: int,
     ) -> Group:
         group_dict = group.dict()
 
         users = [
-            GroupJoinTime(
-                user_id=user_id,
-                join_time=join_time,
-            )
+            GroupJoinTime(user_id=user_id, join_time=join_time,)
             for user_id, join_time in users.items()
         ]
         users.sort(key=lambda user: user.join_time, reverse=True)
@@ -113,16 +112,19 @@ class BaseResource(ABC):
         stats_dict["last_read_time"] = AbstractQuery.to_ts(stats_base.last_read)
         stats_dict["last_sent_time"] = AbstractQuery.to_ts(stats_base.last_sent)
         stats_dict["delete_before"] = AbstractQuery.to_ts(stats_base.delete_before)
-        stats_dict["highlight_time"] = AbstractQuery.to_ts(stats_base.highlight_time, allow_none=True)
-        stats_dict["first_sent"] = AbstractQuery.to_ts(stats_base.first_sent, allow_none=True)
-        stats_dict["last_updated_time"] = AbstractQuery.to_ts(stats_base.last_updated_time)
+        stats_dict["highlight_time"] = AbstractQuery.to_ts(
+            stats_base.highlight_time, allow_none=True
+        )
+        stats_dict["first_sent"] = AbstractQuery.to_ts(
+            stats_base.first_sent, allow_none=True
+        )
+        stats_dict["last_updated_time"] = AbstractQuery.to_ts(
+            stats_base.last_updated_time
+        )
 
         stats = UserGroupStats(**stats_dict)
 
-        return UserGroup(
-            group=group,
-            stats=stats,
-        )
+        return UserGroup(group=group, stats=stats,)
 
     @staticmethod
     def user_group_stats_base_to_user_group_stats(user_stats: UserGroupStatsBase):
@@ -144,7 +146,4 @@ class BaseResource(ABC):
 
     @staticmethod
     def to_last_read(user_id: int, last_read: float) -> GroupLastRead:
-        return GroupLastRead(
-            user_id=user_id,
-            last_read=last_read
-        )
+        return GroupLastRead(user_id=user_id, last_read=last_read)

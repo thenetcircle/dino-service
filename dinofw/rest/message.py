@@ -87,7 +87,9 @@ class MessageResource(BaseResource):
 
         return MessageResource.message_base_to_message(message_base)
 
-    async def update_user_message_status(self, user_id: int, query: MessageQuery, db: Session) -> None:
+    async def update_user_message_status(
+        self, user_id: int, query: MessageQuery, db: Session
+    ) -> None:
         if query.status is None:
             query.status = 0
 

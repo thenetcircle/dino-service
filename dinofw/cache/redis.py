@@ -78,7 +78,9 @@ class CacheRedis(ICache):
 
         self.listen_host = socket.gethostname().split(".")[0]
 
-    def get_last_read_in_group_for_user(self, group_id: str, user_id: int) -> Optional[float]:
+    def get_last_read_in_group_for_user(
+        self, group_id: str, user_id: int
+    ) -> Optional[float]:
         key = RedisKeys.last_read_time(group_id)
         last_read = self.redis.hget(key, user_id)
 
@@ -87,7 +89,9 @@ class CacheRedis(ICache):
 
         return float(str(last_read, "utf-8"))
 
-    def set_last_read_in_group_for_users(self, group_id: str, users: Dict[int, float]) -> None:
+    def set_last_read_in_group_for_users(
+        self, group_id: str, users: Dict[int, float]
+    ) -> None:
         key = RedisKeys.last_read_time(group_id)
         p = self.redis.pipeline()
 
@@ -96,7 +100,9 @@ class CacheRedis(ICache):
 
         p.execute()
 
-    def set_last_read_in_group_for_user(self, group_id: str, user_id: int, last_read: float) -> None:
+    def set_last_read_in_group_for_user(
+        self, group_id: str, user_id: int, last_read: float
+    ) -> None:
         key = RedisKeys.last_read_time(group_id)
         self.redis.hset(key, user_id, last_read)
 
@@ -152,7 +158,9 @@ class CacheRedis(ICache):
 
         return n_users
 
-    def get_user_ids_and_join_time_in_group(self, group_id: str) -> Optional[Dict[int, float]]:
+    def get_user_ids_and_join_time_in_group(
+        self, group_id: str
+    ) -> Optional[Dict[int, float]]:
         users = self.redis.hgetall(RedisKeys.user_in_group(group_id))
 
         if not len(users):
@@ -170,7 +178,9 @@ class CacheRedis(ICache):
             self.add_user_ids_and_join_time_in_group(group_id, users)
             self.redis.expire(key, ONE_HOUR)  # TODO: maybe expire quicker
 
-    def add_user_ids_and_join_time_in_group(self, group_id: str, users: Dict[int, float]) -> None:
+    def add_user_ids_and_join_time_in_group(
+        self, group_id: str, users: Dict[int, float]
+    ) -> None:
         key = RedisKeys.user_in_group(group_id)
         p = self.redis.pipeline()
 
@@ -184,7 +194,9 @@ class CacheRedis(ICache):
         key = RedisKeys.user_in_group(group_id)
         self.redis.delete(key)
 
-    def set_hide_group(self, group_id: str, hide: bool, user_ids: List[int] = None) -> None:
+    def set_hide_group(
+        self, group_id: str, hide: bool, user_ids: List[int] = None
+    ) -> None:
         key = RedisKeys.hide_group(group_id)
 
         if user_ids is None:
