@@ -53,6 +53,7 @@ class UserGroupStatsEntity(env.Base):
     # used to sync changes to apps
     last_updated_time = Column(DateTime(timezone=True), nullable=False)
 
+    # TODO: does this even work? not nullable, so when highlight expires it'll be sorted low even if new messages exist
     # a user can highlight a 1-to-1 group for ANOTHER user
     highlight_time = Column(DateTime(timezone=True), nullable=False)
 

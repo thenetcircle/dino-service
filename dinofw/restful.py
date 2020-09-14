@@ -52,6 +52,91 @@ def get_db():
         db.close()
 
 
+@app.post("/v1/users/{user_id}/groups", response_model=List[UserGroup])
+async def get_groups_for_user(
+    user_id: int, query: GroupQuery, db: Session = Depends(get_db)
+) -> List[UserGroup]:
+    """
+    Get a list of groups for this user, sorted by last message sent. Can be filtered
+    to only return groups where the user has unread messages.
+
+    **Potential error codes in response:**
+    * `250`: if an unknown error occurred.
+    """
+    try:
+        return await environ.env.rest.user.get_groups_for_user(user_id, query, db)
+    except Exception as e:
+        log_error_and_raise_unknown(sys.exc_info(), e)
+
+
+@app.post("/v1/users/{user_id}/groups/updates", response_model=List[UserGroup])
+async def get_groups_updated_since(
+    user_id: int, query: GroupUpdatesQuery, db: Session = Depends(get_db)
+) -> List[UserGroup]:
+    """
+    Get a list of groups for this user that has changed since a certain time, sorted
+    by last message sent. Used to sync changes to mobile apps.
+
+    **Potential error codes in response:**
+    * `250`: if an unknown error occurred.
+    """
+    try:
+        return await environ.env.rest.user.get_groups_updated_since(user_id, query, db)
+    except Exception as e:
+        log_error_and_raise_unknown(sys.exc_info(), e)
+
+
+@app.get("/v1/users/{user_id}/group", response_model=OneToOneStats)
+async def get_one_to_one_information(
+        user_id: int,
+        query: OneToOneQuery,
+        db: Session = Depends(get_db)
+) -> OneToOneStats:
+    """
+    Get details about a 1v1 group.
+
+    **Potential error codes in response:**
+    * `601`: if the group does not exist,
+    * `250`: if an unknown error occurred.
+    """
+    try:
+        return await environ.env.rest.group.get_1v1_info(user_id, query.receiver_id, db)
+    except NoSuchGroupException as e:
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
+    except Exception as e:
+        log_error_and_raise_unknown(sys.exc_info(), e)
+
+
+@app.post("/v1/users/{user_id}/send", response_model=Message)
+async def send_message_to_user(
+    user_id: int, query: SendMessageQuery, db: Session = Depends(get_db)
+) -> List[Message]:
+    """
+    User sends a message in a **1-to-1** conversation. It is not always known on client side if a
+    **1-to-1** group exists between two users, so this API can then be used; Dino will do a group
+    lookup and see if a group with `group_type=1` exists for them, send a message to it and return
+    the group_id.
+
+    If no group exists, Dino will create a __new__ **1-to-1** group, send the message and return the
+    `group_id`.
+
+    This API should NOT be used for EVERY **1-to-1** message. It should only be used if the client
+    doesn't know if a group exists for them or not. After this API has been called once, the client
+    should use the `POST /v1/groups/{group_id}/users/{user_id}/send` API for future messages as
+    much as possible.
+
+    When listing recent history, the client will know the group_id for recent **1-to-1** conversations
+    (since the groups that are **1-to-1** have `group_type=1`), and should thus use the other send API.
+
+    **Potential error codes in response:**
+    * `250`: if an unknown error occurred.
+    """
+    try:
+        return await environ.env.rest.message.send_message_to_user(user_id, query, db)
+    except Exception as e:
+        log_error_and_raise_unknown(sys.exc_info(), e)
+
+
 @app.post("/v1/groups/{group_id}/user/{user_id}/histories", response_model=Histories)
 async def get_group_history_for_user(
     group_id: str, user_id: int, query: MessageQuery, db: Session = Depends(get_db)
@@ -105,36 +190,6 @@ async def send_message_to_group(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@app.post("/v1/users/{user_id}/send", response_model=Message)
-async def send_message_to_user(
-    user_id: int, query: SendMessageQuery, db: Session = Depends(get_db)
-) -> List[Message]:
-    """
-    User sends a message in a **1-to-1** conversation. It is not always known on client side if a
-    **1-to-1** group exists between two users, so this API can then be used; Dino will do a group
-    lookup and see if a group with `group_type=1` exists for them, send a message to it and return
-    the group_id.
-
-    If no group exists, Dino will create a __new__ **1-to-1** group, send the message and return the
-    `group_id`.
-
-    This API should NOT be used for EVERY **1-to-1** message. It should only be used if the client
-    doesn't know if a group exists for them or not. After this API has been called once, the client
-    should use the `POST /v1/groups/{group_id}/users/{user_id}/send` API for future messages as
-    much as possible.
-
-    When listing recent history, the client will know the group_id for recent **1-to-1** conversations
-    (since the groups that are **1-to-1** have `group_type=1`), and should thus use the other send API.
-
-    **Potential error codes in response:**
-    * `250`: if an unknown error occurred.
-    """
-    try:
-        return await environ.env.rest.message.send_message_to_user(user_id, query, db)
-    except Exception as e:
-        log_error_and_raise_unknown(sys.exc_info(), e)
-
-
 @app.get("/v1/groups/{group_id}/users", response_model=GroupUsers)
 async def get_users_in_group(
     group_id: str, db: Session = Depends(get_db)
@@ -174,27 +229,6 @@ async def get_group_information(group_id, db: Session = Depends(get_db)) -> Grou
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@app.get("/v1/users/{user_id}/group", response_model=OneToOneStats)
-async def get_one_to_one_information(
-        user_id: int,
-        query: OneToOneQuery,
-        db: Session = Depends(get_db)
-) -> OneToOneStats:
-    """
-    Get details about a 1v1 group.
-
-    **Potential error codes in response:**
-    * `601`: if the group does not exist,
-    * `250`: if an unknown error occurred.
-    """
-    try:
-        return await environ.env.rest.group.get_1v1_info(user_id, query.receiver_id, db)
-    except NoSuchGroupException as e:
-        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
-    except Exception as e:
-        log_error_and_raise_unknown(sys.exc_info(), e)
-
-
 @app.put("/v1/groups/{group_id}")
 async def edit_group_information(group_id, query: UpdateGroupQuery, db: Session = Depends(get_db)) -> Group:
     """
@@ -208,40 +242,6 @@ async def edit_group_information(group_id, query: UpdateGroupQuery, db: Session 
         return await environ.env.rest.group.update_group_information(group_id, query, db)
     except NoSuchGroupException as e:
         log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
-    except Exception as e:
-        log_error_and_raise_unknown(sys.exc_info(), e)
-
-
-@app.post("/v1/users/{user_id}/groups", response_model=List[UserGroup])
-async def get_groups_for_user(
-    user_id: int, query: GroupQuery, db: Session = Depends(get_db)
-) -> List[UserGroup]:
-    """
-    Get a list of groups for this user, sorted by last message sent. Can be filtered
-    to only return groups where the user has unread messages.
-
-    **Potential error codes in response:**
-    * `250`: if an unknown error occurred.
-    """
-    try:
-        return await environ.env.rest.user.get_groups_for_user(user_id, query, db)
-    except Exception as e:
-        log_error_and_raise_unknown(sys.exc_info(), e)
-
-
-@app.post("/v1/users/{user_id}/groups/updates", response_model=List[UserGroup])
-async def get_groups_updated_since(
-    user_id: int, query: GroupUpdatesQuery, db: Session = Depends(get_db)
-) -> List[UserGroup]:
-    """
-    Get a list of groups for this user that has changed since a certain time, sorted
-    by last message sent. Used to sync changes to mobile apps.
-
-    **Potential error codes in response:**
-    * `250`: if an unknown error occurred.
-    """
-    try:
-        return await environ.env.rest.user.get_groups_updated_since(user_id, query, db)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 
