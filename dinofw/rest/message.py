@@ -66,8 +66,9 @@ class MessageResource(BaseResource):
 
         return messages
 
-    async def edit_message(self, group_id: str, message_id: str, query: EditMessageQuery) -> None:
-        self.env.storage.edit_message(group_id, message_id, query)
+    async def edit_message(self, group_id: str, message_id: str, query: EditMessageQuery, db: Session) -> None:
+        message = self.env.storage.edit_message(group_id, message_id, query)
+        self._user_sends_a_message(group_id, message.user_id, message, db)
 
     async def delete_message(
         self, group_id: str, user_id: int, message_id: str, query: AdminQuery

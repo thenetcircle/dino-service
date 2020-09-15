@@ -95,3 +95,4 @@ class ErrorCodes(object):
     UNKNOWN_ERROR = 250
     USER_NOT_IN_GROUP = 600
     NO_SUCH_GROUP = 601
+    NO_SUCH_MESSAGE = 602

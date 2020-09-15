@@ -28,7 +28,7 @@ from dinofw.rest.models import UpdateUserGroupStats
 from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UserGroupStats
 from dinofw.rest.models import UserStats
-from dinofw.utils.exceptions import NoSuchGroupException
+from dinofw.utils.exceptions import NoSuchGroupException, NoSuchMessageException
 from dinofw.utils.exceptions import UserNotInGroupException
 
 logger = logging.getLogger(__name__)
@@ -136,14 +136,25 @@ async def send_message_to_user(
 
 
 @app.put("/v1/groups/{group_id}/message/{message_id}/edit")
-async def edit_a_message(group_id: str, message_id: str, query: EditMessageQuery) -> None:
+async def edit_a_message(
+        group_id: str, message_id: str, query: EditMessageQuery, db: Session = Depends(get_db)
+) -> None:
     """
     Edit a message.
 
     **Potential error codes in response:**
+    * `601`: if the group does not exist,
+    * `602`: if the message does not exist,
     * `250`: if an unknown error occurred.
     """
-    return await environ.env.rest.message.edit_message(group_id, message_id, query)
+    try:
+        return await environ.env.rest.message.edit_message(group_id, message_id, query, db)
+    except NoSuchGroupException as e:
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
+    except NoSuchMessageException as e:
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_MESSAGE, e)
+    except Exception as e:
+        log_error_and_raise_unknown(sys.exc_info(), e)
 
 
 @app.post("/v1/groups/{group_id}/user/{user_id}/histories", response_model=Histories)
@@ -463,24 +474,6 @@ def log_error_and_raise_known(error_code, e):
 async def get_message_details(group_id: str, user_id: int, message_id: str) -> Message:
     # get message details
     return await environ.env.rest.message.message_details(group_id, user_id, message_id)
-"""
-
-
-"""
-# not needed for now
-
-@app.put(
-    "/v1/groups/{group_id}/users/{user_id}/messages/{message_id}",
-    response_model=Message,
-)
-async def edit_a_message(
-    group_id: str, user_id: int, message_id: str, query: EditMessageQuery
-) -> Message:
-    # edit a group message
-    # TODO: handle no such message error
-    return await environ.env.rest.message.edit_message(
-        group_id, user_id, message_id, query
-    )
 """
 
 
