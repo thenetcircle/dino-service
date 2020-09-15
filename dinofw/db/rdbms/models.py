@@ -2,7 +2,7 @@ from sqlalchemy import Column, Boolean, DateTime
 from sqlalchemy import Integer
 from sqlalchemy import String
 
-from dinofw.environ import env
+from dinofw.utils.environ import env
 
 
 class GroupEntity(env.Base):

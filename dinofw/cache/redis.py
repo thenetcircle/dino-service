@@ -11,7 +11,7 @@ from datetime import datetime as dt
 from datetime import timedelta
 
 from dinofw.cache import ICache
-from dinofw.config import ConfigKeys, RedisKeys
+from dinofw.utils.config import ConfigKeys, RedisKeys
 
 logger = logging.getLogger(__name__)
 

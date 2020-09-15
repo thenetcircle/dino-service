@@ -6,3 +6,8 @@ class UserNotInGroupException(Exception):
 class NoSuchGroupException(Exception):
     def __init__(self, message):
         self.message = f"no such group: {message}"
+
+
+class NoSuchMessageException(Exception):
+    def __init__(self, message):
+        self.message = f"no such message: {message}"

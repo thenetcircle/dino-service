@@ -1,5 +1,5 @@
 from dinofw.stats import IStats
-from dinofw.config import ConfigKeys
+from dinofw.utils.config import ConfigKeys
 
 
 class MockStatsd(IStats):

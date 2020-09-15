@@ -2,7 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-from dinofw.config import ConfigKeys
+from dinofw.utils.config import ConfigKeys
 
 
 def init_db(env, engine=None):
@@ -19,7 +19,5 @@ def init_db(env, engine=None):
 
     env.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     env.Base = declarative_base()
-
-    from dinofw.db.rdbms.models import GroupEntity, UserGroupStatsEntity
 
     env.Base.metadata.create_all(bind=engine)

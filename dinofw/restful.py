@@ -8,9 +8,9 @@ from fastapi import FastAPI
 from fastapi import status
 from sqlalchemy.orm import Session
 
-from dinofw import environ
-from dinofw.config import ErrorCodes
-from dinofw.rest.models import ActionLog
+from dinofw.utils import environ
+from dinofw.utils.config import ErrorCodes
+from dinofw.rest.models import ActionLog, EditMessageQuery
 from dinofw.rest.models import CreateActionLogQuery
 from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import Group
@@ -133,6 +133,17 @@ async def send_message_to_user(
         return await environ.env.rest.message.send_message_to_user(user_id, query, db)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
+
+
+@app.put("/v1/groups/{group_id}/message/{message_id}/edit")
+async def edit_a_message(group_id: str, message_id: str, query: EditMessageQuery) -> None:
+    """
+    Edit a message.
+
+    **Potential error codes in response:**
+    * `250`: if an unknown error occurred.
+    """
+    return await environ.env.rest.message.edit_message(group_id, message_id, query)
 
 
 @app.post("/v1/groups/{group_id}/user/{user_id}/histories", response_model=Histories)

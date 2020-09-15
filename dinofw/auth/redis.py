@@ -4,9 +4,9 @@ import redis
 from typing import Union
 
 from dinofw.auth import IAuth
-from dinofw.config import ConfigKeys
-from dinofw.config import RedisKeys
-from dinofw.config import SessionKeys
+from dinofw.utils.config import ConfigKeys
+from dinofw.utils.config import RedisKeys
+from dinofw.utils.config import SessionKeys
 
 logger = logging.getLogger()
 
@@ -23,7 +23,7 @@ class AuthRedis(IAuth):
             self.redis_instance = None
 
         if env is None:
-            from dinofw import environ
+            from dinofw.utils import environ
 
             self.env = environ.env
         else:

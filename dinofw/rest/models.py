@@ -100,6 +100,7 @@ class EditMessageQuery(AdminQuery):
     message_payload: Optional[str]
     message_type: Optional[int]
     status: Optional[int]
+    created_at: float
 
 
 class UpdateUserGroupStats(AbstractQuery):

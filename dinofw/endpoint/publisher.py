@@ -5,7 +5,7 @@ from typing import List
 from gmqtt import Client as MQTTClient
 from gmqtt.mqtt.constants import MQTTv50
 
-from dinofw.config import ConfigKeys
+from dinofw.utils.config import ConfigKeys
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.storage.schemas import MessageBase
 from dinofw.endpoint import IPublishHandler

@@ -1,6 +1,6 @@
 import os
 
-from dinofw.config import ConfigKeys
+from dinofw.utils.config import ConfigKeys
 from test.base import BaseTest
 
 os.environ[ConfigKeys.TESTING] = "1"
@@ -33,7 +33,7 @@ class BaseDatabaseTest(BaseTest):
         self.env = FakeEnv()
 
         # need to replace the global environ.env with our FakeEnv, functional model files import it directly
-        from dinofw import environ
+        from dinofw.utils import environ
 
         environ.env = self.env
 

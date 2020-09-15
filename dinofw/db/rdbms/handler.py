@@ -7,7 +7,7 @@ import arrow
 from sqlalchemy import literal
 from sqlalchemy.orm import Session
 
-from dinofw.config import GroupTypes
+from dinofw.utils.config import GroupTypes
 from dinofw.db.rdbms import models
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.rdbms.schemas import UserGroupBase
@@ -42,7 +42,7 @@ class RelationalHandler:
         )
 
         if group_entity is None:
-            raise NoSuchGroupException(f"no such group: {group_id}")
+            raise NoSuchGroupException(group_id)
 
         group = GroupBase(**group_entity.__dict__)
         users_and_join_time = self.get_user_ids_and_join_time_in_group(group_id, db)
@@ -138,7 +138,7 @@ class RelationalHandler:
         )
 
         if group is None:
-            raise NoSuchGroupException(f"no such group: {message.group_id}")
+            raise NoSuchGroupException(message.group_id)
 
         group.last_message_time = sent_time
         group.last_message_overview = message.message_payload

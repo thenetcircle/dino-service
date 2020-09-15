@@ -9,7 +9,7 @@ from cassandra.cqlengine import connection
 from cassandra.cqlengine.query import BatchQuery
 from cassandra.cqlengine.management import sync_table
 
-from dinofw.config import ConfigKeys
+from dinofw.utils.config import ConfigKeys
 from dinofw.db.storage.models import ActionLogModel
 from dinofw.db.storage.models import MessageModel
 from dinofw.db.storage.schemas import ActionLogBase
@@ -22,6 +22,8 @@ from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
 
 import logging
+
+from dinofw.utils.exceptions import NoSuchMessageException
 
 
 class CassandraHandler:
@@ -170,18 +172,27 @@ class CassandraHandler:
         removed_at = removed_at.replace(tzinfo=pytz.UTC)
 
         message.update(
-            message_payload="-",  # TODO: allow None values in cassanrda tbale
+            message_payload="-",  # TODO: allow None values in cassanrda table
             removed_by_user=query.admin_id,
             removed_at=removed_at,
         )
 
-    def edit_message(
-        self, group_id: str, user_id: int, message_id: str, query: EditMessageQuery
-    ) -> Optional[MessageBase]:
+    def edit_message(self, group_id: str, message_id: str, query: EditMessageQuery) -> None:
+        # we should filter on the 'created_at' field, since it's a clustering key
+        # and 'message_id' is not; if we don't filter by 'created_at' each edit
+        # will require a full table scan, and editing a recent message happens
+        # quite often, which will become very slow after a group has a long
+        # message history...
+        created_at = query.created_at
+
+        # querying by exact datetime seems to be shifty in cassandra, so just
+        # filter by 24h before
+        approx_date = arrow.get(created_at).shift(days=-1).datetime
+
         message = (
             MessageModel.objects(
                 MessageModel.group_id == group_id,
-                MessageModel.user_id == user_id,
+                MessageModel.created_at > approx_date,
                 MessageModel.message_id == message_id,
             )
             .allow_filtering()
@@ -189,21 +200,15 @@ class CassandraHandler:
         )
 
         if message is None:
-            self.logger.warning(
-                f"no message found for user {user_id}, group {group_id}, message {message_id}"
-            )
-            return None
+            raise NoSuchMessageException(message_id)
 
-        now = dt.utcnow()
-        now = now.replace(tzinfo=pytz.UTC)
+        now = arrow.utcnow().datetime
 
         message.update(
             message_payload=query.message_payload or message.message_payload,
             status=query.status or message.status,
             updated_at=now
         )
-
-        return CassandraHandler.message_base_from_entity(message)
 
     def update_messages_in_group(self, group_id: str, query: MessageQuery) -> None:
         def callback(message: MessageModel) -> None:

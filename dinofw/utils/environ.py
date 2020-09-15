@@ -4,7 +4,7 @@ import os
 from gnenv import create_env
 from gnenv.environ import GNEnvironment
 
-from dinofw.config import ConfigKeys
+from dinofw.utils.config import ConfigKeys
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ def init_logging(gn_env: GNEnvironment) -> None:
 
     home_dir = os.environ.get("DINO_HOME", default=None)
     if home_dir is None:
-        home_dir = "."
+        home_dir = ".."
     tag_name = Git(home_dir).describe()
 
     gn_env.sentry = raven.Client(
