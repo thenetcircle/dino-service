@@ -103,28 +103,6 @@ class TestServerRestApi(BaseServerRestApi):
         self.edit_message(group_id, message_id, created_at, new_payload)
         self.assert_payload(group_id, message_id, new_payload)
 
-    def assert_payload(self, group_id: str, message_id: str, new_payload: str):
-        histories = self.histories_for(group_id)
-
-        message_payload = ""
-
-        for message in histories["messages"]:
-            if message["message_id"] == message_id:
-                message_payload = message["message_payload"]
-                break
-
-        self.assertEqual(new_payload, message_payload)
-
-    def edit_message(self, group_id: str, message_id: str, created_at: float, new_payload: str):
-        raw_response = self.client.put(
-            f"/v1/groups/{group_id}/message/{message_id}/edit",
-            json={
-                "created_at": created_at,
-                "message_payload": new_payload,
-            },
-        )
-        self.assertEqual(raw_response.status_code, 200)
-
     def test_one_user_deletes_some_history(self):
         # both users join a new group
         group_id = self.create_and_join_group(BaseTest.USER_ID)

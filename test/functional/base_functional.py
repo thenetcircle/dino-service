@@ -188,6 +188,16 @@ class BaseServerRestApi(BaseDatabaseTest):
         )
         self.assertEqual(raw_response.status_code, 200)
 
+    def edit_message(self, group_id: str, message_id: str, created_at: float, new_payload: str):
+        raw_response = self.client.put(
+            f"/v1/groups/{group_id}/message/{message_id}/edit",
+            json={
+                "created_at": created_at,
+                "message_payload": new_payload,
+            },
+        )
+        self.assertEqual(raw_response.status_code, 200)
+
     def highlight_group_for_user(self, group_id: str, user_id: int) -> None:
         now_plus_2_days = arrow.utcnow().shift(days=2).datetime
         now_plus_2_days = AbstractQuery.to_ts(now_plus_2_days)
@@ -253,3 +263,15 @@ class BaseServerRestApi(BaseDatabaseTest):
             self.assertTrue(any((user_id == user["user_id"] for user in histories["last_reads"])))
         else:
             self.assertFalse(any((user_id == user["user_id"] for user in histories["last_reads"])))
+
+    def assert_payload(self, group_id: str, message_id: str, new_payload: str):
+        histories = self.histories_for(group_id)
+
+        message_payload = ""
+
+        for message in histories["messages"]:
+            if message["message_id"] == message_id:
+                message_payload = message["message_payload"]
+                break
+
+        self.assertEqual(new_payload, message_payload)
