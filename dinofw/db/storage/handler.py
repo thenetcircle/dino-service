@@ -177,7 +177,7 @@ class CassandraHandler:
             removed_at=removed_at,
         )
 
-    def edit_message(self, group_id: str, message_id: str, query: EditMessageQuery) -> None:
+    def edit_message(self, group_id: str, message_id: str, query: EditMessageQuery) -> MessageBase:
         # we should filter on the 'created_at' field, since it's a clustering key
         # and 'message_id' is not; if we don't filter by 'created_at' each edit
         # will require a full table scan, and editing a recent message happens
@@ -186,13 +186,15 @@ class CassandraHandler:
         created_at = query.created_at
 
         # querying by exact datetime seems to be shifty in cassandra, so just
-        # filter by 24h before
-        approx_date = arrow.get(created_at).shift(days=-1).datetime
+        # filter by a minute before and after
+        approx_date_after = arrow.get(created_at).shift(minutes=-1).datetime
+        approx_date_before = arrow.get(created_at).shift(minutes=1).datetime
 
         message = (
             MessageModel.objects(
                 MessageModel.group_id == group_id,
-                MessageModel.created_at > approx_date,
+                MessageModel.created_at > approx_date_after,
+                MessageModel.created_at < approx_date_before,
                 MessageModel.message_id == message_id,
             )
             .allow_filtering()
@@ -209,6 +211,8 @@ class CassandraHandler:
             status=query.status or message.status,
             updated_at=now
         )
+
+        return CassandraHandler.message_base_from_entity(message)
 
     def update_messages_in_group(self, group_id: str, query: MessageQuery) -> None:
         def callback(message: MessageModel) -> None:

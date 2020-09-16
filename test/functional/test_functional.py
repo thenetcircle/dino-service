@@ -92,6 +92,39 @@ class TestServerRestApi(BaseServerRestApi):
         self.assert_groups_for_user(1, user_id=BaseTest.USER_ID)
         self.assert_groups_for_user(1, user_id=BaseTest.OTHER_USER_ID)
 
+    def test_edit_message(self):
+        group_id = self.create_and_join_group()
+        messages = self.send_message_to_group_from(group_id)
+        new_payload = "edited message payload"
+
+        message_id = messages[0]["message_id"]
+        created_at = messages[0]["created_at"]
+
+        self.edit_message(group_id, message_id, created_at, new_payload)
+        self.assert_payload(group_id, message_id, new_payload)
+
+    def assert_payload(self, group_id: str, message_id: str, new_payload: str):
+        histories = self.histories_for(group_id)
+
+        message_payload = ""
+
+        for message in histories["messages"]:
+            if message["message_id"] == message_id:
+                message_payload = message["message_payload"]
+                break
+
+        self.assertEqual(new_payload, message_payload)
+
+    def edit_message(self, group_id: str, message_id: str, created_at: float, new_payload: str):
+        raw_response = self.client.put(
+            f"/v1/groups/{group_id}/message/{message_id}/edit",
+            json={
+                "created_at": created_at,
+                "message_payload": new_payload,
+            },
+        )
+        self.assertEqual(raw_response.status_code, 200)
+
     def test_one_user_deletes_some_history(self):
         # both users join a new group
         group_id = self.create_and_join_group(BaseTest.USER_ID)

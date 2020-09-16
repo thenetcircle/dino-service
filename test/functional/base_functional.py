@@ -45,7 +45,7 @@ class BaseServerRestApi(BaseDatabaseTest):
             raw_response = self.client.post(
                 f"/v1/groups/{group_id}/user/{user_id}/send",
                 json={
-                    "message_payload": "test message",
+                    "message_payload": BaseTest.MESSAGE_PAYLOAD,
                     "message_type": "text",
                 },
             )

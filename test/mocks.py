@@ -165,7 +165,7 @@ class FakeStorage:
         return messages
 
     def edit_message(
-        self, group_id: str, user_id: int, message_id: str, query: EditMessageQuery
+        self, group_id: str, message_id: str, query: EditMessageQuery
     ) -> Optional[MessageBase]:
 
         message = None
