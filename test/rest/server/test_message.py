@@ -1,3 +1,5 @@
+import arrow
+
 from dinofw.rest.message import MessageResource
 from dinofw.rest.models import EditMessageQuery
 from dinofw.rest.models import Message
@@ -110,7 +112,7 @@ class TestMessageResource(BaseTest):
         old_text = "a new message"
 
         send_query = SendMessageQuery(message_payload=old_text, message_type="text")
-        edit_query = EditMessageQuery(message_payload=new_text,)
+        edit_query = EditMessageQuery(message_payload=new_text, created_at=arrow.utcnow().float_timestamp)
         message_query = MessageQuery(per_page=10,)
 
         message = await self.resource.send_message_to_group(
@@ -126,7 +128,7 @@ class TestMessageResource(BaseTest):
         self.assertIsNone(messages[0].updated_at)
 
         await self.resource.edit_message(
-            BaseTest.GROUP_ID, BaseTest.USER_ID, message.message_id, edit_query
+            BaseTest.GROUP_ID, message.message_id, edit_query, db=None  # noqa
         )
 
         messages = await self.resource.messages_for_user(
