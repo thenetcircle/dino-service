@@ -4,10 +4,10 @@ from typing import List, Optional, Dict
 from uuid import uuid4 as uuid
 
 import arrow
+from sqlalchemy import func
 from sqlalchemy import literal
 from sqlalchemy.orm import Session
 
-from dinofw.utils.config import GroupTypes
 from dinofw.db.rdbms import models
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.rdbms.schemas import UserGroupBase
@@ -18,6 +18,7 @@ from dinofw.rest.models import GroupQuery
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import UpdateGroupQuery
 from dinofw.rest.models import UpdateUserGroupStats
+from dinofw.utils.config import GroupTypes
 from dinofw.utils.exceptions import NoSuchGroupException
 from dinofw.utils.exceptions import UserNotInGroupException
 
@@ -69,9 +70,8 @@ class RelationalHandler:
             user_id = 1234 and
             u.hide = false
         order by
-            u.highlight_time desc,
-            u.pin desc,
-            g.last_message_time desc
+            pin u.desc,
+            greatest(u.highlight_time, g.last_message_time) desc
         """
         until = GroupQuery.to_dt(query.until)
 
@@ -87,9 +87,11 @@ class RelationalHandler:
                 models.UserGroupStatsEntity.user_id == user_id,
             )
             .order_by(
-                models.UserGroupStatsEntity.highlight_time.desc(),
                 models.UserGroupStatsEntity.pin.desc(),
-                models.GroupEntity.last_message_time.desc(),
+                func.greatest(
+                    models.UserGroupStatsEntity.highlight_time,
+                    models.GroupEntity.last_message_time,
+                ).desc(),
             )
             .limit(query.per_page)
             .all()
