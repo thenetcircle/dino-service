@@ -219,4 +219,5 @@ class UserGroup(BaseModel):
 class Histories(BaseModel):
     messages: List[Message]
     action_logs: List[ActionLog]
+    attachments: List[Attachment]
     last_reads: List[GroupLastRead]
