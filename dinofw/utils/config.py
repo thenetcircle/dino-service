@@ -96,3 +96,4 @@ class ErrorCodes(object):
     USER_NOT_IN_GROUP = 600
     NO_SUCH_GROUP = 601
     NO_SUCH_MESSAGE = 602
+    NO_SUCH_ATTACHMENT = 603

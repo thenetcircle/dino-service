@@ -5,7 +5,7 @@ import arrow
 from sqlalchemy.orm import Session
 
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import AdminQuery
+from dinofw.rest.models import AdminQuery, EditAttachmentQuery
 from dinofw.rest.models import EditMessageQuery
 from dinofw.rest.models import Message
 from dinofw.rest.models import MessageQuery
@@ -66,9 +66,9 @@ class MessageResource(BaseResource):
 
         return messages
 
-    async def edit_message(self, group_id: str, message_id: str, query: EditMessageQuery, db: Session) -> None:
-        message = self.env.storage.edit_message(group_id, message_id, query)
-        self._user_sends_a_message(group_id, message.user_id, message, db)
+    async def edit_attachment(self, group_id: str, attachment_id: str, query: EditAttachmentQuery, db: Session) -> None:
+        attachment = self.env.storage.edit_attachment(group_id, attachment_id, query)
+        self._user_sends_a_message(group_id, attachment.user_id, attachment, db)
 
     async def delete_message(
         self, group_id: str, user_id: int, message_id: str, query: AdminQuery

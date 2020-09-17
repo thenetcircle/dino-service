@@ -1,13 +1,13 @@
 import logging
 import sys
-from typing import List
+from typing import List, Any
 
 from gmqtt import Client as MQTTClient
 from gmqtt.mqtt.constants import MQTTv50
 
 from dinofw.utils.config import ConfigKeys
 from dinofw.db.rdbms.schemas import GroupBase
-from dinofw.db.storage.schemas import MessageBase
+from dinofw.db.storage.schemas import MessageBase, AttachmentBase
 from dinofw.endpoint import IPublishHandler
 from dinofw.endpoint import IPublisher
 
@@ -52,8 +52,12 @@ class PublishHandler(IPublishHandler):
     async def setup(self):
         await self.publisher.setup()
 
-    def message(self, group_id: str, message: MessageBase, user_ids: List[int]) -> None:
+    def message(self, message: MessageBase, user_ids: List[int]) -> None:
         data = PublishHandler.message_base_to_event(message)
+        self.send(user_ids, data)
+
+    def attachment(self, attachment: AttachmentBase, user_ids: List[int]) -> None:
+        data = PublishHandler.attachment_base_to_event(attachment)
         self.send(user_ids, data)
 
     def read(self, group_id: str, user_id: int, user_ids: List[int]) -> None:

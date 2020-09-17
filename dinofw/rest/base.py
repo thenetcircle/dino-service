@@ -1,12 +1,13 @@
+import logging
 from abc import ABC
 from datetime import datetime as dt
-from typing import Optional, Dict
+from typing import Dict, Any
 
 import arrow
 import pytz
 
 from dinofw.db.rdbms.schemas import UserGroupStatsBase, GroupBase
-from dinofw.db.storage.schemas import MessageBase, ActionLogBase
+from dinofw.db.storage.schemas import MessageBase, ActionLogBase, AttachmentBase
 from dinofw.rest.models import AbstractQuery, UserGroup
 from dinofw.rest.models import ActionLog
 from dinofw.rest.models import Group
@@ -25,6 +26,8 @@ class BaseResource(ABC):
         self.long_ago = dt.utcfromtimestamp(beginning_of_1995)
         self.long_ago = self.long_ago.replace(tzinfo=pytz.UTC)
 
+        self.logger = logging.getLogger(__name__)
+
     def _user_opens_conversation(self, group_id: str, user_id: int, db):
         """
         update database and cache with everything related to opening a conversation
@@ -39,7 +42,7 @@ class BaseResource(ABC):
         self.env.cache.set_unread_in_group(group_id, user_id, 0)
 
     def _user_sends_a_message(
-        self, group_id: str, user_id: int, message: MessageBase, db
+        self, group_id: str, user_id: int, message: Any[MessageBase, AttachmentBase], db
     ):
         """
         update database and cache with everything related to sending a message
@@ -53,7 +56,15 @@ class BaseResource(ABC):
         )
 
         user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
-        self.env.publisher.message(group_id, message, user_ids)
+
+        message_type = type(message)
+
+        if message_type == MessageBase:
+            self.env.publisher.message(message, user_ids)
+        elif message_type == AttachmentBase:
+            self.env.publisher.attachment(message, user_ids)
+        else:
+            self.logger.error(f"unknown type of message, can't publish to subscribers: {message_type}")
 
         # don't increase unread for the sender
         del user_ids[user_id]

@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime as dt
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 from uuid import uuid4 as uuid
 
 import arrow
@@ -12,7 +12,7 @@ from dinofw.db.rdbms import models
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.rdbms.schemas import UserGroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
-from dinofw.db.storage.schemas import MessageBase
+from dinofw.db.storage.schemas import MessageBase, AttachmentBase
 from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import GroupQuery
 from dinofw.rest.models import MessageQuery
@@ -131,7 +131,7 @@ class RelationalHandler:
         return groups
 
     def update_group_new_message(
-        self, message: MessageBase, sent_time: dt, db: Session
+        self, message: Any[MessageBase, AttachmentBase], sent_time: dt, db: Session
     ) -> None:
         group = (
             db.query(models.GroupEntity)

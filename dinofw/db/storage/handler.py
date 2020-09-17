@@ -1,29 +1,27 @@
+import logging
 from datetime import datetime as dt
 from time import time
 from typing import List, Optional
 from uuid import uuid4 as uuid
 
-import pytz
 import arrow
+import pytz
 from cassandra.cqlengine import connection
-from cassandra.cqlengine.query import BatchQuery
 from cassandra.cqlengine.management import sync_table
+from cassandra.cqlengine.query import BatchQuery
 
-from dinofw.utils.config import ConfigKeys
-from dinofw.db.storage.models import ActionLogModel
-from dinofw.db.storage.models import MessageModel
-from dinofw.db.storage.schemas import ActionLogBase
-from dinofw.db.storage.schemas import MessageBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
-from dinofw.rest.models import EditMessageQuery
+from dinofw.db.storage.models import ActionLogModel, AttachmentModel
+from dinofw.db.storage.models import MessageModel
+from dinofw.db.storage.schemas import ActionLogBase, AttachmentBase
+from dinofw.db.storage.schemas import MessageBase
+from dinofw.rest.models import AdminQuery, EditAttachmentQuery
 from dinofw.rest.models import CreateActionLogQuery
-from dinofw.rest.models import AdminQuery
+from dinofw.rest.models import EditMessageQuery
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
-
-import logging
-
-from dinofw.utils.exceptions import NoSuchMessageException
+from dinofw.utils.config import ConfigKeys
+from dinofw.utils.exceptions import NoSuchAttachmentException
 
 
 class CassandraHandler:
@@ -177,7 +175,7 @@ class CassandraHandler:
             removed_at=removed_at,
         )
 
-    def edit_message(self, group_id: str, message_id: str, query: EditMessageQuery) -> MessageBase:
+    def edit_attachment(self, group_id: str, attachment_id: str, query: EditAttachmentQuery) -> AttachmentBase:
         # we should filter on the 'created_at' field, since it's a clustering key
         # and 'message_id' is not; if we don't filter by 'created_at' each edit
         # will require a full table scan, and editing a recent message happens
@@ -190,29 +188,28 @@ class CassandraHandler:
         approx_date_after = arrow.get(created_at).shift(minutes=-1).datetime
         approx_date_before = arrow.get(created_at).shift(minutes=1).datetime
 
-        message = (
-            MessageModel.objects(
-                MessageModel.group_id == group_id,
-                MessageModel.created_at > approx_date_after,
-                MessageModel.created_at < approx_date_before,
-                MessageModel.message_id == message_id,
+        attachment = (
+            AttachmentModel.objects(
+                AttachmentModel.group_id == group_id,
+                AttachmentModel.created_at > approx_date_after,
+                AttachmentModel.created_at < approx_date_before,
+                AttachmentModel.attachment_id == attachment_id,
             )
             .allow_filtering()
             .first()
         )
 
-        if message is None:
-            raise NoSuchMessageException(message_id)
+        if attachment is None:
+            raise NoSuchAttachmentException(attachment_id)
 
         now = arrow.utcnow().datetime
 
-        message.update(
-            message_payload=query.message_payload or message.message_payload,
-            status=query.status or message.status,
+        attachment.update(
+            is_resized=query.is_resized or attachment.is_resized,
             updated_at=now
         )
 
-        return CassandraHandler.message_base_from_entity(message)
+        return CassandraHandler.attachment_base_from_entity(attachment)
 
     def update_messages_in_group(self, group_id: str, query: MessageQuery) -> None:
         def callback(message: MessageModel) -> None:
@@ -423,6 +420,17 @@ class CassandraHandler:
             status=message.status,
             message_type=message.message_type,
             updated_at=message.updated_at,
+        )
+
+    @staticmethod
+    def attachment_base_from_entity(attachment: AttachmentModel) -> AttachmentBase:
+        return AttachmentBase(
+            group_id=str(attachment.group_id),
+            created_at=attachment.created_at,
+            updated_at=attachment.updated_at,
+            user_id=attachment.user_id,
+            attachment_id=str(attachment.attachment_id),
+            is_resized=attachment.is_resized,
         )
 
     @staticmethod

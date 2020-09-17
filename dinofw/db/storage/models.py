@@ -1,6 +1,6 @@
 import uuid
 
-from cassandra.cqlengine.columns import UUID
+from cassandra.cqlengine.columns import UUID, Boolean
 from cassandra.cqlengine.columns import DateTime
 from cassandra.cqlengine.columns import Integer
 from cassandra.cqlengine.columns import Text
@@ -71,7 +71,6 @@ class ActionLogModel(Model):
 class AttachmentModel(Model):
     __table_name__ = "attachments"
 
-
     group_id = UUID(
         required=True,
         primary_key=True,
@@ -86,9 +85,16 @@ class AttachmentModel(Model):
         required=True,
         primary_key=True,
     )
-    message_id = UUID(
+    attachment_id = UUID(
         required=True,
-        default=uuid.uuid4
+        default=uuid.uuid4,
+    )
+    is_resized = Boolean(
+        required=True,
+        default=False,
+    )
+    updated_at = DateTime(
+        required=False,
     )
 
     # TODO: figure out if use a json body or all just fields, dont' need to filter on them, but need to update some

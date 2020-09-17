@@ -24,3 +24,13 @@ class ActionLogBase(BaseModel):
     action_type: int
 
     admin_id: Optional[int]
+
+
+class AttachmentBase(BaseModel):
+    group_id: str
+    attachment_id: str
+    user_id: int
+    is_resized: bool
+
+    created_at: datetime
+    updated_at: Optional[datetime]

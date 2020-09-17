@@ -11,3 +11,8 @@ class NoSuchGroupException(Exception):
 class NoSuchMessageException(Exception):
     def __init__(self, message):
         self.message = f"no such message: {message}"
+
+
+class NoSuchAttachmentException(Exception):
+    def __init__(self, message):
+        self.message = f"no such attachment: {message}"

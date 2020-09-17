@@ -103,6 +103,14 @@ class EditMessageQuery(AdminQuery):
     created_at: float
 
 
+class EditAttachmentQuery(AdminQuery):
+    attachment_payload: Optional[str]
+    message_type: Optional[int]
+    status: Optional[int]
+    created_at: float
+    is_resized: Optional[bool]
+
+
 class UpdateUserGroupStats(AbstractQuery):
     last_read_time: Optional[float]
     delete_before: Optional[float]
