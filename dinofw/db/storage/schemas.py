@@ -12,7 +12,7 @@ class MessageBase(BaseModel):
     message_payload: Optional[str]
 
     status: Optional[int]
-    message_type: Optional[str]
+    message_type: Optional[int]
     updated_at: Optional[datetime]
 
 

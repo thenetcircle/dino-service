@@ -69,7 +69,7 @@ class AttachmentQuery(AbstractQuery):
 
 class SendMessageQuery(OneToOneQuery):
     message_payload: Optional[str]
-    message_type: str
+    message_type: int
 
 
 class CreateGroupQuery(AbstractQuery):
@@ -187,7 +187,7 @@ class Message(BaseModel):
     message_payload: Optional[str]
 
     status: Optional[int]
-    message_type: Optional[str]
+    message_type: int
     updated_at: Optional[float]
     removed_at: Optional[float]
     removed_by_user: Optional[int]
@@ -210,7 +210,7 @@ class Group(BaseModel):
     last_message_overview: Optional[str]
     last_message_user_id: Optional[int]
     last_message_time: float
-    last_message_type: Optional[str]
+    last_message_type: Optional[int]
     user_count: int
 
 

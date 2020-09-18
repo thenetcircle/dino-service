@@ -4,9 +4,11 @@ class GroupTypes:
 
 
 class MessageTypes:
-    MESSAGE = "text"
-    IMAGE = "image"
-    VIDEO = "video"
+    MESSAGE = 0
+    NO_THANKS = 1
+    NO_THANKS_HIDE = 2
+    IMAGE = 3
+    VIDEO = 4
 
 
 class RedisKeys:

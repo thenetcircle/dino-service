@@ -357,7 +357,7 @@ class TestServerRestApi(BaseServerRestApi):
 
     def test_attachments(self):
         message = self.send_1v1_message(message_type=MessageTypes.IMAGE)
-        self.assertEqual(MessageTypes.IMAGE, message["message_type"])
+        self.assertEqual(MessageTypes.IMAGE, int(message["message_type"]))
         self.assertIsNone(message["message_payload"])
 
         info = self.get_1v1_group_info()

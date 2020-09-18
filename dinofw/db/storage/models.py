@@ -34,7 +34,7 @@ class MessageModel(Model):
     )
 
     status = Integer()
-    message_type = Text()
+    message_type = Integer()
     updated_at = DateTime()
 
 
