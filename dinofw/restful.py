@@ -143,9 +143,18 @@ async def create_an_attachment(
     """
     Create an attachment.
 
+    When a user sends an image or video, first call the "send message API" with the
+    `message_type` set to `image` (or similiar). When the image has finished processing
+    in the backend, call this API to create the actual attachment meta data for it.
+
+    First we create the "empty" message so indicate to all relevant users that someone
+    has sent something, usually the client application will show a loading icon for this
+    "empty" message. When this API is called after the image processing is done, Dino
+    will broadcast an update to the clients with a reference to the ID of the "empty"
+    message, so the real image can replace the loading icon.
+
     **Potential error codes in response:**
     * `601`: if the group does not exist,
-    * `603`: if the attachment does not exist,
     * `250`: if an unknown error occurred.
     """
     try:
