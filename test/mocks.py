@@ -14,7 +14,7 @@ from dinofw.rest.models import (
     CreateGroupQuery,
     MessageQuery,
     EditMessageQuery,
-    AbstractQuery, CreateActionLogQuery, UserGroup,
+    AbstractQuery, CreateActionLogQuery, UserGroup, CreateAttachmentQuery,
 )
 from dinofw.rest.models import GroupQuery
 from dinofw.rest.models import SendMessageQuery
@@ -72,32 +72,27 @@ class FakeStorage:
 
         return logs
 
-    def store_attachments(
-            self, group_id: str, user_id: int, message: MessageBase, query: SendMessageQuery
-    ) -> List[AttachmentBase]:
-        if query.attachments is None or len(query.attachments) == 0:
-            return list()
+    def store_attachment(
+            self, group_id: str, user_id: int, message_id: str, query: CreateAttachmentQuery
+    ) -> AttachmentBase:
 
-        attachments = list()
-        for attachment in query.attachments:
-            attachments.append(AttachmentBase(
-                group_id=str(group_id),
-                created_at=message.created_at,
-                user_id=user_id,
-                attachment_id=str(uuid()),
-                message_id=message.message_id,
-                is_resized=attachment.is_resized,
-                context=attachment.context,
-                filename=attachment.filename,
-            ))
+        attachment = AttachmentBase(
+            group_id=str(group_id),
+            created_at=arrow.utcnow().datetime,
+            user_id=user_id,
+            attachment_id=str(uuid()),
+            message_id=message_id,
+            context=query.context,
+            filename=query.filename,
+        )
 
         if group_id not in self.attachments_by_group:
             self.attachments_by_group[group_id] = list()
 
-        self.attachments_by_group[group_id].extend(attachments)
-        self.attachments_by_message[message.message_id] = attachments
+        self.attachments_by_group[group_id].append(attachment)
+        self.attachments_by_message[message_id] = attachment
 
-        return attachments
+        return attachment
 
     def store_message(
         self, group_id: str, user_id: int, query: SendMessageQuery

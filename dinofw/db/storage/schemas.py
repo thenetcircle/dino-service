@@ -9,7 +9,7 @@ class MessageBase(BaseModel):
     created_at: datetime
     user_id: int
     message_id: str
-    message_payload: str
+    message_payload: Optional[str]
 
     status: Optional[int]
     message_type: Optional[str]
@@ -31,7 +31,6 @@ class AttachmentBase(BaseModel):
     attachment_id: str
     message_id: str
     user_id: int
-    is_resized: bool
     context: str
     filename: str
 

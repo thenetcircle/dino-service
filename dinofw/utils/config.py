@@ -3,6 +3,12 @@ class GroupTypes:
     ONE_TO_ONE = 1
 
 
+class MessageTypes:
+    MESSAGE = "text"
+    IMAGE = "image"
+    VIDEO = "video"
+
+
 class RedisKeys:
     RKEY_AUTH = "user:auth:{}"  # user:auth:user_id
     RKEY_USERS_IN_GROUP = "group:users:{}"  # group:users:group_id

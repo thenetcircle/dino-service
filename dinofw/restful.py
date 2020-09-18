@@ -136,7 +136,7 @@ async def send_message_to_user(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@app.put("/v1/users/{user_id}/message/{message_id}/attachment")
+@app.post("/v1/users/{user_id}/message/{message_id}/attachment")
 async def create_an_attachment(
         user_id: int, message_id: str, query: CreateAttachmentQuery, db: Session = Depends(get_db)
 ) -> None:

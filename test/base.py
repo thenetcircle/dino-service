@@ -20,6 +20,8 @@ class BaseTest(TestCase):
     USER_ID = 1234
     OTHER_USER_ID = 8888
     MESSAGE_PAYLOAD = "test message"
+    FILENAME = "file.jpg"
+    CONTEXT = '{"some-key":"some-value"}'
 
     def setUp(self) -> None:
         # used when no `hide_before` is specified in a query

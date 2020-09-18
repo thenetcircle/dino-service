@@ -28,10 +28,10 @@ class MessageModel(Model):
         required=True,
         default=uuid.uuid4
     )
-
-    # not required; if deleted we clear the body first
-    # TODO: maybe just remove the row?
-    message_payload = Text()
+    # attachment placeholders doesn't have a body
+    message_payload = Text(
+        required=False
+    )
 
     status = Integer()
     message_type = Text()

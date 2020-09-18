@@ -82,26 +82,29 @@ class GroupResource(BaseResource):
 
         self._user_opens_conversation(group_id, user_id, db)
 
-        action_log = self.env.storage.get_action_log_in_group_for_user(
-            group_id, user_stats, query
-        )
-        messages = self.env.storage.get_messages_in_group_for_user(
-            group_id, user_stats, query
-        )
-        attachments = self.env.storage.get_attachments_in_group_for_user(
-            group_id, user_stats, query
-        )
-        last_reads = self.env.db.get_last_reads_in_group(group_id, db)
-
-        messages = [
-            GroupResource.message_base_to_message(message) for message in messages
-        ]
         action_log = [
-            GroupResource.action_log_base_to_action_log(log) for log in action_log
+            GroupResource.action_log_base_to_action_log(log)
+            for log in self.env.storage.get_action_log_in_group_for_user(
+                group_id, user_stats, query
+            )
+        ]
+        messages = [
+            GroupResource.message_base_to_message(message)
+            for message in self.env.storage.get_messages_in_group_for_user(
+                group_id, user_stats, query
+            )
+        ]
+        attachments = [
+            GroupResource.attachment_base_to_attachment(attachment)
+            for attachment in self.env.storage.get_attachments_in_group_for_user(
+                group_id, user_stats, query
+            )
         ]
         last_reads = [
             GroupResource.to_last_read(user_id, last_read)
-            for user_id, last_read in last_reads.items()
+            for user_id, last_read in self.env.db.get_last_reads_in_group(
+                group_id, db
+            ).items()
         ]
 
         return Histories(

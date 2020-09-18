@@ -198,7 +198,7 @@ class CassandraHandler:
             removed_at=removed_at,
         )
 
-    def create_attachment(
+    def store_attachment(
             self, group_id: str, user_id: int, message_id: str, query: CreateAttachmentQuery
     ) -> AttachmentBase:
         """
@@ -471,7 +471,6 @@ class CassandraHandler:
             user_id=attachment.user_id,
             attachment_id=str(attachment.attachment_id),
             message_id=str(attachment.message_id),
-            is_resized=attachment.is_resized,
             context=attachment.context,
             filename=attachment.filename,
         )

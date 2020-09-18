@@ -221,6 +221,60 @@ class BaseServerRestApi(BaseDatabaseTest):
         )
         self.assertEqual(raw_response.status_code, 200)
 
+    def get_1v1_group_info(self, user_id: int = None, receiver_id: int = None):
+        if user_id is None:
+            user_id = BaseTest.USER_ID
+
+        if receiver_id is None:
+            receiver_id = BaseTest.OTHER_USER_ID
+
+        raw_response = self.client.post(
+            f"/v1/users/{user_id}/group",
+            json={
+                "receiver_id": receiver_id,
+            },
+        )
+        self.assertEqual(raw_response.status_code, 200)
+
+        return raw_response.json()
+
+    def create_attachment(self, message_id: str, user_id: int = None, receiver_id: int = None) -> dict:
+        if user_id is None:
+            user_id = BaseTest.USER_ID
+
+        if receiver_id is None:
+            receiver_id = BaseTest.OTHER_USER_ID
+
+        raw_response = self.client.post(
+            f"/v1/users/{user_id}/message/{message_id}/attachment",
+            json={
+                "receiver_id": receiver_id,
+                "filename": BaseTest.FILENAME,
+                "context": BaseTest.CONTEXT,
+            },
+        )
+        self.assertEqual(raw_response.status_code, 200)
+
+        return raw_response.json()
+
+    def send_1v1_message(self, message_type: int = 0, user_id: int = None, receiver_id: int = None) -> dict:
+        if user_id is None:
+            user_id = BaseTest.USER_ID
+
+        if receiver_id is None:
+            receiver_id = BaseTest.OTHER_USER_ID
+
+        raw_response = self.client.post(
+            f"/v1/users/{user_id}/send",
+            json={
+                "receiver_id": receiver_id,
+                "message_type": message_type,
+            },
+        )
+        self.assertEqual(raw_response.status_code, 200)
+
+        return raw_response.json()
+
     def assert_messages_in_group(self, group_id: str, user_id: int = None, amount: int = 0):
         raw_response = self.client.post(
             f"/v1/groups/{group_id}/user/{user_id}/histories",

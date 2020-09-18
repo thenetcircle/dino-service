@@ -4,7 +4,7 @@ from typing import List
 from sqlalchemy.orm import Session
 
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import AdminQuery, CreateAttachmentQuery
+from dinofw.rest.models import AdminQuery, CreateAttachmentQuery, Attachment
 from dinofw.rest.models import Message
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
@@ -68,10 +68,12 @@ class MessageResource(BaseResource):
 
     async def create_attachment(
             self, user_id: int, message_id: str, query: CreateAttachmentQuery, db: Session
-    ) -> None:
+    ) -> Attachment:
         group_id = await self._get_or_create_group_for_1v1(user_id, query.receiver_id, db)
-        attachment = self.env.storage.create_attachment(group_id, user_id, message_id, query)
+        attachment = self.env.storage.store_attachment(group_id, user_id, message_id, query)
         self._user_sends_an_attachment(group_id, attachment, db)
+
+        return MessageResource.attachment_base_to_attachment(attachment)
 
     async def delete_message(
         self, group_id: str, user_id: int, message_id: str, query: AdminQuery

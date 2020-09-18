@@ -8,7 +8,7 @@ import pytz
 
 from dinofw.db.rdbms.schemas import UserGroupStatsBase, GroupBase
 from dinofw.db.storage.schemas import MessageBase, ActionLogBase, AttachmentBase
-from dinofw.rest.models import AbstractQuery, UserGroup
+from dinofw.rest.models import AbstractQuery, UserGroup, Attachment
 from dinofw.rest.models import ActionLog
 from dinofw.rest.models import Group
 from dinofw.rest.models import GroupJoinTime
@@ -80,6 +80,19 @@ class BaseResource(ABC):
         )
 
         return Message(**message_dict)
+
+    @staticmethod
+    def attachment_base_to_attachment(attachment: MessageBase) -> Attachment:
+        attachment_dict = attachment.dict()
+
+        attachment_dict["updated_at"] = AbstractQuery.to_ts(
+            attachment_dict["updated_at"], allow_none=True
+        )
+        attachment_dict["created_at"] = AbstractQuery.to_ts(
+            attachment_dict["created_at"], allow_none=True
+        )
+
+        return Attachment(**attachment_dict)
 
     @staticmethod
     def group_base_to_group(
