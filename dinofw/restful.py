@@ -152,8 +152,6 @@ async def create_an_attachment(
         return await environ.env.rest.message.create_attachment(user_id, message_id, query, db)
     except NoSuchGroupException as e:
         log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
-    except NoSuchMessageException as e:
-        log_error_and_raise_known(ErrorCodes.NO_SUCH_ATTACHMENT, e)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 
