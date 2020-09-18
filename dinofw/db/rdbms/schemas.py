@@ -21,7 +21,6 @@ class GroupBase(BaseModel):
     owner_id: int
 
     meta: Optional[int]
-    weight: Optional[int]
     context: Optional[str]
 
 

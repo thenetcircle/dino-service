@@ -85,7 +85,6 @@ class CreateGroupQuery(AbstractQuery):
 
 class GroupQuery(PaginationQuery):
     ownership: Optional[int]  # TODO: needed?
-    # weight: Optional[int]
     has_unread: Optional[int]  # TODO: needed?
 
 
@@ -208,7 +207,6 @@ class Group(BaseModel):
     owner_id: int
     meta: Optional[int]
     context: Optional[str]
-    weight: Optional[str]
     last_message_overview: Optional[str]
     last_message_user_id: Optional[int]
     last_message_time: float

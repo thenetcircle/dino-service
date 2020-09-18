@@ -81,7 +81,6 @@ class IPublishHandler(ABC):
             "group_type": group.group_type,
             "owner_id": group.owner_id,
             "meta": group.meta,
-            "weight": group.weight,
             "context": group.context,
             "user_ids": ",".join([str(user_id) for user_id in user_ids]),
         }
