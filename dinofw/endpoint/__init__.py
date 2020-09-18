@@ -37,16 +37,6 @@ class IPublishHandler(ABC):
         }
 
     @staticmethod
-    def attachment_base_to_event(attachment: AttachmentBase):
-        return {
-            "attachment_id": attachment.attachment_id,
-            "is_resized": attachment.is_resized,
-            "context": attachment.context,
-            "created_at": AbstractQuery.to_ts(attachment.created_at, allow_none=True) or "",
-            "updated_at": AbstractQuery.to_ts(attachment.updated_at, allow_none=True) or "",
-        }
-
-    @staticmethod
     def message_base_to_event(message: MessageBase):
         return {
             "event_type": "message",
@@ -67,8 +57,7 @@ class IPublishHandler(ABC):
             "attachment_id": attachment.attachment_id,
             "message_id": attachment.message_id,
             "group_id": attachment.group_id,
-            "sender_id": attachment.user_id,
-            "is_resized": attachment.is_resized,
+            "user_id": attachment.user_id,
             "updated_at": AbstractQuery.to_ts(attachment.updated_at, allow_none=True) or "",
             "created_at": AbstractQuery.to_ts(attachment.created_at),
             "context": attachment.context,
