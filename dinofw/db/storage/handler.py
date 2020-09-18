@@ -45,6 +45,7 @@ class CassandraHandler:
 
         sync_table(MessageModel)
         sync_table(ActionLogModel)
+        sync_table(AttachmentModel)
 
     def get_messages_in_group(
             self,
