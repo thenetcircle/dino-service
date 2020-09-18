@@ -41,6 +41,10 @@ class AdminQuery(AbstractQuery):
     admin_id: Optional[int]
 
 
+class OneToOneQuery(AbstractQuery):
+    receiver_id: Optional[int]
+
+
 class MessageQuery(PaginationQuery, AdminQuery):
     message_type: Optional[int]
     status: Optional[int]
@@ -63,11 +67,9 @@ class AttachmentQuery(AbstractQuery):
     is_resized: bool
 
 
-class SendMessageQuery(AbstractQuery):
+class SendMessageQuery(OneToOneQuery):
     message_payload: str
     message_type: str
-    receiver_id: Optional[int]
-    attachments: Optional[List[AttachmentQuery]]
 
 
 class CreateGroupQuery(AbstractQuery):
@@ -85,10 +87,6 @@ class GroupQuery(PaginationQuery):
     ownership: Optional[int]  # TODO: needed?
     # weight: Optional[int]
     has_unread: Optional[int]  # TODO: needed?
-
-
-class OneToOneQuery(AbstractQuery):
-    receiver_id: Optional[int]
 
 
 class GroupUpdatesQuery(PaginationQuery):
@@ -110,12 +108,9 @@ class EditMessageQuery(AdminQuery):
     created_at: float
 
 
-class EditAttachmentQuery(AdminQuery):
-    attachment_payload: Optional[str]
-    message_type: Optional[int]
-    status: Optional[int]
-    created_at: float
-    is_resized: Optional[bool]
+class CreateAttachmentQuery(OneToOneQuery):
+    filename: str
+    context: str
 
 
 class UpdateUserGroupStats(AbstractQuery):

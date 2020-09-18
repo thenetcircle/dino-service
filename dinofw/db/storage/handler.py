@@ -15,13 +15,11 @@ from dinofw.db.storage.models import ActionLogModel, AttachmentModel
 from dinofw.db.storage.models import MessageModel
 from dinofw.db.storage.schemas import ActionLogBase, AttachmentBase
 from dinofw.db.storage.schemas import MessageBase
-from dinofw.rest.models import AdminQuery, EditAttachmentQuery
+from dinofw.rest.models import AdminQuery, CreateAttachmentQuery
 from dinofw.rest.models import CreateActionLogQuery
-from dinofw.rest.models import EditMessageQuery
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
 from dinofw.utils.config import ConfigKeys
-from dinofw.utils.exceptions import NoSuchAttachmentException
 
 
 class CassandraHandler:
@@ -200,7 +198,10 @@ class CassandraHandler:
             removed_at=removed_at,
         )
 
-    def edit_attachment(self, group_id: str, attachment_id: str, query: EditAttachmentQuery) -> AttachmentBase:
+    def create_attachment(
+            self, group_id: str, user_id: int, message_id: str, query: CreateAttachmentQuery
+    ) -> AttachmentBase:
+        """
         # we should filter on the 'created_at' field, since it's a clustering key
         # and 'message_id' is not; if we don't filter by 'created_at' each edit
         # will require a full table scan, and editing a recent message happens
@@ -212,26 +213,16 @@ class CassandraHandler:
         # filter by a minute before and after
         approx_date_after = arrow.get(created_at).shift(minutes=-1).datetime
         approx_date_before = arrow.get(created_at).shift(minutes=1).datetime
+        """
 
-        attachment = (
-            AttachmentModel.objects(
-                AttachmentModel.group_id == group_id,
-                AttachmentModel.created_at > approx_date_after,
-                AttachmentModel.created_at < approx_date_before,
-                AttachmentModel.attachment_id == attachment_id,
-            )
-            .allow_filtering()
-            .first()
-        )
-
-        if attachment is None:
-            raise NoSuchAttachmentException(attachment_id)
-
-        now = arrow.utcnow().datetime
-
-        attachment.update(
-            is_resized=query.is_resized or attachment.is_resized,
-            updated_at=now
+        attachment = AttachmentModel.create(
+            group_id=group_id,
+            user_id=user_id,
+            created_at=arrow.utcnow().datetime,
+            attachment_id=uuid(),
+            message_id=message_id,
+            filename=query.filename,
+            context=query.context,
         )
 
         return CassandraHandler.attachment_base_from_entity(attachment)

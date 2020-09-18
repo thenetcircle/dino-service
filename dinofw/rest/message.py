@@ -1,12 +1,10 @@
 import logging
 from typing import List
 
-import arrow
 from sqlalchemy.orm import Session
 
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import AdminQuery
-from dinofw.rest.models import EditAttachmentQuery
+from dinofw.rest.models import AdminQuery, CreateAttachmentQuery
 from dinofw.rest.models import Message
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
@@ -20,21 +18,21 @@ class MessageResource(BaseResource):
         self, group_id: str, user_id: int, query: SendMessageQuery, db: Session
     ) -> Message:
         message = self.env.storage.store_message(group_id, user_id, query)
-        attachments = self.env.storage.store_attachments(group_id, user_id, message, query)
-
-        self._user_sends_a_message(group_id, user_id, message, attachments, db)
+        self._user_sends_a_message(group_id, user_id, message, db)
 
         return MessageResource.message_base_to_message(message)
+
+    async def _get_or_create_group_for_1v1(self, user_id: int, receiver_id: int, db: Session) -> str:
+        try:
+            return self.env.db.get_group_id_for_1to1(user_id, receiver_id, db)
+        except NoSuchGroupException:
+            group = self.env.db.create_group_for_1to1(user_id, receiver_id, db)
+            return group.group_id
 
     async def send_message_to_user(
         self, user_id: int, query: SendMessageQuery, db: Session
     ) -> Message:
-        try:
-            group_id = self.env.db.get_group_id_for_1to1(user_id, query.receiver_id, db)
-        except NoSuchGroupException:
-            group = self.env.db.create_group_for_1to1(user_id, query.receiver_id, db)
-            group_id = group.group_id
-
+        group_id = await self._get_or_create_group_for_1v1(user_id, query.receiver_id, db)
         return await self.send_message_to_group(group_id, user_id, query, db)
 
     async def messages_in_group(
@@ -68,9 +66,12 @@ class MessageResource(BaseResource):
 
         return messages
 
-    async def edit_attachment(self, group_id: str, attachment_id: str, query: EditAttachmentQuery, db: Session) -> None:
-        attachment = self.env.storage.edit_attachment(group_id, attachment_id, query)
-        self._user_sends_a_message(group_id, attachment.user_id, attachment, db)
+    async def create_attachment(
+            self, user_id: int, message_id: str, query: CreateAttachmentQuery, db: Session
+    ) -> None:
+        group_id = await self._get_or_create_group_for_1v1(user_id, query.receiver_id, db)
+        attachment = self.env.storage.create_attachment(group_id, user_id, message_id, query)
+        self._user_sends_an_attachment(group_id, attachment, db)
 
     async def delete_message(
         self, group_id: str, user_id: int, message_id: str, query: AdminQuery

@@ -8,7 +8,7 @@ from dinofw.rest.models import AbstractQuery
 
 class IPublishHandler(ABC):
     @abstractmethod
-    def message(self, message: MessageBase, attachments: List[AttachmentBase], user_ids: List[int]) -> None:
+    def message(self, message: MessageBase, user_ids: List[int]) -> None:
         """pass"""
 
     @abstractmethod
@@ -37,15 +37,17 @@ class IPublishHandler(ABC):
         }
 
     @staticmethod
-    def message_base_to_event(message: MessageBase, attachments: List[AttachmentBase]):
-        attachments = [{
+    def attachment_base_to_event(attachment: AttachmentBase):
+        return {
             "attachment_id": attachment.attachment_id,
             "is_resized": attachment.is_resized,
             "context": attachment.context,
             "created_at": AbstractQuery.to_ts(attachment.created_at, allow_none=True) or "",
             "updated_at": AbstractQuery.to_ts(attachment.updated_at, allow_none=True) or "",
-        } for attachment in attachments]
+        }
 
+    @staticmethod
+    def message_base_to_event(message: MessageBase):
         return {
             "event_type": "message",
             "group_id": message.group_id,
@@ -56,7 +58,6 @@ class IPublishHandler(ABC):
             "status": message.status,
             "updated_at": AbstractQuery.to_ts(message.updated_at, allow_none=True) or "",
             "created_at": AbstractQuery.to_ts(message.created_at),
-            "attachments": attachments
         }
 
     @staticmethod

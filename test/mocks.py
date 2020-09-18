@@ -516,7 +516,7 @@ class FakePublisherHandler(IPublishHandler):
         self.sent_messages = dict()
         self.sent_attachments = dict()
 
-    def message(self, message: MessageBase, attachments: List[AttachmentBase], user_ids: List[int]) -> None:
+    def message(self, message: MessageBase, user_ids: List[int]) -> None:
         if message.group_id not in self.sent_messages:
             self.sent_messages[message.group_id] = list()
 
@@ -524,7 +524,6 @@ class FakePublisherHandler(IPublishHandler):
             self.sent_attachments[message.group_id] = dict()
 
         self.sent_messages[message.group_id].append(message)
-        self.sent_attachments[message.group_id][message.message_id] = attachments
 
     def attachment(self, attachment: AttachmentBase, user_ids: List[int]) -> None:
         pass

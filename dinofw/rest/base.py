@@ -42,7 +42,7 @@ class BaseResource(ABC):
         self.env.cache.set_unread_in_group(group_id, user_id, 0)
 
     def _user_sends_a_message(
-        self, group_id: str, user_id: int, message: MessageBase, attachments: List[AttachmentBase], db
+        self, group_id: str, user_id: int, message: MessageBase, db
     ):
         """
         update database and cache with everything related to sending a message
@@ -56,11 +56,17 @@ class BaseResource(ABC):
         )
 
         user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
-        self.env.publisher.message(message, attachments, user_ids)
+        self.env.publisher.message(message, user_ids)
 
         # don't increase unread for the sender
         del user_ids[user_id]
         self.env.cache.increase_unread_in_group_for(group_id, user_ids)
+
+    def _user_sends_an_attachment(
+        self, group_id: str, attachment: AttachmentBase, db
+    ):
+        user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
+        self.env.publisher.attachment(attachment, user_ids)
 
     @staticmethod
     def message_base_to_message(message: MessageBase) -> Message:

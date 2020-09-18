@@ -92,10 +92,6 @@ class AttachmentModel(Model):
     message_id = UUID(
         required=True,
     )
-    is_resized = Boolean(
-        required=True,
-        default=False,
-    )
     filename = Text(
         required=True,
     )
@@ -108,6 +104,10 @@ class AttachmentModel(Model):
 
     # TODO: figure out if use a json body or all just fields, dont' need to filter on them, but need to update some
     """
+    is_resized = Boolean(
+        required=True,
+        default=False,
+    )
     const FIELD_EXT_NAME       = 'ext_name';
     const FIELD_FILE_ID        = 'file_id';
     const FIELD_ORIGIN_NAME    = 'origin_name';
