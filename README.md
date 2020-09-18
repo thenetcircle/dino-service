@@ -1,6 +1,6 @@
 # Dino Message System
 
-Backend service for distributed notifications using MQTT over websocket or a TCP stream.
+Backend service for distributed notifications using MQTT over websockets or a TCP streams.
 
 ![Sending a message](docs/images/send-to-group.jpg)
 
