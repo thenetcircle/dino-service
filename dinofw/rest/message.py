@@ -5,8 +5,8 @@ import arrow
 from sqlalchemy.orm import Session
 
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import AdminQuery, EditAttachmentQuery
-from dinofw.rest.models import EditMessageQuery
+from dinofw.rest.models import AdminQuery
+from dinofw.rest.models import EditAttachmentQuery
 from dinofw.rest.models import Message
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
@@ -20,7 +20,9 @@ class MessageResource(BaseResource):
         self, group_id: str, user_id: int, query: SendMessageQuery, db: Session
     ) -> Message:
         message = self.env.storage.store_message(group_id, user_id, query)
-        self._user_sends_a_message(group_id, user_id, message, db)
+        attachments = self.env.storage.store_attachments(group_id, user_id, message, query)
+
+        self._user_sends_a_message(group_id, user_id, message, attachments, db)
 
         return MessageResource.message_base_to_message(message)
 

@@ -6,7 +6,7 @@ import pytz
 import arrow
 
 from dinofw.cache.redis import CacheRedis
-from dinofw.db.storage.schemas import MessageBase, ActionLogBase
+from dinofw.db.storage.schemas import MessageBase, ActionLogBase, AttachmentBase
 from dinofw.db.rdbms.schemas import GroupBase, UserGroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.endpoint import IPublishHandler, IPublisher
@@ -28,6 +28,8 @@ class FakeStorage:
     def __init__(self, env):
         self.env = env
         self.messages_by_group = dict()
+        self.attachments_by_group = dict()
+        self.attachments_by_message = dict()
         self.action_log = dict()
 
     def get_unread_in_group(self, group_id: str, user_id: int, last_read: dt) -> int:
@@ -69,6 +71,33 @@ class FakeStorage:
             logs.append(log)
 
         return logs
+
+    def store_attachments(
+            self, group_id: str, user_id: int, message: MessageBase, query: SendMessageQuery
+    ) -> List[AttachmentBase]:
+        if query.attachments is None or len(query.attachments) == 0:
+            return list()
+
+        attachments = list()
+        for attachment in query.attachments:
+            attachments.append(AttachmentBase(
+                group_id=str(group_id),
+                created_at=message.created_at,
+                user_id=user_id,
+                attachment_id=str(uuid()),
+                message_id=message.message_id,
+                is_resized=attachment.is_resized,
+                context=attachment.context,
+                filename=attachment.filename,
+            ))
+
+        if group_id not in self.attachments_by_group:
+            self.attachments_by_group[group_id] = list()
+
+        self.attachments_by_group[group_id].extend(attachments)
+        self.attachments_by_message[message.message_id] = attachments
+
+        return attachments
 
     def store_message(
         self, group_id: str, user_id: int, query: SendMessageQuery
@@ -143,6 +172,26 @@ class FakeStorage:
                 break
 
         return messages
+
+    def get_attachments_in_group_for_user(
+            self,
+            group_id: str,
+            user_stats: UserGroupStatsBase,
+            query: MessageQuery
+    ) -> List[AttachmentBase]:
+        if group_id not in self.attachments_by_group:
+            return list()
+
+        attachments = list()
+
+        for attachment in self.attachments_by_group[group_id]:
+            if attachment.created_at > user_stats.delete_before:
+                attachments.append(attachment)
+
+            if len(attachments) > query.per_page:
+                break
+
+        return attachments
 
     def get_messages_in_group_for_user(
             self,
@@ -465,12 +514,20 @@ class MockPublisher(IPublisher):
 class FakePublisherHandler(IPublishHandler):
     def __init__(self):
         self.sent_messages = dict()
+        self.sent_attachments = dict()
 
-    def message(self, group_id: str, message: MessageBase, user_ids: List[int]) -> None:
-        if group_id not in self.sent_messages:
-            self.sent_messages[group_id] = list()
+    def message(self, message: MessageBase, attachments: List[AttachmentBase], user_ids: List[int]) -> None:
+        if message.group_id not in self.sent_messages:
+            self.sent_messages[message.group_id] = list()
 
-        self.sent_messages[group_id].append(message)
+        if message.group_id not in self.sent_attachments:
+            self.sent_attachments[message.group_id] = dict()
+
+        self.sent_messages[message.group_id].append(message)
+        self.sent_attachments[message.group_id][message.message_id] = attachments
+
+    def attachment(self, attachment: AttachmentBase, user_ids: List[int]) -> None:
+        pass
 
     def read(self, group_id: str, user_id: int, user_ids: List[int]) -> None:
         pass  # TODO

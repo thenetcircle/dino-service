@@ -135,6 +135,28 @@ async def send_message_to_user(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
+@app.put("/v1/users/{user_id}/attachment/{attachment_id}/edit")
+async def edit_an_attachment(
+        group_id: str, attachment_id: str, query: EditAttachmentQuery, db: Session = Depends(get_db)
+) -> None:
+    """
+    Edit an attachment.
+
+    **Potential error codes in response:**
+    * `601`: if the group does not exist,
+    * `603`: if the attachment does not exist,
+    * `250`: if an unknown error occurred.
+    """
+    try:
+        return await environ.env.rest.message.edit_attachment(group_id, attachment_id, query, db)
+    except NoSuchGroupException as e:
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
+    except NoSuchMessageException as e:
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_ATTACHMENT, e)
+    except Exception as e:
+        log_error_and_raise_unknown(sys.exc_info(), e)
+
+
 @app.put("/v1/groups/{group_id}/attachment/{attachment_id}/edit")
 async def edit_an_attachment(
         group_id: str, attachment_id: str, query: EditAttachmentQuery, db: Session = Depends(get_db)

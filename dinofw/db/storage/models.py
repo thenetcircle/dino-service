@@ -89,6 +89,9 @@ class AttachmentModel(Model):
         required=True,
         default=uuid.uuid4,
     )
+    message_id = UUID(
+        required=True,
+    )
     is_resized = Boolean(
         required=True,
         default=False,

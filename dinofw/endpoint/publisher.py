@@ -52,8 +52,8 @@ class PublishHandler(IPublishHandler):
     async def setup(self):
         await self.publisher.setup()
 
-    def message(self, message: MessageBase, user_ids: List[int]) -> None:
-        data = PublishHandler.message_base_to_event(message)
+    def message(self, message: MessageBase, attachments: List[AttachmentBase], user_ids: List[int]) -> None:
+        data = PublishHandler.message_base_to_event(message, attachments)
         self.send(user_ids, data)
 
     def attachment(self, attachment: AttachmentBase, user_ids: List[int]) -> None:

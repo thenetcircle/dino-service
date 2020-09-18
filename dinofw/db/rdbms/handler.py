@@ -131,7 +131,7 @@ class RelationalHandler:
         return groups
 
     def update_group_new_message(
-        self, message: Any[MessageBase, AttachmentBase], sent_time: dt, db: Session
+        self, message: MessageBase, sent_time: dt, db: Session
     ) -> None:
         group = (
             db.query(models.GroupEntity)

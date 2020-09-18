@@ -92,17 +92,6 @@ class TestServerRestApi(BaseServerRestApi):
         self.assert_groups_for_user(1, user_id=BaseTest.USER_ID)
         self.assert_groups_for_user(1, user_id=BaseTest.OTHER_USER_ID)
 
-    def test_edit_message(self):
-        group_id = self.create_and_join_group()
-        messages = self.send_message_to_group_from(group_id)
-        new_payload = "edited message payload"
-
-        message_id = messages[0]["message_id"]
-        created_at = messages[0]["created_at"]
-
-        self.edit_message(group_id, message_id, created_at, new_payload)
-        self.assert_payload(group_id, message_id, new_payload)
-
     def test_one_user_deletes_some_history(self):
         # both users join a new group
         group_id = self.create_and_join_group(BaseTest.USER_ID)

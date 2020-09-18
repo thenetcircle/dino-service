@@ -72,6 +72,31 @@ class CassandraHandler:
 
         return messages
 
+    def get_attachments_in_group_for_user(
+            self,
+            group_id: str,
+            user_stats: UserGroupStatsBase,
+            query: MessageQuery
+    ) -> List[AttachmentBase]:
+        until = MessageQuery.to_dt(query.until)
+
+        raw_attachments = (
+            AttachmentModel.objects(
+                AttachmentModel.group_id == group_id,
+                AttachmentModel.created_at <= until,
+                AttachmentModel.created_at > user_stats.delete_before,
+            )
+            .limit(query.per_page or 100)
+            .all()
+        )
+
+        attachments = list()
+
+        for attachment in raw_attachments:
+            attachments.append(CassandraHandler.attachment_base_from_entity(attachment))
+
+        return attachments
+
     def get_messages_in_group_for_user(
             self,
             group_id: str,
@@ -303,6 +328,30 @@ class CassandraHandler:
 
         return CassandraHandler.message_base_from_entity(message)
 
+    def store_attachments(
+            self, group_id: str, user_id: int, message: MessageBase, query: SendMessageQuery
+    ) -> List[AttachmentBase]:
+        if query.attachments is None or len(query.attachments) == 0:
+            return list()
+
+        attachments = list()
+        for attachment in query.attachments:
+            attachments.append(AttachmentModel.create(
+                group_id=group_id,
+                created_at=message.created_at,
+                user_id=user_id,
+                attachment_id=uuid(),
+                message_id=message.message_id,
+                is_resized=attachment.is_resized,
+                filename=attachment.filename,
+                context=attachment.context,
+            ))
+
+        return [
+            CassandraHandler.attachment_base_from_entity(attachment)
+            for attachment in attachments
+        ]
+
     def get_action_log_in_group(
             self,
             group_id: str,
@@ -430,6 +479,7 @@ class CassandraHandler:
             updated_at=attachment.updated_at,
             user_id=attachment.user_id,
             attachment_id=str(attachment.attachment_id),
+            message_id=str(attachment.message_id),
             is_resized=attachment.is_resized,
             context=attachment.context,
             filename=attachment.filename,

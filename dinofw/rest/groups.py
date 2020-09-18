@@ -88,6 +88,9 @@ class GroupResource(BaseResource):
         messages = self.env.storage.get_messages_in_group_for_user(
             group_id, user_stats, query
         )
+        attachments = self.env.storage.get_attachments_in_group_for_user(
+            group_id, user_stats, query
+        )
         last_reads = self.env.db.get_last_reads_in_group(group_id, db)
 
         messages = [
@@ -102,7 +105,10 @@ class GroupResource(BaseResource):
         ]
 
         return Histories(
-            messages=messages, action_logs=action_log, last_reads=last_reads,
+            messages=messages,
+            action_logs=action_log,
+            last_reads=last_reads,
+            attachments=attachments,
         )
 
     async def get_user_group_stats(

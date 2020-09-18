@@ -1,7 +1,7 @@
 import logging
 from abc import ABC
 from datetime import datetime as dt
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 import arrow
 import pytz
@@ -42,7 +42,7 @@ class BaseResource(ABC):
         self.env.cache.set_unread_in_group(group_id, user_id, 0)
 
     def _user_sends_a_message(
-        self, group_id: str, user_id: int, message: Any[MessageBase, AttachmentBase], db
+        self, group_id: str, user_id: int, message: MessageBase, attachments: List[AttachmentBase], db
     ):
         """
         update database and cache with everything related to sending a message
@@ -56,15 +56,7 @@ class BaseResource(ABC):
         )
 
         user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
-
-        message_type = type(message)
-
-        if message_type == MessageBase:
-            self.env.publisher.message(message, user_ids)
-        elif message_type == AttachmentBase:
-            self.env.publisher.attachment(message, user_ids)
-        else:
-            self.logger.error(f"unknown type of message, can't publish to subscribers: {message_type}")
+        self.env.publisher.message(message, attachments, user_ids)
 
         # don't increase unread for the sender
         del user_ids[user_id]

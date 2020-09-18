@@ -57,10 +57,17 @@ class SearchQuery(PaginationQuery):
     status: Optional[int]
 
 
+class AttachmentQuery(AbstractQuery):
+    filename: str
+    context: str
+    is_resized: bool
+
+
 class SendMessageQuery(AbstractQuery):
     message_payload: str
     message_type: str
     receiver_id: Optional[int]
+    attachments: Optional[List[AttachmentQuery]]
 
 
 class CreateGroupQuery(AbstractQuery):
@@ -212,6 +219,19 @@ class Group(BaseModel):
     last_message_time: float
     last_message_type: Optional[str]
     user_count: int
+
+
+class Attachment(BaseModel):
+    group_id: str
+    attachment_id: str
+    message_id: str
+    user_id: int
+    is_resized: bool
+    context: str
+    filename: str
+
+    created_at: float
+    updated_at: Optional[float]
 
 
 class OneToOneStats(BaseModel):

@@ -29,6 +29,7 @@ class ActionLogBase(BaseModel):
 class AttachmentBase(BaseModel):
     group_id: str
     attachment_id: str
+    message_id: str
     user_id: int
     is_resized: bool
     context: str
