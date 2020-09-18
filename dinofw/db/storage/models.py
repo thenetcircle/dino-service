@@ -93,6 +93,12 @@ class AttachmentModel(Model):
         required=True,
         default=False,
     )
+    filename = Text(
+        required=True,
+    )
+    context = Text(
+        required=True,
+    )
     updated_at = DateTime(
         required=False,
     )

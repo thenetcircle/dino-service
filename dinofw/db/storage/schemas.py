@@ -31,6 +31,8 @@ class AttachmentBase(BaseModel):
     attachment_id: str
     user_id: int
     is_resized: bool
+    context: str
+    filename: str
 
     created_at: datetime
     updated_at: Optional[datetime]

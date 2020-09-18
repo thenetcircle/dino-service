@@ -59,6 +59,8 @@ class IPublishHandler(ABC):
             "is_resized": attachment.is_resized,
             "updated_at": AbstractQuery.to_ts(attachment.updated_at, allow_none=True) or "",
             "created_at": AbstractQuery.to_ts(attachment.created_at),
+            "context": attachment.context,
+            "filename": attachment.filename,
         }
 
     @staticmethod
@@ -72,7 +74,8 @@ class IPublishHandler(ABC):
             "updated_at": AbstractQuery.to_ts(group.updated_at, allow_none=True) or None,
             "last_message_time": AbstractQuery.to_ts(group.last_message_time, allow_none=True) or None,
             "last_message_overview": group.last_message_overview,
-            "last_message_id": group.last_message_id,
+            "last_message_type": group.last_message_type,
+            "last_message_user_id": group.last_message_user_id,
             "status": group.status,
             "group_type": group.group_type,
             "owner_id": group.owner_id,

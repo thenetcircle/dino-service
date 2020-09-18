@@ -431,6 +431,8 @@ class CassandraHandler:
             user_id=attachment.user_id,
             attachment_id=str(attachment.attachment_id),
             is_resized=attachment.is_resized,
+            context=attachment.context,
+            filename=attachment.filename,
         )
 
     @staticmethod
