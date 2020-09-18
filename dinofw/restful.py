@@ -8,11 +8,9 @@ from fastapi import FastAPI
 from fastapi import status
 from sqlalchemy.orm import Session
 
-from dinofw.utils import environ
-from dinofw.utils.config import ErrorCodes
 from dinofw.rest.models import ActionLog
-from dinofw.rest.models import CreateAttachmentQuery
 from dinofw.rest.models import CreateActionLogQuery
+from dinofw.rest.models import CreateAttachmentQuery
 from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import Group
 from dinofw.rest.models import GroupQuery
@@ -29,7 +27,9 @@ from dinofw.rest.models import UpdateUserGroupStats
 from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UserGroupStats
 from dinofw.rest.models import UserStats
-from dinofw.utils.exceptions import NoSuchGroupException, NoSuchMessageException
+from dinofw.utils import environ
+from dinofw.utils.config import ErrorCodes
+from dinofw.utils.exceptions import NoSuchGroupException
 from dinofw.utils.exceptions import UserNotInGroupException
 
 logger = logging.getLogger(__name__)

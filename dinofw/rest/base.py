@@ -62,9 +62,7 @@ class BaseResource(ABC):
         del user_ids[user_id]
         self.env.cache.increase_unread_in_group_for(group_id, user_ids)
 
-    def _user_sends_an_attachment(
-        self, group_id: str, attachment: AttachmentBase, db
-    ):
+    def _user_sends_an_attachment(self, group_id: str, attachment: AttachmentBase, db):
         user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
         self.env.publisher.attachment(attachment, user_ids)
 

@@ -22,7 +22,9 @@ class MessageResource(BaseResource):
 
         return MessageResource.message_base_to_message(message)
 
-    async def _get_or_create_group_for_1v1(self, user_id: int, receiver_id: int, db: Session) -> str:
+    async def _get_or_create_group_for_1v1(
+        self, user_id: int, receiver_id: int, db: Session
+    ) -> str:
         try:
             return self.env.db.get_group_id_for_1to1(user_id, receiver_id, db)
         except NoSuchGroupException:
@@ -32,7 +34,9 @@ class MessageResource(BaseResource):
     async def send_message_to_user(
         self, user_id: int, query: SendMessageQuery, db: Session
     ) -> Message:
-        group_id = await self._get_or_create_group_for_1v1(user_id, query.receiver_id, db)
+        group_id = await self._get_or_create_group_for_1v1(
+            user_id, query.receiver_id, db
+        )
         return await self.send_message_to_group(group_id, user_id, query, db)
 
     async def messages_in_group(
@@ -67,10 +71,14 @@ class MessageResource(BaseResource):
         return messages
 
     async def create_attachment(
-            self, user_id: int, message_id: str, query: CreateAttachmentQuery, db: Session
+        self, user_id: int, message_id: str, query: CreateAttachmentQuery, db: Session
     ) -> Attachment:
-        group_id = await self._get_or_create_group_for_1v1(user_id, query.receiver_id, db)
-        attachment = self.env.storage.store_attachment(group_id, user_id, message_id, query)
+        group_id = await self._get_or_create_group_for_1v1(
+            user_id, query.receiver_id, db
+        )
+        attachment = self.env.storage.store_attachment(
+            group_id, user_id, message_id, query
+        )
         self._user_sends_an_attachment(group_id, attachment, db)
 
         return MessageResource.attachment_base_to_attachment(attachment)
