@@ -81,8 +81,6 @@ async def get_groups_updated_since(
     Get a list of groups for this user that has changed since a certain time, sorted
     by last message sent. Used to sync changes to mobile apps.
 
-    # TODO: implement
-
     **Potential error codes in response:**
     * `250`: if an unknown error occurred.
     """
