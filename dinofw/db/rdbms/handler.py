@@ -155,6 +155,7 @@ class RelationalHandler:
 
         for user_stat in user_stats:
             user_stat.hide = False
+            user_stat.delete_before = self.long_ago
             db.add(user_stat)
 
         db.add(group)
