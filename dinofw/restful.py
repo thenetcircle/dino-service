@@ -182,6 +182,8 @@ async def get_group_history_for_user(
 
     History can be filtered by `message_type` to e.g. only list images sent in the group.
 
+    # TODO: maybe combine messages/attachments/actions into one list; trouble is doing pagination for that
+
     **Potential error codes in response:**
     * `600`: if the user is not in the group,
     * `601`: if the group does not exist,
