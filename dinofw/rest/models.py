@@ -81,7 +81,7 @@ class GroupQuery(PaginationQuery):
     count_unread: Optional[bool]
 
 
-class GroupUpdatesQuery(PaginationQuery):
+class GroupUpdatesQuery(GroupQuery):
     since: Optional[float]
 
 

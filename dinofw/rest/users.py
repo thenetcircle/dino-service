@@ -16,11 +16,16 @@ class UserResource(BaseResource):
     async def get_groups_for_user(
         self, user_id: int, query: GroupQuery, db: Session
     ) -> List[UserGroup]:
-        count_unread = query.count_unread or False
+        user_groups: List[UserGroupBase] = self.env.db.get_groups_for_user(user_id, query, db)
+        return self._to_user_group(user_groups)
 
-        user_groups: List[UserGroupBase] = self.env.db.get_groups_for_user(
-            user_id, query, db, count_unread=count_unread,
-        )
+    async def get_groups_updated_since(
+        self, user_id: int, query: GroupUpdatesQuery, db: Session
+    ) -> List[UserGroup]:
+        user_groups: List[UserGroupBase] = self.env.db.get_groups_updated_since(user_id, query, db)
+        return self._to_user_group(user_groups)
+
+    def _to_user_group(self, user_groups: List[UserGroupBase]):
         groups: List[UserGroup] = list()
 
         for user_group in user_groups:
@@ -37,19 +42,12 @@ class UserResource(BaseResource):
 
         return groups
 
-    async def get_groups_updated_since(
-        self, user_id: int, query: GroupUpdatesQuery, db: Session
-    ) -> List[UserGroup]:
-        pass  # TODO: implement
-
     async def get_user_stats(self, user_id: int, db: Session) -> UserStats:
         # ordered by last_message_time, so we're likely to get all groups
         # with messages in them even if the user has more than 1k groups
         query = GroupQuery(per_page=1_000)
 
-        user_groups: List[UserGroupBase] = self.env.db.get_groups_for_user(
-            user_id, query, db, count_unread=False
-        )
+        user_groups: List[UserGroupBase] = self.env.db.get_groups_for_user(user_id, query, db)
 
         unread_amount = 0
         owner_amount = 0

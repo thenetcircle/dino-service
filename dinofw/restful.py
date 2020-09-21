@@ -324,6 +324,8 @@ async def create_action_logs(group_id: str, query: CreateActionLogQuery) -> None
     """
     Create one or more action logs in group.
 
+    # TODO: update last_updated_time to sync with other devices?
+
     **Potential error codes in response:**
     * `250`: if an unknown error occurred.
     """

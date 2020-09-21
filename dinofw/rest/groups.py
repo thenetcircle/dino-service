@@ -194,6 +194,7 @@ class GroupResource(BaseResource):
         self, group_id: str, query: UpdateGroupQuery, db: Session
     ) -> None:
         group = self.env.db.update_group_information(group_id, query, db)
+        self.env.db.set_last_updated_at_for_all_in_group(group_id, db)
 
         user_ids_and_join_times = self.env.db.get_user_ids_and_join_time_in_group(
             group.group_id, db

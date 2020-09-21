@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime as dt
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 from uuid import uuid4 as uuid
 
 import arrow
@@ -13,7 +13,7 @@ from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.rdbms.schemas import UserGroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.schemas import MessageBase, AttachmentBase
-from dinofw.rest.models import CreateGroupQuery
+from dinofw.rest.models import CreateGroupQuery, GroupUpdatesQuery
 from dinofw.rest.models import GroupQuery
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import UpdateGroupQuery
@@ -55,8 +55,7 @@ class RelationalHandler:
         self,
         user_id: int,
         query: GroupQuery,
-        db: Session,
-        count_unread: bool = True,
+        db: Session
     ) -> List[UserGroupBase]:
         """
         what we're doing:
@@ -73,6 +72,7 @@ class RelationalHandler:
             greatest(u.highlight_time, g.last_message_time) desc
         """
         until = GroupQuery.to_dt(query.until)
+        count_unread = query.count_unread or False
 
         results = (
             db.query(models.GroupEntity, models.UserGroupStatsEntity)
@@ -94,6 +94,46 @@ class RelationalHandler:
             .all()
         )
 
+        return self._group_and_stats_to_user_group_base(db, results, user_id, count_unread)
+
+    def get_groups_updated_since(self, user_id: int, query: GroupUpdatesQuery, db: Session):
+        """
+        the only difference between get_groups_for_user() and get_groups_updated_since() is
+        that this method doesn't care about last_message_time, hide, delete_before, since
+        this method is used to sync changed to different devices. This method is also
+        filtering by "since" instead of "until", because for syncing we're paginating
+        "forwards" instead of "backwards"
+        """
+        since = GroupUpdatesQuery.to_dt(query.since)
+        count_unread = query.count_unread or False
+
+        results = (
+            db.query(models.GroupEntity, models.UserGroupStatsEntity)
+            .filter(
+                models.GroupEntity.group_id == models.UserGroupStatsEntity.group_id,
+                models.UserGroupStatsEntity.user_id == user_id,
+                models.UserGroupStatsEntity.last_updated_time >= since
+            )
+            .order_by(
+                models.UserGroupStatsEntity.pin.desc(),
+                func.greatest(
+                    models.UserGroupStatsEntity.highlight_time,
+                    models.GroupEntity.last_message_time,
+                ).desc(),
+            )
+            .limit(query.per_page)
+            .all()
+        )
+
+        return self._group_and_stats_to_user_group_base(db, results, user_id, count_unread)
+
+    def _group_and_stats_to_user_group_base(
+            self,
+            db: Session,
+            results: List[Tuple[models.GroupEntity, models.UserGroupStatsEntity]],
+            user_id: int,
+            count_unread: bool
+    ) -> List[UserGroupBase]:
         groups = list()
 
         for group_entity, user_group_stats_entity in results:
@@ -164,6 +204,7 @@ class RelationalHandler:
         for user_stat in user_stats:
             user_stat.hide = False
             user_stat.delete_before = self.long_ago
+            user_stat.last_updated_time = arrow.utcnow().datetime
             db.add(user_stat)
 
         db.add(group)
@@ -357,6 +398,19 @@ class RelationalHandler:
         self.env.cache.add_user_ids_and_join_time_in_group(group_id, join_times)
         self.env.cache.set_last_read_in_group_for_users(group_id, read_times)
 
+    def set_last_updated_at_for_all_in_group(self, group_id: str, db: Session):
+        now = arrow.utcnow().datetime
+
+        _ = (
+            db.query(models.UserGroupStatsEntity)
+            .filter(models.UserGroupStatsEntity.group_id == group_id)
+            .update({
+                models.UserGroupStatsEntity.last_updated_time: now
+            })
+        )
+
+        db.commit()
+
     def update_group_information(
         self, group_id: str, query: UpdateGroupQuery, db: Session
     ) -> Optional[GroupBase]:
@@ -452,7 +506,6 @@ class RelationalHandler:
             # can't set highlight time if also setting last read time
             if highlight_time is not None and last_read is None:
                 user_stats.highlight_time = highlight_time
-                user_stats.last_updated_time = now
 
                 # always becomes unhidden if highlighted
                 user_stats.hide = False
