@@ -83,6 +83,7 @@ class RelationalHandler:
             .filter(
                 models.GroupEntity.last_message_time <= until,
                 models.UserGroupStatsEntity.hide.is_(False),
+                models.UserGroupStatsEntity.delete_before < models.GroupEntity.last_message_time,
                 models.UserGroupStatsEntity.user_id == user_id,
             )
             .order_by(
