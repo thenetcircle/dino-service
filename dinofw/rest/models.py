@@ -176,7 +176,7 @@ class ActionLog(BaseModel):
     action_type: int
     created_at: float
     admin_id: Optional[int]
-    message_id: Optional[str]
+    context: Optional[str]
 
 
 class Message(BaseModel):

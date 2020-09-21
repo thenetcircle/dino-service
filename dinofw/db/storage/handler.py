@@ -275,6 +275,7 @@ class CassandraHandler:
                 user_id=user_id,
                 created_at=action_time,
                 action_type=query.action_type,
+                context=query.context,
                 action_id=uuid(),
             )
 
@@ -485,4 +486,5 @@ class CassandraHandler:
             action_id=str(log.action_id),
             action_type=log.action_type,
             admin_id=log.admin_id,
+            context=log.context,
         )

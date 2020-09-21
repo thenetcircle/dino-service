@@ -22,6 +22,7 @@ class ActionLogBase(BaseModel):
     user_id: int
     action_id: str
     action_type: int
+    context: Optional[str]
 
     admin_id: Optional[int]
 
