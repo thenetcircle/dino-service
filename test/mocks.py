@@ -83,7 +83,8 @@ class FakeStorage:
             attachment_id=str(uuid()),
             message_id=message_id,
             context=query.context,
-            filename=query.filename,
+            file_id=query.file_id,
+            status=query.status,
         )
 
         if group_id not in self.attachments_by_group:

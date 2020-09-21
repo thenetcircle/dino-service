@@ -250,8 +250,9 @@ class BaseServerRestApi(BaseDatabaseTest):
             f"/v1/users/{user_id}/message/{message_id}/attachment",
             json={
                 "receiver_id": receiver_id,
-                "filename": BaseTest.FILENAME,
-                "context": BaseTest.CONTEXT,
+                "file_id": BaseTest.FILE_ID,
+                "status": BaseTest.FILE_STATUS,
+                "context": BaseTest.FILE_CONTEXT,
             },
         )
         self.assertEqual(raw_response.status_code, 200)

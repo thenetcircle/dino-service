@@ -1,7 +1,9 @@
 import asyncio
 from datetime import datetime as dt
-import pytz
 from unittest import TestCase
+from uuid import uuid4 as uuid
+
+import pytz
 
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from test.mocks import FakeEnv
@@ -20,8 +22,9 @@ class BaseTest(TestCase):
     USER_ID = 1234
     OTHER_USER_ID = 8888
     MESSAGE_PAYLOAD = "test message"
-    FILENAME = "file.jpg"
-    CONTEXT = '{"some-key":"some-value"}'
+    FILE_ID = str(uuid()).replace("-", "")
+    FILE_STATUS = 1
+    FILE_CONTEXT = '{"some-key":"some-value"}'
 
     def setUp(self) -> None:
         # used when no `hide_before` is specified in a query
