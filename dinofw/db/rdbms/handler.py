@@ -587,7 +587,7 @@ class RelationalHandler:
             group_id=group_id,
             user_id=user_id,
             last_read=default_dt,
-            delete_before=default_dt,
+            delete_before=self.long_ago,
             last_sent=default_dt,
             join_time=default_dt,
             last_updated_time=now,
