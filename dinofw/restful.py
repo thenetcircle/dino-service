@@ -58,8 +58,8 @@ async def get_groups_for_user(
     user_id: int, query: GroupQuery, db: Session = Depends(get_db)
 ) -> List[UserGroup]:
     """
-    Get a list of groups for this user, sorted by last message sent. Can be filtered
-    to only return groups where the user has unread messages.
+    Get a list of groups for this user, sorted by last message sent. For paying users,
+    the `count_unread` field can be set to true (default is false).
 
     **Potential error codes in response:**
     * `250`: if an unknown error occurred.
