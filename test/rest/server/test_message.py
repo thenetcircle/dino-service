@@ -2,6 +2,7 @@ from dinofw.rest.message import MessageResource
 from dinofw.rest.models import Message
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
+from dinofw.utils.config import MessageTypes
 from test.base import async_test, BaseTest
 
 
@@ -12,7 +13,7 @@ class TestMessageResource(BaseTest):
 
     @async_test
     async def test_send_message_to_group(self):
-        query = SendMessageQuery(message_payload="a new message", message_type="text")
+        query = SendMessageQuery(message_payload="a new message", message_type=MessageTypes.MESSAGE)
 
         self.assertNotIn(BaseTest.GROUP_ID, self.resource.env.publisher.sent_messages)
 
@@ -57,7 +58,7 @@ class TestMessageResource(BaseTest):
     async def test_messages_in_group(self):
         message_query = MessageQuery(per_page=10,)
         send_query = SendMessageQuery(
-            message_payload="a new message", message_type="text"
+            message_payload="a new message", message_type=MessageTypes.MESSAGE
         )
 
         messages = await self.resource.messages_in_group(
@@ -82,7 +83,7 @@ class TestMessageResource(BaseTest):
     async def test_messages_for_user(self):
         message_query = MessageQuery(per_page=10,)
         send_query = SendMessageQuery(
-            message_payload="a new message", message_type="text"
+            message_payload="a new message", message_type=MessageTypes.MESSAGE
         )
 
         messages = await self.resource.messages_for_user(

@@ -7,6 +7,7 @@ from dinofw.rest.models import GroupUsers
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import PaginationQuery
 from dinofw.rest.models import SendMessageQuery
+from dinofw.utils.config import MessageTypes
 from dinofw.utils.exceptions import NoSuchGroupException
 from test.base import async_test, BaseTest
 
@@ -73,7 +74,7 @@ class TestGroupResource(BaseTest):
 
     @async_test
     async def test_histories(self):
-        send_query = SendMessageQuery(message_payload="some text", message_type="text")
+        send_query = SendMessageQuery(message_payload="some text", message_type=MessageTypes.MESSAGE)
         message_query = MessageQuery(per_page=10)
         create_query = CreateGroupQuery(
             group_name="some group name", group_type=0, users=[BaseTest.USER_ID],
@@ -114,7 +115,7 @@ class TestGroupResource(BaseTest):
         create_query = CreateGroupQuery(
             group_name="some group name", group_type=0, users=[BaseTest.USER_ID],
         )
-        send_query = SendMessageQuery(message_payload="some text", message_type="text")
+        send_query = SendMessageQuery(message_payload="some text", message_type=MessageTypes.MESSAGE)
 
         # create a new group
         group = await self.group.create_new_group(BaseTest.USER_ID, create_query, None)  # noqa

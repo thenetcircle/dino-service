@@ -530,7 +530,6 @@ class RelationalHandler:
             owner_id=owner_id,
             meta=query.meta,
             context=query.context,
-            weight=query.weight,
             description=query.description,
         )
 

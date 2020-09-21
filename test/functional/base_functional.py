@@ -3,6 +3,7 @@ import time
 import arrow
 
 from dinofw.rest.models import AbstractQuery
+from dinofw.utils.config import MessageTypes
 from test.base import BaseTest
 from test.functional.base_db import BaseDatabaseTest
 
@@ -46,7 +47,7 @@ class BaseServerRestApi(BaseDatabaseTest):
                 f"/v1/groups/{group_id}/user/{user_id}/send",
                 json={
                     "message_payload": BaseTest.MESSAGE_PAYLOAD,
-                    "message_type": "text",
+                    "message_type": MessageTypes.MESSAGE,
                 },
             )
             self.assertEqual(raw_response.status_code, 200)
