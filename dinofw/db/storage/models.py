@@ -28,7 +28,6 @@ class MessageModel(Model):
         required=True,
         default=uuid.uuid4
     )
-    # attachment placeholders doesn't have a body
     # TODO: for action log we set a payload here for what time of action it is
     message_payload = Text(
         required=False
@@ -40,7 +39,8 @@ class MessageModel(Model):
 
 
 class ActionLogModel(Model):
-    # TODO: remove, combine with MessageModel
+    # TODO: combine with MessageModel, but keep this model; can't filter by message_type and
+    #  need "all attachments in group" api later on, which this table would be responsible for
     __table_name__ = "action_logs"
 
     group_id = UUID(
