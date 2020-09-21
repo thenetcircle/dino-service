@@ -33,7 +33,8 @@ class AttachmentBase(BaseModel):
     message_id: str
     user_id: int
     context: str
-    filename: str
+    file_id: str
+    status: int
 
     created_at: datetime
     updated_at: Optional[datetime]

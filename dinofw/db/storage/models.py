@@ -93,8 +93,11 @@ class AttachmentModel(Model):
     message_id = UUID(
         required=True,
     )
-    filename = Text(
+    file_id = Text(
         required=True,
+    )
+    status = Integer(
+        required=True
     )
     context = Text(
         required=True,

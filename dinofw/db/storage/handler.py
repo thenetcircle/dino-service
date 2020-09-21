@@ -474,7 +474,8 @@ class CassandraHandler:
             attachment_id=str(attachment.attachment_id),
             message_id=str(attachment.message_id),
             context=attachment.context,
-            filename=attachment.filename,
+            file_id=attachment.file_id,
+            status=attachment.status,
         )
 
     @staticmethod

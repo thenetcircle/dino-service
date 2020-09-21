@@ -61,12 +61,6 @@ class SearchQuery(PaginationQuery):
     status: Optional[int]
 
 
-class AttachmentQuery(AbstractQuery):
-    filename: str
-    context: str
-    is_resized: bool
-
-
 class SendMessageQuery(OneToOneQuery):
     message_payload: Optional[str]
     message_type: int
@@ -107,7 +101,8 @@ class EditMessageQuery(AdminQuery):
 
 
 class CreateAttachmentQuery(OneToOneQuery):
-    filename: str
+    file_id: str
+    status: int
     context: str
 
 
@@ -219,7 +214,8 @@ class Attachment(BaseModel):
     message_id: str
     user_id: int
     context: str
-    filename: str
+    file_id: str
+    status: int
 
     created_at: float
     updated_at: Optional[float]
