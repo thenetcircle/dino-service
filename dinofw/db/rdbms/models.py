@@ -28,7 +28,7 @@ class GroupEntity(env.Base):
     last_message_time = Column(DateTime(timezone=True), index=True, nullable=False)
     last_message_user_id = Column(Integer, nullable=True)
     last_message_id = Column(String(36), nullable=True)
-    last_message_type = Column(String(36), nullable=True)
+    last_message_type = Column(Integer, nullable=False, server_default="0")
     last_message_overview = Column(String(512), nullable=True)
 
     meta = Column(Integer, nullable=True)
