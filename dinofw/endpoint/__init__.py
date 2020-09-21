@@ -61,7 +61,8 @@ class IPublishHandler(ABC):
             "updated_at": AbstractQuery.to_ts(attachment.updated_at, allow_none=True) or "",
             "created_at": AbstractQuery.to_ts(attachment.created_at),
             "context": attachment.context,
-            "filename": attachment.filename,
+            "file_id": attachment.file_id,
+            "status": attachment.status,
         }
 
     @staticmethod
