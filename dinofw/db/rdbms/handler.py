@@ -76,11 +76,8 @@ class RelationalHandler:
 
         results = (
             db.query(models.GroupEntity, models.UserGroupStatsEntity)
-            .join(
-                models.UserGroupStatsEntity,
-                models.UserGroupStatsEntity.group_id == models.GroupEntity.group_id,
-            )
             .filter(
+                models.GroupEntity.group_id == models.UserGroupStatsEntity.group_id,
                 models.GroupEntity.last_message_time <= until,
                 models.UserGroupStatsEntity.hide.is_(False),
                 models.UserGroupStatsEntity.delete_before < models.GroupEntity.last_message_time,
@@ -106,26 +103,32 @@ class RelationalHandler:
             users_join_time = self.get_user_ids_and_join_time_in_group(group_entity.group_id, db)
             user_count = len(users_join_time)
 
+            unread_count = -1
+            receiver_unread_count = -1
+
             if count_unread:
+                # only count for receiver if it's a 1v1 group
                 if group.user_a is not None:
                     user_to_count_for = group.user_a if group.user_b == user_id else group.user_b
-                else:
-                    user_to_count_for = user_id
+                    receiver_unread_count = self.env.storage.get_unread_in_group(
+                        group_id=group.group_id,
+                        user_id=user_to_count_for,
+                        last_read=user_group_stats.last_read
+                    )
 
                 unread_count = self.env.storage.get_unread_in_group(
                     group_id=group.group_id,
-                    user_id=user_to_count_for,
+                    user_id=user_id,
                     last_read=user_group_stats.last_read
                 )
-            else:
-                unread_count = 0
 
             user_group = UserGroupBase(
                 group=group,
                 user_stats=user_group_stats,
                 user_join_times=users_join_time,
                 user_count=user_count,
-                unread_count=unread_count
+                unread_count=unread_count,
+                receiver_unread_count=receiver_unread_count,
             )
             groups.append(user_group)
 
