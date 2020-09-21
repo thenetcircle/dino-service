@@ -107,9 +107,14 @@ class RelationalHandler:
             user_count = len(users_join_time)
 
             if count_unread:
+                if group.user_a is not None:
+                    user_to_count_for = group.user_a if group.user_b == user_id else group.user_b
+                else:
+                    user_to_count_for = user_id
+
                 unread_count = self.env.storage.get_unread_in_group(
                     group_id=group.group_id,
-                    user_id=user_id,
+                    user_id=user_to_count_for,
                     last_read=user_group_stats.last_read
                 )
             else:
