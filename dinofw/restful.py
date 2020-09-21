@@ -59,7 +59,10 @@ async def get_groups_for_user(
 ) -> List[UserGroup]:
     """
     Get a list of groups for this user, sorted by last message sent. For paying users,
-    the `count_unread` field can be set to true (default is false).
+    the `count_unread` field can be set to True (default is False).
+
+    If `count_unread` is False, the fields `unread` and `receiver_unread` will have
+    the value `-1`.
 
     **Potential error codes in response:**
     * `250`: if an unknown error occurred.
