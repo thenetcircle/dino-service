@@ -222,7 +222,8 @@ class CassandraHandler:
             created_at=arrow.utcnow().datetime,
             attachment_id=uuid(),
             message_id=message_id,
-            filename=query.filename,
+            file_id=query.file_id,
+            status=query.status,
             context=query.context,
         )
 
