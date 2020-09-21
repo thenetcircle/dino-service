@@ -51,6 +51,7 @@ class BaseResource(ABC):
         now = arrow.utcnow().datetime
 
         self.env.db.update_group_new_message(message, now, db)
+        self.env.db.set_last_updated_at_for_all_in_group(group_id, db)
         self.env.db.update_last_read_and_sent_in_group_for_user(
             group_id, user_id, now, db
         )

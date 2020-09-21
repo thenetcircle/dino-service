@@ -1,3 +1,5 @@
+import arrow
+
 from dinofw.utils.config import MessageTypes
 from test.base import BaseTest
 from test.functional.base_functional import BaseServerRestApi
@@ -420,3 +422,68 @@ class TestServerRestApi(BaseServerRestApi):
 
         self.assertEqual(groups[0]["stats"]["unread"], -1)
         self.assertEqual(groups[0]["stats"]["receiver_unread"], -1)
+
+    def test_last_updated_at_changes_on_send_msg(self):
+        self.send_1v1_message(
+            user_id=BaseTest.USER_ID,
+            receiver_id=BaseTest.OTHER_USER_ID
+        )
+
+        groups = self.groups_for_user(user_id=BaseTest.USER_ID, count_unread=False)
+        last_updated_at = groups[0]["stats"]["last_updated_time"]
+
+        self.send_1v1_message(
+            user_id=BaseTest.USER_ID,
+            receiver_id=BaseTest.OTHER_USER_ID
+        )
+
+        groups = self.groups_for_user(user_id=BaseTest.USER_ID, count_unread=False)
+        self.assertGreater(groups[0]["stats"]["last_updated_time"], last_updated_at)
+
+    def test_last_updated_at_changes_on_no_more_unread(self):
+        self.send_1v1_message(
+            user_id=BaseTest.USER_ID,
+            receiver_id=BaseTest.OTHER_USER_ID
+        )
+
+        groups = self.groups_for_user(user_id=BaseTest.OTHER_USER_ID, count_unread=False)
+        last_updated_at = groups[0]["stats"]["last_updated_time"]
+
+        self.histories_for(groups[0]["group"]["group_id"], user_id=BaseTest.OTHER_USER_ID)
+
+        groups = self.groups_for_user(user_id=BaseTest.OTHER_USER_ID, count_unread=False)
+        self.assertGreater(groups[0]["stats"]["last_updated_time"], last_updated_at)
+
+    def test_last_updated_at_changes_on_new_message_other_user(self):
+        self.send_1v1_message(
+            user_id=BaseTest.USER_ID,
+            receiver_id=BaseTest.OTHER_USER_ID
+        )
+
+        groups = self.groups_for_user(user_id=BaseTest.OTHER_USER_ID, count_unread=False)
+        last_updated_at = groups[0]["stats"]["last_updated_time"]
+
+        self.send_1v1_message(
+            user_id=BaseTest.USER_ID,
+            receiver_id=BaseTest.OTHER_USER_ID
+        )
+
+        groups = self.groups_for_user(user_id=BaseTest.OTHER_USER_ID, count_unread=False)
+        self.assertGreater(groups[0]["stats"]["last_updated_time"], last_updated_at)
+
+    def test_get_groups_updated_since(self):
+        when = arrow.utcnow().float_timestamp - 100
+
+        groups = self.groups_updated_since(user_id=BaseTest.OTHER_USER_ID, since=when)
+        self.assertEqual(0, len(groups))
+
+        self.send_1v1_message(
+            user_id=BaseTest.USER_ID,
+            receiver_id=BaseTest.OTHER_USER_ID
+        )
+
+        groups = self.groups_updated_since(user_id=BaseTest.OTHER_USER_ID, since=when)
+        self.assertEqual(1, len(groups))
+
+        groups = self.groups_updated_since(user_id=BaseTest.OTHER_USER_ID, since=when + 500)
+        self.assertEqual(0, len(groups))

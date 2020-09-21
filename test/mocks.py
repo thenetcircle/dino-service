@@ -313,6 +313,16 @@ class FakeDatabase:
         self.groups[message.group_id].last_message_overview = message.message_payload
         self.groups[message.group_id].last_message_type = message.message_type
 
+    def set_last_updated_at_for_all_in_group(self, group_id: str, _):
+        now = arrow.utcnow().datetime
+
+        for _, stats in self.stats.items():
+            for stat in stats:
+                if stat.group_id != group_id:
+                    continue
+
+                stat.last_updated_time = now
+
     def update_last_read_and_highlight_in_group_for_user(
             self,
             group_id: str,
@@ -320,7 +330,15 @@ class FakeDatabase:
             the_time: dt,
             _
     ) -> None:
-        pass  # TODO
+        if user_id not in self.stats:
+            return
+
+        for stat in self.stats[user_id]:
+            if stat.group_id != group_id:
+                continue
+
+            stat.last_read = the_time
+            stat.highlight_time = the_time
 
     def create_group(self, owner_id: int, query: CreateGroupQuery, _) -> GroupBase:
         created_at = dt.utcnow()

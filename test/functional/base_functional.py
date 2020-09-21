@@ -140,6 +140,22 @@ class BaseServerRestApi(BaseDatabaseTest):
 
         return raw_response.json()
 
+    def groups_updated_since(self, user_id: int, since: float):
+        if user_id is None:
+            user_id = BaseTest.USER_ID
+
+        raw_response = self.client.post(
+            f"/v1/users/{user_id}/groups/updates",
+            json={
+                "since": since,
+                "count_unread": False,
+                "per_page": 100,
+            },
+        )
+        self.assertEqual(raw_response.status_code, 200)
+
+        return raw_response.json()
+
     def groups_for_user(self, user_id: int = None, count_unread: bool = False):
         if user_id is None:
             user_id = BaseTest.USER_ID
