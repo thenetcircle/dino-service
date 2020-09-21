@@ -85,7 +85,7 @@ class CreateGroupQuery(AbstractQuery):
 
 class GroupQuery(PaginationQuery):
     ownership: Optional[int]  # TODO: needed?
-    has_unread: Optional[int]  # TODO: needed?
+    count_unread: Optional[bool]
 
 
 class GroupUpdatesQuery(PaginationQuery):

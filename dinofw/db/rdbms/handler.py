@@ -47,7 +47,7 @@ class RelationalHandler:
 
         group = GroupBase(**group_entity.__dict__)
         users_and_join_time = self.get_user_ids_and_join_time_in_group(group_id, db)
-        user_count = self.count_users_in_group(group_id, db)
+        user_count = len(users_and_join_time)
 
         return group, users_and_join_time, user_count
 
@@ -56,7 +56,6 @@ class RelationalHandler:
         user_id: int,
         query: GroupQuery,
         db: Session,
-        count_users: bool = True,
         count_unread: bool = True,
     ) -> List[UserGroupBase]:
         """
@@ -104,6 +103,7 @@ class RelationalHandler:
             user_group_stats = UserGroupStatsBase(**user_group_stats_entity.__dict__)
 
             users_join_time = self.get_user_ids_and_join_time_in_group(group_entity.group_id, db)
+            user_count = len(users_join_time)
 
             if count_unread:
                 unread_count = self.env.storage.get_unread_in_group(
@@ -113,11 +113,6 @@ class RelationalHandler:
                 )
             else:
                 unread_count = 0
-
-            if count_users:
-                user_count = self.count_users_in_group(group_entity.group_id, db)
-            else:
-                user_count = 0
 
             user_group = UserGroupBase(
                 group=group,
@@ -549,20 +544,6 @@ class RelationalHandler:
         db.commit()
 
         return base
-
-    def count_users_in_group(self, group_id: str, db: Session) -> int:
-        user_count = self.env.cache.get_user_count_in_group(group_id)
-        if user_count is not None:
-            return user_count
-
-        user_count = (
-            db.query(models.UserGroupStatsEntity)
-            .filter(models.UserGroupStatsEntity.group_id == group_id)
-            .distinct()
-            .count()
-        )
-
-        return user_count
 
     def update_user_message_status(self, user_id: int, query: MessageQuery, db: Session) -> None:
         user_stats = (

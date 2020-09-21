@@ -16,8 +16,10 @@ class UserResource(BaseResource):
     async def get_groups_for_user(
         self, user_id: int, query: GroupQuery, db: Session
     ) -> List[UserGroup]:
+        count_unread = query.count_unread or False
+
         user_groups: List[UserGroupBase] = self.env.db.get_groups_for_user(
-            user_id, query, db
+            user_id, query, db, count_unread=count_unread,
         )
         groups: List[UserGroup] = list()
 
@@ -45,7 +47,7 @@ class UserResource(BaseResource):
         query = GroupQuery(per_page=1_000)
 
         user_groups: List[UserGroupBase] = self.env.db.get_groups_for_user(
-            user_id, query, db, count_users=False, count_unread=False
+            user_id, query, db, count_unread=False
         )
 
         unread_amount = 0
