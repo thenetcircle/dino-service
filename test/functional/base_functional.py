@@ -140,12 +140,16 @@ class BaseServerRestApi(BaseDatabaseTest):
 
         return raw_response.json()
 
-    def groups_for_user(self, user_id: int = None):
+    def groups_for_user(self, user_id: int = None, count_unread: bool = False):
         if user_id is None:
             user_id = BaseTest.USER_ID
 
         raw_response = self.client.post(
-            f"/v1/users/{user_id}/groups", json={"per_page": "10"},
+            f"/v1/users/{user_id}/groups",
+            json={
+                "per_page": "10",
+                "count_unread": count_unread,
+            },
         )
         self.assertEqual(raw_response.status_code, 200)
 
@@ -259,7 +263,12 @@ class BaseServerRestApi(BaseDatabaseTest):
 
         return raw_response.json()
 
-    def send_1v1_message(self, message_type: int = 0, user_id: int = None, receiver_id: int = None) -> dict:
+    def send_1v1_message(
+            self,
+            message_type: int = MessageTypes.MESSAGE,
+            user_id: int = None,
+            receiver_id: int = None
+    ) -> dict:
         if user_id is None:
             user_id = BaseTest.USER_ID
 

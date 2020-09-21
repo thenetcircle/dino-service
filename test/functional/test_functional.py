@@ -377,3 +377,46 @@ class TestServerRestApi(BaseServerRestApi):
         self.assertEqual(1, len(history["attachments"]))
         self.assertEqual(message["message_id"], history["messages"][0]["message_id"])
         self.assertEqual(message["message_id"], history["attachments"][0]["message_id"])
+
+    def test_receiver_unread_count(self):
+        self.send_1v1_message(
+            user_id=BaseTest.USER_ID,
+            receiver_id=BaseTest.OTHER_USER_ID
+        )
+        groups = self.groups_for_user(user_id=BaseTest.USER_ID, count_unread=True)
+
+        self.assertEqual(groups[0]["stats"]["unread"], 0)
+        self.assertEqual(groups[0]["stats"]["receiver_unread"], 1)
+
+        self.send_1v1_message(
+            user_id=BaseTest.USER_ID,
+            receiver_id=BaseTest.OTHER_USER_ID
+        )
+        groups = self.groups_for_user(user_id=BaseTest.USER_ID, count_unread=True)
+
+        self.assertEqual(groups[0]["stats"]["unread"], 0)
+        self.assertEqual(groups[0]["stats"]["receiver_unread"], 2)
+
+        groups = self.groups_for_user(user_id=BaseTest.OTHER_USER_ID, count_unread=True)
+
+        self.assertEqual(groups[0]["stats"]["unread"], 2)
+        self.assertEqual(groups[0]["stats"]["receiver_unread"], 0)
+
+        self.send_1v1_message(
+            user_id=BaseTest.OTHER_USER_ID,
+            receiver_id=BaseTest.USER_ID
+        )
+        groups = self.groups_for_user(user_id=BaseTest.OTHER_USER_ID, count_unread=True)
+
+        self.assertEqual(groups[0]["stats"]["unread"], 0)
+        self.assertEqual(groups[0]["stats"]["receiver_unread"], 1)
+
+    def test_unread_count_is_negative_if_query_says_do_not_count(self):
+        self.send_1v1_message(
+            user_id=BaseTest.USER_ID,
+            receiver_id=BaseTest.OTHER_USER_ID
+        )
+        groups = self.groups_for_user(user_id=BaseTest.USER_ID, count_unread=False)
+
+        self.assertEqual(groups[0]["stats"]["unread"], -1)
+        self.assertEqual(groups[0]["stats"]["receiver_unread"], -1)

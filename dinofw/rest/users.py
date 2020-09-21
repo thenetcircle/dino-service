@@ -28,7 +28,8 @@ class UserResource(BaseResource):
                 BaseResource.group_base_to_user_group(
                     group_base=user_group.group,
                     stats_base=user_group.user_stats,
-                    unread_count=user_group.unread_count,
+                    unread=user_group.unread,
+                    receiver_unread=user_group.receiver_unread,
                     user_count=user_group.user_count,
                     users=user_group.user_join_times,
                 )

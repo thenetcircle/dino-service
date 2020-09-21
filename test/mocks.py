@@ -372,7 +372,8 @@ class FakeDatabase:
                 group=group,
                 user_stats=stat,
                 user_count=user_count,
-                unread_count=0,  # TODO: get from storage mock
+                unread=-1,  # TODO: get from storage mock
+                receiver_unread=-1,
                 user_join_times=users,
             ))
 

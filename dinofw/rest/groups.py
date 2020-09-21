@@ -140,7 +140,8 @@ class GroupResource(BaseResource):
             user_id=user_id,
             group_id=group_id,
             message_amount=message_amount,
-            unread_amount=unread_amount,
+            unread=unread_amount,
+            receiver_unread=-1,  # TODO: should be count for other user here as well?
             last_read_time=last_read,
             last_sent_time=last_sent,
             delete_before=delete_before,

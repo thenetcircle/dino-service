@@ -65,4 +65,5 @@ class UserGroupBase(BaseModel):
     user_stats: UserGroupStatsBase
     user_join_times: dict
     user_count: int
-    unread_count: int
+    receiver_unread: int
+    unread: int

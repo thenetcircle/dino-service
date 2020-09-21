@@ -122,12 +122,14 @@ class BaseResource(ABC):
         stats_base: UserGroupStatsBase,
         users: Dict[int, float],
         user_count: int,
-        unread_count: int,
+        receiver_unread: int,
+        unread: int,
     ) -> UserGroup:
         group = BaseResource.group_base_to_group(group_base, users, user_count)
 
         stats_dict = stats_base.__dict__
-        stats_dict["unread_amount"] = unread_count
+        stats_dict["unread"] = unread
+        stats_dict["receiver_unread"] = receiver_unread
 
         stats_dict["last_read_time"] = AbstractQuery.to_ts(stats_base.last_read)
         stats_dict["last_sent_time"] = AbstractQuery.to_ts(stats_base.last_sent)

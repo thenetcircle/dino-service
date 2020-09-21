@@ -127,8 +127,8 @@ class RelationalHandler:
                 user_stats=user_group_stats,
                 user_join_times=users_join_time,
                 user_count=user_count,
-                unread_count=unread_count,
-                receiver_unread_count=receiver_unread_count,
+                unread=unread_count,
+                receiver_unread=receiver_unread_count,
             )
             groups.append(user_group)
 

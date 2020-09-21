@@ -148,7 +148,8 @@ class UserStats(BaseModel):
 class UserGroupStats(BaseModel):
     group_id: str
     user_id: int
-    unread_amount: int
+    unread: int
+    receiver_unread: int
     last_read_time: Optional[float]
     last_sent_time: Optional[float]
     delete_before: float
