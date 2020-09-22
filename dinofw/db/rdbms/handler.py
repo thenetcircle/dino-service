@@ -52,10 +52,7 @@ class RelationalHandler:
         return group, users_and_join_time, user_count
 
     def get_groups_for_user(
-        self,
-        user_id: int,
-        query: GroupQuery,
-        db: Session
+        self, user_id: int, query: GroupQuery, db: Session
     ) -> List[UserGroupBase]:
         """
         what we're doing:
@@ -80,7 +77,8 @@ class RelationalHandler:
                 models.GroupEntity.group_id == models.UserGroupStatsEntity.group_id,
                 models.GroupEntity.last_message_time <= until,
                 models.UserGroupStatsEntity.hide.is_(False),
-                models.UserGroupStatsEntity.delete_before < models.GroupEntity.last_message_time,
+                models.UserGroupStatsEntity.delete_before
+                < models.GroupEntity.last_message_time,
                 models.UserGroupStatsEntity.user_id == user_id,
             )
             .order_by(
@@ -94,9 +92,13 @@ class RelationalHandler:
             .all()
         )
 
-        return self._group_and_stats_to_user_group_base(db, results, user_id, count_unread)
+        return self._group_and_stats_to_user_group_base(
+            db, results, user_id, count_unread
+        )
 
-    def get_groups_updated_since(self, user_id: int, query: GroupUpdatesQuery, db: Session):
+    def get_groups_updated_since(
+        self, user_id: int, query: GroupUpdatesQuery, db: Session
+    ):
         """
         the only difference between get_groups_for_user() and get_groups_updated_since() is
         that this method doesn't care about last_message_time, hide, delete_before, since
@@ -112,7 +114,7 @@ class RelationalHandler:
             .filter(
                 models.GroupEntity.group_id == models.UserGroupStatsEntity.group_id,
                 models.UserGroupStatsEntity.user_id == user_id,
-                models.UserGroupStatsEntity.last_updated_time >= since
+                models.UserGroupStatsEntity.last_updated_time >= since,
             )
             .order_by(
                 models.UserGroupStatsEntity.pin.desc(),
@@ -125,14 +127,16 @@ class RelationalHandler:
             .all()
         )
 
-        return self._group_and_stats_to_user_group_base(db, results, user_id, count_unread)
+        return self._group_and_stats_to_user_group_base(
+            db, results, user_id, count_unread
+        )
 
     def _group_and_stats_to_user_group_base(
-            self,
-            db: Session,
-            results: List[Tuple[models.GroupEntity, models.UserGroupStatsEntity]],
-            user_id: int,
-            count_unread: bool
+        self,
+        db: Session,
+        results: List[Tuple[models.GroupEntity, models.UserGroupStatsEntity]],
+        user_id: int,
+        count_unread: bool,
     ) -> List[UserGroupBase]:
         groups = list()
 
@@ -140,7 +144,9 @@ class RelationalHandler:
             group = GroupBase(**group_entity.__dict__)
             user_group_stats = UserGroupStatsBase(**user_group_stats_entity.__dict__)
 
-            users_join_time = self.get_user_ids_and_join_time_in_group(group_entity.group_id, db)
+            users_join_time = self.get_user_ids_and_join_time_in_group(
+                group_entity.group_id, db
+            )
             user_count = len(users_join_time)
 
             unread_count = -1
@@ -149,17 +155,19 @@ class RelationalHandler:
             if count_unread:
                 # only count for receiver if it's a 1v1 group
                 if group.user_a is not None:
-                    user_to_count_for = group.user_a if group.user_b == user_id else group.user_b
+                    user_to_count_for = (
+                        group.user_a if group.user_b == user_id else group.user_b
+                    )
                     receiver_unread_count = self.env.storage.get_unread_in_group(
                         group_id=group.group_id,
                         user_id=user_to_count_for,
-                        last_read=user_group_stats.last_read
+                        last_read=user_group_stats.last_read,
                     )
 
                 unread_count = self.env.storage.get_unread_in_group(
                     group_id=group.group_id,
                     user_id=user_id,
-                    last_read=user_group_stats.last_read
+                    last_read=user_group_stats.last_read,
                 )
 
             user_group = UserGroupBase(
@@ -216,12 +224,16 @@ class RelationalHandler:
         user_ids = list(users.keys())
         return self.get_last_read_in_group_for_users(group_id, user_ids, db)
 
-    def get_last_read_in_group_for_users(self, group_id: str, user_ids: List[int], db: Session) -> Dict[int, float]:
+    def get_last_read_in_group_for_users(
+        self, group_id: str, user_ids: List[int], db: Session
+    ) -> Dict[int, float]:
         not_cached = list()
         last_reads = dict()
 
         for user_id in user_ids:
-            last_read = self.env.cache.get_last_read_in_group_for_user(group_id, user_id)
+            last_read = self.env.cache.get_last_read_in_group_for_user(
+                group_id, user_id
+            )
 
             if last_read is None:
                 not_cached.append(user_id)
@@ -237,7 +249,7 @@ class RelationalHandler:
                 )
                 .filter(
                     models.UserGroupStatsEntity.group_id == group_id,
-                    models.UserGroupStatsEntity.user_id.in_(user_ids)
+                    models.UserGroupStatsEntity.user_id.in_(user_ids),
                 )
                 .all()
             )
@@ -246,25 +258,31 @@ class RelationalHandler:
                 last_read_float = GroupQuery.to_ts(last_read)
                 last_reads[user_id] = last_read_float
 
-                self.env.cache.set_last_read_in_group_for_user(group_id, user_id, last_read_float)
+                self.env.cache.set_last_read_in_group_for_user(
+                    group_id, user_id, last_read_float
+                )
 
         return last_reads
 
-    def get_group_id_for_1to1(self, user_a: int, user_b: int, db: Session) -> Optional[str]:
+    def get_group_id_for_1to1(
+        self, user_a: int, user_b: int, db: Session
+    ) -> Optional[str]:
         group = self.get_group_for_1to1(user_a, user_b, db)
 
         if group is None:
-            raise NoSuchGroupException(",".join([str(user_id) for user_id in [user_a, user_b]]))
+            raise NoSuchGroupException(
+                ",".join([str(user_id) for user_id in [user_a, user_b]])
+            )
 
         return group.group_id
 
-    def get_group_for_1to1(self, user_a: int, user_b: int, db: Session) -> Optional[GroupBase]:
+    def get_group_for_1to1(
+        self, user_a: int, user_b: int, db: Session
+    ) -> Optional[GroupBase]:
         users = sorted([user_a, user_b])
 
         group = (
-            db.query(
-                models.GroupEntity
-            )
+            db.query(models.GroupEntity)
             .filter(
                 models.GroupEntity.group_type == GroupTypes.ONE_TO_ONE,
                 models.GroupEntity.user_a == users[0],
@@ -283,9 +301,7 @@ class RelationalHandler:
         group_name = ",".join([str(user_id) for user_id in users])
 
         query = CreateGroupQuery(
-            group_name=group_name,
-            group_type=GroupTypes.ONE_TO_ONE,
-            users=users
+            group_name=group_name, group_type=GroupTypes.ONE_TO_ONE, users=users
         )
 
         return self.create_group(user_a, query, db)
@@ -305,15 +321,9 @@ class RelationalHandler:
             .all()
         )
 
-        user_ids_join_time = {
-            user[0]: GroupQuery.to_ts(user[1])
-            for user in users
-        }
+        user_ids_join_time = {user[0]: GroupQuery.to_ts(user[1]) for user in users}
 
-        self.env.cache.set_user_ids_and_join_time_in_group(
-            group_id,
-            user_ids_join_time
-        )
+        self.env.cache.set_user_ids_and_join_time_in_group(group_id, user_ids_join_time)
 
         return user_ids_join_time
 
@@ -378,7 +388,9 @@ class RelationalHandler:
         for user_id in user_ids:
             if user_id not in user_ids_to_stats:
                 user_ids_for_cache.add(user_id)
-                user_ids_to_stats[user_id] = self._create_user_stats(group_id, user_id, now)
+                user_ids_to_stats[user_id] = self._create_user_stats(
+                    group_id, user_id, now
+                )
 
             user_ids_to_stats[user_id].last_read = now
             db.add(user_ids_to_stats[user_id])
@@ -390,10 +402,7 @@ class RelationalHandler:
             user_id: GroupQuery.to_ts(stats.join_time)
             for user_id, stats in user_ids_to_stats.items()
         }
-        read_times = {
-            user_id: now_ts
-            for user_id in user_ids
-        }
+        read_times = {user_id: now_ts for user_id in user_ids}
 
         self.env.cache.add_user_ids_and_join_time_in_group(group_id, join_times)
         self.env.cache.set_last_read_in_group_for_users(group_id, read_times)
@@ -404,9 +413,7 @@ class RelationalHandler:
         _ = (
             db.query(models.UserGroupStatsEntity)
             .filter(models.UserGroupStatsEntity.group_id == group_id)
-            .update({
-                models.UserGroupStatsEntity.last_updated_time: now
-            })
+            .update({models.UserGroupStatsEntity.last_updated_time: now})
         )
 
         db.commit()
@@ -475,7 +482,9 @@ class RelationalHandler:
 
         last_read = UpdateUserGroupStats.to_dt(query.last_read_time, allow_none=True)
         delete_before = UpdateUserGroupStats.to_dt(query.delete_before, allow_none=True)
-        highlight_time = UpdateUserGroupStats.to_dt(query.highlight_time, allow_none=True)
+        highlight_time = UpdateUserGroupStats.to_dt(
+            query.highlight_time, allow_none=True
+        )
         now = arrow.utcnow().datetime
 
         if user_stats is None:
@@ -519,11 +528,7 @@ class RelationalHandler:
         db.commit()
 
     def update_last_read_and_highlight_in_group_for_user(
-            self,
-            group_id: str,
-            user_id: int,
-            the_time: dt,
-            db: Session
+        self, group_id: str, user_id: int, the_time: dt, db: Session
     ) -> None:
         user_stats = (
             db.query(models.UserGroupStatsEntity)
@@ -552,7 +557,9 @@ class RelationalHandler:
             .first()
         )
 
-        self.env.cache.set_last_read_in_group_for_user(group_id, user_id, GroupQuery.to_ts(the_time))
+        self.env.cache.set_last_read_in_group_for_user(
+            group_id, user_id, GroupQuery.to_ts(the_time)
+        )
         self.env.cache.set_hide_group(group_id, False)
         self.env.cache.set_unread_in_group(group_id, user_id, 0)
 
@@ -597,7 +604,9 @@ class RelationalHandler:
         )
 
         for user_id in query.users:
-            user_stats = self._create_user_stats(group_entity.group_id, user_id, created_at)
+            user_stats = self._create_user_stats(
+                group_entity.group_id, user_id, created_at
+            )
             db.add(user_stats)
 
         base = GroupBase(**group_entity.__dict__)
@@ -607,20 +616,17 @@ class RelationalHandler:
 
         return base
 
-    def update_user_message_status(self, user_id: int, query: MessageQuery, db: Session) -> None:
+    def update_user_message_status(
+        self, user_id: int, query: MessageQuery, db: Session
+    ) -> None:
         user_stats = (
             db.query(models.UserStatsEntity)
-            .filter(
-                models.UserGroupStatsEntity.user_id == user_id,
-            )
+            .filter(models.UserGroupStatsEntity.user_id == user_id,)
             .first()
         )
 
         if user_stats is None:
-            user_stats = models.UserStatsEntity(
-                user_id=user_id,
-                status=query.status
-            )
+            user_stats = models.UserStatsEntity(user_id=user_id, status=query.status)
         else:
             user_stats.status = query.status
 
@@ -641,7 +647,9 @@ class RelationalHandler:
             .first()
         )
 
-    def _create_user_stats(self, group_id: str, user_id: int, default_dt: dt) -> models.UserGroupStatsEntity:
+    def _create_user_stats(
+        self, group_id: str, user_id: int, default_dt: dt
+    ) -> models.UserGroupStatsEntity:
         now = arrow.utcnow().datetime
 
         return models.UserGroupStatsEntity(
