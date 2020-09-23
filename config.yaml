@@ -12,6 +12,8 @@ db:
 storage:
     host: "$DINO_STORAGE_HOSTS"
     key_space: "$DINO_STORAGE_KEY_SPACE"
+    user: "$DINO_STORAGE_USERNAME"
+    password: "$DINO_STORAGE_PASSWORD"
 
 coordinator:
     host: "$DINO_COORDINATOR_HOST"

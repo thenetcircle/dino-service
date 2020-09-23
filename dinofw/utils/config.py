@@ -82,6 +82,7 @@ class ConfigKeys:
     DB = "db"
     PORT = "port"
     USER = "user"
+    PASSWORD = "password"
     PREFIX = "prefix"
     INCLUDE_HOST_NAME = "include_hostname"
     URI = "uri"

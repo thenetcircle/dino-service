@@ -6,6 +6,7 @@ from uuid import uuid4 as uuid
 
 import arrow
 import pytz
+from cassandra.cluster import PlainTextAuthProvider
 from cassandra.cqlengine import connection
 from cassandra.cqlengine.management import sync_table
 from cassandra.cqlengine.query import BatchQuery
@@ -38,9 +39,25 @@ class CassandraHandler:
         hosts = self.env.config.get(ConfigKeys.HOST, domain=ConfigKeys.STORAGE)
         hosts = hosts.split(",")
 
-        connection.setup(
-            hosts, default_keyspace=key_space, protocol_version=3, retry_connect=True
-        )
+        if ConfigKeys.PASSWORD in self.env.config.get(ConfigKeys.STORAGE):
+            auth_provider = PlainTextAuthProvider(
+                username=self.env.config.get(ConfigKeys.USER, domain=ConfigKeys.STORAGE),
+                password=self.env.config.get(ConfigKeys.PASSWORD, domain=ConfigKeys.STORAGE),
+            )
+            connection.setup(
+                hosts,
+                default_keyspace=key_space,
+                protocol_version=3,
+                retry_connect=True,
+                auth_provider=auth_provider,
+            )
+        else:
+            connection.setup(
+                hosts,
+                default_keyspace=key_space,
+                protocol_version=3,
+                retry_connect=True,
+            )
 
         sync_table(MessageModel)
         sync_table(AttachmentModel)
