@@ -6,8 +6,7 @@ from sqlalchemy.orm import Session
 
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import AbstractQuery, OneToOneStats
-from dinofw.rest.models import ActionLog
+from dinofw.rest.models import AbstractQuery, OneToOneStats, Message
 from dinofw.rest.models import CreateActionLogQuery
 from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import Group
@@ -82,21 +81,9 @@ class GroupResource(BaseResource):
 
         self._user_opens_conversation(group_id, user_id, db)
 
-        action_log = [
-            GroupResource.action_log_base_to_action_log(log)
-            for log in self.env.storage.get_action_log_in_group_for_user(
-                group_id, user_stats, query
-            )
-        ]
         messages = [
             GroupResource.message_base_to_message(message)
             for message in self.env.storage.get_messages_in_group_for_user(
-                group_id, user_stats, query
-            )
-        ]
-        attachments = [
-            GroupResource.attachment_base_to_attachment(attachment)
-            for attachment in self.env.storage.get_attachments_in_group_for_user(
                 group_id, user_stats, query
             )
         ]
@@ -109,9 +96,7 @@ class GroupResource(BaseResource):
 
         return Histories(
             messages=messages,
-            action_logs=action_log,
             last_reads=last_reads,
-            attachments=attachments,
         )
 
     async def get_user_group_stats(
@@ -160,9 +145,9 @@ class GroupResource(BaseResource):
 
     async def create_action_logs(
         self, group_id: str, query: CreateActionLogQuery
-    ) -> List[ActionLog]:
+    ) -> List[Message]:
         logs = self.env.storage.create_action_logs(group_id, query)
-        return [GroupResource.action_log_base_to_action_log(log) for log in logs]
+        return [GroupResource.message_base_to_message(log) for log in logs]
 
     async def create_new_group(
         self, user_id: int, query: CreateGroupQuery, db: Session

@@ -53,6 +53,7 @@ class MessageQuery(PaginationQuery, AdminQuery):
 class CreateActionLogQuery(AdminQuery):
     user_ids: List[int]
     action_type: int
+    payload: Optional[str]
 
 
 class SearchQuery(PaginationQuery):
@@ -164,16 +165,6 @@ class UserGroupStats(BaseModel):
     rating: Optional[int]
 
 
-class ActionLog(BaseModel):
-    action_id: str
-    user_id: int
-    group_id: str
-    action_type: int
-    created_at: float
-    admin_id: Optional[int]
-    context: Optional[str]
-
-
 class Message(BaseModel):
     group_id: str
     created_at: float
@@ -209,19 +200,6 @@ class Group(BaseModel):
     user_count: int
 
 
-class Attachment(BaseModel):
-    group_id: str
-    attachment_id: str
-    message_id: str
-    user_id: int
-    context: str
-    file_id: str
-    status: int
-
-    created_at: float
-    updated_at: Optional[float]
-
-
 class OneToOneStats(BaseModel):
     group: Group
     stats: List[UserGroupStats]
@@ -234,6 +212,4 @@ class UserGroup(BaseModel):
 
 class Histories(BaseModel):
     messages: List[Message]
-    action_logs: List[ActionLog]
-    attachments: List[Attachment]
     last_reads: List[GroupLastRead]

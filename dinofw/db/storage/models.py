@@ -1,6 +1,6 @@
 import uuid
 
-from cassandra.cqlengine.columns import UUID, Boolean
+from cassandra.cqlengine.columns import UUID
 from cassandra.cqlengine.columns import DateTime
 from cassandra.cqlengine.columns import Integer
 from cassandra.cqlengine.columns import Text
@@ -28,52 +28,22 @@ class MessageModel(Model):
         required=True,
         default=uuid.uuid4
     )
-    # TODO: for action log we set a payload here for what time of action it is
     message_payload = Text(
         required=False
     )
+    message_type = Integer(
+        required=True
+    )
+    file_id = Text(
+        required=False,
+    )
 
     status = Integer()
-    message_type = Integer()
     updated_at = DateTime()
 
 
-class ActionLogModel(Model):
-    # TODO: combine with MessageModel, but keep this model; can't filter by message_type and
-    #  need "all attachments in group" api later on, which this table would be responsible for
-    __table_name__ = "action_logs"
-
-    group_id = UUID(
-        required=True,
-        primary_key=True,
-        partition_key=True,
-    )
-    created_at = DateTime(
-        required=True,
-        primary_key=True,
-        clustering_order="DESC",
-    )
-    user_id = Integer(
-        required=True,
-        primary_key=True,
-    )
-    action_id = UUID(
-        required=True,
-        default=uuid.uuid4
-    )
-    action_type = Integer(
-        required=True
-    )
-    # TODO: not needed, use message_payload in MessageModel instead
-    context = Text(
-        required=False
-    )
-
-    admin_id = Integer()
-
-
 class AttachmentModel(Model):
-    # TODO: remove, combine with MessageModel
+    # duplicate attachments from message table to this table for fast querying
     __table_name__ = "attachments"
 
     group_id = UUID(
@@ -90,26 +60,22 @@ class AttachmentModel(Model):
         required=True,
         primary_key=True,
     )
-    # TODO: not needed, use message_payload in MessageModel instead
-    attachment_id = UUID(
-        required=True,
-        default=uuid.uuid4,
-    )
     message_id = UUID(
         required=True,
+        default=uuid.uuid4
     )
-    file_id = Text(
-        required=True,
+    message_payload = Text(
+        required=False
     )
-    status = Integer(
+    message_type = Integer(
         required=True
     )
-    context = Text(
-        required=True,
-    )
-    updated_at = DateTime(
+    file_id = Text(
         required=False,
     )
+
+    status = Integer()
+    updated_at = DateTime()
 
     # TODO: figure out if use a json body or all just fields, dont' need to filter on them, but need to update some
     """

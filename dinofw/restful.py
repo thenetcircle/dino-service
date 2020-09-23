@@ -8,7 +8,6 @@ from fastapi import FastAPI
 from fastapi import status
 from sqlalchemy.orm import Session
 
-from dinofw.rest.models import ActionLog
 from dinofw.rest.models import CreateActionLogQuery
 from dinofw.rest.models import CreateAttachmentQuery
 from dinofw.rest.models import CreateGroupQuery
@@ -319,7 +318,7 @@ async def join_group(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@app.put("/v1/groups/{group_id}/actions", response_model=List[ActionLog])
+@app.put("/v1/groups/{group_id}/actions", response_model=List[Message])
 async def create_action_logs(group_id: str, query: CreateActionLogQuery) -> None:
     """
     Create one or more action logs in group.

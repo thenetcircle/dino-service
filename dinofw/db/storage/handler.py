@@ -11,9 +11,8 @@ from cassandra.cqlengine.management import sync_table
 from cassandra.cqlengine.query import BatchQuery
 
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
-from dinofw.db.storage.models import ActionLogModel, AttachmentModel
+from dinofw.db.storage.models import AttachmentModel
 from dinofw.db.storage.models import MessageModel
-from dinofw.db.storage.schemas import ActionLogBase, AttachmentBase
 from dinofw.db.storage.schemas import MessageBase
 from dinofw.rest.models import AdminQuery, CreateAttachmentQuery
 from dinofw.rest.models import CreateActionLogQuery
@@ -44,7 +43,6 @@ class CassandraHandler:
         )
 
         sync_table(MessageModel)
-        sync_table(ActionLogModel)
         sync_table(AttachmentModel)
 
     def get_messages_in_group(
@@ -76,7 +74,7 @@ class CassandraHandler:
             group_id: str,
             user_stats: UserGroupStatsBase,
             query: MessageQuery
-    ) -> List[AttachmentBase]:
+    ) -> List[MessageBase]:
         until = MessageQuery.to_dt(query.until)
 
         raw_attachments = (
@@ -92,7 +90,7 @@ class CassandraHandler:
         attachments = list()
 
         for attachment in raw_attachments:
-            attachments.append(CassandraHandler.attachment_base_from_entity(attachment))
+            attachments.append(CassandraHandler.message_base_from_entity(attachment))
 
         return attachments
 
@@ -194,14 +192,14 @@ class CassandraHandler:
         removed_at = removed_at.replace(tzinfo=pytz.UTC)
 
         message.update(
-            message_payload="-",  # TODO: allow None values in cassanrda table
+            message_payload="",
             removed_by_user=query.admin_id,
             removed_at=removed_at,
         )
 
     def store_attachment(
             self, group_id: str, user_id: int, message_id: str, query: CreateAttachmentQuery
-    ) -> AttachmentBase:
+    ) -> MessageBase:
         """
         # we should filter on the 'created_at' field, since it's a clustering key
         # and 'message_id' is not; if we don't filter by 'created_at' each edit
@@ -216,18 +214,20 @@ class CassandraHandler:
         approx_date_before = arrow.get(created_at).shift(minutes=1).datetime
         """
 
+        # TODO: find message and update it
+        # TODO: store in two tables
+
         attachment = AttachmentModel.create(
             group_id=group_id,
             user_id=user_id,
             created_at=arrow.utcnow().datetime,
-            attachment_id=uuid(),
             message_id=message_id,
             file_id=query.file_id,
             status=query.status,
             context=query.context,
         )
 
-        return CassandraHandler.attachment_base_from_entity(attachment)
+        return CassandraHandler.message_base_from_entity(attachment)
 
     def update_messages_in_group(self, group_id: str, query: MessageQuery) -> None:
         def callback(message: MessageModel) -> None:
@@ -265,22 +265,22 @@ class CassandraHandler:
             self,
             group_id: str,
             query: CreateActionLogQuery
-    ) -> List[ActionLogBase]:
+    ) -> List[MessageBase]:
         logs = list()
 
         action_time = arrow.utcnow().datetime
 
         for user_id in query.user_ids:
-            log = ActionLogModel.create(
+            log = MessageModel.create(
                 group_id=group_id,
                 user_id=user_id,
                 created_at=action_time,
-                action_type=query.action_type,
-                context=query.context,
-                action_id=uuid(),
+                message_type=query.action_type,
+                message_payload=query.payload,
+                message_id=uuid(),
             )
 
-            logs.append(CassandraHandler.action_log_base_from_entity(log))
+            logs.append(CassandraHandler.message_base_from_entity(log))
 
         return logs
 
@@ -321,72 +321,6 @@ class CassandraHandler:
         )
 
         return CassandraHandler.message_base_from_entity(message)
-
-    def store_attachments(
-            self, group_id: str, user_id: int, message: MessageBase, query: SendMessageQuery
-    ) -> List[AttachmentBase]:
-        if query.attachments is None or len(query.attachments) == 0:
-            return list()
-
-        attachments = list()
-        for attachment in query.attachments:
-            attachments.append(AttachmentModel.create(
-                group_id=group_id,
-                created_at=message.created_at,
-                user_id=user_id,
-                attachment_id=uuid(),
-                message_id=message.message_id,
-                is_resized=attachment.is_resized,
-                filename=attachment.filename,
-                context=attachment.context,
-            ))
-
-        return [
-            CassandraHandler.attachment_base_from_entity(attachment)
-            for attachment in attachments
-        ]
-
-    def get_action_log_in_group(
-            self,
-            group_id: str,
-            query: MessageQuery
-    ) -> List[ActionLogBase]:
-        until = MessageQuery.to_dt(query.until)
-
-        action_logs = (
-            ActionLogModel.objects(
-                ActionLogModel.group_id == group_id,
-                ActionLogModel.created_at <= until,
-            )
-            .limit(query.per_page or 100)
-            .all()
-        )
-
-        return [
-            CassandraHandler.action_log_base_from_entity(log) for log in action_logs
-        ]
-
-    def get_action_log_in_group_for_user(
-            self,
-            group_id: str,
-            user_stats: UserGroupStatsBase,
-            query: MessageQuery
-    ) -> List[ActionLogBase]:
-        until = MessageQuery.to_dt(query.until)
-
-        action_logs = (
-            ActionLogModel.objects(
-                ActionLogModel.group_id == group_id,
-                ActionLogModel.created_at <= until,
-                ActionLogModel.created_at > user_stats.delete_before,
-            )
-            .limit(query.per_page or 100)
-            .all()
-        )
-
-        return [
-            CassandraHandler.action_log_base_from_entity(log) for log in action_logs
-        ]
 
     def _update_all_messages_in_group(
         self, group_id: str, callback: callable, user_id: int = None
@@ -463,30 +397,5 @@ class CassandraHandler:
             status=message.status,
             message_type=message.message_type,
             updated_at=message.updated_at,
-        )
-
-    @staticmethod
-    def attachment_base_from_entity(attachment: AttachmentModel) -> AttachmentBase:
-        return AttachmentBase(
-            group_id=str(attachment.group_id),
-            created_at=attachment.created_at,
-            updated_at=attachment.updated_at,
-            user_id=attachment.user_id,
-            attachment_id=str(attachment.attachment_id),
-            message_id=str(attachment.message_id),
-            context=attachment.context,
-            file_id=attachment.file_id,
-            status=attachment.status,
-        )
-
-    @staticmethod
-    def action_log_base_from_entity(log: ActionLogModel) -> ActionLogBase:
-        return ActionLogBase(
-            group_id=str(log.group_id),
-            created_at=log.created_at,
-            user_id=log.user_id,
-            action_id=str(log.action_id),
-            action_type=log.action_type,
-            admin_id=log.admin_id,
-            context=log.context,
+            file_id=message.file_id,
         )

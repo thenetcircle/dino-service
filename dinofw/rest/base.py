@@ -81,19 +81,6 @@ class BaseResource(ABC):
         return Message(**message_dict)
 
     @staticmethod
-    def attachment_base_to_attachment(attachment: MessageBase) -> Attachment:
-        attachment_dict = attachment.dict()
-
-        attachment_dict["updated_at"] = AbstractQuery.to_ts(
-            attachment_dict["updated_at"], allow_none=True
-        )
-        attachment_dict["created_at"] = AbstractQuery.to_ts(
-            attachment_dict["created_at"], allow_none=True
-        )
-
-        return Attachment(**attachment_dict)
-
-    @staticmethod
     def group_base_to_group(
         group: GroupBase, users: Dict[int, float], user_count: int,
     ) -> Group:
@@ -158,14 +145,6 @@ class BaseResource(ABC):
         stats_dict["delete_before"] = AbstractQuery.to_ts(stats_dict["delete_before"])
 
         return UserGroupStats(**stats_dict)
-
-    @staticmethod
-    def action_log_base_to_action_log(action_log: ActionLogBase) -> ActionLog:
-        action_dict = action_log.dict()
-
-        action_dict["created_at"] = AbstractQuery.to_ts(action_dict["created_at"])
-
-        return ActionLog(**action_dict)
 
     @staticmethod
     def to_last_read(user_id: int, last_read: float) -> GroupLastRead:
