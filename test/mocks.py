@@ -231,10 +231,7 @@ class FakeStorage:
         if query.status is not None:
             message.status = query.status
 
-        now = dt.utcnow()
-        now = now.replace(tzinfo=pytz.UTC)
-
-        message.updated_at = now
+        message.updated_at = arrow.utcnow().datetime
 
         return message
 
@@ -342,8 +339,7 @@ class FakeDatabase:
             stat.highlight_time = the_time
 
     def create_group(self, owner_id: int, query: CreateGroupQuery, _) -> GroupBase:
-        created_at = dt.utcnow()
-        created_at = created_at.replace(tzinfo=pytz.UTC)
+        created_at = arrow.utcnow().datetime
 
         group = GroupBase(
             group_id=str(uuid()),

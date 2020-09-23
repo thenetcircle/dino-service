@@ -204,8 +204,7 @@ class CassandraHandler:
             )
             return
 
-        removed_at = dt.utcnow()
-        removed_at = removed_at.replace(tzinfo=pytz.UTC)
+        removed_at = arrow.utcnow().datetime
 
         message.update(
             message_payload="",
@@ -269,8 +268,7 @@ class CassandraHandler:
             message.removed_at = removed_at
             message.removed_by_user = query.admin_id
 
-        removed_at = dt.utcnow()
-        removed_at = removed_at.replace(tzinfo=pytz.UTC)
+        removed_at = arrow.utcnow().datetime
 
         self._update_all_messages_in_group(group_id=group_id, callback=callback)
 
@@ -306,16 +304,14 @@ class CassandraHandler:
             message.removed_at = removed_at
             message.removed_by_user = query.admin_id
 
-        removed_at = dt.utcnow()
-        removed_at = removed_at.replace(tzinfo=pytz.UTC)
+        removed_at = arrow.utcnow().datetime
 
         self._update_all_messages_in_group(
             group_id=group_id, callback=callback, user_id=user_id,
         )
 
     def store_message(self, group_id: str, user_id: int, query: SendMessageQuery) -> MessageBase:
-        created_at = dt.utcnow()
-        created_at = created_at.replace(tzinfo=pytz.UTC)
+        created_at = arrow.utcnow().datetime
         message_id = uuid()
 
         message = MessageModel.create(
@@ -332,8 +328,7 @@ class CassandraHandler:
     def _update_all_messages_in_group(
         self, group_id: str, callback: callable, user_id: int = None
     ):
-        until = dt.utcnow()
-        until = until.replace(tzinfo=pytz.UTC)
+        until = arrow.utcnow().datetime
         start = time()
         amount = 0
 
