@@ -146,7 +146,7 @@ async def create_an_attachment(
     Create an attachment.
 
     When a user sends an image or video, first call the "send message API" with the
-    `message_type` set to `image` (or similiar). When the image has finished processing
+    `message_type` set to `image` (or similar). When the image has finished processing
     in the backend, call this API to create the actual attachment meta data for it.
 
     First we create the "empty" message so indicate to all relevant users that someone
@@ -180,8 +180,6 @@ async def get_group_history_for_user(
     broadcast the new read time to every one else in the group that is online.
 
     History can be filtered by `message_type` to e.g. only list images sent in the group.
-
-    # TODO: maybe combine messages/attachments/actions into one list; trouble is doing pagination for that
 
     **Potential error codes in response:**
     * `600`: if the user is not in the group,
@@ -324,6 +322,7 @@ async def create_action_logs(group_id: str, query: CreateActionLogQuery) -> None
     Create one or more action logs in group.
 
     # TODO: update last_updated_time to sync with other devices?
+    # TODO: integrate with messages table
 
     **Potential error codes in response:**
     * `250`: if an unknown error occurred.

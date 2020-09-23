@@ -19,7 +19,8 @@ from dinofw.rest.models import AdminQuery, CreateAttachmentQuery
 from dinofw.rest.models import CreateActionLogQuery
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
-from dinofw.utils.config import ConfigKeys
+from dinofw.utils.config import ConfigKeys, MessageTypes
+from dinofw.utils.exceptions import NoSuchMessageException
 
 
 class CassandraHandler:
@@ -217,34 +218,53 @@ class CassandraHandler:
     def store_attachment(
             self, group_id: str, user_id: int, message_id: str, query: CreateAttachmentQuery
     ) -> MessageBase:
-        """
         # we should filter on the 'created_at' field, since it's a clustering key
         # and 'message_id' is not; if we don't filter by 'created_at' each edit
         # will require a full table scan, and editing a recent message happens
         # quite often, which will become very slow after a group has a long
         # message history...
         created_at = query.created_at
+        now = arrow.utcnow().datetime
 
         # querying by exact datetime seems to be shifty in cassandra, so just
         # filter by a minute before and after
         approx_date_after = arrow.get(created_at).shift(minutes=-1).datetime
         approx_date_before = arrow.get(created_at).shift(minutes=1).datetime
-        """
 
-        # TODO: find message and update it
-        # TODO: store in two tables
-
-        attachment = AttachmentModel.create(
-            group_id=group_id,
-            user_id=user_id,
-            created_at=arrow.utcnow().datetime,
-            message_id=message_id,
-            file_id=query.file_id,
-            status=query.status,
-            context=query.context,
+        message = (
+            MessageModel.objects(
+                MessageModel.group_id == group_id,
+                MessageModel.user_id == user_id,
+                MessageModel.created_at > approx_date_after,
+                MessageModel.created_at < approx_date_before,
+                MessageModel.message_id == message_id,
+            )
+            .allow_filtering()
+            .first()
         )
 
-        return CassandraHandler.message_base_from_entity(attachment)
+        if message is None:
+            raise NoSuchMessageException(message_id)
+
+        message.update(
+            message_payload=query.message_payload,
+            status=query.status,
+            updated_at=now,
+        )
+
+        AttachmentModel.create(
+            group_id=group_id,
+            user_id=user_id,
+            created_at=message.created_at,
+            message_id=message_id,
+            status=query.status,
+            message_payload=query.message_payload,
+            message_type=message.message_type,
+            file_id=message.file_id,
+            updated_at=now,
+        )
+
+        return CassandraHandler.message_base_from_entity(message)
 
     def update_messages_in_group(self, group_id: str, query: MessageQuery) -> None:
         def callback(message: MessageModel) -> None:

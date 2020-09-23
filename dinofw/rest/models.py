@@ -104,7 +104,8 @@ class EditMessageQuery(AdminQuery):
 class CreateAttachmentQuery(OneToOneQuery):
     file_id: str
     status: int
-    context: str
+    message_payload: str
+    created_at: float
 
 
 class UpdateUserGroupStats(AbstractQuery):
