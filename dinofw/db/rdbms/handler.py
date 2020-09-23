@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime as dt
-from typing import List, Optional, Dict, Any, Tuple
+from typing import List, Optional, Dict, Tuple
 from uuid import uuid4 as uuid
 
 import arrow
@@ -12,9 +12,10 @@ from dinofw.db.rdbms import models
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.rdbms.schemas import UserGroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
-from dinofw.db.storage.schemas import MessageBase, AttachmentBase
-from dinofw.rest.models import CreateGroupQuery, GroupUpdatesQuery
+from dinofw.db.storage.schemas import MessageBase
+from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import GroupQuery
+from dinofw.rest.models import GroupUpdatesQuery
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import UpdateGroupQuery
 from dinofw.rest.models import UpdateUserGroupStats

@@ -357,29 +357,6 @@ class TestServerRestApi(BaseServerRestApi):
         groups = self.groups_for_user(BaseTest.USER_ID)
         self.assertEqual(BaseTest.OTHER_USER_ID, groups[0]["group"]["owner_id"])
 
-    def test_attachments(self):
-        message = self.send_1v1_message(message_type=MessageTypes.IMAGE)
-        self.assertEqual(MessageTypes.IMAGE, int(message["message_type"]))
-        self.assertIsNone(message["message_payload"])
-
-        info = self.get_1v1_group_info()
-        group_id = info["group"]["group_id"]
-        history = self.histories_for(group_id)
-
-        self.assertEqual(1, len(history["messages"]))
-        self.assertEqual(0, len(history["attachments"]))
-        self.assertEqual(message["message_id"], history["messages"][0]["message_id"])
-
-        attachment = self.create_attachment(message["message_id"])
-        self.assertEqual(attachment["message_id"], message["message_id"])
-
-        history = self.histories_for(group_id)
-
-        self.assertEqual(1, len(history["messages"]))
-        self.assertEqual(1, len(history["attachments"]))
-        self.assertEqual(message["message_id"], history["messages"][0]["message_id"])
-        self.assertEqual(message["message_id"], history["attachments"][0]["message_id"])
-
     def test_receiver_unread_count(self):
         self.send_1v1_message(
             user_id=BaseTest.USER_ID,

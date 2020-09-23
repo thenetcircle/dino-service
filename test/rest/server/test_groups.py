@@ -88,7 +88,6 @@ class TestGroupResource(BaseTest):
 
         self.assertIsNotNone(histories)
         self.assertEqual(0, len(histories.messages))
-        self.assertEqual(0, len(histories.action_logs))
 
         # create a new group
         group = await self.group.create_new_group(BaseTest.USER_ID, create_query, None)  # noqa
@@ -100,7 +99,6 @@ class TestGroupResource(BaseTest):
 
         # one join event and one message
         self.assertEqual(1, len(histories.messages))
-        self.assertEqual(1, len(histories.action_logs))
 
         # send another message
         await self.message.send_message_to_group(group.group_id, BaseTest.USER_ID, send_query, None)  # noqa
@@ -108,7 +106,6 @@ class TestGroupResource(BaseTest):
 
         # now we should have two messages but still only one join event
         self.assertEqual(2, len(histories.messages))
-        self.assertEqual(1, len(histories.action_logs))
 
     @async_test
     async def test_get_user_group_stats(self):

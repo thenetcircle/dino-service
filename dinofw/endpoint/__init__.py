@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List
 
 from dinofw.db.rdbms.schemas import GroupBase
-from dinofw.db.storage.schemas import MessageBase, AttachmentBase
+from dinofw.db.storage.schemas import MessageBase
 from dinofw.rest.models import AbstractQuery
 
 
@@ -12,7 +12,7 @@ class IPublishHandler(ABC):
         """pass"""
 
     @abstractmethod
-    def attachment(self, attachment: AttachmentBase, user_ids: List[int]) -> None:
+    def attachment(self, attachment: MessageBase, user_ids: List[int]) -> None:
         """pass"""
 
     @abstractmethod
@@ -48,21 +48,6 @@ class IPublishHandler(ABC):
             "status": message.status,
             "updated_at": AbstractQuery.to_ts(message.updated_at, allow_none=True) or "",
             "created_at": AbstractQuery.to_ts(message.created_at),
-        }
-
-    @staticmethod
-    def attachment_base_to_event(attachment: AttachmentBase):
-        return {
-            "event_type": "attachment",
-            "attachment_id": attachment.attachment_id,
-            "message_id": attachment.message_id,
-            "group_id": attachment.group_id,
-            "user_id": attachment.user_id,
-            "updated_at": AbstractQuery.to_ts(attachment.updated_at, allow_none=True) or "",
-            "created_at": AbstractQuery.to_ts(attachment.created_at),
-            "context": attachment.context,
-            "file_id": attachment.file_id,
-            "status": attachment.status,
         }
 
     @staticmethod

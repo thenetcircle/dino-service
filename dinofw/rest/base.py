@@ -1,19 +1,19 @@
 import logging
 from abc import ABC
 from datetime import datetime as dt
-from typing import Dict, Any, List
+from typing import Dict
 
 import arrow
 import pytz
 
 from dinofw.db.rdbms.schemas import UserGroupStatsBase, GroupBase
-from dinofw.db.storage.schemas import MessageBase, ActionLogBase, AttachmentBase
-from dinofw.rest.models import AbstractQuery, UserGroup, Attachment
-from dinofw.rest.models import ActionLog
+from dinofw.db.storage.schemas import MessageBase
+from dinofw.rest.models import AbstractQuery
 from dinofw.rest.models import Group
 from dinofw.rest.models import GroupJoinTime
 from dinofw.rest.models import GroupLastRead
 from dinofw.rest.models import Message
+from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UserGroupStats
 
 
@@ -63,7 +63,7 @@ class BaseResource(ABC):
         del user_ids[user_id]
         self.env.cache.increase_unread_in_group_for(group_id, user_ids)
 
-    def _user_sends_an_attachment(self, group_id: str, attachment: AttachmentBase, db):
+    def _user_sends_an_attachment(self, group_id: str, attachment: MessageBase, db):
         user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
         self.env.publisher.attachment(attachment, user_ids)
 

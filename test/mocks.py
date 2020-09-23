@@ -1,23 +1,24 @@
 from datetime import datetime as dt
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 from uuid import uuid4 as uuid
 
-import pytz
 import arrow
+import pytz
 
 from dinofw.cache.redis import CacheRedis
-from dinofw.db.storage.schemas import MessageBase, ActionLogBase, AttachmentBase
 from dinofw.db.rdbms.schemas import GroupBase, UserGroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
+from dinofw.db.storage.schemas import MessageBase
 from dinofw.endpoint import IPublishHandler, IPublisher
-from dinofw.rest.models import (
-    CreateGroupQuery,
-    MessageQuery,
-    EditMessageQuery,
-    AbstractQuery, CreateActionLogQuery, UserGroup, CreateAttachmentQuery,
-)
+from dinofw.rest.models import AbstractQuery
+from dinofw.rest.models import CreateActionLogQuery
+from dinofw.rest.models import CreateAttachmentQuery
+from dinofw.rest.models import CreateGroupQuery
+from dinofw.rest.models import EditMessageQuery
 from dinofw.rest.models import GroupQuery
+from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
+from dinofw.utils.config import MessageTypes
 from dinofw.utils.exceptions import NoSuchGroupException
 
 
@@ -51,19 +52,19 @@ class FakeStorage:
             self,
             group_id: str,
             query: CreateActionLogQuery
-    ) -> List[ActionLogBase]:
+    ) -> List[MessageBase]:
         if group_id not in self.action_log:
             self.action_log[group_id] = list()
 
         logs = list()
 
         for user_id in query.user_ids:
-            log = ActionLogBase(
+            log = MessageBase(
                 group_id=group_id,
                 created_at=arrow.utcnow().datetime,
                 user_id=user_id,
-                action_id=str(uuid()),
-                action_type=query.action_type,
+                message_id=str(uuid()),
+                message_type=query.action_type,
                 admin_id=query.admin_id,
             )
 
@@ -74,17 +75,17 @@ class FakeStorage:
 
     def store_attachment(
             self, group_id: str, user_id: int, message_id: str, query: CreateAttachmentQuery
-    ) -> AttachmentBase:
+    ) -> MessageBase:
 
-        attachment = AttachmentBase(
+        attachment = MessageBase(
             group_id=str(group_id),
             created_at=arrow.utcnow().datetime,
             user_id=user_id,
-            attachment_id=str(uuid()),
             message_id=message_id,
             context=query.context,
             file_id=query.file_id,
             status=query.status,
+            message_type=MessageTypes.ACTION,
         )
 
         if group_id not in self.attachments_by_group:
@@ -118,7 +119,7 @@ class FakeStorage:
 
     def create_join_action_log(
         self, group_id: str, users: Dict[int, float], action_time: dt
-    ) -> List[ActionLogBase]:
+    ) -> List[MessageBase]:
         user_ids = [user_id for user_id, _ in users.items()]
         return self._create_action_log(
             group_id, user_ids, action_time, FakeStorage.ACTION_TYPE_JOIN
@@ -126,26 +127,26 @@ class FakeStorage:
 
     def create_leave_action_log(
         self, group_id: str, user_ids: [int], action_time: dt
-    ) -> List[ActionLogBase]:
+    ) -> List[MessageBase]:
         return self._create_action_log(
             group_id, user_ids, action_time, FakeStorage.ACTION_TYPE_LEAVE
         )
 
     def _create_action_log(
         self, group_id: str, user_ids: List[int], action_time: dt, action_type: int
-    ) -> List[ActionLogBase]:
+    ) -> List[MessageBase]:
         if group_id not in self.action_log:
             self.action_log[group_id] = list()
 
         new_logs = list()
 
         for user_id in user_ids:
-            log = ActionLogBase(
+            log = MessageBase(
                 group_id=group_id,
                 user_id=user_id,
                 created_at=action_time,
-                action_type=action_type,
-                action_id=str(uuid()),
+                message_type=action_type,
+                message_id=str(uuid()),
             )
 
             new_logs.append(log)
@@ -174,7 +175,7 @@ class FakeStorage:
             group_id: str,
             user_stats: UserGroupStatsBase,
             query: MessageQuery
-    ) -> List[AttachmentBase]:
+    ) -> List[MessageBase]:
         if group_id not in self.attachments_by_group:
             return list()
 
@@ -239,7 +240,7 @@ class FakeStorage:
 
     def get_action_log_in_group(
         self, group_id: str, query: MessageQuery
-    ) -> List[ActionLogBase]:
+    ) -> List[MessageBase]:
         logs = list()
 
         if group_id not in self.action_log:
@@ -258,7 +259,7 @@ class FakeStorage:
             group_id: str,
             user_stats: UserGroupStatsBase,
             query: MessageQuery,
-    ) -> List[ActionLogBase]:
+    ) -> List[MessageBase]:
         logs = list()
 
         if group_id not in self.action_log:
@@ -540,7 +541,7 @@ class FakePublisherHandler(IPublishHandler):
 
         self.sent_messages[message.group_id].append(message)
 
-    def attachment(self, attachment: AttachmentBase, user_ids: List[int]) -> None:
+    def attachment(self, attachment: MessageBase, user_ids: List[int]) -> None:
         pass
 
     def read(self, group_id: str, user_id: int, user_ids: List[int]) -> None:
