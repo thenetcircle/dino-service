@@ -7,7 +7,7 @@ app = FastAPI()
 
 
 @app.get("/")
-async def try_shit():
+async def publish_mqtt():
     client = MQTTClient("client-id")
     await client.connect("maggie-kafka-1.thenetcircle.lab", port=1883, version=MQTTv50)
 
