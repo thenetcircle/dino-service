@@ -620,6 +620,7 @@ class RelationalHandler:
     def update_user_message_status(
         self, user_id: int, query: MessageQuery, db: Session
     ) -> None:
+        # TODO: need to publish a message to all online users this user has contacted before...
         user_stats = (
             db.query(models.UserStatsEntity)
             .filter(models.UserGroupStatsEntity.user_id == user_id,)
@@ -635,8 +636,6 @@ class RelationalHandler:
         db.commit()
 
         self.env.cache.update_user_message_status(user_id, query.status)
-
-        # TODO: need to publish a message to all online users this user has contacted before...
 
     def _get_user_stats_for(self, group_id: str, user_id: int, db: Session):
         return (

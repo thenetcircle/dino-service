@@ -70,7 +70,6 @@ class CassandraHandler:
     ) -> List[MessageBase]:
         until = MessageQuery.to_dt(query.until)
 
-        # TODO: add message_type and status filter from MessageQuery
         raw_messages = (
             MessageModel.objects(
                 MessageModel.group_id == group_id,
@@ -120,7 +119,6 @@ class CassandraHandler:
     ) -> List[MessageBase]:
         until = MessageQuery.to_dt(query.until)
 
-        # TODO: add message_type and status filter from MessageQuery
         raw_messages = (
             MessageModel.objects(
                 MessageModel.group_id == group_id,
@@ -266,30 +264,8 @@ class CassandraHandler:
 
         return CassandraHandler.message_base_from_entity(message)
 
-    def update_messages_in_group(self, group_id: str, query: MessageQuery) -> None:
-        def callback(message: MessageModel) -> None:
-            message.status = query.status
-
-        self._update_all_messages_in_group(group_id=group_id, callback=callback)
-
-    def update_messages_in_group_for_user(
-        self, group_id: str, user_id: int, query: MessageQuery
-    ) -> None:
-        def callback(message: MessageModel) -> None:
-            message.status = query.status
-
-        self._update_all_messages_in_group(
-            group_id=group_id, callback=callback, user_id=user_id,
-        )
-
     def delete_messages_in_group(self, group_id: str, query: MessageQuery) -> None:
         def callback(message: MessageModel):
-            # TODO: is there a status they should use in the query for deletions?
-            message.status = query.status
-
-            # TODO: needed?
-            message.message_type = query.message_type
-
             message.removed_at = removed_at
             message.removed_by_user = query.admin_id
 
@@ -327,12 +303,6 @@ class CassandraHandler:
         # TODO: copy messages to another table `messages_deleted` and then remove the rows for `messages`
 
         def callback(message: MessageModel):
-            # TODO: is there a status they should use in the query for deletions?
-            message.status = query.status
-
-            # TODO: needed?
-            message.message_type = query.message_type
-
             message.removed_at = removed_at
             message.removed_by_user = query.admin_id
 

@@ -103,11 +103,6 @@ class MessageResource(BaseResource):
 
         self.env.db.update_user_message_status(user_id, query, db)
 
-    async def delete_messages_for_user_in_group(
-        self, group_id: str, user_id: int, query: MessageQuery
-    ) -> None:
-        self.env.storage.update_messages_in_group_for_user(group_id, user_id, query)
-
     async def update_messages(self, group_id: str, query: MessageQuery):
         self.env.storage.update_messages_in_group(group_id, query)
 

@@ -46,8 +46,7 @@ class OneToOneQuery(AbstractQuery):
 
 
 class MessageQuery(PaginationQuery, AdminQuery):
-    message_type: Optional[int]
-    status: Optional[int]
+    pass
 
 
 class CreateActionLogQuery(AdminQuery):
