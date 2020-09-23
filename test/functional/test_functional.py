@@ -1,3 +1,4 @@
+from uuid import uuid4 as uuid
 import arrow
 
 from dinofw.utils.config import MessageTypes
@@ -464,3 +465,62 @@ class TestServerRestApi(BaseServerRestApi):
 
         groups = self.groups_updated_since(user_id=BaseTest.OTHER_USER_ID, since=when + 500)
         self.assertEqual(0, len(groups))
+
+    def test_update_attachment(self):
+        message = self.send_1v1_message(message_type=MessageTypes.IMAGE)
+        self.assertEqual(MessageTypes.IMAGE, message["message_type"])
+
+        history = self.histories_for(message["group_id"])
+        all_attachments = self.attachments_for(message["group_id"])
+
+        # a 'placeholder' message should have been created, but no attachment
+        self.assertEqual(1, len(history["messages"]))
+        self.assertEqual(0, len(all_attachments))
+
+        attachment = self.update_attachment(message["message_id"], message["created_at"])
+        history = self.histories_for(message["group_id"])
+        all_attachments = self.attachments_for(message["group_id"])
+
+        # now the message should have been updated, and the attachment created
+        self.assertEqual(message["message_id"], attachment["message_id"])
+        self.assertNotEqual(attachment["created_at"], attachment["updated_at"])
+        self.assertEqual(1, len(history["messages"]))
+        self.assertEqual(1, len(all_attachments))
+
+    def attachments_for(self, group_id: str, user_id: int = None):
+        if user_id is None:
+            user_id = BaseTest.USER_ID
+
+        now = arrow.utcnow().float_timestamp
+
+        raw_response = self.client.post(
+            f"/v1/groups/{group_id}/user/{user_id}/attachments",
+            json={
+                "per_page": 100,
+                "until": now,
+            },
+        )
+        self.assertEqual(raw_response.status_code, 200)
+
+        return raw_response.json()
+
+    def update_attachment(self, message_id: str, created_at: float, user_id: int = None, receiver_id: int = None):
+        if user_id is None:
+            user_id = BaseTest.USER_ID
+
+        if receiver_id is None:
+            receiver_id = BaseTest.OTHER_USER_ID
+
+        raw_response = self.client.post(
+            f"/v1/users/{user_id}/message/{message_id}/attachment",
+            json={
+                "file_id": str(uuid()).replace("-", ""),
+                "status": 1,
+                "message_payload": '{"width":200,"height":500}',
+                "created_at": created_at,
+                "receiver_id": receiver_id,
+            },
+        )
+        self.assertEqual(raw_response.status_code, 200)
+
+        return raw_response.json()

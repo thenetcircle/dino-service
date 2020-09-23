@@ -45,6 +45,17 @@ class GroupResource(BaseResource):
             group, users=first_users, user_count=n_users,
         )
 
+    async def get_attachments_in_group_for_user(
+        self, group_id: str, user_id: int, query: MessageQuery, db: Session
+    ) -> List[Message]:
+        user_stats = self.env.db.get_user_stats_in_group(group_id, user_id, db)
+        attachments = self.env.storage.get_attachments_in_group_for_user(group_id, user_stats, query)
+
+        return [
+            GroupResource.message_base_to_message(attachment)
+            for attachment in attachments
+        ]
+
     async def get_1v1_info(
         self, user_id_a: int, user_id_b: int, db: Session
     ) -> OneToOneStats:

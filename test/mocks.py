@@ -82,7 +82,7 @@ class FakeStorage:
             created_at=arrow.utcnow().datetime,
             user_id=user_id,
             message_id=message_id,
-            context=query.context,
+            message_payload=query.message_payload,
             file_id=query.file_id,
             status=query.status,
             message_type=MessageTypes.ACTION,

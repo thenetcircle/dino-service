@@ -167,6 +167,30 @@ async def create_an_attachment(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
+@app.post("/v1/groups/{group_id}/user/{user_id}/attachments")
+async def get_attachments_in_group_for_user(
+    group_id: str, user_id: int, query: MessageQuery, db: Session = Depends(get_db)
+) -> List[Message]:
+    """
+    Get all attachments in this group for this user.
+
+    **Potential error codes in response:**
+    * `600`: if the user is not in the group,
+    * `601`: if the group does not exist,
+    * `250`: if an unknown error occurred.
+    """
+    try:
+        return await environ.env.rest.group.get_attachments_in_group_for_user(
+            group_id, user_id, query, db
+        )
+    except NoSuchGroupException as e:
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
+    except UserNotInGroupException as e:
+        log_error_and_raise_known(ErrorCodes.USER_NOT_IN_GROUP, e)
+    except Exception as e:
+        log_error_and_raise_unknown(sys.exc_info(), e)
+
+
 @app.post("/v1/groups/{group_id}/user/{user_id}/histories", response_model=Histories)
 async def get_group_history_for_user(
     group_id: str, user_id: int, query: MessageQuery, db: Session = Depends(get_db)
