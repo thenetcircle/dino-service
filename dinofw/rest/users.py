@@ -50,14 +50,13 @@ class UserResource(BaseResource):
 
         user_groups: List[UserGroupBase] = self.env.db.get_groups_for_user(user_id, query, db)
 
+        group_amounts = dict()
         unread_amount = 0
         owner_amount = 0
         max_last_read = self.long_ago
         max_last_sent = self.long_ago
         last_read_group_id = None
         last_sent_group_id = None
-
-        group_amounts = dict()
 
         for user_group in user_groups:
             group = user_group.group
