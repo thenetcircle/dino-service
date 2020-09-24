@@ -24,6 +24,23 @@ from dinofw.utils.exceptions import NoSuchGroupException
 from dinofw.utils.exceptions import UserNotInGroupException
 
 
+def users_to_group_id(user_a: int, user_b: int) -> str:
+    users = sorted([user_a, user_b])
+
+    u = hex(users[0])[2:].zfill(16) + hex(users[1])[2:].zfill(16)
+    uuid_value = f"{u[:8]}-{u[8:12]}-{u[12:16]}-{u[16:20]}-{u[20:]}"
+
+    return uuid_value
+
+
+def group_id_to_users(group_id: str) -> (int, int):
+    group_id = group_id.replace("-", "")
+    user_a = int(group_id[:16].lstrip("0"), 16)
+    user_b = int(group_id[16:].lstrip("0"), 16)
+
+    return sorted([user_a, user_b])
+
+
 class RelationalHandler:
     def __init__(self, env):
         self.env = env
@@ -155,9 +172,10 @@ class RelationalHandler:
 
             if count_unread:
                 # only count for receiver if it's a 1v1 group
-                if group.user_a is not None:
+                if group.group_type == GroupTypes.ONE_TO_ONE:
+                    user_a, user_b = group_id_to_users(group.group_id)
                     user_to_count_for = (
-                        group.user_a if group.user_b == user_id else group.user_b
+                        user_a if user_b == user_id else user_b
                     )
                     receiver_unread_count = self.env.storage.get_unread_in_group(
                         group_id=group.group_id,
@@ -269,31 +287,24 @@ class RelationalHandler:
         self, user_a: int, user_b: int, db: Session
     ) -> Optional[str]:
         group = self.get_group_for_1to1(user_a, user_b, db)
-
-        if group is None:
-            raise NoSuchGroupException(
-                ",".join([str(user_id) for user_id in [user_a, user_b]])
-            )
-
         return group.group_id
 
     def get_group_for_1to1(
         self, user_a: int, user_b: int, db: Session
     ) -> Optional[GroupBase]:
-        users = sorted([user_a, user_b])
+        group_id = users_to_group_id(user_a, user_b)
 
         group = (
             db.query(models.GroupEntity)
             .filter(
                 models.GroupEntity.group_type == GroupTypes.ONE_TO_ONE,
-                models.GroupEntity.user_a == users[0],
-                models.GroupEntity.user_b == users[1],
+                models.GroupEntity.group_id == group_id,
             )
             .first()
         )
 
         if group is None:
-            raise NoSuchGroupException(",".join([str(user_id) for user_id in users]))
+            raise NoSuchGroupException(f"{user_a},{user_b}")
 
         return GroupBase(**group.__dict__)
 
@@ -582,18 +593,14 @@ class RelationalHandler:
     ) -> GroupBase:
         created_at = arrow.utcnow().datetime
 
-        user_a, user_b = None, None
-
         if query.group_type == GroupTypes.ONE_TO_ONE:
-            users = sorted(query.users)
-            user_a = users[0]
-            user_b = users[1]
+            group_id = users_to_group_id(*query.users)
+        else:
+            group_id = str(uuid())
 
         group_entity = models.GroupEntity(
-            group_id=str(uuid()),
+            group_id=group_id,
             name=query.group_name,
-            user_a=user_a,
-            user_b=user_b,
             group_type=query.group_type,
             last_message_time=created_at,
             updated_at=created_at,

@@ -21,8 +21,8 @@ class GroupBase(BaseModel):
     owner_id: int
 
     # for 1v1 groups
-    user_a: Optional[int]
-    user_b: Optional[int]
+    # user_a: Optional[int]
+    # user_b: Optional[int]
 
     meta: Optional[int]
     context: Optional[str]

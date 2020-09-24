@@ -13,8 +13,8 @@ class GroupEntity(env.Base):
     group_id = Column(String(36), index=True)
     name = Column(String(128))
 
-    user_a = Column(Integer, index=True, nullable=True)
-    user_b = Column(Integer, index=True, nullable=True)
+    # user_a = Column(Integer, index=True, nullable=True)
+    # user_b = Column(Integer, index=True, nullable=True)
 
     owner_id = Column(Integer)
     status = Column(Integer, nullable=True)
