@@ -121,6 +121,7 @@ class BaseResource(ABC):
 
         stats_dict["last_read_time"] = AbstractQuery.to_ts(stats_base.last_read)
         stats_dict["last_sent_time"] = AbstractQuery.to_ts(stats_base.last_sent)
+        stats_dict["join_time"] = AbstractQuery.to_ts(stats_base.join_time)
         stats_dict["delete_before"] = AbstractQuery.to_ts(stats_base.delete_before)
         stats_dict["highlight_time"] = AbstractQuery.to_ts(
             stats_base.highlight_time, allow_none=True

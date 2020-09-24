@@ -146,6 +146,7 @@ class GroupResource(BaseResource):
         last_sent = AbstractQuery.to_ts(user_stats.last_sent, allow_none=True)
         last_read = AbstractQuery.to_ts(user_stats.last_read, allow_none=True)
         first_sent = AbstractQuery.to_ts(user_stats.first_sent, allow_none=True)
+        join_time = AbstractQuery.to_ts(user_stats.join_time, allow_none=True)
 
         unread_amount = self.env.storage.count_messages_in_group_since(
             group_id, user_stats.last_read
@@ -156,6 +157,7 @@ class GroupResource(BaseResource):
             group_id=group_id,
             message_amount=message_amount,
             unread=unread_amount,
+            join_time=join_time,
             receiver_unread=-1,  # TODO: should be count for other user here as well?
             last_read_time=last_read,
             last_sent_time=last_sent,
