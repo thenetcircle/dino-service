@@ -14,7 +14,7 @@ from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.models import AttachmentModel
 from dinofw.db.storage.models import MessageModel
 from dinofw.db.storage.schemas import MessageBase
-from dinofw.rest.models import AdminQuery, CreateAttachmentQuery
+from dinofw.rest.models import AdminQuery, CreateAttachmentQuery, AbstractQuery
 from dinofw.rest.models import CreateActionLogQuery
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
@@ -135,20 +135,12 @@ class CassandraHandler:
 
         return messages
 
-    def count_messages_in_group(self, group_id: str) -> int:
-        # TODO: cache for a while if more than X messages? maybe TTL proportional to the amount
-        # TODO: count all or only after `hide_before`?
-        # TODO: until time X, count was A messages, cache A at time X, then count from time X to now and add to cache
-
-        return (
-            MessageModel.objects(MessageModel.group_id == group_id).limit(None).count()
-        )
-
     def count_messages_in_group_since(self, group_id: str, since: dt) -> int:
-        # TODO: count all or only after `hide_before`?
         return (
             MessageModel.objects(
                 MessageModel.group_id == group_id,
+            )
+            .filter(
                 MessageModel.created_at > since,
             )
             .limit(None)

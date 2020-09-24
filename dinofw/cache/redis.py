@@ -158,6 +158,22 @@ class CacheRedis(ICache):
 
         return n_users
 
+    def get_messages_in_group(self, group_id: str) -> (Optional[int], Optional[float]):
+        key = RedisKeys.messages_in_group(group_id)
+        messages_until = self.redis.get(key)
+
+        if messages_until is None:
+            return None, None
+
+        messages, until = str(messages_until, "utf-8").split("|")
+        return int(messages), float(until)
+
+    def set_messages_in_group(self, group_id: str, n_messages: int, until: float) -> None:
+        key = RedisKeys.messages_in_group(group_id)
+        messages_until = f"{n_messages}|{until}"
+
+        self.redis.set(key, messages_until)
+
     def get_user_ids_and_join_time_in_group(
         self, group_id: str
     ) -> Optional[Dict[int, float]]:

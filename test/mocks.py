@@ -273,12 +273,6 @@ class FakeStorage:
 
         return logs
 
-    def count_messages_in_group(self, group_id: str) -> int:
-        if group_id not in self.messages_by_group:
-            return 0
-
-        return len(self.messages_by_group[group_id])
-
     def count_messages_in_group_since(self, group_id: str, since: dt) -> int:
         if group_id not in self.messages_by_group:
             return 0

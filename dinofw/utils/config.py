@@ -21,6 +21,11 @@ class RedisKeys:
     RKEY_UNREAD_IN_GROUP = "group:unread:{}"  # user:unread:group_id
     RKEY_HIDE_GROUP = "group:hide:{}"  # group:hide:group_id
     RKEY_USER_MESSAGE_STATUS = "user:status:{}"  # user:status:user_id
+    RKEY_MESSAGES_IN_GROUP = "group:messages:{}"  # group:messages:group_id
+
+    @staticmethod
+    def messages_in_group(group_id: str) -> str:
+        return RedisKeys.RKEY_MESSAGES_IN_GROUP.format(group_id)
 
     @staticmethod
     def user_message_status(user_id: int) -> str:

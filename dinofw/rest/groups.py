@@ -1,4 +1,5 @@
 import logging
+from functools import lru_cache
 from typing import List, Optional
 
 import arrow
@@ -66,12 +67,15 @@ class GroupResource(BaseResource):
             raise NoSuchGroupException(",".join([str(user_id) for user_id in users]))
 
         group_id = group.group_id
+        message_amount = await self.count_messages_in_group(group_id)
         users_and_join_time = self.env.db.get_user_ids_and_join_time_in_group(
             group_id, db
         )
 
         user_stats = [
-            await self.get_user_group_stats(group_id, user_id, db) for user_id in users
+            await self.get_user_group_stats(
+                group_id, user_id, message_amount, db
+            ) for user_id in users
         ]
 
         return OneToOneStats(
@@ -110,8 +114,24 @@ class GroupResource(BaseResource):
             last_reads=last_reads,
         )
 
+    async def count_messages_in_group(self, group_id: str) -> int:
+        n_messages, until = self.env.cache.get_messages_in_group(group_id)
+
+        if until is None:
+            until = self.long_ago
+            n_messages = 0
+        else:
+            until = AbstractQuery.to_dt(until)
+
+        messages_since = self.env.storage.count_messages_in_group_since(group_id, until)
+        total_messages = n_messages + messages_since
+        now = arrow.utcnow().float_timestamp
+
+        self.env.cache.set_messages_in_group(group_id, total_messages, now)
+        return total_messages
+
     async def get_user_group_stats(
-        self, group_id: str, user_id: int, db: Session
+        self, group_id: str, user_id: int, message_amount: int, db: Session
     ) -> Optional[UserGroupStats]:
         user_stats: UserGroupStatsBase = self.env.db.get_user_stats_in_group(
             group_id, user_id, db
@@ -119,8 +139,6 @@ class GroupResource(BaseResource):
 
         if user_stats is None:
             return None
-
-        message_amount = self.env.storage.count_messages_in_group(group_id)
 
         delete_before = AbstractQuery.to_ts(user_stats.delete_before)
         last_updated_time = AbstractQuery.to_ts(user_stats.last_updated_time)

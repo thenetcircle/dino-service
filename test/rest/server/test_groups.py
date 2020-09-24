@@ -116,17 +116,20 @@ class TestGroupResource(BaseTest):
 
         # create a new group
         group = await self.group.create_new_group(BaseTest.USER_ID, create_query, None)  # noqa
-        stats = await self.group.get_user_group_stats(group.group_id, BaseTest.USER_ID, None)  # noqa
+        count = await self.group.count_messages_in_group(group.group_id)
+        stats = await self.group.get_user_group_stats(group.group_id, BaseTest.USER_ID, count, None)  # noqa
         self.assertEqual(0, stats.unread)
 
         # send a message, should have 0 unread since we sent it
         await self.message.send_message_to_group(group.group_id, BaseTest.USER_ID, send_query, None)  # noqa
-        stats = await self.group.get_user_group_stats(group.group_id, BaseTest.USER_ID, None)  # noqa
+        count = await self.group.count_messages_in_group(group.group_id)
+        stats = await self.group.get_user_group_stats(group.group_id, BaseTest.USER_ID, count, None)  # noqa
         self.assertEqual(0, stats.unread)
 
         # another user sends a message, should have 1 unread now
         await self.message.send_message_to_group(group.group_id, BaseTest.OTHER_USER_ID, send_query, None)  # noqa
-        stats = await self.group.get_user_group_stats(group.group_id, BaseTest.USER_ID, None)  # noqa
+        count = await self.group.count_messages_in_group(group.group_id)
+        stats = await self.group.get_user_group_stats(group.group_id, BaseTest.USER_ID, count, None)  # noqa
         self.assertEqual(1, stats.unread)
 
     @async_test

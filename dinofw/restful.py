@@ -389,7 +389,8 @@ async def get_user_statistics_in_group(
     * `250`: if an unknown error occurred.
     """
     try:
-        return await environ.env.rest.group.get_user_group_stats(group_id, user_id, db)
+        message_amount = await environ.env.rest.group.count_messages_in_group(group_id)
+        return await environ.env.rest.group.get_user_group_stats(group_id, user_id, message_amount, db)
     except NoSuchGroupException as e:
         log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
     except UserNotInGroupException as e:
