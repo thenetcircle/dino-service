@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from fastapi import status
 from sqlalchemy.orm import Session
 
-from dinofw.rest.models import CreateActionLogQuery
+from dinofw.rest.models import CreateActionLogQuery, UpdateUserMessageQuery
 from dinofw.rest.models import CreateAttachmentQuery
 from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import Group
@@ -457,7 +457,7 @@ async def get_user_statistics(user_id: int, db: Session = Depends(get_db)) -> Us
 
 @app.put("/v1/users/{user_id}/messages", response_model=List[Message])
 async def update_user_message_status(
-    user_id: int, query: MessageQuery, db: Session = Depends(get_db)
+    user_id: int, query: UpdateUserMessageQuery, db: Session = Depends(get_db)
 ) -> None:
     """
     Update user message status, e.g. because the user got blocked, is a bot,

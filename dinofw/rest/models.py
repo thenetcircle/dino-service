@@ -93,6 +93,10 @@ class UpdateGroupQuery(AbstractQuery):
     context: Optional[str]
 
 
+class UpdateUserMessageQuery(AbstractQuery):
+    status: int
+
+
 class EditMessageQuery(AdminQuery):
     message_payload: Optional[str]
     message_type: Optional[int]

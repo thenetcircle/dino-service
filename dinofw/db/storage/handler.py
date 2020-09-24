@@ -5,7 +5,6 @@ from typing import List, Optional
 from uuid import uuid4 as uuid
 
 import arrow
-import pytz
 from cassandra.cluster import PlainTextAuthProvider
 from cassandra.cqlengine import connection
 from cassandra.cqlengine.management import sync_table
@@ -19,7 +18,7 @@ from dinofw.rest.models import AdminQuery, CreateAttachmentQuery
 from dinofw.rest.models import CreateActionLogQuery
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
-from dinofw.utils.config import ConfigKeys, MessageTypes
+from dinofw.utils.config import ConfigKeys
 from dinofw.utils.exceptions import NoSuchMessageException
 
 
@@ -139,6 +138,7 @@ class CassandraHandler:
     def count_messages_in_group(self, group_id: str) -> int:
         # TODO: cache for a while if more than X messages? maybe TTL proportional to the amount
         # TODO: count all or only after `hide_before`?
+        # TODO: until time X, count was A messages, cache A at time X, then count from time X to now and add to cache
 
         return (
             MessageModel.objects(MessageModel.group_id == group_id).limit(None).count()

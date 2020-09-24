@@ -4,7 +4,7 @@ from typing import List
 from sqlalchemy.orm import Session
 
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import AdminQuery, CreateAttachmentQuery
+from dinofw.rest.models import AdminQuery, CreateAttachmentQuery, UpdateUserMessageQuery
 from dinofw.rest.models import Message
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
@@ -96,7 +96,7 @@ class MessageResource(BaseResource):
         return MessageResource.message_base_to_message(message_base)
 
     async def update_user_message_status(
-        self, user_id: int, query: MessageQuery, db: Session
+        self, user_id: int, query: UpdateUserMessageQuery, db: Session
     ) -> None:
         if query.status is None:
             query.status = 0

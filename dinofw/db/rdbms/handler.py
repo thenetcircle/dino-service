@@ -13,7 +13,7 @@ from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.rdbms.schemas import UserGroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.schemas import MessageBase
-from dinofw.rest.models import CreateGroupQuery
+from dinofw.rest.models import CreateGroupQuery, UpdateUserMessageQuery
 from dinofw.rest.models import GroupQuery
 from dinofw.rest.models import GroupUpdatesQuery
 from dinofw.rest.models import MessageQuery
@@ -625,7 +625,7 @@ class RelationalHandler:
         return base
 
     def update_user_message_status(
-        self, user_id: int, query: MessageQuery, db: Session
+        self, user_id: int, query: UpdateUserMessageQuery, db: Session
     ) -> None:
         # TODO: need to publish a message to all online users this user has contacted before...
         user_stats = (
