@@ -7,7 +7,7 @@ from gmqtt.mqtt.constants import MQTTv50
 
 from dinofw.utils.config import ConfigKeys
 from dinofw.db.rdbms.schemas import GroupBase
-from dinofw.db.storage.schemas import MessageBase, AttachmentBase
+from dinofw.db.storage.schemas import MessageBase
 from dinofw.endpoint import IPublishHandler
 from dinofw.endpoint import IPublisher
 
@@ -56,7 +56,7 @@ class PublishHandler(IPublishHandler):
         data = PublishHandler.message_base_to_event(message)
         self.send(user_ids, data)
 
-    def attachment(self, attachment: AttachmentBase, user_ids: List[int]) -> None:
+    def attachment(self, attachment: MessageBase, user_ids: List[int]) -> None:
         data = PublishHandler.message_base_to_event(attachment)
         self.send(user_ids, data)
 
