@@ -14,8 +14,9 @@ from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.models import AttachmentModel
 from dinofw.db.storage.models import MessageModel
 from dinofw.db.storage.schemas import MessageBase
-from dinofw.rest.models import AdminQuery, CreateAttachmentQuery, AbstractQuery
+from dinofw.rest.models import AdminQuery
 from dinofw.rest.models import CreateActionLogQuery
+from dinofw.rest.models import CreateAttachmentQuery
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
 from dinofw.utils.config import ConfigKeys

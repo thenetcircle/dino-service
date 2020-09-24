@@ -13,12 +13,12 @@ from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.rdbms.schemas import UserGroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.schemas import MessageBase
-from dinofw.rest.models import CreateGroupQuery, UpdateUserMessageQuery
+from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import GroupQuery
 from dinofw.rest.models import GroupUpdatesQuery
-from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import UpdateGroupQuery
 from dinofw.rest.models import UpdateUserGroupStats
+from dinofw.rest.models import UpdateUserMessageQuery
 from dinofw.utils.config import GroupTypes
 from dinofw.utils.exceptions import NoSuchGroupException
 from dinofw.utils.exceptions import UserNotInGroupException

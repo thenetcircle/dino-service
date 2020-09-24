@@ -5,7 +5,8 @@ from sqlalchemy.orm import Session
 
 from dinofw.db.rdbms.schemas import UserGroupBase
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import GroupQuery, GroupUpdatesQuery
+from dinofw.rest.models import GroupQuery
+from dinofw.rest.models import GroupUpdatesQuery
 from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UserStats
 from dinofw.utils.config import GroupTypes

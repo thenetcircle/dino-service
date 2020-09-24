@@ -1,5 +1,4 @@
 import logging
-from functools import lru_cache
 from typing import List, Optional
 
 import arrow
@@ -7,14 +6,16 @@ from sqlalchemy.orm import Session
 
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import AbstractQuery, OneToOneStats, Message
+from dinofw.rest.models import AbstractQuery
 from dinofw.rest.models import CreateActionLogQuery
 from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import Group
 from dinofw.rest.models import GroupJoinTime
 from dinofw.rest.models import GroupUsers
 from dinofw.rest.models import Histories
+from dinofw.rest.models import Message
 from dinofw.rest.models import MessageQuery
+from dinofw.rest.models import OneToOneStats
 from dinofw.rest.models import SearchQuery
 from dinofw.rest.models import UpdateGroupQuery
 from dinofw.rest.models import UpdateUserGroupStats
