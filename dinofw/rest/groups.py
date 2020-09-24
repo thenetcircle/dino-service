@@ -256,9 +256,6 @@ class GroupResource(BaseResource):
             user_ids_in_group = user_ids_and_join_times.keys()
             self.env.publisher.leave(group_id, user_ids_in_group, user_id, now_ts)
 
-    async def search(self, query: SearchQuery) -> List[Group]:
-        return list()  # TODO: implement
-
     async def delete_one_group_for_user(self, user_id: int, group_id: str) -> None:
         pass
 

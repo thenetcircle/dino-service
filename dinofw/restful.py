@@ -346,7 +346,6 @@ async def create_action_logs(group_id: str, query: CreateActionLogQuery) -> None
     Create one or more action logs in group.
 
     # TODO: update last_updated_time to sync with other devices?
-    # TODO: integrate with messages table
 
     **Potential error codes in response:**
     * `250`: if an unknown error occurred.
@@ -562,7 +561,6 @@ async def batch_delete_messages_in_group_for_user(
     )
 """
 
-# TODO: search groups sort by created time descendent
 """
 @app.post("/v1/groups", response_model=List[Group])
 async def search_for_groups(query: SearchQuery) -> List[Group]:
