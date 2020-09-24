@@ -5,7 +5,6 @@ from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import Group
 from dinofw.rest.models import GroupUsers
 from dinofw.rest.models import MessageQuery
-from dinofw.rest.models import PaginationQuery
 from dinofw.rest.models import SendMessageQuery
 from dinofw.utils.config import MessageTypes
 from dinofw.utils.exceptions import NoSuchGroupException
@@ -41,7 +40,6 @@ class TestGroupResource(BaseTest):
         query = CreateGroupQuery(
             group_name="a group name", group_type=0, users=[BaseTest.USER_ID],
         )
-        page_query = PaginationQuery(per_page=50)
 
         group = await self.group.create_new_group(user_id=BaseTest.USER_ID, query=query, db=None)  # noqa
         group_users = await self.group.get_users_in_group(group_id=group.group_id, db=None)  # noqa
@@ -137,7 +135,6 @@ class TestGroupResource(BaseTest):
         create_query = CreateGroupQuery(
             group_name="some group name", group_type=0, users=[BaseTest.USER_ID],
         )
-        page_query = PaginationQuery(per_page=50)
 
         # create a new group
         group = await self.group.create_new_group(BaseTest.USER_ID, create_query, None)  # noqa
@@ -167,7 +164,6 @@ class TestGroupResource(BaseTest):
         create_query = CreateGroupQuery(
             group_name="some group name", group_type=0, users=[BaseTest.USER_ID],
         )
-        page_query = PaginationQuery(per_page=50)
 
         # group doesn't exist yet
         await self.group.leave_group(BaseTest.GROUP_ID, BaseTest.USER_ID, None)  # noqa
