@@ -157,26 +157,6 @@ class CassandraHandler:
         self.env.cache.set_unread_in_group(group_id, user_id, unread)
         return unread
 
-    def get_message(
-        self, group_id: str, user_id: int, message_id: str
-    ) -> Optional[MessageBase]:
-        # TODO: use `hide_before` here?
-
-        message = (
-            MessageModel.objects(
-                MessageModel.group_id == group_id,
-                MessageModel.user_id == user_id,
-                MessageModel.message_id == message_id,
-            )
-            .allow_filtering()
-            .first()
-        )
-
-        if message is None:
-            return None
-
-        return CassandraHandler.message_base_from_entity(message)
-
     def delete_message(
         self, group_id: str, user_id: int, message_id: str, query: AdminQuery
     ) -> None:

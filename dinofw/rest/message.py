@@ -88,13 +88,6 @@ class MessageResource(BaseResource):
     ) -> None:
         self.env.storage.delete_message(group_id, user_id, message_id, query)
 
-    async def message_details(
-        self, group_id: str, user_id: int, message_id: str
-    ) -> Message:
-        message_base = self.env.storage.get_message(group_id, user_id, message_id)
-
-        return MessageResource.message_base_to_message(message_base)
-
     async def update_user_message_status(
         self, user_id: int, query: UpdateUserMessageQuery, db: Session
     ) -> None:
