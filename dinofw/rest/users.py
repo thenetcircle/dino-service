@@ -8,6 +8,7 @@ from dinofw.rest.base import BaseResource
 from dinofw.rest.models import GroupQuery, GroupUpdatesQuery
 from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UserStats
+from dinofw.utils.config import GroupTypes
 
 logger = logging.getLogger(__name__)
 
@@ -56,9 +57,16 @@ class UserResource(BaseResource):
         last_read_group_id = None
         last_sent_group_id = None
 
+        group_amounts = dict()
+
         for user_group in user_groups:
             group = user_group.group
             stats = user_group.user_stats
+
+            if group.group_type not in group_amounts:
+                group_amounts[group.group_type] = 0
+
+            group_amounts[group.group_type] += 1
 
             last_message = group.last_message_time
             last_read = stats.last_read
@@ -84,7 +92,8 @@ class UserResource(BaseResource):
         return UserStats(
             user_id=user_id,
             unread_amount=unread_amount,
-            group_amount=len(user_groups),
+            group_amount=group_amounts.get(GroupTypes.GROUP, 0),
+            one_to_one_amount=group_amounts.get(GroupTypes.ONE_TO_ONE, 0),
             owned_group_amount=owner_amount,
             last_read_time=GroupQuery.to_ts(max_last_read),
             last_read_group_id=last_read_group_id,

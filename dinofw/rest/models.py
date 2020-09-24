@@ -141,7 +141,8 @@ class GroupUsers(BaseModel):
 class UserStats(BaseModel):
     user_id: int
     unread_amount: int
-    group_amount: int  # TODO: split into amount per group type (1v1/group)
+    group_amount: int
+    one_to_one_amount: int
     owned_group_amount: int
     last_update_time: Optional[float]
     last_read_time: Optional[float]
