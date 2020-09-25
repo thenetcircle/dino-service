@@ -6,7 +6,7 @@ from uuid import uuid4 as uuid
 import arrow
 from sqlalchemy import func
 from sqlalchemy import literal
-from sqlalchemy.orm import Session, aliased
+from sqlalchemy.orm import Session
 
 from dinofw.db.rdbms import models
 from dinofw.db.rdbms.schemas import GroupBase
@@ -25,12 +25,15 @@ from dinofw.utils.exceptions import UserNotInGroupException
 
 
 def users_to_group_id(user_a: int, user_b: int) -> str:
-    users = sorted([user_a, user_b])
+    # convert integer ids to hex; need to be sorted
+    users = map(hex, sorted([user_a, user_b]))
 
-    u = hex(users[0])[2:].zfill(16) + hex(users[1])[2:].zfill(16)
-    uuid_value = f"{u[:8]}-{u[8:12]}-{u[12:16]}-{u[16:20]}-{u[20:]}"
+    # drop the initial '0x' and left-pad with zeros (a uuid is two
+    # 16 character parts, so pad to length 16)
+    u = "".join([user[2:].zfill(16) for user in users])
 
-    return uuid_value
+    # insert dashes at the correct places
+    return f"{u[:8]}-{u[8:12]}-{u[12:16]}-{u[16:20]}-{u[20:]}"
 
 
 def group_id_to_users(group_id: str) -> (int, int):
