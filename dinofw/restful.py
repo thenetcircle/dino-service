@@ -63,6 +63,9 @@ async def get_groups_for_user(
     If `count_unread` is False, the fields `unread` and `receiver_unread` will have
     the value `-1`.
 
+    If `hidden` is set to True in the query, only hidden groups will be returned.
+    Defaults value is False.
+
     **Potential error codes in response:**
     * `250`: if an unknown error occurred.
     """

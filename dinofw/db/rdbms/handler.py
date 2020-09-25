@@ -6,7 +6,7 @@ from uuid import uuid4 as uuid
 import arrow
 from sqlalchemy import func
 from sqlalchemy import literal
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, aliased
 
 from dinofw.db.rdbms import models
 from dinofw.db.rdbms.schemas import GroupBase
@@ -87,16 +87,15 @@ class RelationalHandler:
             greatest(u.highlight_time, g.last_message_time) desc
         """
         until = GroupQuery.to_dt(query.until)
-        count_unread = query.count_unread or False
+        hidden = query.hidden or False
 
         results = (
             db.query(models.GroupEntity, models.UserGroupStatsEntity)
             .filter(
                 models.GroupEntity.group_id == models.UserGroupStatsEntity.group_id,
                 models.GroupEntity.last_message_time <= until,
-                models.UserGroupStatsEntity.hide.is_(False),
-                models.UserGroupStatsEntity.delete_before
-                < models.GroupEntity.last_message_time,
+                models.UserGroupStatsEntity.hide.is_(hidden),
+                models.UserGroupStatsEntity.delete_before < models.GroupEntity.last_message_time,
                 models.UserGroupStatsEntity.user_id == user_id,
             )
             .order_by(
@@ -110,6 +109,7 @@ class RelationalHandler:
             .all()
         )
 
+        count_unread = query.count_unread or False
         return self._group_and_stats_to_user_group_base(
             db, results, user_id, count_unread
         )

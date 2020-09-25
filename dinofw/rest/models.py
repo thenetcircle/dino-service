@@ -79,6 +79,7 @@ class CreateGroupQuery(AbstractQuery):
 
 class GroupQuery(PaginationQuery):
     count_unread: Optional[bool]
+    hidden: Optional[bool]
 
 
 class GroupUpdatesQuery(GroupQuery):
