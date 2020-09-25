@@ -45,10 +45,17 @@ class UserResource(BaseResource):
         return groups
 
     async def get_user_stats(self, user_id: int, db: Session) -> UserStats:
+        # TODO: do we really care about super old groups if they have unread
+        #  in them for user stats? can have another api to filer all groups
+        #  with unread instead; no one will count the actual unread of super
+        #  old groups; limit to like 100 or so
+        #
         # ordered by last_message_time, so we're likely to get all groups
         # with messages in them even if the user has more than 1k groups
         query = GroupQuery(per_page=1_000)
 
+        # TODO: this can be cached for a long time; for stats we don't care about sort
+        #  order (highlight, pin etc.), so keeping the group list cached is fine
         user_groups: List[UserGroupBase] = self.env.db.get_groups_for_user(user_id, query, db)
 
         group_amounts = dict()
