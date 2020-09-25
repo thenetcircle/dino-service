@@ -89,7 +89,7 @@ class RelationalHandler:
         until = GroupQuery.to_dt(query.until)
         hidden = query.hidden or False
 
-        query = (
+        statement = (
             db.query(models.GroupEntity, models.UserGroupStatsEntity)
             .filter(
                 models.GroupEntity.group_id == models.UserGroupStatsEntity.group_id,
@@ -101,12 +101,12 @@ class RelationalHandler:
         )
 
         if query.only_unread:
-            query = query.filter(
+            statement = statement.filter(
                 models.UserGroupStatsEntity.last_read < models.GroupEntity.last_message_time,
             )
 
         results = (
-            query.order_by(
+            statement.order_by(
                 models.UserGroupStatsEntity.pin.desc(),
                 func.greatest(
                     models.UserGroupStatsEntity.highlight_time,
