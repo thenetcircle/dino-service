@@ -97,9 +97,15 @@ class RelationalHandler:
         hidden = query.hidden or False
 
         statement = (
-            db.query(models.GroupEntity, models.UserGroupStatsEntity)
+            db.query(
+                models.GroupEntity,
+                models.UserGroupStatsEntity
+            )
+            .join(
+                models.UserGroupStatsEntity,
+                models.UserGroupStatsEntity.group_id == models.GroupEntity.group_id
+            )
             .filter(
-                models.GroupEntity.group_id == models.UserGroupStatsEntity.group_id,
                 models.GroupEntity.last_message_time <= until,
                 models.UserGroupStatsEntity.hide.is_(hidden),
                 models.UserGroupStatsEntity.delete_before < models.GroupEntity.last_message_time,

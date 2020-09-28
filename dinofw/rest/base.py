@@ -1,12 +1,12 @@
 import logging
 from abc import ABC
 from datetime import datetime as dt
-from typing import Dict
+from typing import Dict, List
 
 import arrow
 import pytz
 
-from dinofw.db.rdbms.schemas import UserGroupStatsBase, GroupBase
+from dinofw.db.rdbms.schemas import UserGroupStatsBase, GroupBase, UserGroupBase
 from dinofw.db.storage.schemas import MessageBase
 from dinofw.rest.models import AbstractQuery
 from dinofw.rest.models import Group
@@ -66,6 +66,23 @@ class BaseResource(ABC):
     def _user_sends_an_attachment(self, group_id: str, attachment: MessageBase, db):
         user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
         self.env.publisher.attachment(attachment, user_ids)
+
+    def _to_user_group(self, user_groups: List[UserGroupBase]):
+        groups: List[UserGroup] = list()
+
+        for user_group in user_groups:
+            groups.append(
+                BaseResource.group_base_to_user_group(
+                    group_base=user_group.group,
+                    stats_base=user_group.user_stats,
+                    unread=user_group.unread,
+                    receiver_unread=user_group.receiver_unread,
+                    user_count=user_group.user_count,
+                    users=user_group.user_join_times,
+                )
+            )
+
+        return groups
 
     @staticmethod
     def message_base_to_message(message: MessageBase) -> Message:

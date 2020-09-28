@@ -27,23 +27,6 @@ class UserResource(BaseResource):
         user_groups: List[UserGroupBase] = self.env.db.get_groups_updated_since(user_id, query, db)
         return self._to_user_group(user_groups)
 
-    def _to_user_group(self, user_groups: List[UserGroupBase]):
-        groups: List[UserGroup] = list()
-
-        for user_group in user_groups:
-            groups.append(
-                BaseResource.group_base_to_user_group(
-                    group_base=user_group.group,
-                    stats_base=user_group.user_stats,
-                    unread=user_group.unread,
-                    receiver_unread=user_group.receiver_unread,
-                    user_count=user_group.user_count,
-                    users=user_group.user_join_times,
-                )
-            )
-
-        return groups
-
     async def get_user_stats(self, user_id: int, db: Session) -> UserStats:
         # if the user has more than 100 groups with unread messages in
         # it won't matter if the count is exact or not, just forget about
