@@ -7,8 +7,11 @@ from fastapi import Depends, HTTPException
 from fastapi import FastAPI
 from fastapi import status
 from sqlalchemy.orm import Session
+from starlette.background import BackgroundTask
+from starlette.responses import JSONResponse, Response
+from starlette.status import HTTP_202_ACCEPTED
 
-from dinofw.rest.models import CreateActionLogQuery, UpdateUserMessageQuery
+from dinofw.rest.models import CreateActionLogQuery
 from dinofw.rest.models import CreateAttachmentQuery
 from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import Group
@@ -458,24 +461,24 @@ async def get_user_statistics(user_id: int, db: Session = Depends(get_db)) -> Us
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@app.put("/v1/users/{user_id}/messages", response_model=List[Message])
-async def update_user_message_status(
-    user_id: int, query: UpdateUserMessageQuery, db: Session = Depends(get_db)
-) -> None:
+@app.put("/v1/userstats/{user_id}", status_code=HTTP_202_ACCEPTED)
+async def update_user_status(user_id: int, db: Session = Depends(get_db)) -> Response:
     """
-    Update user message status, e.g. because the user got blocked, is a bot,
-    was force fake-checked, etc.
-
-    * TODO: this is not easy to do in cassandra since created_at comes before user_id in the partition keys
-    * TODO: see if we can iterate over all to find the user's messages then batch update
+    Update user status, e.g. because the user got blocked, is a bot, was
+    force fake-checked, etc. Will set `last_updated_at` on all this user's
+    group stats.
 
     **Potential error codes in response:**
     * `250`: if an unknown error occurred.
     """
-    try:
-        return await environ.env.rest.message.update_user_message_status(
-            user_id, query, db
+    def set_last_updated(user_id_, db_):
+        environ.env.rest.group.set_last_updated_at_on_all_stats_related_to_user(
+            user_id_, db_
         )
+
+    try:
+        task = BackgroundTask(set_last_updated, user_id_=user_id, db_=db)
+        return Response(background=task, status_code=HTTP_202_ACCEPTED)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 

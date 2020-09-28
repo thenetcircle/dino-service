@@ -9,7 +9,6 @@ def init_db(env, engine=None):
     if engine is None:
         database_uri = env.config.get(ConfigKeys.URI, domain=ConfigKeys.DB)
 
-        connection_args = dict()
         if database_uri.startswith("sqlite"):
             connection_args = {"check_same_thread": False}
         else:

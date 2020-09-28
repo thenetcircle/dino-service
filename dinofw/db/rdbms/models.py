@@ -13,9 +13,6 @@ class GroupEntity(env.Base):
     group_id = Column(String(36), index=True)
     name = Column(String(128))
 
-    # user_a = Column(Integer, index=True, nullable=True)
-    # user_b = Column(Integer, index=True, nullable=True)
-
     owner_id = Column(Integer)
     status = Column(Integer, nullable=True)
     group_type = Column(Integer, server_default="0")
@@ -67,10 +64,3 @@ class UserGroupStatsEntity(env.Base):
 
     # a user can rate conversations
     rating = Column(Integer, nullable=True)
-
-
-class UserStatsEntity(env.Base):
-    __tablename__ = "user_stats"
-
-    user_id = Column(Integer, primary_key=True)
-    status = Column(Integer, nullable=False)

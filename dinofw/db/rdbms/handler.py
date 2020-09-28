@@ -18,7 +18,6 @@ from dinofw.rest.models import GroupQuery
 from dinofw.rest.models import GroupUpdatesQuery
 from dinofw.rest.models import UpdateGroupQuery
 from dinofw.rest.models import UpdateUserGroupStats
-from dinofw.rest.models import UpdateUserMessageQuery
 from dinofw.utils.config import GroupTypes
 from dinofw.utils.exceptions import NoSuchGroupException
 from dinofw.utils.exceptions import UserNotInGroupException
@@ -42,6 +41,12 @@ def group_id_to_users(group_id: str) -> (int, int):
     user_b = int(group_id[16:].lstrip("0"), 16)
 
     return sorted([user_a, user_b])
+
+
+def split_into_chunks(l, n):
+    for i in range(0, len(l), n):
+        # yields successive n-sized chunks of data
+        yield l[i:i + n]
 
 
 class RelationalHandler:
@@ -476,6 +481,42 @@ class RelationalHandler:
         self.env.cache.set_count_group_types_for_user(user_id, types)
         return types
 
+    def set_last_updated_at_on_all_stats_related_to_user(self, user_id: int, db: Session):
+        now = arrow.utcnow().datetime
+
+        group_ids = (
+            db.query(models.UserGroupStatsEntity.group_id)
+            .filter(
+                models.UserGroupStatsEntity.user_id == user_id
+            )
+            .all()
+        )
+
+        before = None
+        if len(group_ids) > 5:
+            before = arrow.utcnow().float_timestamp
+
+        # some users have >10k conversations; split into chunks to not overload the db
+        for group_id_chunk in split_into_chunks(group_ids, 500):
+            _ = (
+                db.query(models.UserGroupStatsEntity)
+                .filter(
+                    models.UserGroupStatsEntity.group_id.in_(group_id_chunk)
+                )
+                .update(
+                    {models.UserGroupStatsEntity.last_updated_time: now},
+                    synchronize_session="fetch",
+                )
+            )
+
+        db.commit()
+
+        if before is not None:
+            the_time = arrow.utcnow().float_timestamp - before
+            the_time = "%.2f" % the_time
+
+            self.logger.info(f"updating {len(group_ids)} user group stats took {the_time}s")
+
     def set_last_updated_at_for_all_in_group(self, group_id: str, db: Session):
         now = arrow.utcnow().datetime
 
@@ -681,26 +722,6 @@ class RelationalHandler:
         db.commit()
 
         return base
-
-    def update_user_message_status(
-        self, user_id: int, query: UpdateUserMessageQuery, db: Session
-    ) -> None:
-        # TODO: need to publish a message to all online users this user has contacted before...
-        user_stats = (
-            db.query(models.UserStatsEntity)
-            .filter(models.UserGroupStatsEntity.user_id == user_id,)
-            .first()
-        )
-
-        if user_stats is None:
-            user_stats = models.UserStatsEntity(user_id=user_id, status=query.status)
-        else:
-            user_stats.status = query.status
-
-        db.add(user_stats)
-        db.commit()
-
-        self.env.cache.update_user_message_status(user_id, query.status)
 
     def _get_user_stats_for(self, group_id: str, user_id: int, db: Session):
         return (

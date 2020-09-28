@@ -9,7 +9,6 @@ from dinofw.rest.models import CreateAttachmentQuery
 from dinofw.rest.models import Message
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
-from dinofw.rest.models import UpdateUserMessageQuery
 from dinofw.utils.exceptions import NoSuchGroupException
 
 logger = logging.getLogger(__name__)
@@ -89,14 +88,6 @@ class MessageResource(BaseResource):
         self, group_id: str, user_id: int, message_id: str, query: AdminQuery
     ) -> None:
         self.env.storage.delete_message(group_id, user_id, message_id, query)
-
-    async def update_user_message_status(
-        self, user_id: int, query: UpdateUserMessageQuery, db: Session
-    ) -> None:
-        if query.status is None:
-            query.status = 0
-
-        self.env.db.update_user_message_status(user_id, query, db)
 
     async def update_messages(self, group_id: str, query: MessageQuery):
         self.env.storage.update_messages_in_group(group_id, query)

@@ -87,6 +87,10 @@ class GroupResource(BaseResource):
             ),
         )
 
+    def set_last_updated_at_on_all_stats_related_to_user(self, user_id: int, db: Session) -> None:
+        # TODO: can we do it async? release request; can take quite a while sometimes, if >10k conversations e.g.
+        self.env.db.set_last_updated_at_on_all_stats_related_to_user(user_id, db)
+
     async def histories(
         self, group_id: str, user_id: int, query: MessageQuery, db: Session
     ) -> Histories:

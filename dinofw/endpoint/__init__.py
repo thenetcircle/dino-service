@@ -51,7 +51,7 @@ class IPublishHandler(ABC):
         }
 
     @staticmethod
-    def group_base_to_event(group: GroupBase, user_ids: List[int]):
+    def group_base_to_event(group: GroupBase, user_ids: List[int]) -> dict:
         return {
             "event_type": "group",
             "group_id": group.group_id,
@@ -68,7 +68,7 @@ class IPublishHandler(ABC):
             "owner_id": group.owner_id,
             "meta": group.meta,
             "context": group.context,
-            "user_ids": ",".join([str(user_id) for user_id in user_ids]),
+            "user_ids": user_ids,
         }
 
 
