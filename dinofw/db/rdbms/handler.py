@@ -430,6 +430,28 @@ class RelationalHandler:
         self.env.cache.add_user_ids_and_join_time_in_group(group_id, join_times)
         self.env.cache.set_last_read_in_group_for_users(group_id, read_times)
 
+    def count_group_types_for_user(self, user_id: int, query: GroupQuery, db: Session) -> List[Tuple[int, int]]:
+        return (
+            db.query(
+                models.GroupEntity.group_type,
+                func.count(models.GroupEntity.group_type),
+            )
+            .join(
+                models.UserGroupStatsEntity,
+                models.UserGroupStatsEntity.group_id == models.GroupEntity.group_id,
+            )
+            .filter(
+                models.UserGroupStatsEntity.user_id == user_id,
+            )
+            .group_by(
+                models.GroupEntity.group_type
+            )
+            .limit(
+                query.per_page
+            )
+            .all()
+        )
+
     def set_last_updated_at_for_all_in_group(self, group_id: str, db: Session):
         now = arrow.utcnow().datetime
 

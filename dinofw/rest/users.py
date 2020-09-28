@@ -1,5 +1,5 @@
 import logging
-from typing import List
+from typing import List, Tuple
 
 from sqlalchemy.orm import Session
 
@@ -51,14 +51,17 @@ class UserResource(BaseResource):
         #  old groups; limit to like 100 or so
         #
         # ordered by last_message_time, so we're likely to get all groups
-        # with messages in them even if the user has more than 1k groups
-        query = GroupQuery(per_page=1_000)
+        # with messages in them even if the user has more than 100 groups
+        query = GroupQuery(per_page=100)
 
         # TODO: this can be cached for a long time; for stats we don't care about sort
         #  order (highlight, pin etc.), so keeping the group list cached is fine
+        # user_groups: List[UserGroupBase] = self.env.db.get_unread_groups_for_user(user_id, query, db)
         user_groups: List[UserGroupBase] = self.env.db.get_groups_for_user(user_id, query, db)
 
-        group_amounts = dict()
+        group_amounts = self.env.db.count_group_types_for_user(user_id, query, db)
+        group_amounts = dict(group_amounts)
+
         unread_amount = 0
         owner_amount = 0
         max_last_read = self.long_ago
@@ -69,11 +72,6 @@ class UserResource(BaseResource):
         for user_group in user_groups:
             group = user_group.group
             stats = user_group.user_stats
-
-            if group.group_type not in group_amounts:
-                group_amounts[group.group_type] = 0
-
-            group_amounts[group.group_type] += 1
 
             last_message = group.last_message_time
             last_read = stats.last_read

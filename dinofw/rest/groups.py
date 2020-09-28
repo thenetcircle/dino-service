@@ -16,7 +16,6 @@ from dinofw.rest.models import Histories
 from dinofw.rest.models import Message
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import OneToOneStats
-from dinofw.rest.models import SearchQuery
 from dinofw.rest.models import UpdateGroupQuery
 from dinofw.rest.models import UpdateUserGroupStats
 from dinofw.rest.models import UserGroupStats

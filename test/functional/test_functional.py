@@ -486,3 +486,32 @@ class TestServerRestApi(BaseServerRestApi):
         self.assertNotEqual(attachment["created_at"], attachment["updated_at"])
         self.assertEqual(1, len(history["messages"]))
         self.assertEqual(1, len(all_attachments))
+
+    def test_count_group_types_in_user_stats(self):
+        stats = self.get_global_user_stats()
+        self.assertEqual(0, stats["group_amount"])
+        self.assertEqual(0, stats["one_to_one_amount"])
+
+        self.send_1v1_message()
+
+        stats = self.get_global_user_stats()
+        self.assertEqual(0, stats["group_amount"])
+        self.assertEqual(1, stats["one_to_one_amount"])
+
+        self.create_and_join_group()
+
+        stats = self.get_global_user_stats()
+        self.assertEqual(1, stats["group_amount"])
+        self.assertEqual(1, stats["one_to_one_amount"])
+
+        self.create_and_join_group()
+
+        stats = self.get_global_user_stats()
+        self.assertEqual(2, stats["group_amount"])
+        self.assertEqual(1, stats["one_to_one_amount"])
+
+        self.send_1v1_message(receiver_id=8844)
+
+        stats = self.get_global_user_stats()
+        self.assertEqual(2, stats["group_amount"])
+        self.assertEqual(2, stats["one_to_one_amount"])

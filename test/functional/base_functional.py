@@ -131,6 +131,15 @@ class BaseServerRestApi(BaseDatabaseTest):
 
         return float(now_ts)
 
+    def get_global_user_stats(self, user_id: int = None):
+        if user_id is None:
+            user_id = BaseTest.USER_ID
+
+        raw_response = self.client.get(f"/v1/userstats/{user_id}")
+        self.assertEqual(raw_response.status_code, 200)
+
+        return raw_response.json()
+
     def get_user_stats(self, group_id: str, user_id: int = None):
         if user_id is None:
             user_id = BaseTest.USER_ID
