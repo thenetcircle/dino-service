@@ -8,8 +8,8 @@ from fastapi import FastAPI
 from fastapi import status
 from sqlalchemy.orm import Session
 from starlette.background import BackgroundTask
-from starlette.responses import JSONResponse, Response
-from starlette.status import HTTP_202_ACCEPTED, HTTP_201_CREATED
+from starlette.responses import Response
+from starlette.status import HTTP_201_CREATED
 
 from dinofw.rest.models import CreateActionLogQuery
 from dinofw.rest.models import CreateAttachmentQuery
