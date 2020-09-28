@@ -1,4 +1,3 @@
-from uuid import uuid4 as uuid
 import arrow
 
 from dinofw.utils.config import MessageTypes

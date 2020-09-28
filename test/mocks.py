@@ -1,5 +1,5 @@
 from datetime import datetime as dt
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 from uuid import uuid4 as uuid
 
 import arrow
@@ -352,8 +352,33 @@ class FakeDatabase:
 
         return group
 
+    def count_group_types_for_user(self, user_id: int, query: GroupQuery, _) -> List[Tuple[int, int]]:
+        group_ids_for_user = set()
+        group_types = dict()
+
+        if user_id not in self.stats:
+            return list()
+
+        for stat in self.stats[user_id]:
+            group_ids_for_user.add(stat.group_id)
+
+        for group_id in group_ids_for_user:
+            if group_id not in self.groups:
+                continue
+
+            group = self.groups[group_id]
+            if group.group_type is None:
+                continue
+
+            if group.group_type not in group_types:
+                group_types[group.group_type] = 0
+
+            group_types[group.group_type] += 1
+
+        return list(group_types.items())
+
     def get_groups_for_user(
-        self, user_id: int, query: GroupQuery, _, count_users: bool = True, count_unread: bool = True,
+        self, user_id: int, query: GroupQuery, _, count_receiver_unread: bool = True,
     ) -> List[UserGroupBase]:
         groups = list()
 
@@ -363,7 +388,7 @@ class FakeDatabase:
         for stat in self.stats[user_id]:
             users = self.get_user_ids_and_join_time_in_group(stat.group_id, None)
 
-            if count_users:
+            if query.count_unread:
                 user_count = self.count_users_in_group(stat.group_id, None)
             else:
                 user_count = 0
