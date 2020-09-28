@@ -45,25 +45,27 @@ class UserResource(BaseResource):
         return groups
 
     async def get_user_stats(self, user_id: int, db: Session) -> UserStats:
-        # TODO: do we really care about super old groups if they have unread
-        #  in them for user stats? can have another api to filer all groups
-        #  with unread instead; no one will count the actual unread of super
-        #  old groups; limit to like 100 or so
-        #
-        # ordered by last_message_time, so we're likely to get all groups
-        # with messages in them even if the user has more than 100 groups
-        query = GroupQuery(per_page=100)
+        # if the user has more than 100 groups with unread messages in
+        # it won't matter if the count is exact or not, just forget about
+        # the super old ones (if a user reads a group, another unread
+        # group will be selected next time for this query anyway)
+        query = GroupQuery(
+            per_page=100,
+            only_unread=True,
+            count_unread=True
+        )
 
-        # TODO: this can be cached for a long time; for stats we don't care about sort
-        #  order (highlight, pin etc.), so keeping the group list cached is fine
-        # user_groups: List[UserGroupBase] = self.env.db.get_unread_groups_for_user(user_id, query, db)
-        user_groups: List[UserGroupBase] = self.env.db.get_groups_for_user(user_id, query, db)
+        user_groups: List[UserGroupBase] = self.env.db.get_groups_for_user(
+            user_id,
+            query,
+            db,
+            count_receiver_unread=False,
+        )
 
         group_amounts = self.env.db.count_group_types_for_user(user_id, query, db)
         group_amounts = dict(group_amounts)
 
         unread_amount = 0
-        owner_amount = 0
         max_last_read = self.long_ago
         max_last_sent = self.long_ago
         last_read_group_id = None
@@ -72,19 +74,10 @@ class UserResource(BaseResource):
         for user_group in user_groups:
             group = user_group.group
             stats = user_group.user_stats
-
-            last_message = group.last_message_time
             last_read = stats.last_read
             last_sent = stats.last_sent
-            delete_before = stats.delete_before
 
-            if last_message > last_read and last_message > delete_before:
-                unread_amount += self.env.storage.get_unread_in_group(
-                    group.group_id, user_id, last_read
-                )
-
-            if group.owner_id == user_id:
-                owner_amount += 1
+            unread_amount += user_group.unread
 
             if last_read is not None and last_read > max_last_read:
                 max_last_read = last_read
@@ -99,7 +92,6 @@ class UserResource(BaseResource):
             unread_amount=unread_amount,
             group_amount=group_amounts.get(GroupTypes.GROUP, 0),
             one_to_one_amount=group_amounts.get(GroupTypes.ONE_TO_ONE, 0),
-            owned_group_amount=owner_amount,
             last_read_time=GroupQuery.to_ts(max_last_read),
             last_read_group_id=last_read_group_id,
             last_send_time=GroupQuery.to_ts(max_last_sent),

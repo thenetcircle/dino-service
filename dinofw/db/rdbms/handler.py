@@ -73,7 +73,11 @@ class RelationalHandler:
         return group, users_and_join_time, user_count
 
     def get_groups_for_user(
-        self, user_id: int, query: GroupQuery, db: Session
+        self,
+        user_id: int,
+        query: GroupQuery,
+        db: Session,
+        count_receiver_unread: bool = True,
     ) -> List[UserGroupBase]:
         """
         what we're doing:
@@ -122,7 +126,11 @@ class RelationalHandler:
 
         count_unread = query.count_unread or False
         return self._group_and_stats_to_user_group_base(
-            db, results, user_id, count_unread
+            db,
+            results,
+            user_id,
+            count_unread=count_unread,
+            count_receiver=count_receiver_unread,  # when getting user stats we don't care about receivers
         )
 
     def get_groups_updated_since(
@@ -166,6 +174,7 @@ class RelationalHandler:
         results: List[Tuple[models.GroupEntity, models.UserGroupStatsEntity]],
         user_id: int,
         count_unread: bool,
+        count_receiver: bool = True
     ) -> List[UserGroupBase]:
         groups = list()
 
@@ -183,7 +192,7 @@ class RelationalHandler:
 
             if count_unread:
                 # only count for receiver if it's a 1v1 group
-                if group.group_type == GroupTypes.ONE_TO_ONE:
+                if group.group_type == GroupTypes.ONE_TO_ONE and count_receiver:
                     user_a, user_b = group_id_to_users(group.group_id)
                     user_to_count_for = (
                         user_a if user_b == user_id else user_b

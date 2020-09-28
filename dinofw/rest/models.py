@@ -145,7 +145,6 @@ class UserStats(BaseModel):
     unread_amount: int
     group_amount: int
     one_to_one_amount: int
-    owned_group_amount: int
     last_update_time: Optional[float]
     last_read_time: Optional[float]
     last_read_group_id: Optional[str]
