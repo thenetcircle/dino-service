@@ -462,7 +462,7 @@ async def get_user_statistics(user_id: int, db: Session = Depends(get_db)) -> Us
 
 
 @app.put("/v1/userstats/{user_id}", status_code=HTTP_201_CREATED)
-async def update_user_status(user_id: int, db: Session = Depends(get_db)) -> Response:
+async def update_user_stats(user_id: int, db: Session = Depends(get_db)) -> Response:
     """
     Update user status, e.g. because the user got blocked, is a bot, was
     force fake-checked, etc. Will set `last_updated_at` on all user group
