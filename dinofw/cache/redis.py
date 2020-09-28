@@ -1,7 +1,7 @@
 import sys
 import logging
 import socket
-from typing import List
+from typing import List, Tuple
 from typing import Optional
 from typing import Dict
 
@@ -167,6 +167,32 @@ class CacheRedis(ICache):
 
         messages, until = str(messages_until, "utf-8").split("|")
         return int(messages), float(until)
+
+    def reset_count_group_types_for_user(self, user_id: int) -> None:
+        key = RedisKeys.count_group_types_for(user_id)
+        self.redis.delete(key)
+
+    def set_count_group_types_for_user(self, user_id: int, counts: List[Tuple[int, int]]) -> None:
+        key = RedisKeys.count_group_types_for(user_id)
+        types = ",".join([":".join(map(str, values)) for values in counts])
+
+        self.redis.set(key, types)
+        self.redis.expire(key, ONE_DAY)
+
+    def get_count_group_types_for_user(self, user_id: int) -> Optional[List[Tuple[int, int]]]:
+        key = RedisKeys.count_group_types_for(user_id)
+
+        count = self.redis.get(key)
+        if count is None:
+            return None
+
+        types = str(count, "utf-8").split(",")
+        types = [
+            group_type.split(":", maxsplit=1)
+            for group_type in types
+        ]
+
+        return [(int(a), int(b)) for a, b in types]
 
     def set_messages_in_group(self, group_id: str, n_messages: int, until: float) -> None:
         key = RedisKeys.messages_in_group(group_id)

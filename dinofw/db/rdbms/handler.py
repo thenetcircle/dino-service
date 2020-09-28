@@ -419,6 +419,8 @@ class RelationalHandler:
 
         for user_id in user_ids:
             if user_id not in user_ids_to_stats:
+                self.env.cache.reset_count_group_types_for_user(user_id)
+
                 user_ids_for_cache.add(user_id)
                 user_ids_to_stats[user_id] = self._create_user_stats(
                     group_id, user_id, now
@@ -440,7 +442,11 @@ class RelationalHandler:
         self.env.cache.set_last_read_in_group_for_users(group_id, read_times)
 
     def count_group_types_for_user(self, user_id: int, query: GroupQuery, db: Session) -> List[Tuple[int, int]]:
-        return (
+        types = self.env.cache.get_count_group_types_for_user(user_id)
+        if types is not None:
+            return types
+
+        types = (
             db.query(
                 models.GroupEntity.group_type,
                 func.count(models.GroupEntity.group_type),
@@ -460,6 +466,9 @@ class RelationalHandler:
             )
             .all()
         )
+
+        self.env.cache.set_count_group_types_for_user(user_id, types)
+        return types
 
     def set_last_updated_at_for_all_in_group(self, group_id: str, db: Session):
         now = arrow.utcnow().datetime
@@ -654,6 +663,7 @@ class RelationalHandler:
         )
 
         for user_id in query.users:
+            self.env.cache.reset_count_group_types_for_user(user_id)
             user_stats = self._create_user_stats(
                 group_entity.group_id, user_id, created_at
             )

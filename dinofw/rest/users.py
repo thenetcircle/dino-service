@@ -56,10 +56,7 @@ class UserResource(BaseResource):
         )
 
         user_groups: List[UserGroupBase] = self.env.db.get_groups_for_user(
-            user_id,
-            query,
-            db,
-            count_receiver_unread=False,
+            user_id, query, db, count_receiver_unread=False,
         )
 
         group_amounts = self.env.db.count_group_types_for_user(user_id, query, db)

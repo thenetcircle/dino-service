@@ -22,6 +22,11 @@ class RedisKeys:
     RKEY_HIDE_GROUP = "group:hide:{}"  # group:hide:group_id
     RKEY_USER_MESSAGE_STATUS = "user:status:{}"  # user:status:user_id
     RKEY_MESSAGES_IN_GROUP = "group:messages:{}"  # group:messages:group_id
+    RKEY_GROUP_COUNT = "group:count:{}"  # group:count:user_id
+
+    @staticmethod
+    def count_group_types_for(user_id: int) -> str:
+        return RedisKeys.RKEY_GROUP_COUNT.format(user_id)
 
     @staticmethod
     def messages_in_group(group_id: str) -> str:
