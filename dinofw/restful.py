@@ -465,8 +465,9 @@ async def get_user_statistics(user_id: int, db: Session = Depends(get_db)) -> Us
 async def update_user_status(user_id: int, db: Session = Depends(get_db)) -> Response:
     """
     Update user status, e.g. because the user got blocked, is a bot, was
-    force fake-checked, etc. Will set `last_updated_at` on all this user's
-    group stats.
+    force fake-checked, etc. Will set `last_updated_at` on all user group
+    stats that has had an interaction with this user (including this
+    user's user group stats).
 
     This API is run asynchronously, and returns a 201 Created instead of
     200 OK.
