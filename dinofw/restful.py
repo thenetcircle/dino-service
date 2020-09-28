@@ -468,6 +468,9 @@ async def update_user_status(user_id: int, db: Session = Depends(get_db)) -> Res
     force fake-checked, etc. Will set `last_updated_at` on all this user's
     group stats.
 
+    This API is run asynchronously, and returns a 202 Accepted instead of
+    200 OK.
+
     **Potential error codes in response:**
     * `250`: if an unknown error occurred.
     """
