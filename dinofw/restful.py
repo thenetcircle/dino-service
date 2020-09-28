@@ -9,7 +9,7 @@ from fastapi import status
 from sqlalchemy.orm import Session
 from starlette.background import BackgroundTask
 from starlette.responses import JSONResponse, Response
-from starlette.status import HTTP_202_ACCEPTED
+from starlette.status import HTTP_202_ACCEPTED, HTTP_201_CREATED
 
 from dinofw.rest.models import CreateActionLogQuery
 from dinofw.rest.models import CreateAttachmentQuery
@@ -461,14 +461,14 @@ async def get_user_statistics(user_id: int, db: Session = Depends(get_db)) -> Us
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@app.put("/v1/userstats/{user_id}", status_code=HTTP_202_ACCEPTED)
+@app.put("/v1/userstats/{user_id}", status_code=HTTP_201_CREATED)
 async def update_user_status(user_id: int, db: Session = Depends(get_db)) -> Response:
     """
     Update user status, e.g. because the user got blocked, is a bot, was
     force fake-checked, etc. Will set `last_updated_at` on all this user's
     group stats.
 
-    This API is run asynchronously, and returns a 202 Accepted instead of
+    This API is run asynchronously, and returns a 201 Created instead of
     200 OK.
 
     **Potential error codes in response:**
@@ -481,7 +481,7 @@ async def update_user_status(user_id: int, db: Session = Depends(get_db)) -> Res
 
     try:
         task = BackgroundTask(set_last_updated, user_id_=user_id, db_=db)
-        return Response(background=task, status_code=HTTP_202_ACCEPTED)
+        return Response(background=task, status_code=HTTP_201_CREATED)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 
