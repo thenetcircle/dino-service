@@ -322,7 +322,7 @@ class RelationalHandler:
 
     def get_group_for_1to1(
         self, user_a: int, user_b: int, db: Session, parse_result: bool = True
-    ) -> Any[GroupBase, str]:
+    ):
         group_id = users_to_group_id(user_a, user_b)
 
         group = (
