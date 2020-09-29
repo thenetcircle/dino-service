@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime as dt
-from typing import List, Optional, Dict, Tuple
+from typing import List, Optional, Dict, Tuple, Any
 from uuid import uuid4 as uuid
 
 import arrow
@@ -321,8 +321,8 @@ class RelationalHandler:
         return group.group_id
 
     def get_group_for_1to1(
-        self, user_a: int, user_b: int, db: Session
-    ) -> Optional[GroupBase]:
+        self, user_a: int, user_b: int, db: Session, parse_result: bool = True
+    ) -> Any[GroupBase, str]:
         group_id = users_to_group_id(user_a, user_b)
 
         group = (
@@ -337,7 +337,10 @@ class RelationalHandler:
         if group is None:
             raise NoSuchGroupException(f"{user_a},{user_b}")
 
-        return GroupBase(**group.__dict__)
+        if parse_result:
+            return GroupBase(**group.__dict__)
+
+        return group_id
 
     def create_group_for_1to1(self, user_a: int, user_b: int, db: Session) -> GroupBase:
         users = sorted([user_a, user_b])
@@ -365,7 +368,6 @@ class RelationalHandler:
         )
 
         user_ids_join_time = {user[0]: GroupQuery.to_ts(user[1]) for user in users}
-
         self.env.cache.set_user_ids_and_join_time_in_group(group_id, user_ids_join_time)
 
         return user_ids_join_time
