@@ -7,15 +7,15 @@
 
             $(document).ready(function() {
                 let settings = {
-                    clientId: '1234',
-                    username: '1234',
+                    clientId: '71037',
+                    username: '71037',
                     clean: false,
                     qos: 1
                 }
-                let client  = mqtt.connect('mqtt://maggie-kafka-1:1880/mqtt', settings);
+                let client  = mqtt.connect('mqtt://maggie-kafka-1.thenetcircle.lab:1880/mqtt', settings);
 
                 client.on('connect', function () {
-                    client.subscribe('1234', {qos: 1}, function (err) {
+                    client.subscribe('71037', {qos: 1}, function (err) {
                         if (err) {
                             console.log(err);
                         }

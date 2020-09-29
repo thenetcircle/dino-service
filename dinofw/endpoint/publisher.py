@@ -1,6 +1,7 @@
 import logging
 import sys
 from typing import List
+from uuid import uuid4 as uuid
 
 from gmqtt import Client as MQTTClient
 from gmqtt.mqtt.constants import MQTTv50
@@ -19,8 +20,13 @@ class MqttPublisher(IPublisher):
         self.mqtt_port = env.config.get(ConfigKeys.PORT, domain=ConfigKeys.MQTT)
         self.mqtt_ttl = int(env.config.get(ConfigKeys.TTL, domain=ConfigKeys.MQTT))
 
-        # TODO: unique client id
-        self.mqtt = MQTTClient("client-id")
+        client_id = str(uuid()).split("-")[0]
+        client_id = f"dino-ms-{client_id}"
+
+        self.mqtt = MQTTClient(
+            client_id=client_id,
+            session_expiry_interval=60
+        )
 
     async def setup(self):
         await self.mqtt.connect(
