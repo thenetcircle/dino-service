@@ -103,8 +103,6 @@ class EditMessageQuery(AdminQuery):
 
 
 class CreateAttachmentQuery(OneToOneQuery):
-    file_id: str
-    status: int
     message_payload: str
     created_at: float
 
