@@ -515,7 +515,7 @@ class TestServerRestApi(BaseServerRestApi):
         self.assertEqual(2, stats["group_amount"])
         self.assertEqual(2, stats["one_to_one_amount"])
 
-    def _test_user_stats_group_read_and_send_times(self):
+    def test_user_stats_group_read_and_send_times(self):
         """
         user_id: int
         unread_amount: int
@@ -535,10 +535,27 @@ class TestServerRestApi(BaseServerRestApi):
         message = self.send_1v1_message()
         stats = self.get_global_user_stats()
 
-        last_send_time_first = stats["last_send_time"]
-        last_read_time_first = stats["last_read_time"]
-        last_send_group_id = stats["last_send_group_id"]
-        last_read_group_id = stats["last_read_group_id"]
+        # TODO: remove last_read? not needed maybe
 
-        self.assertEqual(message["group_id"], last_send_group_id)
-        self.assertEqual(message["group_id"], last_read_group_id)
+        last_sent_time_first = stats["last_sent_time"]
+        # last_read_time_first = stats["last_read_time"]
+        last_sent_group_id = stats["last_sent_group_id"]
+        # last_read_group_id = stats["last_read_group_id"]
+
+        self.assertEqual(message["group_id"], last_sent_group_id)
+        # self.assertEqual(message["group_id"], last_read_group_id)
+        self.assertIsNotNone(last_sent_time_first)
+        # self.assertIsNotNone(last_read_time_first)
+
+        message = self.send_1v1_message()
+        stats = self.get_global_user_stats()
+
+        last_sent_time_second = stats["last_sent_time"]
+        # last_read_time_second = stats["last_read_time"]
+        last_sent_group_id = stats["last_sent_group_id"]
+        # last_read_group_id = stats["last_read_group_id"]
+
+        self.assertEqual(message["group_id"], last_sent_group_id)
+        # self.assertEqual(message["group_id"], last_read_group_id)
+        self.assertNotEqual(last_sent_time_first, last_sent_time_second)
+        # self.assertNotEqual(last_read_time_first, last_read_time_second)

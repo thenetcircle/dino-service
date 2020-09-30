@@ -13,7 +13,7 @@ from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.rdbms.schemas import UserGroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.schemas import MessageBase
-from dinofw.rest.models import CreateGroupQuery
+from dinofw.rest.models import CreateGroupQuery, AbstractQuery
 from dinofw.rest.models import GroupQuery
 from dinofw.rest.models import GroupUpdatesQuery
 from dinofw.rest.models import UpdateGroupQuery
@@ -76,6 +76,56 @@ class RelationalHandler:
         user_count = len(users_and_join_time)
 
         return group, users_and_join_time, user_count
+
+    def get_last_sent_for_user(self, user_id: int, db: Session) -> (str, float):
+        group_id, last_sent = self.env.cache.get_last_sent_for_user(user_id)
+        if group_id is not None:
+            return group_id, last_sent
+
+        group_id_and_last_sent = (
+            db.query(
+                models.UserGroupStatsEntity.group_id,
+                models.UserGroupStatsEntity.last_sent
+            )
+            .filter(models.UserGroupStatsEntity.user_id == user_id)
+            .order_by(models.UserGroupStatsEntity.last_sent)
+            .limit(1)
+            .first()
+        )
+
+        if group_id_and_last_sent is None:
+            return None, None
+
+        group_id, last_sent = group_id_and_last_sent
+        last_sent = AbstractQuery.to_ts(last_sent)
+        self.env.cache.set_last_sent_for_user(user_id, group_id, last_sent)
+
+        return group_id, last_sent
+
+    def get_last_read_for_user(self, user_id: int, db: Session) -> (str, float):
+        group_id, last_read = self.env.cache.get_last_read_for_user(user_id)
+        if group_id is not None:
+            return group_id, last_read
+
+        group_id_and_last_read = (
+            db.query(
+                models.UserGroupStatsEntity.group_id,
+                models.UserGroupStatsEntity.last_read
+            )
+            .filter(models.UserGroupStatsEntity.user_id == user_id)
+            .order_by(models.UserGroupStatsEntity.last_read)
+            .limit(1)
+            .first()
+        )
+
+        if group_id_and_last_read is None:
+            return None, None
+
+        group_id, last_read = group_id_and_last_read
+        last_read = AbstractQuery.to_ts(last_read)
+        self.env.cache.set_last_read_for_user(user_id, group_id, last_read)
+
+        return group_id, last_read
 
     def get_groups_for_user(
         self,
@@ -669,9 +719,13 @@ class RelationalHandler:
             .first()
         )
 
-        self.env.cache.set_last_read_in_group_for_user(
-            group_id, user_id, GroupQuery.to_ts(the_time)
-        )
+        the_time_ts = GroupQuery.to_ts(the_time)
+        self.env.cache.set_last_read_in_group_for_user(group_id, user_id, the_time_ts)
+
+        # TODO: do we need 'set_last_read_for_user'? last_sent is easier
+        # user for user global stats api
+        self.env.cache.set_last_sent_for_user(user_id, group_id, the_time_ts)
+
         self.env.cache.set_hide_group(group_id, False)
         self.env.cache.set_unread_in_group(group_id, user_id, 0)
 

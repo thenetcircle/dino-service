@@ -58,6 +58,7 @@ class BaseDatabaseTest(BaseTest):
         from dinofw.db.rdbms import models
 
         self.env.db = RelationalHandler(self.env)
+        self.env.session_maker = TestingSessionLocal
 
         def clear_test_db():
             db = None

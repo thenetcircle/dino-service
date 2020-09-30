@@ -46,36 +46,25 @@ class UserResource(BaseResource):
         group_amounts = dict(group_amounts)
 
         unread_amount = 0
-        max_last_read = self.long_ago
-        max_last_sent = self.long_ago
 
-        # TODO
-        last_read_group_id = None  # self.env.cache.get_last_read_for_user(user_id)
-        last_sent_group_id = None  # self.env.cache.get_last_sent_for_user(user_id)
+        last_read_group_id, last_read_time = self.env.db.get_last_read_for_user(user_id, db)
+        last_sent_group_id, last_sent_time = self.env.db.get_last_sent_for_user(user_id, db)
+
+        if last_sent_time is None:
+            last_sent_time = self.long_ago
+        if last_read_time is None:
+            last_read_time = self.long_ago
 
         for user_group in user_groups:
-            group = user_group.group
-            stats = user_group.user_stats
-            last_read = stats.last_read
-            last_sent = stats.last_sent
-
             unread_amount += user_group.unread
-
-            if last_read is not None and last_read > max_last_read:
-                max_last_read = last_read
-                last_read_group_id = group.group_id
-
-            if last_sent is not None and last_sent > max_last_sent:
-                max_last_sent = last_sent
-                last_sent_group_id = group.group_id
 
         return UserStats(
             user_id=user_id,
             unread_amount=unread_amount,
             group_amount=group_amounts.get(GroupTypes.GROUP, 0),
             one_to_one_amount=group_amounts.get(GroupTypes.ONE_TO_ONE, 0),
-            last_read_time=GroupQuery.to_ts(max_last_read),
+            last_read_time=GroupQuery.to_ts(last_read_time),
             last_read_group_id=last_read_group_id,
-            last_sent_time=GroupQuery.to_ts(max_last_sent),
+            last_sent_time=GroupQuery.to_ts(last_sent_time),
             last_sent_group_id=last_sent_group_id,
         )
