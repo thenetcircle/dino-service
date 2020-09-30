@@ -218,8 +218,6 @@ class CassandraHandler:
 
         message.update(
             message_payload=query.message_payload,
-            status=query.status,
-            file_id=query.file_id,
             updated_at=now,
         )
 
@@ -228,10 +226,8 @@ class CassandraHandler:
             user_id=user_id,
             created_at=message.created_at,
             message_id=message_id,
-            status=query.status,
             message_payload=query.message_payload,
             message_type=message.message_type,
-            file_id=message.file_id,
             updated_at=now,
         )
 
@@ -370,8 +366,6 @@ class CassandraHandler:
             user_id=message.user_id,
             message_id=str(message.message_id),
             message_payload=message.message_payload,
-            status=message.status,
             message_type=message.message_type,
             updated_at=message.updated_at,
-            file_id=message.file_id,
         )

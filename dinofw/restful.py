@@ -173,7 +173,7 @@ async def create_an_attachment(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@app.post("/v1/groups/{group_id}/user/{user_id}/attachments")
+@app.post("/v1/groups/{group_id}/user/{user_id}/attachments", response_model=List[Message])
 async def get_attachments_in_group_for_user(
     group_id: str, user_id: int, query: MessageQuery, db: Session = Depends(get_db)
 ) -> List[Message]:
