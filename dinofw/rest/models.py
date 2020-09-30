@@ -140,8 +140,6 @@ class UserStats(BaseModel):
     group_amount: int
     one_to_one_amount: int
     last_update_time: Optional[float]
-    last_read_time: Optional[float]
-    last_read_group_id: Optional[str]
     last_sent_time: Optional[float]
     last_sent_group_id: Optional[str]
 

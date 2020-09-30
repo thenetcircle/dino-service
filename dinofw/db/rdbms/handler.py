@@ -102,31 +102,6 @@ class RelationalHandler:
 
         return group_id, last_sent
 
-    def get_last_read_for_user(self, user_id: int, db: Session) -> (str, float):
-        group_id, last_read = self.env.cache.get_last_read_for_user(user_id)
-        if group_id is not None:
-            return group_id, last_read
-
-        group_id_and_last_read = (
-            db.query(
-                models.UserGroupStatsEntity.group_id,
-                models.UserGroupStatsEntity.last_read
-            )
-            .filter(models.UserGroupStatsEntity.user_id == user_id)
-            .order_by(models.UserGroupStatsEntity.last_read)
-            .limit(1)
-            .first()
-        )
-
-        if group_id_and_last_read is None:
-            return None, None
-
-        group_id, last_read = group_id_and_last_read
-        last_read = AbstractQuery.to_ts(last_read)
-        self.env.cache.set_last_read_for_user(user_id, group_id, last_read)
-
-        return group_id, last_read
-
     def get_groups_for_user(
         self,
         user_id: int,

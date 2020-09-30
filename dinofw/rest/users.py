@@ -47,13 +47,9 @@ class UserResource(BaseResource):
 
         unread_amount = 0
 
-        last_read_group_id, last_read_time = self.env.db.get_last_read_for_user(user_id, db)
         last_sent_group_id, last_sent_time = self.env.db.get_last_sent_for_user(user_id, db)
-
         if last_sent_time is None:
             last_sent_time = self.long_ago
-        if last_read_time is None:
-            last_read_time = self.long_ago
 
         for user_group in user_groups:
             unread_amount += user_group.unread
@@ -63,8 +59,6 @@ class UserResource(BaseResource):
             unread_amount=unread_amount,
             group_amount=group_amounts.get(GroupTypes.GROUP, 0),
             one_to_one_amount=group_amounts.get(GroupTypes.ONE_TO_ONE, 0),
-            last_read_time=GroupQuery.to_ts(last_read_time),
-            last_read_group_id=last_read_group_id,
             last_sent_time=GroupQuery.to_ts(last_sent_time),
             last_sent_group_id=last_sent_group_id,
         )

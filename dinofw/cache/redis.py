@@ -175,31 +175,16 @@ class CacheRedis(ICache):
 
     def set_last_sent_for_user(self, user_id: int, group_id: str, last_time: float) -> None:
         key = RedisKeys.last_sent_time_user(user_id)
-        self._set_last_read_or_sent_for_user(key, group_id, last_time)
-
-    def set_last_read_for_user(self, user_id: int, group_id: str, last_time: float) -> None:
-        # TODO: remove? not needed maybe
-        key = RedisKeys.last_read_time_user(user_id)
-        self._set_last_read_or_sent_for_user(key, group_id, last_time)
+        self.redis.set(key, f"{group_id}:{last_time}")
 
     def get_last_sent_for_user(self, user_id: int) -> (str, float):
         key = RedisKeys.last_sent_time_user(user_id)
-        return self._get_last_read_or_sent_for_user(key)
-
-    def get_last_read_for_user(self, user_id: int) -> (str, float):
-        key = RedisKeys.last_read_time_user(user_id)
-        return self._get_last_read_or_sent_for_user(key)
-
-    def _get_last_read_or_sent_for_user(self, key: str) -> (str, float):
         values = self.redis.get(key)
         if values is None:
             return None, None
 
         group_id, last_time = str(values, "utf-8").split(":", maxsplit=1)
         return group_id, float(last_time)
-
-    def _set_last_read_or_sent_for_user(self, key: str, group_id: str, last_time: float) -> (str, float):
-        self.redis.set(key, f"{group_id}:{last_time}")
 
     def set_count_group_types_for_user(self, user_id: int, counts: List[Tuple[int, int]]) -> None:
         key = RedisKeys.count_group_types_for(user_id)

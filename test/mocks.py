@@ -290,7 +290,6 @@ class FakeDatabase:
     def __init__(self):
         self.groups = dict()
         self.stats = dict()
-        self.last_read = dict()
         self.last_sent = dict()
 
         beginning_of_1995 = 789_000_000
@@ -351,15 +350,6 @@ class FakeDatabase:
         self.groups[group.group_id] = group
 
         return group
-
-    def get_last_read_for_user(self, user_id: int, _) -> (str, float):
-        if user_id not in self.last_read:
-            return None, None
-
-        return self.last_read[user_id]
-
-    def set_last_read_for_user(self, user_id: int, group_id: str, the_time: float, _) -> None:
-        self.last_read[user_id] = group_id, the_time
 
     def get_last_sent_for_user(self, user_id: int, _) -> (str, float):
         if user_id not in self.last_sent:
