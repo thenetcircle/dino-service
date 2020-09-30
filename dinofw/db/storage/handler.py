@@ -219,6 +219,7 @@ class CassandraHandler:
         message.update(
             message_payload=query.message_payload,
             status=query.status,
+            file_id=query.file_id,
             updated_at=now,
         )
 
