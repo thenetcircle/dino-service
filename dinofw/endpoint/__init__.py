@@ -45,7 +45,6 @@ class IPublishHandler(ABC):
             "message_id": message.message_id,
             "message_payload": message.message_payload,
             "message_type": message.message_type,
-            "status": message.status,
             "updated_at": AbstractQuery.to_ts(message.updated_at, allow_none=True) or "",
             "created_at": AbstractQuery.to_ts(message.created_at),
         }
