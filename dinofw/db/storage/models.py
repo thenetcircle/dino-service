@@ -34,11 +34,6 @@ class MessageModel(Model):
     message_type = Integer(
         required=True
     )
-    file_id = Text(
-        required=False,
-    )
-
-    status = Integer()
     updated_at = DateTime()
 
 
@@ -70,11 +65,6 @@ class AttachmentModel(Model):
     message_type = Integer(
         required=True
     )
-    file_id = Text(
-        required=False,
-    )
-
-    status = Integer()
     updated_at = DateTime()
 
     # TODO: figure out if use a json body or all just fields, dont' need to filter on them, but need to update some

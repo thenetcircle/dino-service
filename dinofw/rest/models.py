@@ -174,13 +174,10 @@ class Message(BaseModel):
     message_id: str
     message_payload: Optional[str]
 
-    file_id: Optional[str]
-    status: Optional[int]
     message_type: int
     updated_at: Optional[float]
     removed_at: Optional[float]
     removed_by_user: Optional[int]
-    last_action_log_id: Optional[str]
 
 
 class Group(BaseModel):

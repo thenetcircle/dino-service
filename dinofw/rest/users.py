@@ -48,8 +48,10 @@ class UserResource(BaseResource):
         unread_amount = 0
         max_last_read = self.long_ago
         max_last_sent = self.long_ago
-        last_read_group_id = None
-        last_sent_group_id = None
+
+        # TODO
+        last_read_group_id = None  # self.env.cache.get_last_read_for_user(user_id)
+        last_sent_group_id = None  # self.env.cache.get_last_sent_for_user(user_id)
 
         for user_group in user_groups:
             group = user_group.group
