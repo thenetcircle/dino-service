@@ -77,6 +77,17 @@ class RelationalHandler:
 
         return group, users_and_join_time, user_count
 
+    """
+    def get_last_read_and_sent_group_for_user(self, user_id: int, db: Session):
+        group = (
+            db.query(models.UserGroupStatsEntity)
+            .filter(models.UserGroupStatsEntity.user_id == user_id)
+            .order_by(
+                models.UserGroupStatsEntity.last_sent.desc(),
+                func.greatest(
+        )
+    """
+
     def get_groups_for_user(
         self,
         user_id: int,
@@ -680,6 +691,7 @@ class RelationalHandler:
 
         user_stats.last_read = the_time
         user_stats.last_sent = the_time
+        user_stats.last_sent_group_id = group_id
         user_stats.last_updated_time = the_time
 
         if user_stats.first_sent is None:

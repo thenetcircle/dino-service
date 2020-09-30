@@ -74,6 +74,6 @@ class UserResource(BaseResource):
             one_to_one_amount=group_amounts.get(GroupTypes.ONE_TO_ONE, 0),
             last_read_time=GroupQuery.to_ts(max_last_read),
             last_read_group_id=last_read_group_id,
-            last_send_time=GroupQuery.to_ts(max_last_sent),
-            last_send_group_id=last_sent_group_id,
+            last_sent_time=GroupQuery.to_ts(max_last_sent),
+            last_sent_group_id=last_sent_group_id,
         )

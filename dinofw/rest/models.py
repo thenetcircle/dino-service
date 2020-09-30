@@ -144,8 +144,8 @@ class UserStats(BaseModel):
     last_update_time: Optional[float]
     last_read_time: Optional[float]
     last_read_group_id: Optional[str]
-    last_send_time: Optional[float]
-    last_send_group_id: Optional[str]
+    last_sent_time: Optional[float]
+    last_sent_group_id: Optional[str]
 
 
 class UserGroupStats(BaseModel):
@@ -174,6 +174,7 @@ class Message(BaseModel):
     message_id: str
     message_payload: Optional[str]
 
+    file_id: Optional[str]
     status: Optional[int]
     message_type: int
     updated_at: Optional[float]

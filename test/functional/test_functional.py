@@ -514,3 +514,31 @@ class TestServerRestApi(BaseServerRestApi):
         stats = self.get_global_user_stats()
         self.assertEqual(2, stats["group_amount"])
         self.assertEqual(2, stats["one_to_one_amount"])
+
+    def _test_user_stats_group_read_and_send_times(self):
+        """
+        user_id: int
+        unread_amount: int
+        group_amount: int
+        one_to_one_amount: int
+        last_update_time: Optional[float]
+        last_read_time: Optional[float]
+        last_read_group_id: Optional[str]
+        last_send_time: Optional[float]
+        last_send_group_id: Optional[str]
+        """
+
+        stats = self.get_global_user_stats()
+        self.assertEqual(0, stats["group_amount"])
+        self.assertEqual(0, stats["one_to_one_amount"])
+
+        message = self.send_1v1_message()
+        stats = self.get_global_user_stats()
+
+        last_send_time_first = stats["last_send_time"]
+        last_read_time_first = stats["last_read_time"]
+        last_send_group_id = stats["last_send_group_id"]
+        last_read_group_id = stats["last_read_group_id"]
+
+        self.assertEqual(message["group_id"], last_send_group_id)
+        self.assertEqual(message["group_id"], last_read_group_id)
