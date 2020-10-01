@@ -33,15 +33,17 @@ class BaseTest(TestCase):
         long_ago = long_ago.replace(tzinfo=pytz.UTC)
 
         self.fake_env = FakeEnv()
-        self.fake_env.db.stats[BaseTest.USER_ID] = [UserGroupStatsBase(
-            group_id=BaseTest.GROUP_ID,
-            user_id=BaseTest.USER_ID,
-            last_read=long_ago,
-            last_sent=long_ago,
-            delete_before=long_ago,
-            join_time=long_ago,
-            last_updated_time=long_ago,
-            hide=False,
-            pin=False,
-            bookmark=False,
-        )]
+        self.fake_env.db.stats[BaseTest.USER_ID] = [
+            UserGroupStatsBase(
+                group_id=BaseTest.GROUP_ID,
+                user_id=BaseTest.USER_ID,
+                last_read=long_ago,
+                last_sent=long_ago,
+                delete_before=long_ago,
+                join_time=long_ago,
+                last_updated_time=long_ago,
+                hide=False,
+                pin=False,
+                bookmark=False,
+            )
+        ]

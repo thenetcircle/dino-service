@@ -101,7 +101,9 @@ class TestServerRestApi(BaseServerRestApi):
         self.user_joins_group(group_id, BaseTest.OTHER_USER_ID)
 
         self.assert_messages_in_group(group_id, user_id=BaseTest.USER_ID, amount=0)
-        self.assert_messages_in_group(group_id, user_id=BaseTest.OTHER_USER_ID, amount=0)
+        self.assert_messages_in_group(
+            group_id, user_id=BaseTest.OTHER_USER_ID, amount=0
+        )
 
         # each user sends 4 messages each, then we delete some of them for one user
         messages_to_send_each = 4
@@ -110,17 +112,26 @@ class TestServerRestApi(BaseServerRestApi):
             group_id, user_id=BaseTest.USER_ID, amount=messages_to_send_each, delay=10
         )
         messages = self.send_message_to_group_from(
-            group_id, user_id=BaseTest.OTHER_USER_ID, amount=messages_to_send_each, delay=10
+            group_id,
+            user_id=BaseTest.OTHER_USER_ID,
+            amount=messages_to_send_each,
+            delay=10,
         )
 
         # first user deletes the first 5 messages in the group
-        self.update_delete_before(group_id, delete_before=messages[0]["created_at"], user_id=BaseTest.USER_ID)
+        self.update_delete_before(
+            group_id, delete_before=messages[0]["created_at"], user_id=BaseTest.USER_ID
+        )
 
         # first user should have 3, since we deleted everything before the other user's
         # first message (including that first message); second user should have all 8
         # since he/she didn't delete anything
-        self.assert_messages_in_group(group_id, user_id=BaseTest.USER_ID, amount=messages_to_send_each - 1)
-        self.assert_messages_in_group(group_id, user_id=BaseTest.OTHER_USER_ID, amount=messages_to_send_each * 2)
+        self.assert_messages_in_group(
+            group_id, user_id=BaseTest.USER_ID, amount=messages_to_send_each - 1
+        )
+        self.assert_messages_in_group(
+            group_id, user_id=BaseTest.OTHER_USER_ID, amount=messages_to_send_each * 2
+        )
 
     def test_joining_a_group_changes_last_update_time(self):
         group_id = self.create_and_join_group(BaseTest.USER_ID)
@@ -141,14 +152,18 @@ class TestServerRestApi(BaseServerRestApi):
         group_id1 = self.create_and_join_group(BaseTest.USER_ID)
 
         self.user_joins_group(group_id1, BaseTest.OTHER_USER_ID)
-        self.send_message_to_group_from(group_id1, user_id=BaseTest.USER_ID, amount=10, delay=10)
+        self.send_message_to_group_from(
+            group_id1, user_id=BaseTest.USER_ID, amount=10, delay=10
+        )
         self.assert_total_unread_count(user_id=BaseTest.USER_ID, unread_count=0)
         self.assert_total_unread_count(user_id=BaseTest.OTHER_USER_ID, unread_count=10)
 
         group_id2 = self.create_and_join_group(BaseTest.USER_ID)
 
         self.user_joins_group(group_id2, BaseTest.OTHER_USER_ID)
-        self.send_message_to_group_from(group_id2, user_id=BaseTest.USER_ID, amount=10, delay=10)
+        self.send_message_to_group_from(
+            group_id2, user_id=BaseTest.USER_ID, amount=10, delay=10
+        )
         self.assert_total_unread_count(user_id=BaseTest.USER_ID, unread_count=0)
         self.assert_total_unread_count(user_id=BaseTest.OTHER_USER_ID, unread_count=20)
 
@@ -194,14 +209,22 @@ class TestServerRestApi(BaseServerRestApi):
         self.user_joins_group(group_id, BaseTest.OTHER_USER_ID)
 
         histories = self.histories_for(group_id, BaseTest.USER_ID)
-        last_read_user_1_before = self.last_read_in_histories_for(histories, BaseTest.USER_ID)
-        last_read_user_2_before = self.last_read_in_histories_for(histories, BaseTest.OTHER_USER_ID)
+        last_read_user_1_before = self.last_read_in_histories_for(
+            histories, BaseTest.USER_ID
+        )
+        last_read_user_2_before = self.last_read_in_histories_for(
+            histories, BaseTest.OTHER_USER_ID
+        )
 
         self.send_message_to_group_from(group_id, user_id=BaseTest.USER_ID, delay=50)
 
         histories = self.histories_for(group_id, BaseTest.USER_ID)
-        last_read_user_1_after = self.last_read_in_histories_for(histories, BaseTest.USER_ID)
-        last_read_user_2_after = self.last_read_in_histories_for(histories, BaseTest.OTHER_USER_ID)
+        last_read_user_1_after = self.last_read_in_histories_for(
+            histories, BaseTest.USER_ID
+        )
+        last_read_user_2_after = self.last_read_in_histories_for(
+            histories, BaseTest.OTHER_USER_ID
+        )
 
         self.assertNotEqual(last_read_user_1_before, last_read_user_1_after)
         self.assertEqual(last_read_user_2_before, last_read_user_2_after)
@@ -296,7 +319,9 @@ class TestServerRestApi(BaseServerRestApi):
 
         # first send a message to each group with a short delay
         for group_id in [group_1, group_2, group_3]:
-            self.send_message_to_group_from(group_id, user_id=BaseTest.USER_ID, delay=50)
+            self.send_message_to_group_from(
+                group_id, user_id=BaseTest.USER_ID, delay=50
+            )
 
         # last group to receive a message should be on top
         self.assert_order_of_groups(BaseTest.USER_ID, group_3, group_2, group_1)
@@ -359,8 +384,7 @@ class TestServerRestApi(BaseServerRestApi):
 
     def test_receiver_unread_count(self):
         self.send_1v1_message(
-            user_id=BaseTest.USER_ID,
-            receiver_id=BaseTest.OTHER_USER_ID
+            user_id=BaseTest.USER_ID, receiver_id=BaseTest.OTHER_USER_ID
         )
         groups = self.groups_for_user(user_id=BaseTest.USER_ID, count_unread=True)
 
@@ -368,8 +392,7 @@ class TestServerRestApi(BaseServerRestApi):
         self.assertEqual(groups[0]["stats"]["receiver_unread"], 1)
 
         self.send_1v1_message(
-            user_id=BaseTest.USER_ID,
-            receiver_id=BaseTest.OTHER_USER_ID
+            user_id=BaseTest.USER_ID, receiver_id=BaseTest.OTHER_USER_ID
         )
         groups = self.groups_for_user(user_id=BaseTest.USER_ID, count_unread=True)
 
@@ -382,8 +405,7 @@ class TestServerRestApi(BaseServerRestApi):
         self.assertEqual(groups[0]["stats"]["receiver_unread"], 0)
 
         self.send_1v1_message(
-            user_id=BaseTest.OTHER_USER_ID,
-            receiver_id=BaseTest.USER_ID
+            user_id=BaseTest.OTHER_USER_ID, receiver_id=BaseTest.USER_ID
         )
         groups = self.groups_for_user(user_id=BaseTest.OTHER_USER_ID, count_unread=True)
 
@@ -392,8 +414,7 @@ class TestServerRestApi(BaseServerRestApi):
 
     def test_unread_count_is_negative_if_query_says_do_not_count(self):
         self.send_1v1_message(
-            user_id=BaseTest.USER_ID,
-            receiver_id=BaseTest.OTHER_USER_ID
+            user_id=BaseTest.USER_ID, receiver_id=BaseTest.OTHER_USER_ID
         )
         groups = self.groups_for_user(user_id=BaseTest.USER_ID, count_unread=False)
 
@@ -402,16 +423,14 @@ class TestServerRestApi(BaseServerRestApi):
 
     def test_last_updated_at_changes_on_send_msg(self):
         self.send_1v1_message(
-            user_id=BaseTest.USER_ID,
-            receiver_id=BaseTest.OTHER_USER_ID
+            user_id=BaseTest.USER_ID, receiver_id=BaseTest.OTHER_USER_ID
         )
 
         groups = self.groups_for_user(user_id=BaseTest.USER_ID, count_unread=False)
         last_updated_at = groups[0]["stats"]["last_updated_time"]
 
         self.send_1v1_message(
-            user_id=BaseTest.USER_ID,
-            receiver_id=BaseTest.OTHER_USER_ID
+            user_id=BaseTest.USER_ID, receiver_id=BaseTest.OTHER_USER_ID
         )
 
         groups = self.groups_for_user(user_id=BaseTest.USER_ID, count_unread=False)
@@ -419,33 +438,40 @@ class TestServerRestApi(BaseServerRestApi):
 
     def test_last_updated_at_changes_on_no_more_unread(self):
         self.send_1v1_message(
-            user_id=BaseTest.USER_ID,
-            receiver_id=BaseTest.OTHER_USER_ID
+            user_id=BaseTest.USER_ID, receiver_id=BaseTest.OTHER_USER_ID
         )
 
-        groups = self.groups_for_user(user_id=BaseTest.OTHER_USER_ID, count_unread=False)
+        groups = self.groups_for_user(
+            user_id=BaseTest.OTHER_USER_ID, count_unread=False
+        )
         last_updated_at = groups[0]["stats"]["last_updated_time"]
 
-        self.histories_for(groups[0]["group"]["group_id"], user_id=BaseTest.OTHER_USER_ID)
+        self.histories_for(
+            groups[0]["group"]["group_id"], user_id=BaseTest.OTHER_USER_ID
+        )
 
-        groups = self.groups_for_user(user_id=BaseTest.OTHER_USER_ID, count_unread=False)
+        groups = self.groups_for_user(
+            user_id=BaseTest.OTHER_USER_ID, count_unread=False
+        )
         self.assertGreater(groups[0]["stats"]["last_updated_time"], last_updated_at)
 
     def test_last_updated_at_changes_on_new_message_other_user(self):
         self.send_1v1_message(
-            user_id=BaseTest.USER_ID,
-            receiver_id=BaseTest.OTHER_USER_ID
+            user_id=BaseTest.USER_ID, receiver_id=BaseTest.OTHER_USER_ID
         )
 
-        groups = self.groups_for_user(user_id=BaseTest.OTHER_USER_ID, count_unread=False)
+        groups = self.groups_for_user(
+            user_id=BaseTest.OTHER_USER_ID, count_unread=False
+        )
         last_updated_at = groups[0]["stats"]["last_updated_time"]
 
         self.send_1v1_message(
-            user_id=BaseTest.USER_ID,
-            receiver_id=BaseTest.OTHER_USER_ID
+            user_id=BaseTest.USER_ID, receiver_id=BaseTest.OTHER_USER_ID
         )
 
-        groups = self.groups_for_user(user_id=BaseTest.OTHER_USER_ID, count_unread=False)
+        groups = self.groups_for_user(
+            user_id=BaseTest.OTHER_USER_ID, count_unread=False
+        )
         self.assertGreater(groups[0]["stats"]["last_updated_time"], last_updated_at)
 
     def test_get_groups_updated_since(self):
@@ -455,14 +481,15 @@ class TestServerRestApi(BaseServerRestApi):
         self.assertEqual(0, len(groups))
 
         self.send_1v1_message(
-            user_id=BaseTest.USER_ID,
-            receiver_id=BaseTest.OTHER_USER_ID
+            user_id=BaseTest.USER_ID, receiver_id=BaseTest.OTHER_USER_ID
         )
 
         groups = self.groups_updated_since(user_id=BaseTest.OTHER_USER_ID, since=when)
         self.assertEqual(1, len(groups))
 
-        groups = self.groups_updated_since(user_id=BaseTest.OTHER_USER_ID, since=when + 500)
+        groups = self.groups_updated_since(
+            user_id=BaseTest.OTHER_USER_ID, since=when + 500
+        )
         self.assertEqual(0, len(groups))
 
     def test_update_attachment(self):
@@ -476,7 +503,9 @@ class TestServerRestApi(BaseServerRestApi):
         self.assertEqual(1, len(history["messages"]))
         self.assertEqual(0, len(all_attachments))
 
-        attachment = self.update_attachment(message["message_id"], message["created_at"])
+        attachment = self.update_attachment(
+            message["message_id"], message["created_at"]
+        )
         history = self.histories_for(message["group_id"])
         all_attachments = self.attachments_for(message["group_id"])
 

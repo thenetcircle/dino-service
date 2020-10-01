@@ -13,7 +13,9 @@ class TestMessageResource(BaseTest):
 
     @async_test
     async def test_send_message_to_group(self):
-        query = SendMessageQuery(message_payload="a new message", message_type=MessageTypes.MESSAGE)
+        query = SendMessageQuery(
+            message_payload="a new message", message_type=MessageTypes.MESSAGE
+        )
 
         self.assertNotIn(BaseTest.GROUP_ID, self.resource.env.publisher.sent_messages)
 
