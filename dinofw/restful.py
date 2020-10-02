@@ -31,7 +31,7 @@ from dinofw.rest.models import UserGroupStats
 from dinofw.rest.models import UserStats
 from dinofw.utils import environ
 from dinofw.utils.config import ErrorCodes
-from dinofw.utils.exceptions import NoSuchGroupException
+from dinofw.utils.exceptions import NoSuchGroupException, NoSuchUserException
 from dinofw.utils.exceptions import UserNotInGroupException
 
 logger = logging.getLogger(__name__)
@@ -136,10 +136,13 @@ async def send_message_to_user(
     (since the groups that are **1-to-1** have `group_type=1`), and should thus use the other send API.
 
     **Potential error codes in response:**
+    * `604`: if the user does not exist,
     * `250`: if an unknown error occurred.
     """
     try:
         return await environ.env.rest.message.send_message_to_user(user_id, query, db)
+    except NoSuchUserException as e:
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_USER, e)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 

@@ -9,7 +9,7 @@ from dinofw.rest.models import CreateAttachmentQuery
 from dinofw.rest.models import Message
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
-from dinofw.utils.exceptions import NoSuchGroupException
+from dinofw.utils.exceptions import NoSuchGroupException, NoSuchUserException
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +35,9 @@ class MessageResource(BaseResource):
     async def send_message_to_user(
         self, user_id: int, query: SendMessageQuery, db: Session
     ) -> Message:
+        if query.receiver_id < 1:
+            raise NoSuchUserException(query.receiver_id)
+
         group_id = await self._get_or_create_group_for_1v1(
             user_id, query.receiver_id, db
         )

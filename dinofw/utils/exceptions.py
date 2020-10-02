@@ -16,3 +16,8 @@ class NoSuchMessageException(Exception):
 class NoSuchAttachmentException(Exception):
     def __init__(self, message):
         self.message = f"no such attachment: {message}"
+
+
+class NoSuchUserException(Exception):
+    def __init__(self, message):
+        self.message = f"no such user: {message}"

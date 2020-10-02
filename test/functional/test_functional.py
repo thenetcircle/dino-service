@@ -566,3 +566,5 @@ class TestServerRestApi(BaseServerRestApi):
 
         self.assertEqual(message["group_id"], last_sent_group_id)
         self.assertNotEqual(last_sent_time_first, last_sent_time_second)
+
+    # TODO: test create attachment updates group overview
