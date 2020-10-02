@@ -117,11 +117,14 @@ class RelationalHandler:
         inner join
             user_group_stats u on u.group_id = g.group_id
         where
-            user_id = 1234 and
-            u.hide = false
+            u.user_id = 1234 and
+            u.hide = false and
+            u.delete_before < g.last_message_time and
+            g.last_message_time <= until
         order by
-            pin u.desc,
+            u.pin desc,
             greatest(u.highlight_time, g.last_message_time) desc
+        limit per_page
         """
         until = GroupQuery.to_dt(query.until)
         hidden = query.hidden or False
