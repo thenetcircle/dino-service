@@ -636,3 +636,7 @@ class TestServerRestApi(BaseServerRestApi):
         self.assertEqual(delete_before, new_delete_before)
         self.assertEqual(delete_time, new_receiver_delete_before)
         self.assertNotEqual(receiver_delete_before, new_receiver_delete_before)
+
+    def test_update_bookmark(self):
+        # TODO
+        pass
