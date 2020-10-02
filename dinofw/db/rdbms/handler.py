@@ -685,6 +685,10 @@ class RelationalHandler:
             # used by apps to sync changes
             user_stats.last_updated_time = now
 
+            user_stats.bookmark = query.bookmark or user_stats.bookmark
+            user_stats.pin = query.pin or user_stats.pin
+            user_stats.rating = query.rating or user_stats.rating
+
             if last_read is not None:
                 user_stats.last_read = last_read
 
@@ -693,12 +697,6 @@ class RelationalHandler:
 
             if delete_before is not None:
                 user_stats.delete_before = delete_before
-
-            if query.pin is not None:
-                user_stats.pin = query.pin
-
-            if query.rating is not None:
-                user_stats.rating = query.rating
 
             # can't set highlight time if also setting last read time
             if highlight_time is not None and last_read is None:
@@ -731,6 +729,7 @@ class RelationalHandler:
         user_stats.last_read = the_time
         user_stats.last_updated_time = the_time
         user_stats.highlight_time = self.long_ago
+        user_stats.bookmark = False
 
         db.add(user_stats)
         db.commit()
