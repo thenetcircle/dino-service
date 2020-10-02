@@ -510,7 +510,7 @@ async def mark_all_groups_as_read(user_id: int, db: Session = Depends(get_db)) -
 @app.delete("/v1/users/{user_id}/groups")
 async def delete_all_groups_for_user(user_id: int) -> None:
     """
-    When a user removes his/her profile, make the user leave all the groups.
+    When a user removes his/her profile, make the user leave all groups.
 
     # TODO: implement
     """
