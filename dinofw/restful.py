@@ -507,6 +507,16 @@ async def mark_all_groups_as_read(user_id: int, db: Session = Depends(get_db)) -
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
+@app.delete("/v1/users/{user_id}/groups")
+async def delete_all_groups_for_user(user_id: int) -> None:
+    """
+    When a user removes his/her profile, make the user leave all the groups.
+
+    # TODO: implement
+    """
+    return  # await environ.env.rest.groups.delete_all_groups_for_user(user_id)
+
+
 @app.on_event("startup")
 async def startup():
     await environ.env.publisher.setup()
@@ -529,90 +539,3 @@ def log_error_and_raise_known(error_code, e):
     raise HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST, detail=f"{error_code}: {e.message}",
     )
-
-
-"""
-# not needed for now
-
-@app.get(
-    "/v1/groups/{group_id}/users/{user_id}/messages/{message_id}",
-    response_model=Message,
-)
-async def get_message_details(group_id: str, user_id: int, message_id: str) -> Message:
-    # get message details
-    return await environ.env.rest.message.message_details(group_id, user_id, message_id)
-"""
-
-
-"""
-# not needed for now
-
-@app.delete("/v1/groups/{group_id}/users/{user_id}/messages/{message_id}")
-async def delete_a_message(
-    group_id: str, user_id: int, message_id: str, query: AdminQuery
-) -> None:
-    # delete a message in group (hard delete)
-    # TODO: handle no such message error
-    return await environ.env.rest.message.delete_message(
-        group_id, user_id, message_id, query
-    )
-"""
-
-"""
-# not really necessary
-
-@app.post(
-    "/v1/groups/{group_id}/users/{user_id}/messages", response_model=List[Message]
-)
-async def get_messages_for_user_in_group(
-    group_id: str, user_id: int, query: MessageQuery
-) -> List[Message]:
-    # TODO: get user messages in a group
-    # TODO: this is not easy to do in cassandra since created_at comes before user_id in the partition keys
-    # TODO: see if we can iterate over all to find the user's messages
-    return await environ.env.rest.message.messages_for_user(group_id, user_id, query)
-"""
-
-
-"""
-# should not specify group, should be in all groups
-
-@app.delete(
-    "/v1/groups/{group_id}/users/{user_id}/messages", response_model=List[Message]
-)
-async def batch_delete_messages_in_group_for_user(
-    group_id: str, user_id: int, query: AdminQuery
-) -> List[Message]:
-    # TODO: batch delete user messages in a group (gdpr)
-    # TODO: this is not easy to do in cassandra since created_at comes before user_id in the partition keys
-    # TODO: see if we can iterate over all to find the user's messages then batch delete
-    return await environ.env.rest.message.delete_messages_for_user_in_group(
-        group_id, user_id, query
-    )
-"""
-
-"""
-@app.post("/v1/groups", response_model=List[Group])
-async def search_for_groups(query: SearchQuery) -> List[Group]:
-    return await environ.env.rest.group.search(query)
-"""
-
-
-"""
-@app.delete("/v1/users/{user_id}/groups/{group_id}")
-async def delete_one_group_for_user(user_id: int, group_id: str):
-    # TODO: owner delete a group
-    # TODO: this is just hiding right? use the update user group stats api instead
-    # TODO: how would deletion work here for other users in the group?
-    return await environ.env.rest.group.delete_on_group_for_user(user_id, group_id)
-"""
-
-
-"""
-@app.delete("/v1/users/{user_id}/groups")
-async def delete_all_groups_for_user(user_id: int) -> Group:
-    # TODO: batch delete user created group
-    # TODO: when would this ever be used?
-    # TODO: really delete all user's groups? what about other users in group?
-    return await environ.env.rest.groups.delete_all_groups_for_user(user_id)
-"""
