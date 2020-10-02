@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List
-
+from datetime import datetime as dt
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.storage.schemas import MessageBase
 from dinofw.rest.models import AbstractQuery
@@ -34,6 +34,15 @@ class IPublishHandler(ABC):
             "created_at": now,
             "group_id": group_id,
             "user_id": user_id,
+        }
+
+    @staticmethod
+    def read_to_event(group_id: str, user_id: int, now: dt):
+        return {
+            "event_type": "read",
+            "group_id": group_id,
+            "user_id": user_id,
+            "read_at": AbstractQuery.to_ts(now),
         }
 
     @staticmethod

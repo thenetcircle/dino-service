@@ -38,7 +38,7 @@ class BaseResource(ABC):
         self.env.db.update_last_read_and_highlight_in_group_for_user(
             group_id, user_id, now, db
         )
-        self.env.publisher.read(group_id, user_id, user_ids)
+        self.env.publisher.read(group_id, user_id, user_ids, now)
         self.env.cache.set_unread_in_group(group_id, user_id, 0)
 
     def _user_sends_a_message(

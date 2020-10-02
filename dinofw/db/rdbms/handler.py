@@ -748,8 +748,7 @@ class RelationalHandler:
         the_time_ts = GroupQuery.to_ts(the_time)
         self.env.cache.set_last_read_in_group_for_user(group_id, user_id, the_time_ts)
 
-        # TODO: do we need 'set_last_read_for_user'? last_sent is easier
-        # user for user global stats api
+        # used for user global stats api
         self.env.cache.set_last_sent_for_user(user_id, group_id, the_time_ts)
 
         self.env.cache.set_hide_group(group_id, False)

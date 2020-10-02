@@ -5,11 +5,13 @@ from uuid import uuid4 as uuid
 
 from gmqtt import Client as MQTTClient
 from gmqtt.mqtt.constants import MQTTv50
+from datetime import datetime as dt
 
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.storage.schemas import MessageBase
 from dinofw.endpoint import IPublishHandler
 from dinofw.endpoint import IPublisher
+from dinofw.rest.models import AbstractQuery
 from dinofw.utils.config import ConfigKeys
 
 
@@ -66,9 +68,13 @@ class PublishHandler(IPublishHandler):
         data = PublishHandler.message_base_to_event(attachment)
         self.send(user_ids, data)
 
-    def read(self, group_id: str, user_id: int, user_ids: List[int]) -> None:
-        # TODO: publish to clients
-        pass
+    def read(self, group_id: str, user_id: int, user_ids: List[int], now: dt) -> None:
+        # only send read receipt to 1v1 groups
+        if len(user_ids) > 2:
+            return
+
+        data = PublishHandler.read_to_event(group_id, user_id, now)
+        self.send(user_ids, data)
 
     def group_change(self, group_base: GroupBase, user_ids: List[int]) -> None:
         data = PublishHandler.group_base_to_event(group_base, user_ids)
