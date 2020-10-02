@@ -37,7 +37,7 @@ class BaseDatabaseTest(BaseTest):
 
         environ.env = self.env
 
-        # init with our sqlite test functional
+        # init with our test db
         init_db(self.env, engine)
 
         TestingSessionLocal = sessionmaker(
