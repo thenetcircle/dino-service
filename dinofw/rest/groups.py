@@ -181,6 +181,8 @@ class GroupResource(BaseResource):
         self, group_id: str, query: CreateActionLogQuery
     ) -> List[Message]:
         logs = self.env.storage.create_action_logs(group_id, query)
+        # TODO: broadcast action log?
+        # TODO: update group last update time?
         return [GroupResource.message_base_to_message(log) for log in logs]
 
     async def create_new_group(
