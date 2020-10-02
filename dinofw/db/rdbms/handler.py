@@ -685,9 +685,14 @@ class RelationalHandler:
             # used by apps to sync changes
             user_stats.last_updated_time = now
 
-            user_stats.bookmark = query.bookmark or user_stats.bookmark
-            user_stats.pin = query.pin or user_stats.pin
-            user_stats.rating = query.rating or user_stats.rating
+            if query.bookmark is not None:
+                user_stats.bookmark = query.bookmark
+
+            if query.pin is not None:
+                user_stats.pin = query.pin
+
+            if query.rating is not None:
+                user_stats.rating = query.rating
 
             if last_read is not None:
                 user_stats.last_read = last_read

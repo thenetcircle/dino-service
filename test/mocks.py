@@ -562,7 +562,7 @@ class FakePublisherHandler(IPublishHandler):
     def attachment(self, attachment: MessageBase, user_ids: List[int]) -> None:
         pass
 
-    def read(self, group_id: str, user_id: int, user_ids: List[int]) -> None:
+    def read(self, group_id: str, user_id: int, user_ids: List[int], now) -> None:
         pass  # TODO
 
     def group_change(self, group_base: GroupBase, user_ids: List[int]) -> None:

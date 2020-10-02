@@ -36,6 +36,18 @@ class BaseServerRestApi(BaseDatabaseTest):
         )
         self.assertEqual(raw_response.status_code, 200)
 
+    def bookmark_group(
+        self, group_id: str, bookmark: bool, user_id: int = None
+    ):
+        if user_id is None:
+            user_id = BaseTest.USER_ID
+
+        raw_response = self.client.put(
+            f"/v1/groups/{group_id}/user/{user_id}/update",
+            json={"bookmark": bookmark},
+        )
+        self.assertEqual(raw_response.status_code, 200)
+
     def send_message_to_group_from(
         self, group_id: str, user_id: int = None, amount: int = 1, delay: int = 0
     ) -> list:

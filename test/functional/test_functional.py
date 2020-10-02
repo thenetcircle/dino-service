@@ -638,5 +638,20 @@ class TestServerRestApi(BaseServerRestApi):
         self.assertNotEqual(receiver_delete_before, new_receiver_delete_before)
 
     def test_update_bookmark(self):
-        # TODO
-        pass
+        message = self.send_1v1_message()
+
+        groups = self.groups_for_user()
+        bookmark = groups[0]["stats"]["bookmark"]
+        self.assertFalse(bookmark)
+
+        self.bookmark_group(message["group_id"], bookmark=True)
+
+        groups = self.groups_for_user()
+        bookmark = groups[0]["stats"]["bookmark"]
+        self.assertTrue(bookmark)
+
+        self.bookmark_group(message["group_id"], bookmark=False)
+
+        groups = self.groups_for_user()
+        bookmark = groups[0]["stats"]["bookmark"]
+        self.assertFalse(bookmark)
