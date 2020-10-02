@@ -67,6 +67,10 @@ class BaseResource(ABC):
         self.env.cache.increase_unread_in_group_for(group_id, user_ids)
 
     def _user_sends_an_attachment(self, group_id: str, attachment: MessageBase, db):
+        # cassandra DT is different from python DT
+        now = arrow.utcnow().datetime
+
+        self.env.db.update_group_new_message(attachment, now, db)
         user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
         self.env.publisher.attachment(attachment, user_ids)
 
