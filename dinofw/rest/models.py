@@ -162,6 +162,10 @@ class UserGroupStats(BaseModel):
     bookmark: Optional[bool]
     rating: Optional[int]
 
+    receiver_highlight_time: Optional[float]
+    receiver_delete_before: Optional[float]
+    receiver_hide: Optional[bool]
+
 
 class Message(BaseModel):
     group_id: str

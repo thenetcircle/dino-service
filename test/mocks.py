@@ -375,7 +375,7 @@ class FakeDatabase:
         return list(group_types.items())
 
     def get_groups_for_user(
-        self, user_id: int, query: GroupQuery, _, count_receiver_unread: bool = True,
+        self, user_id: int, query: GroupQuery, _, count_receiver_unread: bool = True, receiver_stats: bool = False,
     ) -> List[UserGroupBase]:
         groups = list()
 

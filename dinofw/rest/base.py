@@ -82,6 +82,7 @@ class BaseResource(ABC):
                 BaseResource.group_base_to_user_group(
                     group_base=user_group.group,
                     stats_base=user_group.user_stats,
+                    receiver_stats_base=user_group.receiver_user_stats,
                     unread=user_group.unread,
                     receiver_unread=user_group.receiver_unread,
                     user_count=user_group.user_count,
@@ -132,6 +133,7 @@ class BaseResource(ABC):
     def group_base_to_user_group(
         group_base: GroupBase,
         stats_base: UserGroupStatsBase,
+        receiver_stats_base: UserGroupStatsBase,
         users: Dict[int, float],
         user_count: int,
         receiver_unread: int,
@@ -142,6 +144,11 @@ class BaseResource(ABC):
         stats_dict = stats_base.__dict__
         stats_dict["unread"] = unread
         stats_dict["receiver_unread"] = receiver_unread
+
+        if receiver_stats_base is not None:
+            stats_dict["receiver_highlight_time"] = AbstractQuery.to_ts(receiver_stats_base.highlight_time)
+            stats_dict["receiver_delete_before"] = AbstractQuery.to_ts(receiver_stats_base.delete_before)
+            stats_dict["receiver_hide"] = receiver_stats_base.hide
 
         stats_dict["last_read_time"] = AbstractQuery.to_ts(stats_base.last_read)
         stats_dict["last_sent_time"] = AbstractQuery.to_ts(stats_base.last_sent)

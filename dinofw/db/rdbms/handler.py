@@ -108,6 +108,7 @@ class RelationalHandler:
         query: GroupQuery,
         db: Session,
         count_receiver_unread: bool = True,
+        receiver_stats: bool = False,
     ) -> List[UserGroupBase]:
         """
         what we're doing:
@@ -163,17 +164,33 @@ class RelationalHandler:
             .all()
         )
 
+        receiver_stats_base = list()
+        if receiver_stats:
+            group_ids = list()
+
+            for group, stats in results:
+                if group.group_type != GroupTypes.ONE_TO_ONE:
+                    continue
+                group_ids.append(group.group_id)
+
+            receiver_stats_base = self.get_receiver_user_stats(group_ids, user_id, db)
+
         count_unread = query.count_unread or False
         return self._group_and_stats_to_user_group_base(
             db,
             results,
-            user_id,
+            receiver_stats=receiver_stats_base,
+            user_id=user_id,
             count_unread=count_unread,
             count_receiver=count_receiver_unread,  # when getting user stats we don't care about receivers
         )
 
     def get_groups_updated_since(
-        self, user_id: int, query: GroupUpdatesQuery, db: Session
+        self,
+        user_id: int,
+        query: GroupUpdatesQuery,
+        db: Session,
+        receiver_stats: bool = False,
     ):
         """
         the only difference between get_groups_for_user() and get_groups_updated_since() is
@@ -203,19 +220,45 @@ class RelationalHandler:
             .all()
         )
 
+        receiver_stats_base = list()
+        if receiver_stats:
+            group_ids = list()
+
+            for group, stats in results:
+                if group.group_type != GroupTypes.ONE_TO_ONE:
+                    continue
+                group_ids.append(group.group_id)
+
+            receiver_stats_base = self.get_receiver_user_stats(group_ids, user_id, db)
+
         return self._group_and_stats_to_user_group_base(
-            db, results, user_id, count_unread
+            db, results, receiver_stats_base, user_id, count_unread
+        )
+
+    def get_receiver_user_stats(self, group_ids: List[str], user_id: int, db: Session):
+        return (
+            db.query(models.UserGroupStatsEntity)
+            .filter(
+                models.UserGroupStatsEntity.group_id.in_(group_ids),
+                models.UserGroupStatsEntity.user_id != user_id,
+            )
+            .all()
         )
 
     def _group_and_stats_to_user_group_base(
         self,
         db: Session,
         results: List[Tuple[models.GroupEntity, models.UserGroupStatsEntity]],
+        receiver_stats: List[models.UserGroupStatsEntity],
         user_id: int,
         count_unread: bool,
-        count_receiver: bool = True
+        count_receiver: bool = True,
     ) -> List[UserGroupBase]:
         groups = list()
+
+        receivers = dict()
+        for stat in receiver_stats:
+            receivers[stat.group_id] = UserGroupStatsBase(**stat.__dict__)
 
         for group_entity, user_group_stats_entity in results:
             group = GroupBase(**group_entity.__dict__)
@@ -248,6 +291,10 @@ class RelationalHandler:
                     last_read=user_group_stats.last_read,
                 )
 
+            receiver_stat = None
+            if group.group_id in receivers:
+                receiver_stat = receivers[group.group_id]
+
             user_group = UserGroupBase(
                 group=group,
                 user_stats=user_group_stats,
@@ -255,6 +302,7 @@ class RelationalHandler:
                 user_count=user_count,
                 unread=unread_count,
                 receiver_unread=receiver_unread_count,
+                receiver_user_stats=receiver_stat,
             )
             groups.append(user_group)
 

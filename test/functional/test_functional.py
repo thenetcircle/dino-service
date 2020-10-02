@@ -568,3 +568,5 @@ class TestServerRestApi(BaseServerRestApi):
         self.assertNotEqual(last_sent_time_first, last_sent_time_second)
 
     # TODO: test create attachment updates group overview
+
+    # TODO: test for receiver_highlight in group list

@@ -18,13 +18,13 @@ class UserResource(BaseResource):
     async def get_groups_for_user(
         self, user_id: int, query: GroupQuery, db: Session
     ) -> List[UserGroup]:
-        user_groups: List[UserGroupBase] = self.env.db.get_groups_for_user(user_id, query, db)
+        user_groups: List[UserGroupBase] = self.env.db.get_groups_for_user(user_id, query, db, receiver_stats=True)
         return self._to_user_group(user_groups)
 
     async def get_groups_updated_since(
         self, user_id: int, query: GroupUpdatesQuery, db: Session
     ) -> List[UserGroup]:
-        user_groups: List[UserGroupBase] = self.env.db.get_groups_updated_since(user_id, query, db)
+        user_groups: List[UserGroupBase] = self.env.db.get_groups_updated_since(user_id, query, db, receiver_stats=True)
         return self._to_user_group(user_groups)
 
     async def get_user_stats(self, user_id: int, db: Session) -> UserStats:
