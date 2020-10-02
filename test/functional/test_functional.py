@@ -567,6 +567,72 @@ class TestServerRestApi(BaseServerRestApi):
         self.assertEqual(message["group_id"], last_sent_group_id)
         self.assertNotEqual(last_sent_time_first, last_sent_time_second)
 
-    # TODO: test create attachment updates group overview
+    def test_create_attachment_updates_group_overview(self):
+        message = self.send_1v1_message()
 
-    # TODO: test for receiver_highlight in group list
+        histories = self.histories_for(message["group_id"])
+        self.assertEqual(1, len(histories["messages"]))
+
+        groups = self.groups_for_user()
+        last_msg_overview = groups[0]["group"]["last_message_overview"]
+
+        self.update_attachment(message["message_id"], message["created_at"])
+
+        groups = self.groups_for_user()
+        new_msg_overview = groups[0]["group"]["last_message_overview"]
+
+        self.assertNotEqual(last_msg_overview, new_msg_overview)
+
+        histories = self.histories_for(message["group_id"])
+        self.assertEqual(1, len(histories["messages"]))
+
+    def test_receiver_highlight_exists_in_group_list(self):
+        message = self.send_1v1_message()
+
+        groups = self.groups_for_user()
+        receiver_highlight_time = groups[0]["stats"]["receiver_highlight_time"]
+        self.assertIsNotNone(receiver_highlight_time)
+
+        self.highlight_group_for_user(message["group_id"], user_id=BaseTest.OTHER_USER_ID)
+
+        groups = self.groups_for_user()
+        new_receiver_highlight_time = groups[0]["stats"]["receiver_highlight_time"]
+
+        self.assertNotEqual(receiver_highlight_time, new_receiver_highlight_time)
+
+    def test_receiver_hide_exists_in_group_list(self):
+        message = self.send_1v1_message()
+
+        groups = self.groups_for_user()
+        receiver_hide = groups[0]["stats"]["receiver_hide"]
+        hide = groups[0]["stats"]["hide"]
+        self.assertFalse(receiver_hide)
+        self.assertFalse(hide)
+
+        self.update_hide_group_for(message["group_id"], hide=True, user_id=BaseTest.OTHER_USER_ID)
+
+        groups = self.groups_for_user()
+        new_receiver_hide = groups[0]["stats"]["receiver_hide"]
+        new_hide = groups[0]["stats"]["hide"]
+
+        self.assertTrue(new_receiver_hide)
+        self.assertFalse(new_hide)
+
+    def test_receiver_delete_before_in_group_list(self):
+        message = self.send_1v1_message()
+
+        groups = self.groups_for_user()
+        receiver_delete_before = groups[0]["stats"]["receiver_delete_before"]
+        delete_before = groups[0]["stats"]["delete_before"]
+        self.assertEqual(receiver_delete_before, delete_before)
+
+        delete_time = arrow.utcnow().float_timestamp
+        self.update_delete_before(message["group_id"], delete_time, user_id=BaseTest.OTHER_USER_ID)
+
+        groups = self.groups_for_user()
+        new_receiver_delete_before = groups[0]["stats"]["receiver_delete_before"]
+        new_delete_before = groups[0]["stats"]["delete_before"]
+
+        self.assertEqual(delete_before, new_delete_before)
+        self.assertEqual(delete_time, new_receiver_delete_before)
+        self.assertNotEqual(receiver_delete_before, new_receiver_delete_before)
