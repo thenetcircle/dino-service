@@ -475,8 +475,6 @@ async def update_user_stats(user_id: int, db: Session = Depends(get_db)) -> Resp
     This API is run asynchronously, and returns a 201 Created instead of
     200 OK.
 
-    # TODO: allow "mark all as read" instead of only "last_updated_at" by using a request body to choose which
-
     **Potential error codes in response:**
     * `250`: if an unknown error occurred.
     """
@@ -487,6 +485,23 @@ async def update_user_stats(user_id: int, db: Session = Depends(get_db)) -> Resp
 
     try:
         task = BackgroundTask(set_last_updated, user_id_=user_id, db_=db)
+        return Response(background=task, status_code=HTTP_201_CREATED)
+    except Exception as e:
+        log_error_and_raise_unknown(sys.exc_info(), e)
+
+
+@app.put("/v1/user/{user_id}/read", status_code=HTTP_201_CREATED)
+async def mark_all_groups_as_read(user_id: int, db: Session = Depends(get_db)) -> Response:
+    def set_read_time(user_id_, db_):
+        # TODO: implement, also remove all bookmarks when marking as read
+        pass
+
+        # environ.env.rest.group.set_last_updated_at_on_all_stats_related_to_user(
+        #     user_id_, db_
+        # )
+
+    try:
+        task = BackgroundTask(set_read_time, user_id_=user_id, db_=db)
         return Response(background=task, status_code=HTTP_201_CREATED)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
