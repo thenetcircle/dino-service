@@ -571,7 +571,7 @@ class RelationalHandler:
         )
 
         before = None
-        if len(group_ids) > 5:
+        if len(group_ids) > 250:
             before = arrow.utcnow().float_timestamp
 
         # some users have >10k conversations; split into chunks to not overload the db

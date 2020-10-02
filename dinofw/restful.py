@@ -475,6 +475,8 @@ async def update_user_stats(user_id: int, db: Session = Depends(get_db)) -> Resp
     This API is run asynchronously, and returns a 201 Created instead of
     200 OK.
 
+    # TODO: allow "mark all as read" instead of only "last_updated_at" by using a request body to choose which
+
     **Potential error codes in response:**
     * `250`: if an unknown error occurred.
     """
