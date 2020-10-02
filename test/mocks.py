@@ -49,9 +49,7 @@ class FakeStorage:
         return unread
 
     def create_action_logs(
-            self,
-            group_id: str,
-            query: CreateActionLogQuery
+        self, group_id: str, query: CreateActionLogQuery
     ) -> List[MessageBase]:
         if group_id not in self.action_log:
             self.action_log[group_id] = list()
@@ -74,7 +72,7 @@ class FakeStorage:
         return logs
 
     def store_attachment(
-            self, group_id: str, user_id: int, message_id: str, query: CreateAttachmentQuery
+        self, group_id: str, user_id: int, message_id: str, query: CreateAttachmentQuery
     ) -> MessageBase:
 
         attachment = MessageBase(
@@ -169,10 +167,7 @@ class FakeStorage:
         return messages
 
     def get_attachments_in_group_for_user(
-            self,
-            group_id: str,
-            user_stats: UserGroupStatsBase,
-            query: MessageQuery
+        self, group_id: str, user_stats: UserGroupStatsBase, query: MessageQuery
     ) -> List[MessageBase]:
         if group_id not in self.attachments_by_group:
             return list()
@@ -189,10 +184,7 @@ class FakeStorage:
         return attachments
 
     def get_messages_in_group_for_user(
-            self,
-            group_id: str,
-            user_stats: UserGroupStatsBase,
-            query: MessageQuery,
+        self, group_id: str, user_stats: UserGroupStatsBase, query: MessageQuery,
     ) -> List[MessageBase]:
         if group_id not in self.messages_by_group:
             return list()
@@ -250,10 +242,7 @@ class FakeStorage:
         return logs
 
     def get_action_log_in_group_for_user(
-            self,
-            group_id: str,
-            user_stats: UserGroupStatsBase,
-            query: MessageQuery,
+        self, group_id: str, user_stats: UserGroupStatsBase, query: MessageQuery,
     ) -> List[MessageBase]:
         logs = list()
 
@@ -315,11 +304,7 @@ class FakeDatabase:
                 stat.last_updated_time = now
 
     def update_last_read_and_highlight_in_group_for_user(
-            self,
-            group_id: str,
-            user_id: int,
-            the_time: dt,
-            _
+        self, group_id: str, user_id: int, the_time: dt, _
     ) -> None:
         if user_id not in self.stats:
             return
@@ -357,10 +342,14 @@ class FakeDatabase:
 
         return self.last_sent[user_id]
 
-    def set_last_sent_for_user(self, user_id: int, group_id: str, the_time: float, _) -> None:
+    def set_last_sent_for_user(
+        self, user_id: int, group_id: str, the_time: float, _
+    ) -> None:
         self.last_sent[user_id] = group_id, the_time
 
-    def count_group_types_for_user(self, user_id: int, query: GroupQuery, _) -> List[Tuple[int, int]]:
+    def count_group_types_for_user(
+        self, user_id: int, query: GroupQuery, _
+    ) -> List[Tuple[int, int]]:
         group_ids_for_user = set()
         group_types = dict()
 
@@ -410,14 +399,16 @@ class FakeDatabase:
             user_count: int
             unread_count: int
 
-            groups.append(UserGroupBase(
-                group=group,
-                user_stats=stat,
-                user_count=user_count,
-                unread=-1,  # TODO: get from storage mock
-                receiver_unread=-1,
-                user_join_times=users,
-            ))
+            groups.append(
+                UserGroupBase(
+                    group=group,
+                    user_stats=stat,
+                    user_count=user_count,
+                    unread=-1,  # TODO: get from storage mock
+                    receiver_unread=-1,
+                    user_join_times=users,
+                )
+            )
 
             if len(groups) > query.per_page:
                 break
@@ -450,7 +441,9 @@ class FakeDatabase:
         self, group_id: str, users: Dict[int, float], now: dt, _
     ) -> None:
         for user_id, _ in users.items():
-            self.update_last_read_and_sent_in_group_for_user(group_id, user_id, now, None)
+            self.update_last_read_and_sent_in_group_for_user(
+                group_id, user_id, now, None
+            )
 
     def set_group_updated_at(self, group_id: str, now: dt, _) -> None:
         if group_id not in self.groups:
@@ -518,7 +511,9 @@ class FakeDatabase:
 
         return last_reads
 
-    def get_user_ids_and_join_time_in_group(self, group_id: str, _=None) -> Dict[int, float]:
+    def get_user_ids_and_join_time_in_group(
+        self, group_id: str, _=None
+    ) -> Dict[int, float]:
         response = dict()
 
         for _, stats in self.stats.items():
@@ -573,10 +568,14 @@ class FakePublisherHandler(IPublishHandler):
     def group_change(self, group_base: GroupBase, user_ids: List[int]) -> None:
         pass
 
-    def join(self, group_id: str, user_ids: List[int], joiner_id: int, now: float) -> None:
+    def join(
+        self, group_id: str, user_ids: List[int], joiner_id: int, now: float
+    ) -> None:
         pass
 
-    def leave(self, group_id: str, user_ids: List[int], leaver_id: int, now: float) -> None:
+    def leave(
+        self, group_id: str, user_ids: List[int], leaver_id: int, now: float
+    ) -> None:
         pass
 
 

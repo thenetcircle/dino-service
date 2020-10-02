@@ -11,5 +11,5 @@ async def publish_mqtt():
     client = MQTTClient("client-id")
     await client.connect("maggie-kafka-1.thenetcircle.lab", port=1883, version=MQTTv50)
 
-    client.publish('1972', str(time.time()), qos=1, message_expiry_interval=10)
+    client.publish("1972", str(time.time()), qos=1, message_expiry_interval=10)
     await client.disconnect()

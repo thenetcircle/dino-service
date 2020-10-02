@@ -24,19 +24,21 @@ class BaseServerRestApi(BaseDatabaseTest):
 
         return dict()
 
-    def update_delete_before(self, group_id: str, delete_before: float, user_id: int = None):
+    def update_delete_before(
+        self, group_id: str, delete_before: float, user_id: int = None
+    ):
         if user_id is None:
             user_id = BaseTest.USER_ID
 
         raw_response = self.client.put(
             f"/v1/groups/{group_id}/user/{user_id}/update",
-            json={
-                "delete_before": delete_before,
-            },
+            json={"delete_before": delete_before,},
         )
         self.assertEqual(raw_response.status_code, 200)
 
-    def send_message_to_group_from(self, group_id: str, user_id: int = None, amount: int = 1, delay: int = 0) -> list:
+    def send_message_to_group_from(
+        self, group_id: str, user_id: int = None, amount: int = 1, delay: int = 0
+    ) -> list:
         if user_id is None:
             user_id = BaseTest.USER_ID
 
@@ -64,11 +66,7 @@ class BaseServerRestApi(BaseDatabaseTest):
 
         raw_response = self.client.post(
             f"/v1/users/{user_id}/groups/create",
-            json={
-                "group_name": "a new group",
-                "group_type": 0,
-                "users": [user_id],
-            },
+            json={"group_name": "a new group", "group_type": 0, "users": [user_id],},
         )
         self.assertEqual(raw_response.status_code, 200)
 
@@ -111,8 +109,7 @@ class BaseServerRestApi(BaseDatabaseTest):
             user_id = BaseTest.USER_ID
 
         raw_response = self.client.put(
-            f"/v1/groups/{group_id}/user/{user_id}/update",
-            json={"hide": hide},
+            f"/v1/groups/{group_id}/user/{user_id}/update", json={"hide": hide},
         )
         self.assertEqual(raw_response.status_code, 200)
 
@@ -155,11 +152,7 @@ class BaseServerRestApi(BaseDatabaseTest):
 
         raw_response = self.client.post(
             f"/v1/users/{user_id}/groups/updates",
-            json={
-                "since": since,
-                "count_unread": False,
-                "per_page": 100,
-            },
+            json={"since": since, "count_unread": False, "per_page": 100,},
         )
         self.assertEqual(raw_response.status_code, 200)
 
@@ -171,10 +164,7 @@ class BaseServerRestApi(BaseDatabaseTest):
 
         raw_response = self.client.post(
             f"/v1/users/{user_id}/groups",
-            json={
-                "per_page": "10",
-                "count_unread": count_unread,
-            },
+            json={"per_page": "10", "count_unread": count_unread,},
         )
         self.assertEqual(raw_response.status_code, 200)
 
@@ -186,45 +176,40 @@ class BaseServerRestApi(BaseDatabaseTest):
     def unpin_group_for(self, group_id: str, user_id: int = None) -> None:
         self._set_pin_group_for(group_id, user_id, pinned=False)
 
-    def _set_pin_group_for(self, group_id: str, user_id: int = None, pinned: bool = False) -> None:
+    def _set_pin_group_for(
+        self, group_id: str, user_id: int = None, pinned: bool = False
+    ) -> None:
         if user_id is None:
             user_id = BaseTest.USER_ID
 
         raw_response = self.client.put(
-            f"/v1/groups/{group_id}/user/{user_id}/update",
-            json={"pin": pinned}
+            f"/v1/groups/{group_id}/user/{user_id}/update", json={"pin": pinned}
         )
         self.assertEqual(raw_response.status_code, 200)
 
     def edit_group(
-            self,
-            group_id: str,
-            name: str = "test name",
-            weight: int = 1,
-            context: str = "",
-            owner: int = None
+        self,
+        group_id: str,
+        name: str = "test name",
+        weight: int = 1,
+        context: str = "",
+        owner: int = None,
     ):
         if owner is None:
             owner = BaseTest.USER_ID
 
         raw_response = self.client.put(
             f"/v1/groups/{group_id}",
-            json={
-                "owner": owner,
-                "name": name,
-                "weight": weight,
-                "context": context,
-            }
+            json={"owner": owner, "name": name, "weight": weight, "context": context,},
         )
         self.assertEqual(raw_response.status_code, 200)
 
-    def edit_message(self, group_id: str, message_id: str, created_at: float, new_payload: str):
+    def edit_message(
+        self, group_id: str, message_id: str, created_at: float, new_payload: str
+    ):
         raw_response = self.client.put(
             f"/v1/groups/{group_id}/message/{message_id}/edit",
-            json={
-                "created_at": created_at,
-                "message_payload": new_payload,
-            },
+            json={"created_at": created_at, "message_payload": new_payload,},
         )
         self.assertEqual(raw_response.status_code, 200)
 
@@ -234,9 +219,7 @@ class BaseServerRestApi(BaseDatabaseTest):
 
         raw_response = self.client.put(
             f"/v1/groups/{group_id}/user/{user_id}/update",
-            json={
-                "highlight_time": now_plus_2_days,
-            },
+            json={"highlight_time": now_plus_2_days,},
         )
         self.assertEqual(raw_response.status_code, 200)
 
@@ -245,9 +228,7 @@ class BaseServerRestApi(BaseDatabaseTest):
 
         raw_response = self.client.put(
             f"/v1/groups/{group_id}/user/{user_id}/update",
-            json={
-                "last_read_time": now,
-            },
+            json={"last_read_time": now,},
         )
         self.assertEqual(raw_response.status_code, 200)
 
@@ -259,20 +240,17 @@ class BaseServerRestApi(BaseDatabaseTest):
             receiver_id = BaseTest.OTHER_USER_ID
 
         raw_response = self.client.post(
-            f"/v1/users/{user_id}/group",
-            json={
-                "receiver_id": receiver_id,
-            },
+            f"/v1/users/{user_id}/group", json={"receiver_id": receiver_id,},
         )
         self.assertEqual(raw_response.status_code, 200)
 
         return raw_response.json()
 
     def send_1v1_message(
-            self,
-            message_type: int = MessageTypes.MESSAGE,
-            user_id: int = None,
-            receiver_id: int = None
+        self,
+        message_type: int = MessageTypes.MESSAGE,
+        user_id: int = None,
+        receiver_id: int = None,
     ) -> dict:
         if user_id is None:
             user_id = BaseTest.USER_ID
@@ -282,10 +260,7 @@ class BaseServerRestApi(BaseDatabaseTest):
 
         raw_response = self.client.post(
             f"/v1/users/{user_id}/send",
-            json={
-                "receiver_id": receiver_id,
-                "message_type": message_type,
-            },
+            json={"receiver_id": receiver_id, "message_type": message_type,},
         )
         self.assertEqual(raw_response.status_code, 200)
 
@@ -299,16 +274,19 @@ class BaseServerRestApi(BaseDatabaseTest):
 
         raw_response = self.client.post(
             f"/v1/groups/{group_id}/user/{user_id}/attachments",
-            json={
-                "per_page": 100,
-                "until": now,
-            },
+            json={"per_page": 100, "until": now,},
         )
         self.assertEqual(raw_response.status_code, 200)
 
         return raw_response.json()
 
-    def update_attachment(self, message_id: str, created_at: float, user_id: int = None, receiver_id: int = None):
+    def update_attachment(
+        self,
+        message_id: str,
+        created_at: float,
+        user_id: int = None,
+        receiver_id: int = None,
+    ):
         if user_id is None:
             user_id = BaseTest.USER_ID
 
@@ -329,23 +307,22 @@ class BaseServerRestApi(BaseDatabaseTest):
 
         return raw_response.json()
 
-    def assert_messages_in_group(self, group_id: str, user_id: int = None, amount: int = 0):
+    def assert_messages_in_group(
+        self, group_id: str, user_id: int = None, amount: int = 0
+    ):
         raw_response = self.client.post(
-            f"/v1/groups/{group_id}/user/{user_id}/histories",
-            json={
-                "per_page": 100,
-            },
+            f"/v1/groups/{group_id}/user/{user_id}/histories", json={"per_page": 100,},
         )
         self.assertEqual(raw_response.status_code, 200)
         self.assertEqual(amount, len(raw_response.json()["messages"]))
 
-    def assert_hidden_for_user(self, hidden: bool, group_id: str, user_id: int = None) -> None:
+    def assert_hidden_for_user(
+        self, hidden: bool, group_id: str, user_id: int = None
+    ) -> None:
         if user_id is None:
             user_id = BaseTest.USER_ID
 
-        raw_response = self.client.get(
-            f"/v1/groups/{group_id}/user/{user_id}",
-        )
+        raw_response = self.client.get(f"/v1/groups/{group_id}/user/{user_id}",)
         self.assertEqual(raw_response.status_code, 200)
         self.assertEqual(hidden, raw_response.json()["hide"])
 
@@ -368,9 +345,13 @@ class BaseServerRestApi(BaseDatabaseTest):
 
     def assert_in_histories(self, user_id: int, histories, is_in: bool):
         if is_in:
-            self.assertTrue(any((user_id == user["user_id"] for user in histories["last_reads"])))
+            self.assertTrue(
+                any((user_id == user["user_id"] for user in histories["last_reads"]))
+            )
         else:
-            self.assertFalse(any((user_id == user["user_id"] for user in histories["last_reads"])))
+            self.assertFalse(
+                any((user_id == user["user_id"] for user in histories["last_reads"]))
+            )
 
     def assert_payload(self, group_id: str, message_id: str, new_payload: str):
         histories = self.histories_for(group_id)
