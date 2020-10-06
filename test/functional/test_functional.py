@@ -655,3 +655,9 @@ class TestServerRestApi(BaseServerRestApi):
         groups = self.groups_for_user()
         bookmark = groups[0]["stats"]["bookmark"]
         self.assertFalse(bookmark)
+
+    def test_mark_all_groups_as_read(self):
+        message = self.send_1v1_message()
+        self.bookmark_group(message["group_id"], bookmark=True)
+
+        # TODO: mark as read; test bookmark False and no unread messages

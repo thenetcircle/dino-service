@@ -494,11 +494,9 @@ async def update_user_stats(user_id: int, db: Session = Depends(get_db)) -> Resp
 async def mark_all_groups_as_read(user_id: int, db: Session = Depends(get_db)) -> Response:
     def set_read_time(user_id_, db_):
         # TODO: implement, also remove all bookmarks when marking as read
-        pass
-
-        # environ.env.rest.group.set_last_updated_at_on_all_stats_related_to_user(
-        #     user_id_, db_
-        # )
+        environ.env.rest.group.mark_all_as_read(
+            user_id_, db_
+        )
 
     try:
         task = BackgroundTask(set_read_time, user_id_=user_id, db_=db)

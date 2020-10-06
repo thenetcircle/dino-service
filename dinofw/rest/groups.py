@@ -57,6 +57,9 @@ class GroupResource(BaseResource):
             for attachment in attachments
         ]
 
+    async def mark_all_as_read(self, user_id: int, db: Session) -> None:
+        self.env.db.mark_all_groups_as_read(user_id, db)
+
     async def get_1v1_info(
         self, user_id_a: int, user_id_b: int, db: Session
     ) -> OneToOneStats:

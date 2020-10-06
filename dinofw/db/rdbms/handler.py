@@ -641,6 +641,41 @@ class RelationalHandler:
 
         return base
 
+    def mark_all_groups_as_read(self, user_id: int, db: Session) -> None:
+        group_ids = (
+            db.query(models.UserGroupStatsEntity.group_id)
+            .join(
+                models.GroupEntity
+            )
+            .filter(
+                models.UserGroupStatsEntity.user_id == user_id,
+                models.GroupEntity.group_id == models.UserGroupStatsEntity.group_id,
+                models.UserGroupStatsEntity.last_read < models.GroupEntity.last_message_time,
+            )
+            .all()
+        )
+
+        now = arrow.utcnow().datetime
+
+        # some users have >10k conversations; split into chunks to not overload the db
+        for group_id_chunk in split_into_chunks(group_ids, 500):
+            _ = (
+                db.query(models.UserGroupStatsEntity)
+                .filter(
+                    models.UserGroupStatsEntity.group_id.in_(group_id_chunk)
+                )
+                .update(
+                    {
+                        models.UserGroupStatsEntity.last_updated_time: now,
+                        models.UserGroupStatsEntity.last_read: now,
+                        models.UserGroupStatsEntity.bookmark: False,
+                    },
+                    synchronize_session="fetch",
+                )
+            )
+
+        db.commit()
+
     def get_user_stats_in_group(
         self, group_id: str, user_id: int, db: Session
     ) -> Optional[UserGroupStatsBase]:
