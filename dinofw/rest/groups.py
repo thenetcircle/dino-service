@@ -4,9 +4,9 @@ from typing import List, Optional
 import arrow
 from sqlalchemy.orm import Session
 
-from dinofw.db.rdbms.schemas import UserGroupStatsBase
+from dinofw.db.rdbms.schemas import UserGroupStatsBase, UserGroupBase
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import AbstractQuery
+from dinofw.rest.models import AbstractQuery, GroupQuery
 from dinofw.rest.models import CreateActionLogQuery
 from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import Group
@@ -57,7 +57,7 @@ class GroupResource(BaseResource):
             for attachment in attachments
         ]
 
-    async def mark_all_as_read(self, user_id: int, db: Session) -> None:
+    def mark_all_as_read(self, user_id: int, db: Session) -> None:
         self.env.db.mark_all_groups_as_read(user_id, db)
 
     async def get_1v1_info(

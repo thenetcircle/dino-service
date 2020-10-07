@@ -5,6 +5,7 @@ from uuid import uuid4 as uuid
 
 import arrow
 from sqlalchemy import func
+from sqlalchemy import or_
 from sqlalchemy import literal
 from sqlalchemy.orm import Session
 
@@ -645,12 +646,15 @@ class RelationalHandler:
         group_ids = (
             db.query(models.UserGroupStatsEntity.group_id)
             .join(
-                models.GroupEntity
+                models.GroupEntity,
+                models.GroupEntity.group_id == models.UserGroupStatsEntity.group_id
             )
             .filter(
                 models.UserGroupStatsEntity.user_id == user_id,
-                models.GroupEntity.group_id == models.UserGroupStatsEntity.group_id,
-                models.UserGroupStatsEntity.last_read < models.GroupEntity.last_message_time,
+                or_(
+                    models.UserGroupStatsEntity.last_read < models.GroupEntity.last_message_time,
+                    models.UserGroupStatsEntity.bookmark.is_(True),
+                )
             )
             .all()
         )
