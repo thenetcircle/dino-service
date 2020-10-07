@@ -223,11 +223,8 @@ class BaseServerRestApi(BaseDatabaseTest):
         self,
         message_type: int = MessageTypes.MESSAGE,
         user_id: int = BaseTest.USER_ID,
-        receiver_id: int = None,
+        receiver_id: int = BaseTest.OTHER_USER_ID,
     ) -> dict:
-        if receiver_id is None:
-            receiver_id = BaseTest.OTHER_USER_ID
-
         raw_response = self.client.post(
             f"/v1/users/{user_id}/send",
             json={"receiver_id": receiver_id, "message_type": message_type,},

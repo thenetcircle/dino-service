@@ -1,5 +1,5 @@
 import logging
-from typing import List, Tuple
+from typing import List
 
 from sqlalchemy.orm import Session
 

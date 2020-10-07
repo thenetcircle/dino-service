@@ -669,5 +669,12 @@ class TestServerRestApi(BaseServerRestApi):
         self.assertFalse(stats["bookmark"])
 
     def test_mark_all_groups_as_read_resets_count(self):
-        pass
-        # TODO: mark as read; test bookmark False and no unread messages
+        self.send_1v1_message(user_id=BaseTest.OTHER_USER_ID, receiver_id=BaseTest.USER_ID)
+
+        stats = self.groups_for_user(count_unread=True)[0]["stats"]
+        self.assertEqual(1, stats["unread"])
+
+        self.mark_as_read()
+
+        stats = self.groups_for_user(count_unread=True)[0]["stats"]
+        self.assertEqual(0, stats["unread"])

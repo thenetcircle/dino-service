@@ -659,10 +659,15 @@ class RelationalHandler:
             .all()
         )
 
+        # sqlalchemy returns a list of tuples: [(group_id1,), (group_id2,), ...]
+        group_ids = [group_id[0] for group_id in group_ids]
+
         now = arrow.utcnow().datetime
 
         # some users have >10k conversations; split into chunks to not overload the db
         for group_id_chunk in split_into_chunks(group_ids, 500):
+            self.env.cache.reset_unread_in_groups(user_id, group_id_chunk)
+
             _ = (
                 db.query(models.UserGroupStatsEntity)
                 .filter(

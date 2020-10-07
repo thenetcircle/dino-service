@@ -133,6 +133,15 @@ class CacheRedis(ICache):
 
         return int(str(value, "utf-8"))
 
+    def reset_unread_in_groups(self, user_id: int, group_ids: List[str]):
+        p = self.redis.pipeline()
+
+        for group_id in group_ids:
+            key = RedisKeys.unread_in_group(group_id)
+            p.hset(key, user_id, 0)
+
+        p.execute()
+
     def get_unread_in_group(self, group_id: str, user_id: int) -> Optional[int]:
         key = RedisKeys.unread_in_group(group_id)
 
@@ -146,7 +155,6 @@ class CacheRedis(ICache):
             return None
 
     def set_unread_in_group(self, group_id: str, user_id: int, unread: int) -> None:
-        # TODO: need to expire this or not?
         key = RedisKeys.unread_in_group(group_id)
         self.redis.hset(key, user_id, unread)
 
