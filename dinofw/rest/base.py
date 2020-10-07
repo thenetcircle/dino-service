@@ -66,6 +66,21 @@ class BaseResource(ABC):
         del user_ids[user_id]
         self.env.cache.increase_unread_in_group_for(group_id, user_ids)
 
+    def _user_sends_action_logs(
+        self, group_id: str, messages: List[MessageBase], db
+    ):
+        # cassandra DT is different from python DT
+        now = arrow.utcnow().datetime
+
+        # just update with the last one created
+        self.env.db.update_group_new_action_log(messages[-1], now, db)
+
+        self.env.db.set_last_updated_at_for_all_in_group(group_id, db)
+        user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
+
+        for message in messages:
+            self.env.publisher.message(message, user_ids)
+
     def _user_sends_an_attachment(self, group_id: str, attachment: MessageBase, db):
         # cassandra DT is different from python DT
         now = arrow.utcnow().datetime

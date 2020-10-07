@@ -181,11 +181,11 @@ class GroupResource(BaseResource):
         self.env.db.update_user_group_stats(group_id, user_id, query, db)
 
     async def create_action_logs(
-        self, group_id: str, query: CreateActionLogQuery
+        self, group_id: str, query: CreateActionLogQuery, db: Session
     ) -> List[Message]:
         logs = self.env.storage.create_action_logs(group_id, query)
-        # TODO: broadcast action log?
-        # TODO: update group last update time?
+        self._user_sends_action_logs(group_id, logs, db)
+
         return [GroupResource.message_base_to_message(log) for log in logs]
 
     async def create_new_group(
