@@ -492,8 +492,17 @@ async def update_user_stats(user_id: int, db: Session = Depends(get_db)) -> Resp
 
 @app.put("/v1/user/{user_id}/read", status_code=HTTP_201_CREATED)
 async def mark_all_groups_as_read(user_id: int, db: Session = Depends(get_db)) -> Response:
+    """
+    Mark all groups as read, including removing any bookmarks done by the
+    user.
+
+    This API is run asynchronously, and returns a 201 Created instead of
+    200 OK.
+
+    **Potential error codes in response:**
+    * `250`: if an unknown error occurred.
+    """
     def set_read_time(user_id_, db_):
-        # TODO: implement, also remove all bookmarks when marking as read
         environ.env.rest.group.mark_all_as_read(
             user_id_, db_
         )
@@ -510,7 +519,7 @@ async def delete_all_groups_for_user(user_id: int) -> None:
     """
     When a user removes his/her profile, make the user leave all groups.
 
-    # TODO: implement
+    # TODO: do it async: for all groups, call leave() which will broadcast to clients
     """
     return  # await environ.env.rest.groups.delete_all_groups_for_user(user_id)
 
