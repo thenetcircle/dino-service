@@ -514,12 +514,13 @@ async def mark_all_groups_as_read(user_id: int, db: Session = Depends(get_db)) -
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
+# TODO: do it async: for all groups, call leave() which will broadcast to clients
+# TODO: discuss about deletion of messages; when? GDPR
 """
 @app.delete("/v1/users/{user_id}/groups")
 async def delete_all_groups_for_user(user_id: int) -> None:
     When a user removes his/her profile, make the user leave all groups.
 
-    # TODO: do it async: for all groups, call leave() which will broadcast to clients
     return  # await environ.env.rest.groups.delete_all_groups_for_user(user_id)
 """
 
