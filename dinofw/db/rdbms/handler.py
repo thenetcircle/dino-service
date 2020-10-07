@@ -150,7 +150,10 @@ class RelationalHandler:
 
         if query.only_unread:
             statement = statement.filter(
-                models.UserGroupStatsEntity.last_read < models.GroupEntity.last_message_time,
+                or_(
+                    models.UserGroupStatsEntity.last_read < models.GroupEntity.last_message_time,
+                    models.UserGroupStatsEntity.bookmark.is_(True),
+                )
             )
 
         results = (
