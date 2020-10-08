@@ -714,3 +714,6 @@ class TestServerRestApi(BaseServerRestApi):
 
         groups = self.groups_for_user(only_unread=True)
         self.assertEqual(0, len(groups))
+
+    def test_delete_all_groups_for_user(self):
+        pass  # TODO: implement

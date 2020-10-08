@@ -244,10 +244,7 @@ class GroupResource(BaseResource):
         user_ids_in_group = user_ids_and_join_times.keys()
         self.env.publisher.join(group_id, user_ids_in_group, user_id, now_ts)
 
-    async def leave_group(self, group_id: str, user_id: int, db: Session) -> None:
-        if not self.env.db.group_exists(group_id, db):
-            return None
-
+    def leave_group(self, group_id: str, user_id: int, db: Session) -> None:
         now = arrow.utcnow().datetime
         now_ts = AbstractQuery.to_ts(now)
 
@@ -259,12 +256,13 @@ class GroupResource(BaseResource):
         )
 
         # if it's the last user we don't need to publish anything
-        if user_ids_and_join_times is not None:
+        if len(user_ids_and_join_times):
             user_ids_in_group = user_ids_and_join_times.keys()
             self.env.publisher.leave(group_id, user_ids_in_group, user_id, now_ts)
 
-    async def delete_one_group_for_user(self, user_id: int, group_id: str) -> None:
-        pass
+    def delete_all_groups_for_user(self, user_id: int, db: Session) -> None:
+        group_ids = self.env.db.get_all_group_ids_for_user(user_id, db)
 
-    async def delete_all_groups_for_user(self, user_id: int, group_id: str) -> None:
-        pass
+        # TODO: this is async, but check how long time this would take for like 5-10k groups
+        for group_id in group_ids:
+            self.leave_group(group_id, user_id, db)

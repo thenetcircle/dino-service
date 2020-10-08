@@ -447,6 +447,9 @@ class RelationalHandler:
             .all()
         )
 
+        if users is None or len(users) == 0:
+            return dict()
+
         user_ids_join_time = {user[0]: GroupQuery.to_ts(user[1]) for user in users}
         self.env.cache.set_user_ids_and_join_time_in_group(group_id, user_ids_join_time)
 

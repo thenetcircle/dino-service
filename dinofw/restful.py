@@ -375,7 +375,7 @@ async def leave_group(
     * `250`: if an unknown error occurred.
     """
     try:
-        return await environ.env.rest.group.leave_group(group_id, user_id, db)
+        return environ.env.rest.group.leave_group(group_id, user_id, db)
     except NoSuchGroupException as e:
         log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
     except Exception as e:
@@ -512,15 +512,23 @@ async def mark_all_groups_as_read(user_id: int, db: Session = Depends(get_db)) -
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-# TODO: do it async: for all groups, call leave() which will broadcast to clients
-# TODO: discuss about deletion of messages; when? GDPR
-"""
-@app.delete("/v1/users/{user_id}/groups")
-async def delete_all_groups_for_user(user_id: int) -> None:
+@app.delete("/v1/users/{user_id}/groups", status_code=HTTP_201_CREATED)
+async def delete_all_groups_for_user(user_id: int, db: Session = Depends(get_db)) -> Response:
+    """
     When a user removes his/her profile, make the user leave all groups.
 
-    return  # await environ.env.rest.groups.delete_all_groups_for_user(user_id)
-"""
+    # TODO: discuss about deletion of messages; when? GDPR
+    """
+    def leave_all_groups(user_id_, db_):
+        environ.env.rest.groups.delete_all_groups_for_user(
+            user_id_, db_
+        )
+
+    try:
+        task = BackgroundTask(leave_all_groups, user_id_=user_id, db_=db)
+        return Response(background=task, status_code=HTTP_201_CREATED)
+    except Exception as e:
+        log_error_and_raise_unknown(sys.exc_info(), e)
 
 
 @app.on_event("startup")
