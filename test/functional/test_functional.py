@@ -678,3 +678,39 @@ class TestServerRestApi(BaseServerRestApi):
 
         stats = self.groups_for_user(count_unread=True)[0]["stats"]
         self.assertEqual(0, stats["unread"])
+
+    def test_action_log_changes_last_update_time(self):
+        message = self.send_1v1_message()
+
+        last_updated_time_before = self.groups_for_user()[0]["stats"]["last_updated_time"]
+        self.assertIsNotNone(last_updated_time_before)
+
+        self.action_log(message["group_id"])
+
+        last_updated_time_after = self.groups_for_user()[0]["stats"]["last_updated_time"]
+        self.assertNotEqual(last_updated_time_before, last_updated_time_after)
+
+    def test_groups_for_user_only_unread_includes_bookmarks(self):
+        message = self.send_1v1_message()
+        groups = self.groups_for_user(only_unread=True)
+        self.assertEqual(0, len(groups))
+
+        self.bookmark_group(message["group_id"], bookmark=True)
+
+        groups = self.groups_for_user(only_unread=True)
+        self.assertEqual(1, len(groups))
+        self.assertEqual(message["group_id"], groups[0]["group"]["group_id"])
+
+    def test_bookmark_removed_on_get_histories(self):
+        message = self.send_1v1_message()
+        groups = self.groups_for_user(only_unread=True)
+        self.assertEqual(0, len(groups))
+
+        self.bookmark_group(message["group_id"], bookmark=True)
+        groups = self.groups_for_user(only_unread=True)
+        self.assertEqual(1, len(groups))
+
+        self.histories_for(message["group_id"])
+
+        groups = self.groups_for_user(only_unread=True)
+        self.assertEqual(0, len(groups))
