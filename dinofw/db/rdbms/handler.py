@@ -348,7 +348,7 @@ class RelationalHandler:
             # TODO: make we actually want to wake them up, check with stakeholders
             if wakeup_users:
                 user_stat.hide = False
-                user_stat.delete_before = self.long_ago
+                user_stat.delete_before = user_stats.join_time
 
             user_stat.last_updated_time = arrow.utcnow().datetime
             db.add(user_stat)
@@ -403,6 +403,10 @@ class RelationalHandler:
         return last_reads
 
     def get_all_group_ids_for_user(self, user_id: int, db: Session) -> List[str]:
+        """
+        used only when a user is deleting their profile, no need
+        to cache it, shouldn't happen that often
+        """
         group_ids = (
             db.query(
                 models.UserGroupStatsEntity.group_id
