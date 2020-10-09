@@ -765,4 +765,25 @@ class TestServerRestApi(BaseServerRestApi):
         self.assertFalse(group_and_stats[0]["stats"]["hide"])
 
     def test_delete_all_groups_for_user(self):
-        pass  # TODO: implement
+        self.send_1v1_message()
+
+        groups = self.groups_for_user()
+        self.assertEqual(1, len(groups))
+
+        self.leave_all_groups()
+
+        groups = self.groups_for_user()
+        self.assertEqual(0, len(groups))
+
+        self.send_1v1_message(receiver_id=1000)
+        self.send_1v1_message(receiver_id=1001)
+        self.send_1v1_message(receiver_id=1002)
+        self.send_1v1_message(receiver_id=1003)
+
+        groups = self.groups_for_user()
+        self.assertEqual(4, len(groups))
+
+        self.leave_all_groups()
+
+        groups = self.groups_for_user()
+        self.assertEqual(0, len(groups))

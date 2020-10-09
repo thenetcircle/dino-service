@@ -522,7 +522,7 @@ async def delete_all_groups_for_user(user_id: int, db: Session = Depends(get_db)
     # TODO: discuss about deletion of messages; when? GDPR
     """
     def leave_all_groups(user_id_, db_):
-        environ.env.rest.groups.delete_all_groups_for_user(
+        environ.env.rest.group.delete_all_groups_for_user(
             user_id_, db_
         )
 

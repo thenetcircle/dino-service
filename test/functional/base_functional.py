@@ -173,6 +173,15 @@ class BaseServerRestApi(BaseDatabaseTest):
         # async api
         time.sleep(0.1)
 
+    def leave_all_groups(self, user_id: int = BaseTest.USER_ID):
+        raw_response = self.client.delete(
+            f"/v1/users/{user_id}/groups"
+        )
+        self.assertEqual(raw_response.status_code, 201)
+
+        # async api
+        time.sleep(0.1)
+
     def pin_group_for(self, group_id: str, user_id: int = BaseTest.USER_ID) -> None:
         self._set_pin_group_for(group_id, user_id, pinned=True)
 

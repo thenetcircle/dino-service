@@ -402,6 +402,22 @@ class RelationalHandler:
 
         return last_reads
 
+    def get_all_group_ids_for_user(self, user_id: int, db: Session) -> List[str]:
+        group_ids = (
+            db.query(
+                models.UserGroupStatsEntity.group_id
+            )
+            .filter(
+                models.UserGroupStatsEntity.user_id == user_id
+            )
+            .all()
+        )
+
+        if group_ids is None or len(group_ids) == 0:
+            return list()
+
+        return [group_id[0] for group_id in group_ids]
+
     def get_group_id_for_1to1(
         self, user_a: int, user_b: int, db: Session
     ) -> Optional[str]:
