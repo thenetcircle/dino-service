@@ -72,8 +72,12 @@ class BaseResource(ABC):
         # cassandra DT is different from python DT
         now = arrow.utcnow().datetime
 
-        # just update with the last one created
-        self.env.db.update_group_new_action_log(messages[-1], now, db)
+        self.env.db.update_group_new_message(
+            messages[-1],  # just update with the last one created
+            now,
+            db,
+            wakeup_users=False  # not for action logs
+        )
 
         self.env.db.set_last_updated_at_for_all_in_group(group_id, db)
         user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)

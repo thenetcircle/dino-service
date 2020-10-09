@@ -349,8 +349,10 @@ async def join_group(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@app.put("/v1/groups/{group_id}/actions", response_model=List[Message])
-async def create_action_logs(group_id: str, query: CreateActionLogQuery) -> None:
+@app.post("/v1/groups/{group_id}/actions", response_model=List[Message])
+async def create_action_logs(
+    group_id: str, query: CreateActionLogQuery, db: Session = Depends(get_db)
+) -> None:
     """
     Create one or more action logs in group.
 
@@ -358,7 +360,7 @@ async def create_action_logs(group_id: str, query: CreateActionLogQuery) -> None
     * `250`: if an unknown error occurred.
     """
     try:
-        return await environ.env.rest.group.create_action_logs(group_id, query)
+        return await environ.env.rest.group.create_action_logs(group_id, query, db)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 

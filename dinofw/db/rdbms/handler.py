@@ -313,7 +313,11 @@ class RelationalHandler:
         return groups
 
     def update_group_new_message(
-        self, message: MessageBase, sent_time: dt, db: Session
+        self,
+        message: MessageBase,
+        sent_time: dt,
+        db: Session,
+        wakeup_users: bool = True,
     ) -> None:
         group = (
             db.query(models.GroupEntity)
@@ -340,8 +344,12 @@ class RelationalHandler:
         )
 
         for user_stat in user_stats:
-            user_stat.hide = False
-            user_stat.delete_before = self.long_ago
+            # when creating action logs, we want to sync changes to apps, but not necessarily un-hide a group
+            # TODO: make we actually want to wake them up, check with stakeholders
+            if wakeup_users:
+                user_stat.hide = False
+                user_stat.delete_before = self.long_ago
+
             user_stat.last_updated_time = arrow.utcnow().datetime
             db.add(user_stat)
 

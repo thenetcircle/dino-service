@@ -717,3 +717,9 @@ class TestServerRestApi(BaseServerRestApi):
 
     def test_delete_all_groups_for_user(self):
         pass  # TODO: implement
+
+    def test_action_log_does_not_wakeup_users(self):
+        pass  # TODO: implement
+
+    def test_new_message_wakeup_users(self):
+        pass  # TODO: implement
