@@ -98,7 +98,7 @@ class TestGroupResource(BaseTest):
         group = await self.group.create_new_group(
             BaseTest.USER_ID, create_query, None
         )  # noqa
-        await self.group.create_action_logs(group.group_id, log_query)
+        await self.group.create_action_logs(group.group_id, log_query, None)  # noqa
 
         # send message and get histories
         await self.message.send_message_to_group(
@@ -201,7 +201,7 @@ class TestGroupResource(BaseTest):
         )
 
         # group doesn't exist yet
-        await self.group.leave_group(BaseTest.GROUP_ID, BaseTest.USER_ID, None)  # noqa
+        self.group.leave_group(BaseTest.GROUP_ID, BaseTest.USER_ID, None)  # noqa
 
         # create a new group
         group = await self.group.create_new_group(
@@ -214,7 +214,7 @@ class TestGroupResource(BaseTest):
         self.assertEqual(1, group_users.user_count)
 
         # leave the group
-        await self.group.leave_group(group.group_id, BaseTest.USER_ID, None)  # noqa
+        self.group.leave_group(group.group_id, BaseTest.USER_ID, None)  # noqa
 
         # check there's no users left in the group after leaving
         group_users = await self.group.get_users_in_group(group.group_id, None)  # noqa

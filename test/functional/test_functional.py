@@ -715,11 +715,54 @@ class TestServerRestApi(BaseServerRestApi):
         groups = self.groups_for_user(only_unread=True)
         self.assertEqual(0, len(groups))
 
-    def test_delete_all_groups_for_user(self):
-        pass  # TODO: implement
-
     def test_action_log_does_not_wakeup_users(self):
-        pass  # TODO: implement
+        message = self.send_1v1_message()
+        groups = self.groups_for_user(only_unread=True)
+        self.assertEqual(0, len(groups))
+
+        self.update_hide_group_for(message["group_id"], hide=True)
+
+        # make sure it's hidden
+        group_and_stats = self.groups_for_user(hidden=True)
+        self.assertEqual(1, len(group_and_stats))
+        self.assertTrue(group_and_stats[0]["stats"]["hide"])
+
+        self.action_log(message["group_id"], user_id=BaseTest.OTHER_USER_ID)
+
+        # should still be hidden
+        group_and_stats = self.groups_for_user(hidden=True)
+        self.assertEqual(1, len(group_and_stats))
+        self.assertTrue(group_and_stats[0]["stats"]["hide"])
 
     def test_new_message_wakeup_users(self):
+        message = self.send_1v1_message()
+        groups = self.groups_for_user(only_unread=True)
+        self.assertEqual(0, len(groups))
+
+        self.update_hide_group_for(message["group_id"], hide=True)
+
+        # make sure it's hidden
+        group_and_stats = self.groups_for_user(hidden=True)
+        self.assertEqual(1, len(group_and_stats))
+        self.assertTrue(group_and_stats[0]["stats"]["hide"])
+
+        self.action_log(message["group_id"], user_id=BaseTest.OTHER_USER_ID)
+
+        # should still be hidden
+        group_and_stats = self.groups_for_user(hidden=True)
+        self.assertEqual(1, len(group_and_stats))
+        self.assertTrue(group_and_stats[0]["stats"]["hide"])
+
+        group_and_stats = self.groups_for_user()
+        self.assertEqual(0, len(group_and_stats))
+
+        # try to wake up the users
+        self.send_1v1_message()
+
+        # should have woken up now
+        group_and_stats = self.groups_for_user()
+        self.assertEqual(1, len(group_and_stats))
+        self.assertFalse(group_and_stats[0]["stats"]["hide"])
+
+    def test_delete_all_groups_for_user(self):
         pass  # TODO: implement
