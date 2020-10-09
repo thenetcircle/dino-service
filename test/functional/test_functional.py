@@ -1,3 +1,5 @@
+import time
+
 import arrow
 
 from dinofw.utils.config import MessageTypes
@@ -763,6 +765,36 @@ class TestServerRestApi(BaseServerRestApi):
         group_and_stats = self.groups_for_user()
         self.assertEqual(1, len(group_and_stats))
         self.assertFalse(group_and_stats[0]["stats"]["hide"])
+
+    def test_new_message_resets_delete_before(self):
+        message = self.send_1v1_message(user_id=BaseTest.USER_ID, receiver_id=BaseTest.OTHER_USER_ID)
+
+        group_and_stats = self.groups_for_user()
+        join_time = group_and_stats[0]["stats"]["join_time"]
+        delete_before_original = group_and_stats[0]["stats"]["delete_before"]
+        self.assertEqual(join_time, delete_before_original)
+
+        yesterday = arrow.utcnow().shift(days=-1).float_timestamp
+        self.update_delete_before(message["group_id"], delete_before=yesterday)
+
+        group_and_stats = self.groups_for_user()
+        delete_before_updated = group_and_stats[0]["stats"]["delete_before"]
+
+        self.assertEqual(yesterday, delete_before_updated)
+        self.assertNotEqual(join_time, delete_before_updated)
+
+        # update it again so the next message resets it to join_time
+        now = arrow.utcnow().float_timestamp
+        self.update_delete_before(message["group_id"], delete_before=now)
+
+        # should reset 'delete_before' to 'join_time'
+        self.send_1v1_message(user_id=BaseTest.OTHER_USER_ID, receiver_id=BaseTest.USER_ID)
+
+        group_and_stats = self.groups_for_user()
+        delete_before_auto_updated = group_and_stats[0]["stats"]["delete_before"]
+
+        # TODO: fix, is off by 50ms
+        self.assertEqual(join_time, delete_before_auto_updated)
 
     def test_delete_all_groups_for_user(self):
         self.send_1v1_message()

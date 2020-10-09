@@ -348,7 +348,7 @@ class RelationalHandler:
             # TODO: make we actually want to wake them up, check with stakeholders
             if wakeup_users:
                 user_stat.hide = False
-                user_stat.delete_before = user_stats.join_time
+                user_stat.delete_before = user_stat.join_time
 
             user_stat.last_updated_time = arrow.utcnow().datetime
             db.add(user_stat)
@@ -906,7 +906,7 @@ class RelationalHandler:
             group_id=group_id,
             user_id=user_id,
             last_read=default_dt,
-            delete_before=self.long_ago,
+            delete_before=default_dt,  # TODO: for group chats, should this be long_ago or join_time? see old history
             last_sent=default_dt,
             join_time=default_dt,
             last_updated_time=now,
