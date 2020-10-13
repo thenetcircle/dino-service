@@ -74,6 +74,10 @@ class MessageResource(BaseResource):
 
         return messages
 
+    async def get_attachment_info(self, group_id: str, file_id: str) -> Message:
+        # TODO: implement
+        pass
+
     async def create_attachment(
         self, user_id: int, message_id: str, query: CreateAttachmentQuery, db: Session
     ) -> Message:

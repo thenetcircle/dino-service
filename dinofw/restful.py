@@ -176,6 +176,25 @@ async def create_an_attachment(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
+@app.get("/v1/group/{group_id}/attachment/{file_id}")
+async def get_attachment_info_from_file_id(
+        group_id: str, file_id: str, db: Session = Depends(get_db)
+) -> None:
+    """
+    TODO: implement
+
+    **Potential error codes in response:**
+    * `601`: if the group does not exist,
+    * `250`: if an unknown error occurred.
+    """
+    try:
+        return await environ.env.rest.message.get_attachmet_info(group_id, file_id, db)
+    except NoSuchGroupException as e:
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
+    except Exception as e:
+        log_error_and_raise_unknown(sys.exc_info(), e)
+
+
 @app.post("/v1/groups/{group_id}/user/{user_id}/attachments", response_model=List[Message])
 async def get_attachments_in_group_for_user(
     group_id: str, user_id: int, query: MessageQuery, db: Session = Depends(get_db)
