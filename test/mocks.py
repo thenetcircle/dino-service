@@ -19,7 +19,7 @@ from dinofw.rest.models import GroupQuery
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
 from dinofw.utils.config import MessageTypes
-from dinofw.utils.exceptions import NoSuchGroupException
+from dinofw.utils.exceptions import NoSuchGroupException, NoSuchAttachmentException
 
 
 class FakeStorage:
@@ -75,13 +75,23 @@ class FakeStorage:
         self, group_id: str, user_id: int, message_id: str, query: CreateAttachmentQuery
     ) -> MessageBase:
 
+        message_type = None
+        for message in self.messages_by_group[group_id]:
+            if message.message_id == message_id:
+                message_type = message.message_type
+                break
+
+        if message_type is None:
+            raise NoSuchAttachmentException(message_id)
+
         attachment = MessageBase(
             group_id=str(group_id),
             created_at=arrow.utcnow().datetime,
             user_id=user_id,
+            file_id=query.file_id,
             message_id=message_id,
             message_payload=query.message_payload,
-            message_type=MessageTypes.ACTION,
+            message_type=message_type,
         )
 
         if group_id not in self.attachments_by_group:
@@ -182,6 +192,16 @@ class FakeStorage:
                 break
 
         return attachments
+
+    def get_attachment_from_file_id(self, group_id: str, created_at: dt, file_id: str) -> MessageBase:
+        if group_id not in self.attachments_by_group:
+            raise NoSuchAttachmentException(file_id)
+
+        for attachment in self.attachments_by_group[group_id]:
+            if attachment.file_id == file_id:
+                return attachment
+
+        raise NoSuchAttachmentException(file_id)
 
     def get_messages_in_group_for_user(
         self, group_id: str, user_stats: UserGroupStatsBase, query: MessageQuery,

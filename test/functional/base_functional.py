@@ -1,4 +1,5 @@
 import time
+from uuid import uuid4 as uuid
 
 import arrow
 
@@ -258,9 +259,14 @@ class BaseServerRestApi(BaseDatabaseTest):
         user_id: int = BaseTest.USER_ID,
         receiver_id: int = BaseTest.OTHER_USER_ID,
     ) -> dict:
+        json_data = {
+            "receiver_id": receiver_id,
+            "message_type": message_type
+        }
+
         raw_response = self.client.post(
             f"/v1/users/{user_id}/send",
-            json={"receiver_id": receiver_id, "message_type": message_type,},
+            json=json_data,
         )
         self.assertEqual(raw_response.status_code, 200)
 
@@ -282,11 +288,8 @@ class BaseServerRestApi(BaseDatabaseTest):
         message_id: str,
         created_at: float,
         user_id: int = BaseTest.USER_ID,
-        receiver_id: int = None,
+        receiver_id: int = BaseTest.OTHER_USER_ID,
     ):
-        if receiver_id is None:
-            receiver_id = BaseTest.OTHER_USER_ID
-
         raw_response = self.client.post(
             f"/v1/users/{user_id}/message/{message_id}/attachment",
             json={
@@ -300,6 +303,18 @@ class BaseServerRestApi(BaseDatabaseTest):
         self.assertEqual(raw_response.status_code, 200)
 
         return raw_response.json()
+
+    def attachment_for_file_id(self, group_id: str, file_id: str, assert_response: bool = True):
+        raw_response = self.client.get(
+            f"/v1/group/{group_id}/attachment/{file_id}"
+        )
+        if assert_response:
+            self.assertEqual(raw_response.status_code, 200)
+
+        return raw_response.json()
+
+    def assert_error(self, response, error_code):
+        self.assertEqual(int(response["detail"].split(":")[0]), error_code)
 
     def assert_messages_in_group(
         self, group_id: str, user_id: int = BaseTest.USER_ID, amount: int = 0

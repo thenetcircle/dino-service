@@ -2,7 +2,7 @@ import time
 
 import arrow
 
-from dinofw.utils.config import MessageTypes
+from dinofw.utils.config import MessageTypes, ErrorCodes
 from test.base import BaseTest
 from test.functional.base_functional import BaseServerRestApi
 
@@ -821,10 +821,24 @@ class TestServerRestApi(BaseServerRestApi):
         self.assertEqual(0, len(groups))
 
     def test_get_attachment_from_file_id_returns_no_such_attachment(self):
-        pass
+        message = self.send_1v1_message(message_type=MessageTypes.IMAGE)
+        attachment = self.attachment_for_file_id(message["group_id"], BaseTest.FILE_ID, assert_response=False)
+        self.assert_error(attachment, ErrorCodes.NO_SUCH_ATTACHMENT)
 
     def test_get_attachment_from_file_id_returns_no_such_group(self):
-        pass
+        attachment = self.attachment_for_file_id(BaseTest.GROUP_ID, BaseTest.FILE_ID, assert_response=False)
+        self.assert_error(attachment, ErrorCodes.NO_SUCH_GROUP)
 
     def test_get_attachment_from_file_id_returns_ok(self):
-        pass
+        message = self.send_1v1_message(message_type=MessageTypes.IMAGE)
+        message_id = message["message_id"]
+        created_at = message["created_at"]
+        group_id = message["group_id"]
+
+        self.update_attachment(message_id, created_at)
+
+        attachment = self.attachment_for_file_id(group_id, BaseTest.FILE_ID)
+
+        self.assertIsNotNone(attachment)
+        self.assertEqual(attachment["file_id"], BaseTest.FILE_ID)
+        self.assertEqual(attachment["message_type"], MessageTypes.IMAGE)

@@ -176,6 +176,7 @@ class Message(BaseModel):
     message_payload: Optional[str]
 
     message_type: int
+    file_id: Optional[str]
     updated_at: Optional[float]
     removed_at: Optional[float]
     removed_by_user: Optional[int]
