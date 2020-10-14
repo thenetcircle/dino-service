@@ -305,8 +305,11 @@ class BaseServerRestApi(BaseDatabaseTest):
         return raw_response.json()
 
     def attachment_for_file_id(self, group_id: str, file_id: str, assert_response: bool = True):
-        raw_response = self.client.get(
-            f"/v1/groups/{group_id}/attachment/{file_id}"
+        raw_response = self.client.post(
+            f"/v1/groups/{group_id}/attachment",
+            json={
+                "file_id": file_id
+            }
         )
         if assert_response:
             self.assertEqual(raw_response.status_code, 200)
@@ -320,7 +323,7 @@ class BaseServerRestApi(BaseDatabaseTest):
         self, group_id: str, user_id: int = BaseTest.USER_ID, amount: int = 0
     ):
         raw_response = self.client.post(
-            f"/v1/groups/{group_id}/user/{user_id}/histories", json={"per_page": 100,},
+            f"/v1/groups/{group_id}/user/{user_id}/histories", json={"per_page": 100},
         )
         self.assertEqual(raw_response.status_code, 200)
         self.assertEqual(amount, len(raw_response.json()["messages"]))

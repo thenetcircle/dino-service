@@ -11,7 +11,7 @@ from starlette.background import BackgroundTask
 from starlette.responses import Response
 from starlette.status import HTTP_201_CREATED
 
-from dinofw.rest.models import CreateActionLogQuery
+from dinofw.rest.models import CreateActionLogQuery, AttachmentQuery
 from dinofw.rest.models import CreateAttachmentQuery
 from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import Group
@@ -180,9 +180,9 @@ async def create_an_attachment(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@app.get("/v1/groups/{group_id}/attachment/{file_id}", response_model=Message)
+@app.post("/v1/groups/{group_id}/attachment", response_model=Message)
 async def get_attachment_info_from_file_id(
-    group_id: str, file_id: str, db: Session = Depends(get_db)
+    group_id: str, query: AttachmentQuery, db: Session = Depends(get_db)
 ) -> Message:
     """
     Get attachment info from `file_id`.
@@ -193,7 +193,7 @@ async def get_attachment_info_from_file_id(
     * `250`: if an unknown error occurred.
     """
     try:
-        return await environ.env.rest.message.get_attachment_info(group_id, file_id, db)
+        return await environ.env.rest.message.get_attachment_info(group_id, query, db)
     except NoSuchGroupException as e:
         log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
     except NoSuchAttachmentException as e:

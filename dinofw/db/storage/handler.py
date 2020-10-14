@@ -14,7 +14,7 @@ from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.models import AttachmentModel
 from dinofw.db.storage.models import MessageModel
 from dinofw.db.storage.schemas import MessageBase
-from dinofw.rest.models import AdminQuery
+from dinofw.rest.models import AdminQuery, AttachmentQuery
 from dinofw.rest.models import CreateActionLogQuery
 from dinofw.rest.models import CreateAttachmentQuery
 from dinofw.rest.models import MessageQuery
@@ -185,14 +185,14 @@ class CassandraHandler:
             removed_at=removed_at,
         )
 
-    def get_attachment_from_file_id(self, group_id: str, created_at: dt, file_id: str) -> MessageBase:
+    def get_attachment_from_file_id(self, group_id: str, created_at: dt, query: AttachmentQuery) -> MessageBase:
         approx_date = arrow.get(created_at).shift(minutes=-1).datetime
 
         attachment = (
             AttachmentModel.objects(
                 AttachmentModel.group_id == group_id,
                 AttachmentModel.created_at > approx_date,
-                AttachmentModel.file_id == file_id,
+                AttachmentModel.file_id == query.file_id,
             )
             .allow_filtering()
             .first()

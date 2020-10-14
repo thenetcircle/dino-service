@@ -10,7 +10,7 @@ from dinofw.db.rdbms.schemas import GroupBase, UserGroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.schemas import MessageBase
 from dinofw.endpoint import IPublishHandler, IPublisher
-from dinofw.rest.models import AbstractQuery
+from dinofw.rest.models import AbstractQuery, AttachmentQuery
 from dinofw.rest.models import CreateActionLogQuery
 from dinofw.rest.models import CreateAttachmentQuery
 from dinofw.rest.models import CreateGroupQuery
@@ -193,15 +193,15 @@ class FakeStorage:
 
         return attachments
 
-    def get_attachment_from_file_id(self, group_id: str, created_at: dt, file_id: str) -> MessageBase:
+    def get_attachment_from_file_id(self, group_id: str, created_at: dt, query: AttachmentQuery) -> MessageBase:
         if group_id not in self.attachments_by_group:
-            raise NoSuchAttachmentException(file_id)
+            raise NoSuchAttachmentException(query.file_id)
 
         for attachment in self.attachments_by_group[group_id]:
-            if attachment.file_id == file_id:
+            if attachment.file_id == query.file_id:
                 return attachment
 
-        raise NoSuchAttachmentException(file_id)
+        raise NoSuchAttachmentException(query.file_id)
 
     def get_messages_in_group_for_user(
         self, group_id: str, user_stats: UserGroupStatsBase, query: MessageQuery,
