@@ -7,15 +7,15 @@
 
             $(document).ready(function() {
                 let settings = {
-                    clientId: '71037',
-                    username: '71037',
+                    clientId: '33',
+                    username: '33',
                     clean: false,
                     qos: 1
                 }
                 let client  = mqtt.connect('mqtt://maggie-kafka-1.thenetcircle.lab:1880/mqtt', settings);
 
                 client.on('connect', function () {
-                    client.subscribe('71037', {qos: 1}, function (err) {
+                    client.subscribe('33', {qos: 1}, function (err) {
                         if (err) {
                             console.log(err);
                         }
@@ -26,12 +26,169 @@
                     $('#messages').append(message + "<br/>");
                     console.log(message.toString());
                 });
+
+                $("input#send-msg").click(function() {
+                    let sender = $("input#sender").val();
+                    let receiver = parseInt($("input#receiver").val());
+                    let message_type = parseInt($("input#message_type").val());
+
+                    $.ajax({
+                        type: 'POST',
+                        url: "http://localhost:9800/v1/users/" + sender + "/send",
+                        contentType: 'application/json',
+                        dataType: 'json',
+                        processData: false,
+                        data: JSON.stringify({
+                            receiver_id: receiver,
+                            message_type: message_type,
+                            message_payload: "{\"some_key\":\"some_value\"}"
+                        }),
+                        success: function(resp){
+                            console.log(resp);
+
+                            $("input#message_id").val(resp["message_id"]);
+                            $("input#created_at").val(resp["created_at"]);
+                            $("input#group_id").val(resp["group_id"]);
+                            reset_file_id();
+                        }
+                    })
+                })
+
+                $("input#update-attachment").click(function() {
+                    let sender = $("input#sender").val();
+                    let message_id = $("input#message_id").val();
+                    let file_id = $("input#file_id").val();
+                    let receiver = parseInt($("input#receiver").val());
+                    let created_at = parseFloat($("input#created_at").val());
+                    let message_type = parseInt($("input#message_type").val());
+
+                    let json_data = JSON.stringify({
+                        receiver_id: receiver,
+                        file_id: file_id,
+                        created_at: created_at,
+                        message_type: message_type,
+                        message_payload: "{\"some_key\":\"some_value\"}",
+                    });
+                    console.log(json_data)
+
+                    $.ajax({
+                        type: 'POST',
+                        url: "http://localhost:9800/v1/users/" + sender + "/message/" + message_id + "/attachment",
+                        contentType: 'application/json',
+                        dataType: 'json',
+                        processData: false,
+                        data: json_data,
+                        success: function(resp){
+                            console.log(resp);
+
+                            $("input#message_id").val(resp["message_id"]);
+                            $("input#created_at").val(resp["created_at"]);
+                        }
+                    })
+                })
+
+                $("input#get-attachment").click(function() {
+                    let file_id = $("input#get_file_id").val();
+                    let group_id = $("input#group_id").val();
+
+                    let json_data = JSON.stringify({
+                        group_id: group_id,
+                        file_id: file_id,
+                    });
+                    console.log(json_data)
+
+                    $.ajax({
+                        type: 'POST',
+                        url: "http://localhost:9800/v1/groups/" + group_id + "/attachment",
+                        contentType: 'application/json',
+                        dataType: 'json',
+                        data: json_data,
+                        success: function(data) {
+                            console.log(data);
+                            $("pre#attachment").html(JSON.stringify(data, null, 2));
+                        }
+                    })
+                })
+
+                function reset_file_id() {
+                    let file_id = parseInt((Math.random() * 1000000).toString());
+                    $("input#file_id").val(file_id);
+                    $("input#get_file_id").val(file_id);
+                }
             });
         </script>
     </head>
     <body>
-        <h1>MQTT test</h1>
+        <h1>REST/MQTT test</h1>
 
-        <div id="messages"></div>
+        <table style="width: 100%;" border="1">
+            <tr>
+                <td style="width: 50%;">
+                    <div id="messages"></div>
+                </td>
+                <td style="vertical-align: top;">
+                    <div id="rest">
+                        <label for="sender">
+                            sender:
+                            <input type="text" id="sender" value="33"/>
+                        </label><br />
+
+                        <label for="receiver">
+                            receiver:
+                            <input type="text" id="receiver" value="66" />
+                        </label><br />
+
+                        <label for="message_type">
+                            message type:
+                            <input type="text" id="message_type" value="0" />
+                        </label><br />
+
+                        <label for="text">
+                            <textarea id="text">some text here</textarea>
+                        </label>
+
+                        <input type="button" id="send-msg" value="send">
+                        <br /><br />
+
+                        <label for="message_id">
+                            message ID:
+                            <input type="text" id="message_id" value="" />
+                        </label><br />
+
+                        <label for="file_id">
+                            file ID:
+                            <input type="text" id="file_id" value="" />
+                        </label><br />
+
+                        <label for="created_at">
+                            created at:
+                            <input type="text" id="created_at" value="" />
+                        </label><br />
+
+                        <input type="button" id="update-attachment" value="update attachment">
+                        <br /><br />
+
+                        <label for="get_file_id">
+                            file ID:
+                            <input type="text" id="get_file_id" value="" />
+                        </label><br />
+
+                        <label for="group_id">
+                            group ID:
+                            <input type="text" id="group_id" value="" />
+                        </label><br />
+
+                        <input type="button" id="get-attachment" value="get attachment info">
+                        <br /><br />
+                    </div>
+                    <br />
+
+                    <div style="width: 500px; overflow-wrap: break-word;">
+                        attachment:
+                        <pre style="border: 1px solid black;" id="attachment"></pre>
+                    </div>
+                </td>
+            </tr>
+        </table>
     </body>
 </html>

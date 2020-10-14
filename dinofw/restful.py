@@ -26,6 +26,7 @@ from dinofw.rest.models import OneToOneStats
 from dinofw.rest.models import SendMessageQuery
 from dinofw.rest.models import UpdateGroupQuery
 from dinofw.rest.models import UpdateUserGroupStats
+from fastapi.middleware.cors import CORSMiddleware
 from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UserGroupStats
 from dinofw.rest.models import UserStats
@@ -41,7 +42,17 @@ logging.getLogger("gmqtt").setLevel(logging.WARNING)
 
 
 def create_app():
-    return FastAPI()
+    api = FastAPI()
+
+    api.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    return api
 
 
 app = create_app()
