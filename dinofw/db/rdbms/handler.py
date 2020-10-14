@@ -143,7 +143,7 @@ class RelationalHandler:
             .filter(
                 models.GroupEntity.last_message_time <= until,
                 models.UserGroupStatsEntity.hide.is_(hidden),
-                models.UserGroupStatsEntity.delete_before < models.GroupEntity.last_message_time,
+                models.UserGroupStatsEntity.delete_before < models.GroupEntity.last_message_time,  # fix
                 models.UserGroupStatsEntity.user_id == user_id,
             )
         )
@@ -867,7 +867,17 @@ class RelationalHandler:
     def create_group(
         self, owner_id: int, query: CreateGroupQuery, db: Session
     ) -> GroupBase:
-        created_at = arrow.utcnow().datetime
+        utc_now = arrow.utcnow()
+        last_message_time = utc_now.datetime
+
+        # can't be exactly the same, because when listing groups for a
+        # user, any group with only one message would not be included,
+        # since we're doing a filter on delete_before < last_message_time,
+        # and when joining a group (happens on first message) we set
+        # "delete_before = join_time = created_at"; if we set
+        # last_message_time to this time as well the filter won't include
+        # the group
+        created_at = utc_now.shift(seconds=-1).datetime
 
         if query.group_type == GroupTypes.ONE_TO_ONE:
             group_id = users_to_group_id(*query.users)
@@ -878,7 +888,7 @@ class RelationalHandler:
             group_id=group_id,
             name=query.group_name,
             group_type=query.group_type,
-            last_message_time=created_at,
+            last_message_time=last_message_time,
             updated_at=created_at,
             created_at=created_at,
             owner_id=owner_id,
