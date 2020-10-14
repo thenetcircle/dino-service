@@ -143,7 +143,11 @@ class RelationalHandler:
             .filter(
                 models.GroupEntity.last_message_time <= until,
                 models.UserGroupStatsEntity.hide.is_(hidden),
-                models.UserGroupStatsEntity.delete_before < models.GroupEntity.last_message_time,  # fix
+                models.UserGroupStatsEntity.delete_before <= models.GroupEntity.updated_at,
+                # TODO: when joining a "group", the last message was before you joined; if we create
+                #  an action log when a user joins it will update `last_message_time` and we can use
+                #  that instead of `updated_at`, which would make more sense
+                # models.UserGroupStatsEntity.delete_before < models.GroupEntity.last_message_time,
                 models.UserGroupStatsEntity.user_id == user_id,
             )
         )
@@ -338,7 +342,11 @@ class RelationalHandler:
             db.query(models.UserGroupStatsEntity)
             .filter(
                 models.UserGroupStatsEntity.group_id == message.group_id,
-                models.UserGroupStatsEntity.hide.is_(True),
+                # we want to reset 'hide' and 'delete_before' when a new message is sent
+                or_(
+                    models.UserGroupStatsEntity.hide.is_(True),
+                    models.UserGroupStatsEntity.delete_before > models.UserGroupStatsEntity.join_time
+                )
             )
             .all()
         )
