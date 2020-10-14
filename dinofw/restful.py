@@ -546,6 +546,12 @@ async def delete_all_groups_for_user(user_id: int, db: Session = Depends(get_db)
     When a user removes his/her profile, make the user leave all groups.
 
     # TODO: discuss about deletion of messages; when? GDPR
+
+    This API is run asynchronously, and returns a 201 Created instead of
+    200 OK.
+
+    **Potential error codes in response:**
+    * `250`: if an unknown error occurred.
     """
     def leave_all_groups(user_id_, db_):
         environ.env.rest.group.delete_all_groups_for_user(
