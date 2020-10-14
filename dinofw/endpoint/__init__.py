@@ -51,6 +51,7 @@ class IPublishHandler(ABC):
             "event_type": "message",
             "group_id": message.group_id,
             "sender_id": message.user_id,
+            "file_id": message.file_id,
             "message_id": message.message_id,
             "message_payload": message.message_payload,
             "message_type": message.message_type,

@@ -23,7 +23,7 @@
                 });
 
                 client.on('message', function (topic, message) {
-                    $('#messages').append(message + "<br/>");
+                    $('#messages').append(JSON.stringify(JSON.parse(message.toString()), null, 2) + "\n");
                     console.log(message.toString());
                 });
 
@@ -124,7 +124,7 @@
         <table style="width: 100%;" border="1">
             <tr>
                 <td style="width: 50%;">
-                    <div id="messages"></div>
+                    <pre id="messages"></pre>
                 </td>
                 <td style="vertical-align: top;">
                     <div id="rest">
