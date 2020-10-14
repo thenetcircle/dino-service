@@ -31,7 +31,8 @@ from dinofw.rest.models import UserGroupStats
 from dinofw.rest.models import UserStats
 from dinofw.utils import environ
 from dinofw.utils.config import ErrorCodes
-from dinofw.utils.exceptions import NoSuchGroupException, NoSuchUserException, NoSuchAttachmentException
+from dinofw.utils.exceptions import NoSuchGroupException, NoSuchUserException, NoSuchAttachmentException, \
+    NoSuchMessageException
 from dinofw.utils.exceptions import UserNotInGroupException
 
 logger = logging.getLogger(__name__)
@@ -166,12 +167,15 @@ async def create_an_attachment(
 
     **Potential error codes in response:**
     * `601`: if the group does not exist,
+    * `602`: if the message does not exist,
     * `250`: if an unknown error occurred.
     """
     try:
         return await environ.env.rest.message.create_attachment(user_id, message_id, query, db)
     except NoSuchGroupException as e:
         log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
+    except NoSuchMessageException as e:
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_MESSAGE, e)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 
