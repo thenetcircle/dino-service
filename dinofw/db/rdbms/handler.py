@@ -342,11 +342,12 @@ class RelationalHandler:
             db.query(models.UserGroupStatsEntity)
             .filter(
                 models.UserGroupStatsEntity.group_id == message.group_id,
+                # TODO: don't filter; need to set 'last_updated_time' on every new message to sync?
                 # we want to reset 'hide' and 'delete_before' when a new message is sent
-                or_(
-                    models.UserGroupStatsEntity.hide.is_(True),
-                    models.UserGroupStatsEntity.delete_before > models.UserGroupStatsEntity.join_time
-                )
+                # or_(
+                #     models.UserGroupStatsEntity.hide.is_(True),
+                #     models.UserGroupStatsEntity.delete_before > models.UserGroupStatsEntity.join_time
+                # )
             )
             .all()
         )
@@ -358,7 +359,7 @@ class RelationalHandler:
                 user_stat.hide = False
                 user_stat.delete_before = user_stat.join_time
 
-            user_stat.last_updated_time = arrow.utcnow().datetime
+            user_stat.last_updated_time = sent_time
             db.add(user_stat)
 
         db.add(group)

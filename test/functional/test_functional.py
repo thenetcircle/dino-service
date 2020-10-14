@@ -424,10 +424,7 @@ class TestServerRestApi(BaseServerRestApi):
         self.assertEqual(groups[0]["stats"]["receiver_unread"], -1)
 
     def test_last_updated_at_changes_on_send_msg(self):
-        self.send_1v1_message(
-            user_id=BaseTest.USER_ID, receiver_id=BaseTest.OTHER_USER_ID
-        )
-
+        self.send_1v1_message(user_id=BaseTest.USER_ID, receiver_id=BaseTest.OTHER_USER_ID)
         groups = self.groups_for_user(user_id=BaseTest.USER_ID, count_unread=False)
         last_updated_at = groups[0]["stats"]["last_updated_time"]
 
@@ -437,6 +434,137 @@ class TestServerRestApi(BaseServerRestApi):
 
         groups = self.groups_for_user(user_id=BaseTest.USER_ID, count_unread=False)
         self.assertGreater(groups[0]["stats"]["last_updated_time"], last_updated_at)
+
+    def test_last_updated_at_changes_on_highlight(self):
+        self.send_1v1_message(user_id=BaseTest.USER_ID, receiver_id=BaseTest.OTHER_USER_ID)
+        groups = self.groups_for_user(user_id=BaseTest.USER_ID, count_unread=False)
+        last_updated_at = groups[0]["stats"]["last_updated_time"]
+
+        self.highlight_group_for_user(
+            group_id=groups[0]["group"]["group_id"],
+            user_id=BaseTest.USER_ID
+        )
+
+        groups = self.groups_for_user(user_id=BaseTest.USER_ID, count_unread=False)
+        self.assertGreater(groups[0]["stats"]["last_updated_time"], last_updated_at)
+
+    def test_last_updated_at_changes_on_bookmark_true(self):
+        self.send_1v1_message(user_id=BaseTest.USER_ID, receiver_id=BaseTest.OTHER_USER_ID)
+        groups = self.groups_for_user(user_id=BaseTest.USER_ID, count_unread=False)
+        last_updated_at = groups[0]["stats"]["last_updated_time"]
+
+        self.bookmark_group(
+            group_id=groups[0]["group"]["group_id"],
+            user_id=BaseTest.USER_ID,
+            bookmark=True,
+        )
+
+        groups = self.groups_for_user(user_id=BaseTest.USER_ID, count_unread=False)
+        self.assertGreater(groups[0]["stats"]["last_updated_time"], last_updated_at)
+
+    def test_last_updated_at_changes_on_bookmark_false(self):
+        self.send_1v1_message(user_id=BaseTest.USER_ID, receiver_id=BaseTest.OTHER_USER_ID)
+        groups = self.groups_for_user(user_id=BaseTest.USER_ID, count_unread=False)
+        last_updated_at = groups[0]["stats"]["last_updated_time"]
+
+        self.bookmark_group(
+            group_id=groups[0]["group"]["group_id"],
+            user_id=BaseTest.USER_ID,
+            bookmark=True,
+        )
+
+        groups = self.groups_for_user(user_id=BaseTest.USER_ID, count_unread=False)
+        bookmarked_updated_at = groups[0]["stats"]["last_updated_time"]
+        self.assertGreater(bookmarked_updated_at, last_updated_at)
+
+        self.bookmark_group(
+            group_id=groups[0]["group"]["group_id"],
+            user_id=BaseTest.USER_ID,
+            bookmark=False,
+        )
+
+        groups = self.groups_for_user(user_id=BaseTest.USER_ID, count_unread=False)
+        not_bookmarked_updated_at = groups[0]["stats"]["last_updated_time"]
+        self.assertGreater(not_bookmarked_updated_at, bookmarked_updated_at)
+
+    def test_last_updated_at_changes_on_hide_true(self):
+        self.send_1v1_message(user_id=BaseTest.USER_ID, receiver_id=BaseTest.OTHER_USER_ID)
+        groups = self.groups_for_user(user_id=BaseTest.USER_ID, count_unread=False)
+        last_updated_at = groups[0]["stats"]["last_updated_time"]
+
+        self.update_hide_group_for(
+            group_id=groups[0]["group"]["group_id"],
+            user_id=BaseTest.USER_ID,
+            hide=True
+        )
+
+        groups = self.groups_for_user(user_id=BaseTest.USER_ID, count_unread=False, hidden=True)
+        self.assertGreater(groups[0]["stats"]["last_updated_time"], last_updated_at)
+
+    def test_last_updated_at_changes_on_hide_false(self):
+        self.send_1v1_message(user_id=BaseTest.USER_ID, receiver_id=BaseTest.OTHER_USER_ID)
+        groups = self.groups_for_user(user_id=BaseTest.USER_ID, count_unread=False)
+        last_updated_at = groups[0]["stats"]["last_updated_time"]
+
+        self.update_hide_group_for(
+            group_id=groups[0]["group"]["group_id"],
+            user_id=BaseTest.USER_ID,
+            hide=True
+        )
+
+        groups = self.groups_for_user(user_id=BaseTest.USER_ID, count_unread=False, hidden=True)
+        hidden_updated_at = groups[0]["stats"]["last_updated_time"]
+        self.assertGreater(hidden_updated_at, last_updated_at)
+
+        self.update_hide_group_for(
+            group_id=groups[0]["group"]["group_id"],
+            user_id=BaseTest.USER_ID,
+            hide=False
+        )
+
+        groups = self.groups_for_user(user_id=BaseTest.USER_ID, count_unread=False)
+        not_hidden_updated_at = groups[0]["stats"]["last_updated_time"]
+        self.assertGreater(not_hidden_updated_at, hidden_updated_at)
+
+    def test_last_updated_at_changes_on_name_change(self):
+        self.send_1v1_message(user_id=BaseTest.USER_ID, receiver_id=BaseTest.OTHER_USER_ID)
+        groups = self.groups_for_user(user_id=BaseTest.USER_ID, count_unread=False)
+        last_updated_at = groups[0]["stats"]["last_updated_time"]
+
+        new_name = "new test name for group"
+        self.edit_group(groups[0]["group"]["group_id"], name=new_name)
+
+        groups = self.groups_for_user(user_id=BaseTest.USER_ID, count_unread=False)
+        new_updated_at = groups[0]["stats"]["last_updated_time"]
+        self.assertGreater(new_updated_at, last_updated_at)
+
+    def test_last_updated_at_changed_on_update_attachment(self):
+        message = self.send_1v1_message(message_type=MessageTypes.IMAGE)
+        self.assertEqual(MessageTypes.IMAGE, message["message_type"])
+        groups = self.groups_for_user(user_id=BaseTest.USER_ID, count_unread=False)
+        last_updated_at = groups[0]["stats"]["last_updated_time"]
+
+        self.update_attachment(
+            message["message_id"], message["created_at"]
+        )
+
+        groups = self.groups_for_user(user_id=BaseTest.USER_ID, count_unread=False)
+        new_updated_at = groups[0]["stats"]["last_updated_time"]
+        self.assertGreater(new_updated_at, last_updated_at)
+
+    def test_last_updated_at_not_changed_on_create_attachment(self):
+        self.send_1v1_message(user_id=BaseTest.USER_ID, receiver_id=BaseTest.OTHER_USER_ID)
+        groups = self.groups_for_user(user_id=BaseTest.USER_ID, count_unread=False)
+        last_updated_at = groups[0]["stats"]["last_updated_time"]
+
+        message = self.send_1v1_message(message_type=MessageTypes.IMAGE)
+        self.assertEqual(MessageTypes.IMAGE, message["message_type"])
+
+        groups = self.groups_for_user(user_id=BaseTest.USER_ID, count_unread=False)
+        create_attachment_updated_at = groups[0]["stats"]["last_updated_time"]
+
+        # TODO: do we want to update it on template creation as well as when processing is done?
+        self.assertGreater(create_attachment_updated_at, last_updated_at)
 
     def test_last_updated_at_changes_on_no_more_unread(self):
         self.send_1v1_message(
