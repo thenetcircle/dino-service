@@ -31,7 +31,7 @@ from dinofw.rest.models import UserGroupStats
 from dinofw.rest.models import UserStats
 from dinofw.utils import environ
 from dinofw.utils.config import ErrorCodes
-from dinofw.utils.exceptions import NoSuchGroupException, NoSuchUserException
+from dinofw.utils.exceptions import NoSuchGroupException, NoSuchUserException, NoSuchAttachmentException
 from dinofw.utils.exceptions import UserNotInGroupException
 
 logger = logging.getLogger(__name__)
@@ -176,21 +176,24 @@ async def create_an_attachment(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@app.get("/v1/group/{group_id}/attachment/{file_id}")
+@app.get("/v1/group/{group_id}/attachment/{file_id}", response_model=Message)
 async def get_attachment_info_from_file_id(
-        group_id: str, file_id: str, db: Session = Depends(get_db)
-) -> None:
+    group_id: str, file_id: str, db: Session = Depends(get_db)
+) -> Message:
     """
-    TODO: implement
+    Get attachment info from `file_id`.
 
     **Potential error codes in response:**
     * `601`: if the group does not exist,
+    * `604`: if the attachment does not exist,
     * `250`: if an unknown error occurred.
     """
     try:
-        return await environ.env.rest.message.get_attachmet_info(group_id, file_id, db)
+        return await environ.env.rest.message.get_attachment_info(group_id, file_id, db)
     except NoSuchGroupException as e:
         log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
+    except NoSuchAttachmentException as e:
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_ATTACHMENT, e)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 

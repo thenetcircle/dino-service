@@ -819,3 +819,12 @@ class TestServerRestApi(BaseServerRestApi):
 
         groups = self.groups_for_user()
         self.assertEqual(0, len(groups))
+
+    def test_get_attachment_from_file_id_returns_no_such_attachment(self):
+        pass
+
+    def test_get_attachment_from_file_id_returns_no_such_group(self):
+        pass
+
+    def test_get_attachment_from_file_id_returns_ok(self):
+        pass

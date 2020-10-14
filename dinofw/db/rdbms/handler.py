@@ -428,6 +428,20 @@ class RelationalHandler:
         group = self.get_group_for_1to1(user_a, user_b, db)
         return group.group_id
 
+    def get_group_from_id(self, group_id: str, db: Session) -> GroupBase:
+        group = (
+            db.query(models.GroupEntity)
+            .filter(
+                models.GroupEntity.group_id == group_id,
+            )
+            .first()
+        )
+
+        if group is None:
+            raise NoSuchGroupException(group_id)
+
+        return GroupBase(**group.__dict__)
+
     def get_group_for_1to1(
         self, user_a: int, user_b: int, db: Session, parse_result: bool = True
     ):

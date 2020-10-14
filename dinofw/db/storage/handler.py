@@ -20,7 +20,7 @@ from dinofw.rest.models import CreateAttachmentQuery
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
 from dinofw.utils.config import ConfigKeys
-from dinofw.utils.exceptions import NoSuchMessageException
+from dinofw.utils.exceptions import NoSuchMessageException, NoSuchAttachmentException
 
 
 class CassandraHandler:
@@ -184,6 +184,24 @@ class CassandraHandler:
             removed_by_user=query.admin_id,
             removed_at=removed_at,
         )
+
+    def get_attachment_from_file_id(self, group_id: str, created_at: dt, file_id: str) -> MessageBase:
+        approx_date = arrow.get(created_at).shift(minutes=-1).datetime
+
+        attachment = (
+            AttachmentModel.objects(
+                AttachmentModel.group_id == group_id,
+                AttachmentModel.created_at > approx_date,
+                AttachmentModel.file_id == file_id,
+            )
+            .allow_filtering()
+            .first()
+        )
+
+        if attachment is None:
+            raise NoSuchAttachmentException(file_id)
+
+        return CassandraHandler.message_base_from_entity(attachment)
 
     def store_attachment(
             self, group_id: str, user_id: int, message_id: str, query: CreateAttachmentQuery
