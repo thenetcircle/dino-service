@@ -180,7 +180,7 @@ async def create_an_attachment(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@app.get("/v1/group/{group_id}/attachment/{file_id}", response_model=Message)
+@app.get("/v1/groups/{group_id}/attachment/{file_id}", response_model=Message)
 async def get_attachment_info_from_file_id(
     group_id: str, file_id: str, db: Session = Depends(get_db)
 ) -> Message:

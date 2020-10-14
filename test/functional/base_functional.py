@@ -306,7 +306,7 @@ class BaseServerRestApi(BaseDatabaseTest):
 
     def attachment_for_file_id(self, group_id: str, file_id: str, assert_response: bool = True):
         raw_response = self.client.get(
-            f"/v1/group/{group_id}/attachment/{file_id}"
+            f"/v1/groups/{group_id}/attachment/{file_id}"
         )
         if assert_response:
             self.assertEqual(raw_response.status_code, 200)
