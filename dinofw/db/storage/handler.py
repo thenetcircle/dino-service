@@ -218,6 +218,7 @@ class CassandraHandler:
 
         message.update(
             message_payload=query.message_payload,
+            file_id=query.file_id,
             updated_at=now,
         )
 
@@ -229,6 +230,7 @@ class CassandraHandler:
             message_payload=query.message_payload,
             message_type=message.message_type,
             updated_at=now,
+            file_id=query.file_id,
         )
 
         return CassandraHandler.message_base_from_entity(message)
@@ -368,4 +370,5 @@ class CassandraHandler:
             message_payload=message.message_payload,
             message_type=message.message_type,
             updated_at=message.updated_at,
+            file_id=message.file_id,
         )

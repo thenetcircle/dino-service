@@ -28,6 +28,9 @@ class MessageModel(Model):
         required=True,
         default=uuid.uuid4
     )
+    file_id = Text(
+        required=False
+    )
     message_payload = Text(
         required=False
     )
@@ -58,6 +61,9 @@ class AttachmentModel(Model):
     message_id = UUID(
         required=True,
         default=uuid.uuid4
+    )
+    file_id = Text(
+        required=True
     )
     message_payload = Text(
         required=False
