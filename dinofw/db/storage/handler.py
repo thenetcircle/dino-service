@@ -199,7 +199,7 @@ class CassandraHandler:
         )
 
         if attachment is None:
-            raise NoSuchAttachmentException(file_id)
+            raise NoSuchAttachmentException(query.file_id)
 
         return CassandraHandler.message_base_from_entity(attachment)
 
