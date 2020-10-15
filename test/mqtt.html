@@ -50,9 +50,7 @@
                     }
                 });
 
-                $(document).on('click', 'a.join-group', function() {
-                    let group_id = $(this).attr('id');
-
+                function get_history(group_id, until, should_clear) {
                     $.ajax({
                         type: 'POST',
                         url: `${endpoint}/groups/${group_id}/user/${user_id}/histories`,
@@ -60,21 +58,53 @@
                         dataType: 'json',
                         processData: false,
                         data: JSON.stringify({
-                            per_page: 100
+                            per_page: 10,
+                            until: until
                         }),
                         success: function(resp){
                             console.log(resp);
 
-                            $("pre#history").html("");
+                            let history = $("pre#history");
+                            let until = $("input#until");
+
+                            if (should_clear) {
+                                history.html("");
+                            }
 
                             for (let i = 0; i < resp["messages"].length; i++) {
                                 let msg = resp["messages"][i];
-                                $("pre#history").append(
-                                    `${msg.created_at}: ${msg.message_payload}\n`
-                                )
+                                let created_at = format_date(new Date(msg.created_at * 1000));
+
+                                history.append(`${created_at} - ${msg.message_id} - ${msg.message_payload}\n`)
+                                until.val(msg.created_at);
                             }
                         }
                     });
+                }
+
+                function format_date(d) {
+                    return d.getFullYear() + "-" +
+                        ("0" + (d.getMonth() + 1)).slice(-2) + "-" +
+                        ("0" + d.getDate()).slice(-2) + " " +
+                        ("0" + d.getHours()).slice(-2) + ":" +
+                        ("0" + d.getMinutes()).slice(-2) + ":" +
+                        ("0" + d.getSeconds()).slice(-2);
+                }
+
+                $(document).on('click', 'a#next', function() {
+                    let group_id = $("input#current_group").val();
+                    let until = parseFloat($("input#until").val());
+
+                    get_history(group_id, until, false);
+                });
+
+                $(document).on('click', 'a.join-group', function() {
+                    let group_id = $(this).attr('id');
+                    let now = new Date();
+                    let until = Math.round(now.getTime() / 1000);
+
+                    $("input#current_group").val(group_id);
+                    get_history(group_id, until, true);
                 });
 
                 $("input#send-msg").click(function() {
@@ -174,7 +204,7 @@
         <table style="width: 100%;" border="1">
             <tr>
                 <td style="width: 50%;">
-                    <pre id="messages"></pre>
+                    <pre id="messages" style="height: 350px; overflow-y: scroll;"></pre>
                 </td>
                 <td style="vertical-align: top;">
                     <div id="rest">
@@ -241,10 +271,18 @@
             </tr>
             <tr>
                 <td style="vertical-align: top;">
-                    <pre id="history"></pre>
+                    <span><a href="#" id="next">next page</a></span>
+                    <pre id="history" style="height: 350px; overflow-y: scroll;"></pre>
                 </td>
                 <td style="vertical-align: top;">
                     <span>groups</span>
+
+                    <label for="until">
+                        <input id="until" style="display: none;" />
+                    </label>
+                    <label for="current_group">
+                        <input id="current_group" style="display: none;" />
+                    </label>
                     <div id="groups"></div>
                 </td>
             </tr>
