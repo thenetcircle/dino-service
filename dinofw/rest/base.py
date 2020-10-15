@@ -28,18 +28,28 @@ class BaseResource(ABC):
 
         self.logger = logging.getLogger(__name__)
 
-    def _user_opens_conversation(self, group_id: str, user_id: int, db):
+    def _user_opens_conversation(self, group_id: str, user_id: int, user_stats: UserGroupStatsBase, db):
         """
-        update database and cache with everything related to opening a conversation
+        update database and cache with everything related to opening a conversation (if needed)
         """
-        now = arrow.utcnow().datetime
-        user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
+        last_message_time = self.env.db.get_last_message_time_in_group(group_id, db)
 
-        self.env.db.update_last_read_and_highlight_in_group_for_user(
-            group_id, user_id, now, db
-        )
-        self.env.publisher.read(group_id, user_id, user_ids, now)
-        self.env.cache.set_unread_in_group(group_id, user_id, 0)
+        # if a user opens a conversation a second time and nothing has changed, we don't need to update
+        if BaseResource.need_to_update_stats_in_group(user_stats, last_message_time):
+            now = arrow.utcnow().datetime
+
+            # something changed, so update and set last_updated_time to sync to apps
+            self.env.db.update_last_read_and_highlight_in_group_for_user(
+                group_id, user_id, now, db
+            )
+
+            # no point updating if already newer than last message (also skips
+            # broadcasting unnecessary read-receipts)
+            if last_message_time < user_stats.last_read:
+                user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
+
+                self.env.publisher.read(group_id, user_id, user_ids, now)
+                self.env.cache.set_unread_in_group(group_id, user_id, 0)
 
     def _user_sends_a_message(
         self, group_id: str, user_id: int, message: MessageBase, db
@@ -93,7 +103,18 @@ class BaseResource(ABC):
         user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
         self.env.publisher.attachment(attachment, user_ids)
 
-    def _to_user_group(self, user_groups: List[UserGroupBase]):
+    @staticmethod
+    def need_to_update_stats_in_group(user_stats: UserGroupStatsBase, last_message_time: dt):
+        if user_stats.bookmark:
+            return True
+
+        if user_stats.highlight_time > last_message_time:
+            return True
+
+        return last_message_time > user_stats.last_read
+
+    @staticmethod
+    def to_user_group(user_groups: List[UserGroupBase]):
         groups: List[UserGroup] = list()
 
         for user_group in user_groups:

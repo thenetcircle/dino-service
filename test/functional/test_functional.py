@@ -571,18 +571,14 @@ class TestServerRestApi(BaseServerRestApi):
             user_id=BaseTest.USER_ID, receiver_id=BaseTest.OTHER_USER_ID
         )
 
-        groups = self.groups_for_user(
-            user_id=BaseTest.OTHER_USER_ID, count_unread=False
-        )
+        groups = self.groups_for_user(user_id=BaseTest.OTHER_USER_ID)
         last_updated_at = groups[0]["stats"]["last_updated_time"]
 
         self.histories_for(
             groups[0]["group"]["group_id"], user_id=BaseTest.OTHER_USER_ID
         )
 
-        groups = self.groups_for_user(
-            user_id=BaseTest.OTHER_USER_ID, count_unread=False
-        )
+        groups = self.groups_for_user(user_id=BaseTest.OTHER_USER_ID)
         self.assertGreater(groups[0]["stats"]["last_updated_time"], last_updated_at)
 
     def test_last_updated_at_changes_on_new_message_other_user(self):

@@ -78,46 +78,30 @@ class TestGroupResource(BaseTest):
 
     @async_test
     async def test_histories(self):
-        send_query = SendMessageQuery(
-            message_payload="some text", message_type=MessageTypes.MESSAGE
-        )
+        send_query = SendMessageQuery(message_payload="some text", message_type=MessageTypes.MESSAGE)
         message_query = MessageQuery(per_page=10)
-        create_query = CreateGroupQuery(
-            group_name="some group name", group_type=0, users=[BaseTest.USER_ID],
-        )
+        create_query = CreateGroupQuery(group_name="some group name", group_type=0, users=[BaseTest.USER_ID])
         log_query = CreateActionLogQuery(action_type=0, user_ids=[BaseTest.USER_ID])
 
-        histories = await self.group.histories(
-            BaseTest.GROUP_ID, BaseTest.USER_ID, message_query, db=None
-        )  # noqa
+        histories = await self.group.histories(BaseTest.GROUP_ID, BaseTest.USER_ID, message_query, db=None)  # noqa
 
         self.assertIsNotNone(histories)
         self.assertEqual(0, len(histories.messages))
 
         # create a new group
-        group = await self.group.create_new_group(
-            BaseTest.USER_ID, create_query, None
-        )  # noqa
+        group = await self.group.create_new_group(BaseTest.USER_ID, create_query, None)  # noqa
         await self.group.create_action_logs(group.group_id, log_query, None)  # noqa
 
         # send message and get histories
-        await self.message.send_message_to_group(
-            group.group_id, BaseTest.USER_ID, send_query, None
-        )  # noqa
-        histories = await self.group.histories(
-            group.group_id, BaseTest.USER_ID, message_query, db=None
-        )  # noqa
+        await self.message.send_message_to_group(group.group_id, BaseTest.USER_ID, send_query, None)  # noqa
+        histories = await self.group.histories(group.group_id, BaseTest.USER_ID, message_query, db=None)  # noqa
 
         # one join event and one message
         self.assertEqual(1, len(histories.messages))
 
         # send another message
-        await self.message.send_message_to_group(
-            group.group_id, BaseTest.USER_ID, send_query, None
-        )  # noqa
-        histories = await self.group.histories(
-            group.group_id, BaseTest.USER_ID, message_query, db=None
-        )  # noqa
+        await self.message.send_message_to_group(group.group_id, BaseTest.USER_ID, send_query, None)  # noqa
+        histories = await self.group.histories(group.group_id, BaseTest.USER_ID, message_query, db=None)  # noqa
 
         # now we should have two messages but still only one join event
         self.assertEqual(2, len(histories.messages))
