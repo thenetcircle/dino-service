@@ -122,7 +122,7 @@ class CassandraHandler:
         raw_messages = (
             MessageModel.objects(
                 MessageModel.group_id == group_id,
-                MessageModel.created_at <= until,
+                MessageModel.created_at < until,
                 MessageModel.created_at > user_stats.delete_before,
             )
             .limit(query.per_page or 100)
