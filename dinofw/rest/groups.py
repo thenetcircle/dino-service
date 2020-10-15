@@ -100,8 +100,6 @@ class GroupResource(BaseResource):
         if user_stats.hide:
             return Histories(messages=list(), action_logs=list(), last_reads=list())
 
-        self._user_opens_conversation(group_id, user_id, db)
-
         messages = [
             GroupResource.message_base_to_message(message)
             for message in self.env.storage.get_messages_in_group_for_user(
@@ -114,6 +112,9 @@ class GroupResource(BaseResource):
                 group_id, db
             ).items()
         ]
+
+        if len(messages):
+            self._user_opens_conversation(group_id, user_id, db)
 
         return Histories(
             messages=messages,
