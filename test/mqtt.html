@@ -4,8 +4,87 @@
         <script type="text/javascript" src="js/mqtt.min.js"></script>
         <script type="text/javascript">
             let socket;
+            let groups = {};
             const user_id = '33';
             const endpoint = 'http://localhost:9800/v1';
+
+            function add_group_link(group_id, group_name) {
+                $("div#groups").append(
+                    `<a href='#' class='join-group' id='${group_id}'>${group_name}</a><br />`
+                );
+            }
+
+            function format_message(created_at_float, message_id, message_payload, sender_id) {
+                let created_at = format_date(new Date(created_at_float * 1000));
+                return `${created_at} - ${sender_id} - ${message_payload}\n`
+            }
+
+            function get_history(group_id, until, should_clear) {
+                $.ajax({
+                    type: 'POST',
+                    url: `${endpoint}/groups/${group_id}/user/${user_id}/histories`,
+                    contentType: 'application/json',
+                    dataType: 'json',
+                    processData: false,
+                    data: JSON.stringify({
+                        per_page: 10,
+                        until: until
+                    }),
+                    success: function(resp){
+                        console.log(resp);
+
+                        let history = $("pre#history");
+                        let until = $("input#until");
+
+                        if (should_clear) {
+                            history.html("");
+                        }
+
+                        for (let i = 0; i < resp["messages"].length; i++) {
+                            let msg = resp["messages"][i];
+
+                            history.append(
+                                format_message(
+                                    msg.created_at,
+                                    msg.message_id,
+                                    msg.message_payload,
+                                    msg.user_id
+                                )
+                            );
+                            until.val(msg.created_at);
+                        }
+                    }
+                });
+            }
+
+            function get_group_name(group_id) {
+                $.ajax({
+                    type: 'GET',
+                    url: `${endpoint}/groups/${group_id}`,
+                    contentType: 'application/json',
+                    dataType: 'json',
+                    processData: false,
+                    success: function(resp) {
+                        groups[group_id] = resp.name;
+                        add_group_link(group_id, resp.name);
+                    }
+                });
+            }
+
+            function format_date(d) {
+                return d.getFullYear() + "-" +
+                    ("0" + (d.getMonth() + 1)).slice(-2) + "-" +
+                    ("0" + d.getDate()).slice(-2) + " " +
+                    ("0" + d.getHours()).slice(-2) + ":" +
+                    ("0" + d.getMinutes()).slice(-2) + ":" +
+                    ("0" + d.getSeconds()).slice(-2);
+            }
+
+            function reset_file_id() {
+                let file_id = parseInt((Math.random() * 1000000).toString());
+                $("input#file_id").val(file_id);
+                $("input#get_file_id").val(file_id);
+            }
 
             $(document).ready(function() {
                 let settings = {
@@ -24,11 +103,43 @@
                     })
                 });
 
+                function is_message_event(json_data) {
+                    return json_data.event_type === "message";
+                }
+
+                function is_for_this_group(json_data) {
+                    return $("input#current_group").val() === json_data.group_id;
+                }
+
+                function is_new_group(json_data) {
+                    return !(json_data.group_id in groups);
+                }
+
                 client.on('message', function (topic, message) {
-                    $('#messages').append(JSON.stringify(JSON.parse(message.toString()), null, 2) + "\n");
-                    console.log(message.toString());
+                    let json_data = JSON.parse(message.toString())
+
+                    // add a pretty-printed version to the event log
+                    $('#events').append(JSON.stringify(json_data, null, 2) + "\n");
+
+                    if (is_message_event(json_data) && is_for_this_group(json_data)) {
+                        let history = $("pre#history");
+
+                        history.prepend(
+                            format_message(
+                                json_data.created_at,
+                                json_data.message_id,
+                                json_data.message_payload,
+                                json_data.sender_id
+                            )
+                        );
+
+                        if (is_new_group(json_data)) {
+                            get_group_name(json_data.group_id);
+                        }
+                    }
                 });
 
+                // get all current groups
                 $.ajax({
                     type: 'POST',
                     url: `${endpoint}/users/${user_id}/groups`,
@@ -43,53 +154,11 @@
                             let group_id = resp[i]["group"].group_id;
                             let group_name = resp[i]["group"].name;
 
-                            $("div#groups").append(
-                                `<a href='#' class='join-group' id='${group_id}'>${group_name}</a><br />`
-                            );
+                            groups[group_id] = resp.name;
+                            add_group_link(group_id, group_name);
                         }
                     }
                 });
-
-                function get_history(group_id, until, should_clear) {
-                    $.ajax({
-                        type: 'POST',
-                        url: `${endpoint}/groups/${group_id}/user/${user_id}/histories`,
-                        contentType: 'application/json',
-                        dataType: 'json',
-                        processData: false,
-                        data: JSON.stringify({
-                            per_page: 10,
-                            until: until
-                        }),
-                        success: function(resp){
-                            console.log(resp);
-
-                            let history = $("pre#history");
-                            let until = $("input#until");
-
-                            if (should_clear) {
-                                history.html("");
-                            }
-
-                            for (let i = 0; i < resp["messages"].length; i++) {
-                                let msg = resp["messages"][i];
-                                let created_at = format_date(new Date(msg.created_at * 1000));
-
-                                history.append(`${created_at} - ${msg.message_id} - ${msg.message_payload}\n`)
-                                until.val(msg.created_at);
-                            }
-                        }
-                    });
-                }
-
-                function format_date(d) {
-                    return d.getFullYear() + "-" +
-                        ("0" + (d.getMonth() + 1)).slice(-2) + "-" +
-                        ("0" + d.getDate()).slice(-2) + " " +
-                        ("0" + d.getHours()).slice(-2) + ":" +
-                        ("0" + d.getMinutes()).slice(-2) + ":" +
-                        ("0" + d.getSeconds()).slice(-2);
-                }
 
                 $(document).on('click', 'a#next', function() {
                     let group_id = $("input#current_group").val();
@@ -111,6 +180,7 @@
                     let sender = $("input#sender").val();
                     let receiver = parseInt($("input#receiver").val());
                     let message_type = parseInt($("input#message_type").val());
+                    let message_payload = $("textarea#message_payload").val();
 
                     $.ajax({
                         type: 'POST',
@@ -121,7 +191,7 @@
                         data: JSON.stringify({
                             receiver_id: receiver,
                             message_type: message_type,
-                            message_payload: "{\"some_key\":\"some_value\"}"
+                            message_payload: message_payload
                         }),
                         success: function(resp){
                             console.log(resp);
@@ -147,7 +217,7 @@
                         file_id: file_id,
                         created_at: created_at,
                         message_type: message_type,
-                        message_payload: "{\"some_key\":\"some_value\"}",
+                        message_payload: "{\"width\":\"400\",\"height\":\"240\"}",
                     });
                     console.log(json_data)
 
@@ -189,12 +259,6 @@
                         }
                     })
                 });
-
-                function reset_file_id() {
-                    let file_id = parseInt((Math.random() * 1000000).toString());
-                    $("input#file_id").val(file_id);
-                    $("input#get_file_id").val(file_id);
-                }
             });
         </script>
     </head>
@@ -204,7 +268,7 @@
         <table style="width: 100%;" border="1">
             <tr>
                 <td style="width: 50%;">
-                    <pre id="messages" style="height: 350px; overflow-y: scroll;"></pre>
+                    <pre id="events" style="height: 350px; overflow-y: scroll;"></pre>
                 </td>
                 <td style="vertical-align: top;">
                     <div id="rest">
@@ -223,8 +287,8 @@
                             <input type="text" id="message_type" value="0" />
                         </label><br />
 
-                        <label for="text">
-                            <textarea id="text">some text here</textarea>
+                        <label for="message_payload">
+                            <textarea id="message_payload">some text here</textarea>
                         </label><br />
 
                         <input type="button" id="send-msg" value="send message">

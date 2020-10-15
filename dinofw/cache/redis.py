@@ -1,24 +1,25 @@
-import sys
 import logging
 import socket
-from typing import List, Tuple
-from typing import Optional
+import sys
+from datetime import datetime as dt
+from datetime import timedelta
 from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Tuple
 
 import redis
 
-from datetime import datetime as dt
-from datetime import timedelta
-
 from dinofw.cache import ICache
-from dinofw.rest.models import AbstractQuery
-from dinofw.utils.config import ConfigKeys, RedisKeys
+from dinofw.utils.config import ConfigKeys
+from dinofw.utils.config import RedisKeys
 
 logger = logging.getLogger(__name__)
 
 FIVE_MINUTES = 60 * 5
 ONE_HOUR = 60 * 60
 ONE_DAY = 24 * ONE_HOUR
+ONE_WEEK = 7 * ONE_DAY
 
 
 class MemoryCache:
@@ -176,6 +177,20 @@ class CacheRedis(ICache):
 
         messages, until = str(messages_until, "utf-8").split("|")
         return int(messages), float(until)
+
+    def set_last_message_time_in_group(self, group_id: str, last_message_time: float):
+        key = RedisKeys.last_message_time(group_id)
+        self.redis.set(key, last_message_time)
+        self.redis.expire(key, ONE_WEEK)
+
+    def get_last_message_time_in_group(self, group_id: str):
+        key = RedisKeys.last_message_time(group_id)
+        last_message_time = self.redis.get(key)
+
+        if last_message_time is None:
+            return None
+
+        return float(str(last_message_time, "utf-8"))
 
     def reset_count_group_types_for_user(self, user_id: int) -> None:
         key = RedisKeys.count_group_types_for(user_id)

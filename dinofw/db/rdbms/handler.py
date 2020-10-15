@@ -819,6 +819,29 @@ class RelationalHandler:
         db.add(user_stats)
         db.commit()
 
+    def get_last_message_time_in_group(self, group_id: str, db: Session) -> dt:
+        last_message_time = self.env.cache.get_last_message_time_in_group(group_id)
+        if last_message_time is not None:
+            return AbstractQuery.to_dt(last_message_time)
+
+        last_message_time = (
+            db.query(
+                models.GroupEntity.last_message_time
+            )
+            .filter(
+                models.GroupEntity.group_id == group_id
+            )
+            .first()
+        )
+
+        if last_message_time is None or len(last_message_time) == 0:
+            raise NoSuchGroupException(group_id)
+
+        last_message_time = last_message_time[0]
+        self.env.cache.set_last_message_time_in_group(group_id, AbstractQuery.to_ts(last_message_time))
+
+        return last_message_time
+
     def update_last_read_and_highlight_in_group_for_user(
         self, group_id: str, user_id: int, the_time: dt, db: Session
     ) -> None:
