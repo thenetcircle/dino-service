@@ -25,7 +25,7 @@ class RedisKeys:
     RKEY_GROUP_COUNT = "group:count:{}"  # group:count:user_id
     RKEY_LAST_SENT_TIME_USER = "user:lastsent:{}"  # user:lastsent:user_id
     RKEY_LAST_READ_TIME_USER = "user:lastread:{}"  # user:lastread:user_id
-    RKEY_LAST_MESSAGE_TIME = "user:lastmsgtime:{}"  # user:lastmsgtime:group_id
+    RKEY_LAST_MESSAGE_TIME = "group:lastmsgtime:{}"  # group:lastmsgtime:group_id
 
     @staticmethod
     def last_message_time(group_id: str) -> str:

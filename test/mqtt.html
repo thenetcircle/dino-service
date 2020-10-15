@@ -6,6 +6,7 @@
             let socket;
             let groups = {};
             const user_id = '33';
+            const other_user_id = '66';
             const endpoint = 'http://localhost:9800/v1';
 
             function add_group_link(group_id, group_name) {
@@ -100,7 +101,12 @@
                         if (err) {
                             console.log(err);
                         }
-                    })
+                    });
+                    client.subscribe(other_user_id, {qos: 1}, function (err) {
+                        if (err) {
+                            console.log(err);
+                        }
+                    });
                 });
 
                 function is_message_event(json_data) {
@@ -119,7 +125,12 @@
                     let json_data = JSON.parse(message.toString())
 
                     // add a pretty-printed version to the event log
-                    $('#events').append(JSON.stringify(json_data, null, 2) + "\n");
+                    $(`#events-${topic}`).append(JSON.stringify(json_data, null, 2) + "\n");
+
+                    // we don't care about the other user, we only need to see the events
+                    if (topic === other_user_id) {
+                        return;
+                    }
 
                     if (is_message_event(json_data) && is_for_this_group(json_data)) {
                         let history = $("pre#history");
@@ -268,7 +279,12 @@
         <table style="width: 100%;" border="1">
             <tr>
                 <td style="width: 50%;">
-                    <pre id="events" style="height: 550px; overflow-y: scroll;"></pre>
+                    events for user 33<br />
+                    <pre id="events-33" style="height: 240px; overflow-y: scroll;"></pre>
+                    <br />
+
+                    events for user 66<br />
+                    <pre id="events-66" style="height: 240px; overflow-y: scroll;"></pre>
                 </td>
                 <td style="vertical-align: top;">
                     <div id="rest">

@@ -332,6 +332,12 @@ class RelationalHandler:
         if group is None:
             raise NoSuchGroupException(message.group_id)
 
+        # for knowing if we need to send read-receipts when user opens a conversation
+        self.env.cache.set_last_message_time_in_group(
+            message.group_id,
+            AbstractQuery.to_ts(sent_time)
+        )
+
         group.last_message_time = sent_time
         group.last_message_overview = message.message_payload
         group.last_message_id = message.message_id

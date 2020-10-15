@@ -45,9 +45,11 @@ class BaseResource(ABC):
 
             # no point updating if already newer than last message (also skips
             # broadcasting unnecessary read-receipts)
-            if last_message_time < user_stats.last_read:
+            # TODO: test case for this
+            if last_message_time > user_stats.last_read:
                 user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
 
+                del user_ids[user_id]
                 self.env.publisher.read(group_id, user_id, user_ids, now)
                 self.env.cache.set_unread_in_group(group_id, user_id, 0)
 
