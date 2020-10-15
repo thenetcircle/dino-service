@@ -118,6 +118,7 @@ class GroupResource(BaseResource):
 
             # no point updating if already newer than last message (also skips
             # broadcasting unnecessary read-receipts)
+            # TODO: need to remove bookmark at least, even if last read is more recent than last message
             if last_message_time > user_stats.last_read:
                 self._user_opens_conversation(group_id, user_id, db)
 
