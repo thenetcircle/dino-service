@@ -125,7 +125,7 @@
                     let json_data = JSON.parse(message.toString())
 
                     // add a pretty-printed version to the event log
-                    $(`#events-${topic}`).append(JSON.stringify(json_data, null, 2) + "\n");
+                    $(`#events-${topic}`).prepend(JSON.stringify(json_data, null, 2) + "\n");
 
                     // we don't care about the other user, we only need to see the events
                     if (topic === other_user_id) {
@@ -282,6 +282,7 @@
                     events for user 33<br />
                     <pre id="events-33" style="height: 240px; overflow-y: scroll;"></pre>
                     <br />
+                    <hr />
 
                     events for user 66<br />
                     <pre id="events-66" style="height: 240px; overflow-y: scroll;"></pre>
@@ -351,7 +352,7 @@
             </tr>
             <tr>
                 <td style="vertical-align: top;">
-                    <span><a href="#" id="next">next page</a></span>
+                    <span><a href="#" id="next">load older messages</a></span>
                     <pre id="history" style="height: 350px; overflow-y: scroll;"></pre>
                 </td>
                 <td style="vertical-align: top;">
