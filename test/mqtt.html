@@ -4,18 +4,20 @@
         <script type="text/javascript" src="js/mqtt.min.js"></script>
         <script type="text/javascript">
             let socket;
+            const user_id = '33';
+            const endpoint = 'http://localhost:9800/v1';
 
             $(document).ready(function() {
                 let settings = {
-                    clientId: '33',
-                    username: '33',
+                    clientId: user_id,
+                    username: user_id,
                     clean: false,
                     qos: 1
                 }
                 let client  = mqtt.connect('mqtt://maggie-kafka-1.thenetcircle.lab:1880/mqtt', settings);
 
                 client.on('connect', function () {
-                    client.subscribe('33', {qos: 1}, function (err) {
+                    client.subscribe(user_id, {qos: 1}, function (err) {
                         if (err) {
                             console.log(err);
                         }
@@ -27,6 +29,54 @@
                     console.log(message.toString());
                 });
 
+                $.ajax({
+                    type: 'POST',
+                    url: `${endpoint}/users/${user_id}/groups`,
+                    contentType: 'application/json',
+                    dataType: 'json',
+                    processData: false,
+                    data: JSON.stringify({
+                        per_page: 100
+                    }),
+                    success: function(resp) {
+                        for (let i = 0; i < resp.length; i++) {
+                            let group_id = resp[i]["group"].group_id;
+                            let group_name = resp[i]["group"].name;
+
+                            $("div#groups").append(
+                                `<a href='#' class='join-group' id='${group_id}'>${group_name}</a><br />`
+                            );
+                        }
+                    }
+                });
+
+                $(document).on('click', 'a.join-group', function() {
+                    let group_id = $(this).attr('id');
+
+                    $.ajax({
+                        type: 'POST',
+                        url: `${endpoint}/groups/${group_id}/user/${user_id}/histories`,
+                        contentType: 'application/json',
+                        dataType: 'json',
+                        processData: false,
+                        data: JSON.stringify({
+                            per_page: 100
+                        }),
+                        success: function(resp){
+                            console.log(resp);
+
+                            $("pre#history").html("");
+
+                            for (let i = 0; i < resp["messages"].length; i++) {
+                                let msg = resp["messages"][i];
+                                $("pre#history").append(
+                                    `${msg.created_at}: ${msg.message_payload}\n`
+                                )
+                            }
+                        }
+                    });
+                });
+
                 $("input#send-msg").click(function() {
                     let sender = $("input#sender").val();
                     let receiver = parseInt($("input#receiver").val());
@@ -34,7 +84,7 @@
 
                     $.ajax({
                         type: 'POST',
-                        url: "http://localhost:9800/v1/users/" + sender + "/send",
+                        url: `${endpoint}/users/${sender}/send`,
                         contentType: 'application/json',
                         dataType: 'json',
                         processData: false,
@@ -51,8 +101,8 @@
                             $("input#group_id").val(resp["group_id"]);
                             reset_file_id();
                         }
-                    })
-                })
+                    });
+                });
 
                 $("input#update-attachment").click(function() {
                     let sender = $("input#sender").val();
@@ -73,7 +123,7 @@
 
                     $.ajax({
                         type: 'POST',
-                        url: "http://localhost:9800/v1/users/" + sender + "/message/" + message_id + "/attachment",
+                        url: `${endpoint}/users/${sender}/message/${message_id}/attachment`,
                         contentType: 'application/json',
                         dataType: 'json',
                         processData: false,
@@ -85,7 +135,7 @@
                             $("input#created_at").val(resp["created_at"]);
                         }
                     })
-                })
+                });
 
                 $("input#get-attachment").click(function() {
                     let file_id = $("input#get_file_id").val();
@@ -99,7 +149,7 @@
 
                     $.ajax({
                         type: 'POST',
-                        url: "http://localhost:9800/v1/groups/" + group_id + "/attachment",
+                        url: `${endpoint}/groups/${group_id}/attachment`,
                         contentType: 'application/json',
                         dataType: 'json',
                         data: json_data,
@@ -108,7 +158,7 @@
                             $("pre#attachment").html(JSON.stringify(data, null, 2));
                         }
                     })
-                })
+                });
 
                 function reset_file_id() {
                     let file_id = parseInt((Math.random() * 1000000).toString());
@@ -187,6 +237,15 @@
                         attachment:
                         <pre style="border: 1px solid black;" id="attachment"></pre>
                     </div>
+                </td>
+            </tr>
+            <tr>
+                <td style="vertical-align: top;">
+                    <pre id="history"></pre>
+                </td>
+                <td style="vertical-align: top;">
+                    <span>groups</span>
+                    <div id="groups"></div>
                 </td>
             </tr>
         </table>
