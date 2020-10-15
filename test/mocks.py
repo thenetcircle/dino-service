@@ -576,6 +576,7 @@ class FakePublisherHandler(IPublishHandler):
     def __init__(self):
         self.sent_messages = dict()
         self.sent_attachments = dict()
+        self.sent_reads = dict()
 
     def message(self, message: MessageBase, user_ids: List[int]) -> None:
         if message.group_id not in self.sent_messages:
@@ -590,7 +591,11 @@ class FakePublisherHandler(IPublishHandler):
         pass
 
     def read(self, group_id: str, user_id: int, user_ids: List[int], now) -> None:
-        pass  # TODO
+        for receiver in user_ids:
+            if receiver not in self.sent_reads:
+                self.sent_reads[receiver] = list()
+
+            self.sent_reads[receiver].append((group_id, user_id, now))
 
     def group_change(self, group_base: GroupBase, user_ids: List[int]) -> None:
         pass

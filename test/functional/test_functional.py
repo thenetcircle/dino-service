@@ -966,3 +966,29 @@ class TestServerRestApi(BaseServerRestApi):
         self.assertIsNotNone(attachment)
         self.assertEqual(attachment["file_id"], BaseTest.FILE_ID)
         self.assertEqual(attachment["message_type"], MessageTypes.IMAGE)
+
+    def test_read_receipt_published_when_opening_conversation(self):
+        message = self.send_1v1_message()
+        self.assertEqual(0, len(self.env.publisher.sent_reads))
+
+        self.histories_for(message["group_id"], user_id=BaseTest.OTHER_USER_ID)
+
+        # USER_ID should have gotten a read-receipt from OTHER_USER_ID
+        self.assertEqual(1, len(self.env.publisher.sent_reads[BaseTest.USER_ID]))
+        self.assertEqual(BaseTest.OTHER_USER_ID, self.env.publisher.sent_reads[BaseTest.USER_ID][0][1])
+
+    def test_read_receipt_not_duplicated_when_opening_conversation(self):
+        message = self.send_1v1_message()
+        self.assertEqual(0, len(self.env.publisher.sent_reads))
+
+        self.histories_for(message["group_id"], user_id=BaseTest.OTHER_USER_ID)
+
+        # USER_ID should have gotten a read-receipt from OTHER_USER_ID
+        self.assertEqual(1, len(self.env.publisher.sent_reads[BaseTest.USER_ID]))
+        self.assertEqual(BaseTest.OTHER_USER_ID, self.env.publisher.sent_reads[BaseTest.USER_ID][0][1])
+
+        self.histories_for(message["group_id"], user_id=BaseTest.OTHER_USER_ID)
+
+        # should not have another one
+        self.assertEqual(1, len(self.env.publisher.sent_reads[BaseTest.USER_ID]))
+        self.assertEqual(BaseTest.OTHER_USER_ID, self.env.publisher.sent_reads[BaseTest.USER_ID][0][1])
