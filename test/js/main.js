@@ -1,10 +1,14 @@
 let socket;
 let groups = {};
+let reads = {};
+let other_user_last_read = -1;
+let other_user_last_read_idx = 0;
 const user_id = '33';
 const other_user_id = '66';
 const rest_endpoint = 'http://maggie-kafka-1.thenetcircle.lab:9800';
 const mqtt_endpoint = 'mqtt://maggie-kafka-1.thenetcircle.lab:1880/mqtt';
 const version = 'v1';
+
 
 $(document).ready(initialize);
 
@@ -45,19 +49,6 @@ function setup_mqtt() {
 
     // handle events from mqtt
     client.on('message', on_mqtt_event);
-}
-
-function call(values) {
-    let data = {
-        type: 'POST',
-        contentType: 'application/json',
-        dataType: 'json',
-        processData: false
-    }
-    data = Object.assign({}, data, values);
-    data["url"] = `${rest_endpoint}/${version}/${values["url"]}`;
-
-    $.ajax(data);
 }
 
 function on_mqtt_event(topic, message) {
@@ -106,7 +97,29 @@ function handle_message_event(topic, json_data) {
 }
 
 function handle_read_event(topic, json_data) {
+    let group_id = json_data["group_id"];
+    let user_id = json_data["user_id"];
+    let read_at = json_data["read_at"];
 
+    if (!(group_id in reads)) {
+        reads[group_id] = {};
+    }
+    if (!(user_id in reads[group_id])) {
+        reads[group_id][user_id] = read_at;
+    }
+}
+
+function call(values) {
+    let data = {
+        type: 'POST',
+        contentType: 'application/json',
+        dataType: 'json',
+        processData: false
+    }
+    data = Object.assign({}, data, values);
+    data["url"] = `${rest_endpoint}/${version}/${values["url"]}`;
+
+    $.ajax(data);
 }
 
 function get_history(group_id, until, should_clear) {
@@ -123,15 +136,40 @@ function get_history(group_id, until, should_clear) {
             if (should_clear) {
                 history.html("");
             }
+            console.log(resp);
+
+            for (let i = 0; i < resp["last_reads"].length; i++) {
+                if (resp["last_reads"][i]["user_id"] === parseInt(other_user_id)) {
+                    other_user_last_read = resp["last_reads"][i]["last_read"];
+                    break;
+                }
+            }
+
+            for (let i = 0; i < resp["messages"].length; i++) {
+                if (parseFloat(resp["messages"][i]["created_at"]) > other_user_last_read) {
+                    other_user_last_read_idx = i;
+                }
+                else {
+                    break;
+                }
+            }
+
+            console.log(`last_read: ${other_user_last_read}`);
+            console.log(`last_read_idx: ${other_user_last_read_idx}`);
 
             for (let i = 0; i < resp["messages"].length; i++) {
                 let msg = resp["messages"][i];
+
+                let payload = msg.message_payload;
+                if (i === other_user_last_read_idx) {
+                    payload = payload + ` (last read: ${other_user_id})`
+                }
 
                 history.append(
                     format_message(
                         msg.created_at,
                         msg.message_id,
-                        msg.message_payload,
+                        payload,
                         msg.user_id
                     )
                 );
