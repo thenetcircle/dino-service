@@ -244,7 +244,7 @@ async def delete_attachment_with_file_id(
     """
     Delete an attachment.
 
-    # TODO: implement, async, result to kafka
+    # TODO: implement, async, send file_id to kafka on completion
 
     **Potential error codes in response:**
     * `250`: if an unknown error occurred.
@@ -266,7 +266,7 @@ async def delete_attachments_in_group_for_user(
     """
     Delete all attachments in this group for this user.
 
-    # TODO: implement, async, result to kafka
+    # TODO: implement, async, send file_id to kafka on completion
 
     **Potential error codes in response:**
     * `250`: if an unknown error occurred.
@@ -288,7 +288,7 @@ async def delete_attachments_in_all_groups_from_user(user_id: int, db: Session =
     """
     Delete all attachments send by this user in all groups.
 
-    # TODO: implement, async, result to kafka
+    # TODO: implement, async, send file_id to kafka on completion
 
     **Potential error codes in response:**
     * `250`: if an unknown error occurred.
