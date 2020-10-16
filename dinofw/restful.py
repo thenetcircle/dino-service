@@ -237,6 +237,72 @@ async def get_attachments_in_group_for_user(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
+@app.delete("/v1/groups/{group_id}/attachment", status_code=HTTP_201_CREATED)
+async def delete_attachment_with_file_id(
+    group_id: str, query: AttachmentQuery, db: Session = Depends(get_db)
+) -> Response:
+    """
+    Delete an attachment.
+
+    # TODO: implement, async
+
+    **Potential error codes in response:**
+    * `250`: if an unknown error occurred.
+    """
+    def _delete_attachment_with_file_id(group_id_, query_, db_):
+        environ.env.rest.group.delete_attachment(group_id_, query_, db_)
+
+    try:
+        task = BackgroundTask(_delete_attachment_with_file_id, group_id_=group_id, query_=query, db_=db)
+        return Response(background=task, status_code=HTTP_201_CREATED)
+    except Exception as e:
+        log_error_and_raise_unknown(sys.exc_info(), e)
+
+
+@app.delete("/v1/groups/{group_id}/user/{user_id}/attachments", status_code=HTTP_201_CREATED)
+async def delete_attachments_in_group_for_user(
+    group_id: str, user_id: int, db: Session = Depends(get_db)
+) -> Response:
+    """
+    Delete all attachments in this group for this user.
+
+    # TODO: implement, async
+
+    **Potential error codes in response:**
+    * `250`: if an unknown error occurred.
+    """
+    def _delete_attachments_in_group_for_user(group_id_, user_id_, db_):
+        environ.env.rest.group.delete_attachments_in_group_for_user(
+            group_id_, user_id_, db_
+        )
+
+    try:
+        task = BackgroundTask(_delete_attachments_in_group_for_user, group_id_=group_id, user_id_=user_id, db_=db)
+        return Response(background=task, status_code=HTTP_201_CREATED)
+    except Exception as e:
+        log_error_and_raise_unknown(sys.exc_info(), e)
+
+
+@app.delete("/v1/user/{user_id}/attachments", status_code=HTTP_201_CREATED)
+async def delete_attachments_in_all_groups_from_user(user_id: int, db: Session = Depends(get_db)) -> Response:
+    """
+    Delete all attachments send by this user in all groups.
+
+    # TODO: implement, async
+
+    **Potential error codes in response:**
+    * `250`: if an unknown error occurred.
+    """
+    def _delete_attachments_in_all_groups_from_user(user_id_, db_):
+        environ.env.rest.user.delete_all_user_attachments(user_id_, db_)
+
+    try:
+        task = BackgroundTask(_delete_attachments_in_all_groups_from_user, user_id_=user_id, db_=db)
+        return Response(background=task, status_code=HTTP_201_CREATED)
+    except Exception as e:
+        log_error_and_raise_unknown(sys.exc_info(), e)
+
+
 @app.post("/v1/groups/{group_id}/user/{user_id}/histories", response_model=Histories)
 async def get_group_history_for_user(
     group_id: str, user_id: int, query: MessageQuery, db: Session = Depends(get_db)
