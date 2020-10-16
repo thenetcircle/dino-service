@@ -44,7 +44,7 @@ function setup_mqtt() {
     });
 
     // handle events from mqtt
-    client.on('message', on_message_event);
+    client.on('message', on_mqtt_event);
 }
 
 function call(values) {
@@ -60,33 +60,53 @@ function call(values) {
     $.ajax(data);
 }
 
-function on_message_event(topic, message) {
+function on_mqtt_event(topic, message) {
     let json_data = JSON.parse(message.toString())
 
     // add a pretty-printed version to the event log
     $(`#events-${topic}`).prepend(JSON.stringify(json_data, null, 2) + "\n");
 
-    // we don't care about the other user, we only need to see the events
-    if (topic === other_user_id) {
+    switch (json_data["event_type"]) {
+        case "message":
+            handle_message_event(topic, json_data)
+            break;
+
+        case "read":
+            handle_read_event(topic, json_data)
+            break;
+
+        default:
+            console.log(`unknown mqtt event: ${json_data}`)
+    }
+}
+
+function handle_message_event(topic, json_data) {
+    if (!is_for_this_group(json_data)) {
+        return;
+    }
+    // we don't care about other users' messages
+    if (topic !== user_id) {
         return;
     }
 
-    if (is_message_event(json_data) && is_for_this_group(json_data)) {
-        let history = $("pre#history");
+    let history = $("pre#history");
 
-        history.prepend(
-            format_message(
-                json_data.created_at,
-                json_data.message_id,
-                json_data.message_payload,
-                json_data.sender_id
-            )
-        );
+    history.prepend(
+        format_message(
+            json_data.created_at,
+            json_data.message_id,
+            json_data.message_payload,
+            json_data.sender_id
+        )
+    );
 
-        if (is_new_group(json_data)) {
-            get_group_name(json_data.group_id);
-        }
+    if (is_new_group(json_data)) {
+        get_group_name(json_data.group_id);
     }
+}
+
+function handle_read_event(topic, json_data) {
+
 }
 
 function get_history(group_id, until, should_clear) {
@@ -226,10 +246,6 @@ function open_conversation() {
 
     $("input#current_group").val(group_id);
     get_history(group_id, until, true);
-}
-
-function is_message_event(json_data) {
-    return json_data.event_type === "message";
 }
 
 function is_for_this_group(json_data) {
