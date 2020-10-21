@@ -992,3 +992,12 @@ class TestServerRestApi(BaseServerRestApi):
         # should not have another one
         self.assertEqual(1, len(self.env.publisher.sent_reads[BaseTest.USER_ID]))
         self.assertEqual(BaseTest.OTHER_USER_ID, self.env.publisher.sent_reads[BaseTest.USER_ID][0][1])
+
+    def test_delete_one_attachment(self):
+        pass  # TODO: implement
+
+    def test_delete_all_attachments_in_one_group_for_user(self):
+        pass  # TODO: implement
+
+    def test_delete_all_attachments_in_all_groups_for_user(self):
+        pass  # TODO: implement
