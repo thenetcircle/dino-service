@@ -103,6 +103,24 @@ class RelationalHandler:
 
         return group_id, last_sent
 
+    def get_group_ids_and_created_at_for_user(self, user_id: int, db: Session) -> List[Tuple[str, dt]]:
+        groups = (
+            db.query(
+                models.GroupEntity.group_id,
+                models.GroupEntity.created_at,
+            )
+            .join(
+                models.UserGroupStatsEntity,
+                models.UserGroupStatsEntity.group_id == models.GroupEntity.group_id,
+            )
+            .filter(
+                models.UserGroupStatsEntity.user_id == user_id
+            )
+            .all()
+        )
+
+        return groups
+
     def get_groups_for_user(
         self,
         user_id: int,

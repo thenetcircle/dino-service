@@ -1,4 +1,5 @@
 import arrow
+import time
 
 from test.base import BaseTest
 from test.functional.base_db import BaseDatabaseTest
@@ -26,3 +27,22 @@ class TestDatabaseQueries(BaseDatabaseTest):
         )
         self.assertEqual(BaseTest.GROUP_ID, group_id)
         self.assertIsNotNone(last_sent)
+
+    def test_get_group_ids_and_created_at_for_user(self):
+        session = self.env.session_maker()
+
+        user_id = 50
+        receivers = [51, 52, 53, 54, 55]
+
+        groups = dict()
+
+        for receiver_id in receivers:
+            time.sleep(0.01)
+            group = self.env.db.create_group_for_1to1(user_id, receiver_id, session)
+            groups[group.group_id] = group.created_at
+
+        group_and_created_at = self.env.db.get_group_ids_and_created_at_for_user(user_id, session)
+        self.assertEqual(len(group_and_created_at), len(receivers))
+
+        for group_id, created_at in group_and_created_at:
+            self.assertEqual(created_at, groups[group_id])

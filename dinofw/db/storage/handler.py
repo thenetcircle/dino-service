@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime as dt
 from time import time
-from typing import List, Optional
+from typing import List, Optional, Dict, Tuple
 from uuid import uuid4 as uuid
 
 import arrow
@@ -158,6 +158,29 @@ class CassandraHandler:
         self.env.cache.set_unread_in_group(group_id, user_id, unread)
         return unread
 
+    def delete_attachments_in_all_groups(
+        self,
+        group_created_at: List[Tuple[str, dt]],
+        user_id: int
+    ) -> Dict[str, List[str]]:
+        group_to_msg_ids = dict()
+        start = time()
+
+        for group_id, created_at in group_created_at:
+            msg_ids, _ = self.delete_attachments(group_id, created_at, user_id)
+
+            if len(msg_ids):
+                group_to_msg_ids[group_id] = msg_ids
+
+        elapsed = time() - start
+        if elapsed > 5:
+            n = len(group_to_msg_ids)
+            self.logger.info(
+                f"batch delete attachments in {n} groups for user {user_id} took {elapsed:.2f}s"
+            )
+
+        return group_to_msg_ids
+
     def delete_attachments(
         self,
         group_id: str,
@@ -183,6 +206,10 @@ class CassandraHandler:
         file_ids = {attachment.file_id for attachment in attachments}
         attachment_msg_ids = {attachment.message_id for attachment in attachments}
 
+        # no un-deleted attachments in this group
+        if not len(file_ids):
+            return list(), list()
+
         messages_all = (
             MessageModel.objects(
                 MessageModel.group_id == group_id,
@@ -204,16 +231,18 @@ class CassandraHandler:
             callback=set_removed_at
         )
 
-        elapsed = (time() - start) / 1000
-        self.logger.info(f"batch updating {len(messages)} messages for deletion in {elapsed:.2f}s")
+        elapsed = time() - start
+        if elapsed > 1:
+            self.logger.info(f"batch updating {len(messages)} messages for deletion in {elapsed:.2f}s")
 
         start = time()
         with BatchQuery() as b:
             for attachment in attachments:
                 attachment.batch(b).delete()
 
-        elapsed = (time() - start) / 1000
-        self.logger.info(f"batch deleted {len(attachments)} attachments in {elapsed:.2f}s")
+        elapsed = time() - start
+        if elapsed > 1:
+            self.logger.info(f"batch deleted {len(attachments)} attachments in {elapsed:.2f}s")
 
         return attachment_msg_ids, file_ids
 
@@ -418,8 +447,7 @@ class CassandraHandler:
             )
 
             if not len(messages):
-                end = time()
-                elapsed = (end - start) / 1000
+                elapsed = time() - start
 
                 if elapsed > 5 or amount > 500:
                     self.logger.info(

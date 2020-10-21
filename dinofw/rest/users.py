@@ -62,3 +62,10 @@ class UserResource(BaseResource):
             last_sent_time=GroupQuery.to_ts(last_sent_time),
             last_sent_group_id=last_sent_group_id,
         )
+
+    def delete_all_user_attachments(self, user_id: int, db: Session) -> None:
+        group_created_at = self.env.db.get_group_ids_and_created_at_for_user(user_id, db)
+        group_to_msg_ids = self.env.storage.delete_attachments_in_all_groups(group_created_at, user_id)
+
+        # TODO: how to tell apps an attachment was deleted?
+        # TODO: self.env.publisher.delete_attachments(group_ids, message_ids)
