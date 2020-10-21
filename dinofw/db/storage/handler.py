@@ -158,12 +158,46 @@ class CassandraHandler:
         self.env.cache.set_unread_in_group(group_id, user_id, unread)
         return unread
 
+    def delete_attachment(
+            self,
+            group_id: str,
+            group_created_at: dt,
+            query: AttachmentQuery
+    ) -> (str, str):
+        attachment = (
+            AttachmentModel.objects(
+                AttachmentModel.group_id == group_id,
+                AttachmentModel.created_at > group_created_at,
+                AttachmentModel.file_id == query.file_id,
+            )
+            .allow_filtering()
+            .first()
+        )
+
+        # convert uuid to str
+        message_id = str(attachment.message_id)
+
+        self.delete_message(
+            group_id,
+            attachment.user_id,
+            message_id,
+            attachment.created_at
+        )
+
+        # delete attachment after message; delete_message() throws NoSuchMessage if not found
+        attachment.delete()
+
+        return message_id, query.file_id
+
     def delete_message(
-        self, group_id: str, user_id: int, message_id: str, query: AdminQuery
+        self, group_id: str, user_id: int, message_id: str, created_at: dt
     ) -> None:
+        approx_date = arrow.get(created_at).shift(minutes=-1).datetime
+
         message = (
             MessageModel.objects(
                 MessageModel.group_id == group_id,
+                MessageModel.created_at > approx_date,
                 MessageModel.user_id == user_id,
                 MessageModel.message_id == message_id,
             )
@@ -172,16 +206,12 @@ class CassandraHandler:
         )
 
         if message is None:
-            self.logger.warning(
-                f"no message found for user {user_id}, group {group_id}, message {message_id}"
-            )
-            return
+            raise NoSuchMessageException(message_id)
 
         removed_at = arrow.utcnow().datetime
 
         message.update(
             message_payload="",
-            removed_by_user=query.admin_id,
             removed_at=removed_at,
         )
 

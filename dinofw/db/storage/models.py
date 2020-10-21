@@ -38,6 +38,7 @@ class MessageModel(Model):
         required=True
     )
     updated_at = DateTime()
+    removed_at = DateTime()
 
 
 class AttachmentModel(Model):

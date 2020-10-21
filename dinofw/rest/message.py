@@ -99,9 +99,26 @@ class MessageResource(BaseResource):
         return MessageResource.message_base_to_message(attachment)
 
     async def delete_message(
-        self, group_id: str, user_id: int, message_id: str, query: AdminQuery
+        self, group_id: str, user_id: int, message_id: str, db: Session
     ) -> None:
-        self.env.storage.delete_message(group_id, user_id, message_id, query)
+        group = self.env.db.get_group_from_id(group_id, db)
+
+        self.env.storage.delete_message(
+            group_id, user_id, message_id, group.created_at
+        )
+
+        # TODO: how to tell apps a message was deleted?
+        # TODO: self.env.publisher.delete_message(group_id, message_id)
+
+    async def delete_attachment(self, group_id: str, query: AttachmentQuery, db: Session) -> None:
+        group = self.env.db.get_group_from_id(group_id, db)
+
+        message_id, file_id = self.env.storage.delete_attachment(
+            group_id, group.created_at, query
+        )
+
+        # TODO: how to tell apps an attachment was deleted?
+        # TODO: self.env.publisher.delete_attachment(group_id, message_id)
 
     async def update_messages(self, group_id: str, query: MessageQuery):
         self.env.storage.update_messages_in_group(group_id, query)

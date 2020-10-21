@@ -250,7 +250,7 @@ async def delete_attachment_with_file_id(
     * `250`: if an unknown error occurred.
     """
     def _delete_attachment_with_file_id(group_id_, query_, db_):
-        environ.env.rest.group.delete_attachment(group_id_, query_, db_)
+        environ.env.rest.message.delete_attachment(group_id_, query_, db_)
 
     try:
         task = BackgroundTask(_delete_attachment_with_file_id, group_id_=group_id, query_=query, db_=db)
