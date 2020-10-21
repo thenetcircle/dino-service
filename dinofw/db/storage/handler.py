@@ -213,6 +213,7 @@ class CassandraHandler:
         message.update(
             message_payload="",
             removed_at=removed_at,
+            updated_at=removed_at,
         )
 
     def get_attachment_from_file_id(self, group_id: str, created_at: dt, query: AttachmentQuery) -> MessageBase:
