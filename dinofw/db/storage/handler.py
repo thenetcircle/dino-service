@@ -19,7 +19,7 @@ from dinofw.rest.models import CreateActionLogQuery
 from dinofw.rest.models import CreateAttachmentQuery
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
-from dinofw.utils.config import ConfigKeys
+from dinofw.utils.config import ConfigKeys, MessageTypes
 from dinofw.utils.exceptions import NoSuchMessageException, NoSuchAttachmentException
 
 
@@ -158,11 +158,70 @@ class CassandraHandler:
         self.env.cache.set_unread_in_group(group_id, user_id, unread)
         return unread
 
+    def delete_attachments(
+        self,
+        group_id: str,
+        group_created_at: dt,
+        user_id: int
+    ) -> (List[str], List[str]):
+        now = arrow.utcnow().datetime
+
+        def set_removed_at(msg: MessageModel):
+            msg.removed_at = now
+            msg.updated_at = now
+            msg.message_payload = None
+
+        attachments = (
+            AttachmentModel.objects(
+                AttachmentModel.group_id == group_id,
+                AttachmentModel.created_at > group_created_at,
+                AttachmentModel.user_id == user_id,
+            )
+            .allow_filtering()
+            .all()
+        )
+        file_ids = {attachment.file_id for attachment in attachments}
+        attachment_msg_ids = {attachment.message_id for attachment in attachments}
+
+        messages_all = (
+            MessageModel.objects(
+                MessageModel.group_id == group_id,
+                MessageModel.created_at > group_created_at,
+                MessageModel.user_id == user_id,
+                MessageModel.message_type == MessageTypes.IMAGE,  # TODO: need to have type in query? image/video/etc.
+            )
+            .allow_filtering()
+            .all()
+        )
+        messages = [
+            message for message in messages_all
+            if message.message_id in attachment_msg_ids
+        ]
+
+        start = time()
+        self._update_messages(
+            messages=messages,
+            callback=set_removed_at
+        )
+
+        elapsed = (time() - start) / 1000
+        self.logger.info(f"batch updating {len(messages)} messages for deletion in {elapsed:.2f}s")
+
+        start = time()
+        with BatchQuery() as b:
+            for attachment in attachments:
+                attachment.batch(b).delete()
+
+        elapsed = (time() - start) / 1000
+        self.logger.info(f"batch deleted {len(attachments)} attachments in {elapsed:.2f}s")
+
+        return attachment_msg_ids, file_ids
+
     def delete_attachment(
-            self,
-            group_id: str,
-            group_created_at: dt,
-            query: AttachmentQuery
+        self,
+        group_id: str,
+        group_created_at: dt,
+        query: AttachmentQuery
     ) -> (str, str):
         attachment = (
             AttachmentModel.objects(
@@ -366,7 +425,6 @@ class CassandraHandler:
                     self.logger.info(
                         f"finished batch updating {amount} messages in group {group_id} after {elapsed:.2f}s"
                     )
-
                 break
 
             amount += len(messages)

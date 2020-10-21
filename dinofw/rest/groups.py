@@ -261,6 +261,16 @@ class GroupResource(BaseResource):
             user_ids_in_group = user_ids_and_join_times.keys()
             self.env.publisher.leave(group_id, user_ids_in_group, user_id, now_ts)
 
+    def delete_attachments_in_group_for_user(self, group_id: str, user_id: int, db: Session) -> None:
+        group = self.env.db.get_group_from_id(group_id, db)
+
+        message_ids, file_ids = self.env.storage.delete_attachments(
+            group_id, group.created_at, user_id
+        )
+
+        # TODO: how to tell apps an attachment was deleted?
+        # TODO: self.env.publisher.delete_attachments(group_ids, message_ids)
+
     def delete_all_groups_for_user(self, user_id: int, db: Session) -> None:
         group_ids = self.env.db.get_all_group_ids_for_user(user_id, db)
 
