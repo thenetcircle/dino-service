@@ -9,9 +9,8 @@ from datetime import datetime as dt
 
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.storage.schemas import MessageBase
-from dinofw.endpoint import IPublishHandler
+from dinofw.endpoint import IPublishHandler, EventTypes
 from dinofw.endpoint import IPublisher
-from dinofw.rest.models import AbstractQuery
 from dinofw.utils.config import ConfigKeys
 
 
@@ -68,7 +67,7 @@ class PublishHandler(IPublishHandler):
         data = PublishHandler.message_base_to_event(attachment)
         self.send(user_ids, data)
 
-    def read(self, group_id: str, user_id: int, user_ids: List[int], now: dt) -> None:
+    def read(self, group_id: str, user_id: int, user_ids: List[int], now: float) -> None:
         # only send read receipt to 1v1 groups
         if len(user_ids) > 2:
             return
@@ -76,16 +75,34 @@ class PublishHandler(IPublishHandler):
         data = PublishHandler.read_to_event(group_id, user_id, now)
         self.send(user_ids, data)
 
+    def delete_attachments(
+        self,
+        group_id: str,
+        message_ids: List[str],
+        file_ids: List[str],
+        user_ids: List[int],
+        now: float
+    ) -> None:
+        data = PublishHandler.create_simple_event(
+            event_type=EventTypes.DELETE_ATTACHMENT,
+            group_id=group_id,
+            now=now,
+        )
+        data["message_ids"] = message_ids
+        data["file_ids"] = file_ids
+
+        self.send(user_ids, data)
+
     def group_change(self, group_base: GroupBase, user_ids: List[int]) -> None:
         data = PublishHandler.group_base_to_event(group_base, user_ids)
         self.send(user_ids, data)
 
     def join(self, group_id: str, user_ids: List[int], joiner_id: int, now: float) -> None:
-        data = PublishHandler.create_simple_event("join", group_id, joiner_id, now)
+        data = PublishHandler.create_simple_event(EventTypes.JOIN, group_id, now, joiner_id)
         self.send(user_ids, data)
 
     def leave(self, group_id: str, user_ids: List[int], leaver_id: int, now: float) -> None:
-        data = PublishHandler.create_simple_event("leave", group_id, leaver_id, now)
+        data = PublishHandler.create_simple_event(EventTypes.LEAVE, group_id, now, leaver_id)
         self.send(user_ids, data)
 
     def send(self, user_ids, data):

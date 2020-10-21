@@ -162,24 +162,24 @@ class CassandraHandler:
         self,
         group_created_at: List[Tuple[str, dt]],
         user_id: int
-    ) -> Dict[str, List[str]]:
-        group_to_msg_ids = dict()
+    ) -> Dict[str, Tuple[List[str], List[str]]]:
+        group_to_ids = dict()
         start = time()
 
         for group_id, created_at in group_created_at:
-            msg_ids, _ = self.delete_attachments(group_id, created_at, user_id)
+            msg_ids, file_ids = self.delete_attachments(group_id, created_at, user_id)
 
             if len(msg_ids):
-                group_to_msg_ids[group_id] = msg_ids
+                group_to_ids[group_id] = msg_ids, file_ids
 
         elapsed = time() - start
         if elapsed > 5:
-            n = len(group_to_msg_ids)
+            n = len(group_to_ids)
             self.logger.info(
                 f"batch delete attachments in {n} groups for user {user_id} took {elapsed:.2f}s"
             )
 
-        return group_to_msg_ids
+        return group_to_ids
 
     def delete_attachments(
         self,

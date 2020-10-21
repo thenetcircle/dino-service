@@ -6,6 +6,16 @@ from dinofw.db.storage.schemas import MessageBase
 from dinofw.rest.models import AbstractQuery
 
 
+class EventTypes:
+    JOIN = "join"
+    LEAVE = "leave"
+    GROUP = "group"
+    READ = "read"
+    MESSAGE = "message"
+    DELETE_ATTACHMENT = "delete_attachment"
+    DELETE_MESSAGE = "delete_message"
+
+
 class IPublishHandler(ABC):
     @abstractmethod
     def message(self, message: MessageBase, user_ids: List[int]) -> None:
@@ -28,27 +38,31 @@ class IPublishHandler(ABC):
         """pass"""
 
     @staticmethod
-    def create_simple_event(event_type: str, group_id: str, user_id: int, now: float) -> dict:
-        return {
+    def create_simple_event(event_type: str, group_id: str, now: float, user_id: int = None) -> dict:
+        data = {
             "event_type": event_type,
             "created_at": now,
-            "group_id": group_id,
-            "user_id": user_id,
+            "group_id": group_id
         }
 
+        if user_id is not None:
+            data["user_id"] = user_id
+
+        return data
+
     @staticmethod
-    def read_to_event(group_id: str, user_id: int, now: dt):
+    def read_to_event(group_id: str, user_id: int, now: float):
         return {
-            "event_type": "read",
+            "event_type": EventTypes.READ,
             "group_id": group_id,
             "user_id": user_id,
-            "read_at": AbstractQuery.to_ts(now),
+            "read_at": now,
         }
 
     @staticmethod
     def message_base_to_event(message: MessageBase):
         return {
-            "event_type": "message",
+            "event_type": EventTypes.MESSAGE,
             "group_id": message.group_id,
             "sender_id": message.user_id,
             "file_id": message.file_id,
@@ -62,7 +76,7 @@ class IPublishHandler(ABC):
     @staticmethod
     def group_base_to_event(group: GroupBase, user_ids: List[int]) -> dict:
         return {
-            "event_type": "group",
+            "event_type": EventTypes.GROUP,
             "group_id": group.group_id,
             "name": group.name,
             "description": group.description,

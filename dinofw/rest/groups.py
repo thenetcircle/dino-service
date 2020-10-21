@@ -268,8 +268,18 @@ class GroupResource(BaseResource):
             group_id, group.created_at, user_id
         )
 
-        # TODO: how to tell apps an attachment was deleted?
-        # TODO: self.env.publisher.delete_attachments(group_ids, message_ids)
+        now = arrow.utcnow().float_timestamp
+        user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db).keys()
+
+        if len(user_ids):
+            # TODO: rename 'publisher' to 'client_publisher'
+            self.env.publisher.delete_attachments(group_id, message_ids, file_ids, user_ids, now)
+
+            # TODO: publish to kafka
+            # self.env.server_publisher.delete_attachments(group_id, message_id, file_id, user_ids, now)
+
+            # TODO: how to tell apps an attachment was deleted?
+            # self.env.db.update_group_updated_at ?
 
     def delete_all_groups_for_user(self, user_id: int, db: Session) -> None:
         group_ids = self.env.db.get_all_group_ids_for_user(user_id, db)

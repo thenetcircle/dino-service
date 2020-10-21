@@ -36,11 +36,13 @@ class BaseResource(ABC):
 
         # if a user opens a conversation a second time and nothing has changed, we don't need to update
         if BaseResource.need_to_update_stats_in_group(user_stats, last_message_time):
-            now = arrow.utcnow().datetime
+            now_arrow = arrow.utcnow()
+            now_dt = now_arrow.datetime
+            now_ts = now_arrow.float_timestamp
 
             # something changed, so update and set last_updated_time to sync to apps
             self.env.db.update_last_read_and_highlight_in_group_for_user(
-                group_id, user_id, now, db
+                group_id, user_id, now_dt, db
             )
 
             # no point updating if already newer than last message (also skips
@@ -49,7 +51,7 @@ class BaseResource(ABC):
                 user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
 
                 del user_ids[user_id]
-                self.env.publisher.read(group_id, user_id, user_ids, now)
+                self.env.publisher.read(group_id, user_id, user_ids, now_ts)
                 self.env.cache.set_unread_in_group(group_id, user_id, 0)
 
     def _user_sends_a_message(

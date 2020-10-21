@@ -1,6 +1,7 @@
 import logging
 from typing import List
 
+import arrow
 from sqlalchemy.orm import Session
 
 from dinofw.db.rdbms.schemas import UserGroupBase
@@ -65,7 +66,23 @@ class UserResource(BaseResource):
 
     def delete_all_user_attachments(self, user_id: int, db: Session) -> None:
         group_created_at = self.env.db.get_group_ids_and_created_at_for_user(user_id, db)
-        group_to_msg_ids = self.env.storage.delete_attachments_in_all_groups(group_created_at, user_id)
+        group_to_ids = self.env.storage.delete_attachments_in_all_groups(group_created_at, user_id)
 
-        # TODO: how to tell apps an attachment was deleted?
-        # TODO: self.env.publisher.delete_attachments(group_ids, message_ids)
+        now = arrow.utcnow().float_timestamp
+
+        for group_id, (msg_ids, file_ids) in group_to_ids.items():
+            user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db).keys()
+
+            if not len(user_ids):
+                continue
+
+            # TODO: rename 'publisher' to 'client_publisher'
+            self.env.publisher.delete_attachments(
+                group_id, msg_ids, file_ids, user_ids, now
+            )
+
+            # TODO: publish to kafka
+            # self.env.server_publisher.delete_attachments(group_id, [message_id], [file_id], user_ids, now)
+
+            # TODO: how to tell apps an attachment was deleted?
+            # self.env.db.update_group_updated_at ?

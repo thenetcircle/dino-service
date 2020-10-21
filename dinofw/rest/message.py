@@ -1,6 +1,7 @@
 import logging
 from typing import List
 
+import arrow
 from sqlalchemy.orm import Session
 
 from dinofw.rest.base import BaseResource
@@ -117,8 +118,18 @@ class MessageResource(BaseResource):
             group_id, group.created_at, query
         )
 
-        # TODO: how to tell apps an attachment was deleted?
-        # TODO: self.env.publisher.delete_attachment(group_id, message_id)
+        now = arrow.utcnow().float_timestamp
+        user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db).keys()
+
+        if len(user_ids):
+            # TODO: rename 'publisher' to 'client_publisher'
+            self.env.publisher.delete_attachments(group_id, [message_id], [file_id], user_ids, now)
+
+            # TODO: publish to kafka
+            # self.env.server_publisher.delete_attachments(group_id, [message_id], [file_id], user_ids, now)
+
+            # TODO: how to tell apps an attachment was deleted?
+            # self.env.db.update_group_updated_at ?
 
     async def update_messages(self, group_id: str, query: MessageQuery):
         self.env.storage.update_messages_in_group(group_id, query)
