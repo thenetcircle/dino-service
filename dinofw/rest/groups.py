@@ -211,7 +211,7 @@ class GroupResource(BaseResource):
         )
 
         # notify users they're in a new group
-        self.env.publisher.group_change(group_base, list(users.keys()))
+        self.env.client_publisher.group_change(group_base, list(users.keys()))
 
         return group
 
@@ -226,7 +226,7 @@ class GroupResource(BaseResource):
         )
         user_ids = user_ids_and_join_times.keys()
 
-        self.env.publisher.group_change(group, user_ids)
+        self.env.client_publisher.group_change(group, user_ids)
 
     async def join_group(self, group_id: str, user_id: int, db: Session) -> None:
         now = arrow.utcnow().datetime
@@ -243,7 +243,7 @@ class GroupResource(BaseResource):
             group_id, db
         )
         user_ids_in_group = user_ids_and_join_times.keys()
-        self.env.publisher.join(group_id, user_ids_in_group, user_id, now_ts)
+        self.env.client_publisher.join(group_id, user_ids_in_group, user_id, now_ts)
 
     def leave_group(self, group_id: str, user_id: int, db: Session) -> None:
         now = arrow.utcnow().datetime
@@ -259,7 +259,7 @@ class GroupResource(BaseResource):
         # if it's the last user we don't need to publish anything
         if len(user_ids_and_join_times):
             user_ids_in_group = user_ids_and_join_times.keys()
-            self.env.publisher.leave(group_id, user_ids_in_group, user_id, now_ts)
+            self.env.client_publisher.leave(group_id, user_ids_in_group, user_id, now_ts)
 
     def delete_attachments_in_group_for_user(self, group_id: str, user_id: int, db: Session) -> None:
         group = self.env.db.get_group_from_id(group_id, db)
@@ -272,11 +272,8 @@ class GroupResource(BaseResource):
         user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db).keys()
 
         if len(user_ids):
-            # TODO: rename 'publisher' to 'client_publisher'
-            self.env.publisher.delete_attachments(group_id, message_ids, file_ids, user_ids, now)
-
-            # TODO: publish to kafka
-            # self.env.server_publisher.delete_attachments(group_id, message_id, file_id, user_ids, now)
+            self.env.client_publisher.delete_attachments(group_id, message_ids, file_ids, user_ids, now)
+            self.env.server_publisher.delete_attachments(group_id, message_ids, file_ids, user_ids, now)
 
             # TODO: how to tell apps an attachment was deleted?
             # self.env.db.update_group_updated_at ?

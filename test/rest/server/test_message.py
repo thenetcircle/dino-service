@@ -17,7 +17,7 @@ class TestMessageResource(BaseTest):
             message_payload="a new message", message_type=MessageTypes.MESSAGE
         )
 
-        self.assertNotIn(BaseTest.GROUP_ID, self.resource.env.publisher.sent_messages)
+        self.assertNotIn(BaseTest.GROUP_ID, self.resource.env.client_publisher.sent_messages)
 
         message = await self.resource.send_message_to_group(
             group_id=BaseTest.GROUP_ID,
@@ -26,7 +26,7 @@ class TestMessageResource(BaseTest):
             db=None,  # noqa
         )
         self.assertEqual(
-            1, len(self.resource.env.publisher.sent_messages[BaseTest.GROUP_ID])
+            1, len(self.resource.env.client_publisher.sent_messages[BaseTest.GROUP_ID])
         )
         self.assertEqual(type(message), Message)
 
@@ -46,7 +46,7 @@ class TestMessageResource(BaseTest):
             db=None,  # noqa
         )
         self.assertEqual(
-            2, len(self.resource.env.publisher.sent_messages[BaseTest.GROUP_ID])
+            2, len(self.resource.env.client_publisher.sent_messages[BaseTest.GROUP_ID])
         )
 
         new_last_sent = self.resource.env.db.stats[BaseTest.USER_ID][0].last_sent

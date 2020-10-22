@@ -5,7 +5,6 @@ from uuid import uuid4 as uuid
 
 from gmqtt import Client as MQTTClient
 from gmqtt.mqtt.constants import MQTTv50
-from datetime import datetime as dt
 
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.storage.schemas import MessageBase
@@ -113,3 +112,20 @@ class PublishHandler(IPublishHandler):
                 self.logger.error(f"could not handle message: {str(e)}")
                 self.logger.exception(e)
                 self.env.capture_exception(sys.exc_info())
+
+
+class KafkaHandler:
+    def __init__(self):
+        # TODO: setup
+        pass
+
+    def delete_attachments(
+        self,
+        group_id: str,
+        message_ids: List[str],
+        file_ids: List[str],
+        user_ids: List[int],
+        now: float
+    ) -> None:
+        # TODO: generate event and send to kafka
+        pass

@@ -76,13 +76,12 @@ class UserResource(BaseResource):
             if not len(user_ids):
                 continue
 
-            # TODO: rename 'publisher' to 'client_publisher'
-            self.env.publisher.delete_attachments(
+            self.env.client_publisher.delete_attachments(
                 group_id, msg_ids, file_ids, user_ids, now
             )
-
-            # TODO: publish to kafka
-            # self.env.server_publisher.delete_attachments(group_id, msg_ids, file_ids, user_ids, now)
+            self.env.server_publisher.delete_attachments(
+                group_id, msg_ids, file_ids, user_ids, now
+            )
 
             # TODO: how to tell apps an attachment was deleted?
             # self.env.db.update_group_updated_at ?
