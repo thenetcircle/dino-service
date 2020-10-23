@@ -36,7 +36,7 @@ class MqttPublisher(IClientPublisher):
             version=MQTTv50
         )
 
-    def send(self, user_id: int, fields: dict) -> None:
+    def send(self, user_id: int, fields: dict, qos: int = 1) -> None:
         data = {
             key: value
             for key, value in fields.items()
@@ -45,7 +45,7 @@ class MqttPublisher(IClientPublisher):
         self.mqtt.publish(
             message_or_topic=str(user_id),
             payload=data,
-            qos=1,
+            qos=qos,
             message_expiry_interval=self.mqtt_ttl
         )
 
@@ -90,7 +90,20 @@ class MqttPublishHandler(IClientPublishHandler):
         data["message_ids"] = [att.message_id for att in attachments]
         data["file_ids"] = [att.file_id for att in attachments]
 
-        self.send(user_ids, data)
+        # we're sending deletion events async, and gmqtt can't store qos > 0
+        # without an eventloop, which we don't have since starlette runs
+        # BackgroundTasks in a thread executor... might be able to get around
+        # it by using something like this, but has to be tested:
+        #
+        #     loop = asyncio.new_event_loop()
+        #     asyncio.set_event_loop(loop)
+        #
+        #     loop.run_until_complete(do_stuff(i))
+        #     loop.close()
+        #
+        # for now, just use qos of 0 for deletion events, not the end of the
+        # world if they aren't delivered
+        self.send(user_ids, data, qos=0)
 
     def group_change(self, group_base: GroupBase, user_ids: List[int]) -> None:
         data = MqttPublishHandler.group_base_to_event(group_base, user_ids)
@@ -104,10 +117,10 @@ class MqttPublishHandler(IClientPublishHandler):
         data = MqttPublishHandler.create_simple_event(EventTypes.LEAVE, group_id, now, leaver_id)
         self.send(user_ids, data)
 
-    def send(self, user_ids, data):
+    def send(self, user_ids, data, qos: int = 1):
         for user_id in user_ids:
             try:
-                self.publisher.send(user_id, data)
+                self.publisher.send(user_id, data, qos)
             except Exception as e:
                 self.logger.error(f"could not handle message: {str(e)}")
                 self.logger.exception(e)
