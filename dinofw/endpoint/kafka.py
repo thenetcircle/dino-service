@@ -130,7 +130,7 @@ class KafkaPublishHandler(IServerPublishHandler):
 
         return ActivityBuilder.enrich(self.env, {
             "actor": {
-                "id": owner_id,
+                "id": str(owner_id),
             },
             "verb": "delete",
             "title": "messenger.attachment.delete",
