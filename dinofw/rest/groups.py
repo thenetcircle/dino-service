@@ -272,8 +272,8 @@ class GroupResource(BaseResource):
         user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db).keys()
 
         if len(user_ids):
-            self.env.client_publisher.delete_attachments(group_id, message_ids, file_ids, user_ids, now)
-            self.env.server_publisher.delete_attachments(group_id, message_ids, file_ids, user_ids, now)
+            for publisher in [self.env.client_publisher, self.env.server_publisher]:
+                publisher.delete_attachments(group_id, message_ids, file_ids, user_ids, now)
 
             # TODO: how to tell apps an attachment was deleted?
             # self.env.db.update_group_updated_at ?
