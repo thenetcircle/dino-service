@@ -51,7 +51,7 @@ class BaseResource(ABC):
                 user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
 
                 del user_ids[user_id]
-                self.env.publisher.read(group_id, user_id, user_ids, now_ts)
+                self.env.client_publisher.read(group_id, user_id, user_ids, now_ts)
                 self.env.cache.set_unread_in_group(group_id, user_id, 0)
 
     def _user_sends_a_message(
@@ -73,7 +73,7 @@ class BaseResource(ABC):
         )
 
         user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
-        self.env.publisher.message(message, user_ids)
+        self.env.client_publisher.message(message, user_ids)
 
         # don't increase unread for the sender
         del user_ids[user_id]
@@ -96,7 +96,7 @@ class BaseResource(ABC):
         user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
 
         for message in messages:
-            self.env.publisher.message(message, user_ids)
+            self.env.client_publisher.message(message, user_ids)
 
     def _user_sends_an_attachment(self, group_id: str, attachment: MessageBase, db):
         # cassandra DT is different from python DT
@@ -104,7 +104,7 @@ class BaseResource(ABC):
 
         self.env.db.update_group_new_message(attachment, now, db)
         user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
-        self.env.publisher.attachment(attachment, user_ids)
+        self.env.client_publisher.attachment(attachment, user_ids)
 
     @staticmethod
     def need_to_update_stats_in_group(user_stats: UserGroupStatsBase, last_message_time: dt):
