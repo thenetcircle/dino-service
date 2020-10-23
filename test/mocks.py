@@ -9,7 +9,7 @@ from dinofw.cache.redis import CacheRedis
 from dinofw.db.rdbms.schemas import GroupBase, UserGroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.schemas import MessageBase
-from dinofw.endpoint import IPublishHandler, IPublisher
+from dinofw.endpoint import IClientPublishHandler, IClientPublisher
 from dinofw.rest.models import AbstractQuery, AttachmentQuery
 from dinofw.rest.models import CreateActionLogQuery
 from dinofw.rest.models import CreateAttachmentQuery
@@ -564,7 +564,7 @@ class FakeDatabase:
         return None
 
 
-class MockPublisher(IPublisher):
+class MockPublisher(IClientPublisher):
     def __init__(self):
         self.stream = list()
 
@@ -572,7 +572,7 @@ class MockPublisher(IPublisher):
         self.stream.append(fields)
 
 
-class FakePublisherHandler(IPublishHandler):
+class FakePublisherHandler(IClientPublishHandler):
     def __init__(self):
         self.sent_messages = dict()
         self.sent_attachments = dict()
@@ -618,6 +618,10 @@ class FakeEnv:
                 "storage": {
                     "key_space": "dinofw",
                     "host": "maggie-cassandra-1,maggie-cassandra-2",
+                },
+                "kafka": {
+                    "topic": "test",
+                    "host": "localhost"
                 }
             }
 

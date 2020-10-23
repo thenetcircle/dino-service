@@ -21,6 +21,11 @@ coordinator:
     host: "$DINO_COORDINATOR_HOST"
     db: $DINO_COORDINATOR_DB
 
+kafka:
+    host: "$DINO_KAFKA_HOST"
+    topic: "$DINO_KAFKA_TOPIC"
+    dropped_log: "$DINO_KAFKA_DROPPED_LOG"
+
 stats:
     type: "mock"
 

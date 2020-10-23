@@ -1,12 +1,13 @@
 import json
 import logging
 import sys
-from abc import abstractmethod
 from abc import ABC
+from abc import abstractmethod
 from typing import List
 
 from dinofw.endpoint import IServerPublishHandler
 from dinofw.endpoint import IServerPublisher
+from dinofw.utils.activity import ActivityBuilder
 from dinofw.utils.config import ConfigKeys
 
 logging.getLogger("kafka").setLevel(logging.WARNING)
@@ -34,6 +35,13 @@ class KafkaPublisher(IServerPublisher):
     def __init__(self, env):
         self.env = env
         self.logger = logging.getLogger(__name__)
+
+        self.writer_factory = None
+        self.dropped_event_log = None
+        self.topic = None
+        self.producer = None
+
+    def setup(self):
         self.writer_factory = KafkaWriterFactory()
         self.dropped_event_log = self.create_loggers()
 
@@ -79,7 +87,7 @@ class KafkaPublisher(IServerPublisher):
         d_event_path = self.env.config.get(
             ConfigKeys.DROPPED_EVENT_FILE,
             domain=ConfigKeys.KAFKA,
-            default="/var/log/dino/dropped-events.log",
+            default="dropped-events.log",
         )
 
         return _create_logger(d_event_path, "DroppedEvents")
@@ -107,4 +115,22 @@ class KafkaPublishHandler(IServerPublishHandler):
         user_ids: List[int],
         now: float
     ) -> None:
-        pass  # TODO: implement
+        event = self.generate_event(group_id, file_ids)
+        self.publisher.send(event)
+
+    def generate_event(self, group_id: str, file_ids: List[str]) -> dict:
+        return ActivityBuilder.enrich(self.env, {
+            "verb": "delete",
+            "title": "messenger.attachment.delete",
+            "object": {
+                "objectType": "files",
+                "attachments": [{
+                    "objectType": "file_id",
+                    "content": file_id
+                } for file_id in file_ids]
+            },
+            "target": {
+                "objectType": "group",
+                "content": group_id,
+            },
+        })
