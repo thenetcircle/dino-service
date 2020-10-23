@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from typing import List
-from datetime import datetime as dt
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.storage.schemas import MessageBase
 from dinofw.rest.models import AbstractQuery
@@ -16,7 +15,22 @@ class EventTypes:
     DELETE_MESSAGE = "delete_message"
 
 
-class IPublishHandler(ABC):
+class IServerPublishHandler(ABC):
+    @abstractmethod
+    def delete_attachments(
+        self,
+        group_id: str,
+        message_ids: List[str],
+        file_ids: List[str],
+        user_ids: List[int],
+        now: float
+    ) -> None:
+        """
+        publish a list of attachments that has been deleted
+        """
+
+
+class IClientPublishHandler(ABC):
     @abstractmethod
     def message(self, message: MessageBase, user_ids: List[int]) -> None:
         """pass"""
@@ -95,9 +109,15 @@ class IPublishHandler(ABC):
         }
 
 
-class IPublisher(ABC):
+class IClientPublisher(ABC):
     @abstractmethod
     def send(self, user_id: int, fields: dict) -> None:
         """
         publish a bunch of fields to the configured stream
         """
+
+
+class IServerPublisher(ABC):
+    @abstractmethod
+    def send(self, message: dict) -> None:
+        """pass"""

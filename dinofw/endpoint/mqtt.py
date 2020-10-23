@@ -8,12 +8,13 @@ from gmqtt.mqtt.constants import MQTTv50
 
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.storage.schemas import MessageBase
-from dinofw.endpoint import IPublishHandler, EventTypes
-from dinofw.endpoint import IPublisher
+from dinofw.endpoint import EventTypes
+from dinofw.endpoint import IClientPublishHandler
+from dinofw.endpoint import IClientPublisher
 from dinofw.utils.config import ConfigKeys
 
 
-class MqttPublisher(IPublisher):
+class MqttPublisher(IClientPublisher):
     def __init__(self, env):
         self.env = env
         self.mqtt_host = env.config.get(ConfigKeys.HOST, domain=ConfigKeys.MQTT)
@@ -49,7 +50,7 @@ class MqttPublisher(IPublisher):
         )
 
 
-class PublishHandler(IPublishHandler):
+class MqttPublishHandler(IClientPublishHandler):
     def __init__(self, env):
         self.env = env
         self.logger = logging.getLogger(__name__)
@@ -59,11 +60,11 @@ class PublishHandler(IPublishHandler):
         await self.publisher.setup()
 
     def message(self, message: MessageBase, user_ids: List[int]) -> None:
-        data = PublishHandler.message_base_to_event(message)
+        data = MqttPublishHandler.message_base_to_event(message)
         self.send(user_ids, data)
 
     def attachment(self, attachment: MessageBase, user_ids: List[int]) -> None:
-        data = PublishHandler.message_base_to_event(attachment)
+        data = MqttPublishHandler.message_base_to_event(attachment)
         self.send(user_ids, data)
 
     def read(self, group_id: str, user_id: int, user_ids: List[int], now: float) -> None:
@@ -71,7 +72,7 @@ class PublishHandler(IPublishHandler):
         if len(user_ids) > 2:
             return
 
-        data = PublishHandler.read_to_event(group_id, user_id, now)
+        data = MqttPublishHandler.read_to_event(group_id, user_id, now)
         self.send(user_ids, data)
 
     def delete_attachments(
@@ -82,7 +83,7 @@ class PublishHandler(IPublishHandler):
         user_ids: List[int],
         now: float
     ) -> None:
-        data = PublishHandler.create_simple_event(
+        data = MqttPublishHandler.create_simple_event(
             event_type=EventTypes.DELETE_ATTACHMENT,
             group_id=group_id,
             now=now,
@@ -93,15 +94,15 @@ class PublishHandler(IPublishHandler):
         self.send(user_ids, data)
 
     def group_change(self, group_base: GroupBase, user_ids: List[int]) -> None:
-        data = PublishHandler.group_base_to_event(group_base, user_ids)
+        data = MqttPublishHandler.group_base_to_event(group_base, user_ids)
         self.send(user_ids, data)
 
     def join(self, group_id: str, user_ids: List[int], joiner_id: int, now: float) -> None:
-        data = PublishHandler.create_simple_event(EventTypes.JOIN, group_id, now, joiner_id)
+        data = MqttPublishHandler.create_simple_event(EventTypes.JOIN, group_id, now, joiner_id)
         self.send(user_ids, data)
 
     def leave(self, group_id: str, user_ids: List[int], leaver_id: int, now: float) -> None:
-        data = PublishHandler.create_simple_event(EventTypes.LEAVE, group_id, now, leaver_id)
+        data = MqttPublishHandler.create_simple_event(EventTypes.LEAVE, group_id, now, leaver_id)
         self.send(user_ids, data)
 
     def send(self, user_ids, data):
@@ -112,20 +113,3 @@ class PublishHandler(IPublishHandler):
                 self.logger.error(f"could not handle message: {str(e)}")
                 self.logger.exception(e)
                 self.env.capture_exception(sys.exc_info())
-
-
-class KafkaHandler:
-    def __init__(self):
-        # TODO: setup
-        pass
-
-    def delete_attachments(
-        self,
-        group_id: str,
-        message_ids: List[str],
-        file_ids: List[str],
-        user_ids: List[int],
-        now: float
-    ) -> None:
-        # TODO: generate event and send to kafka
-        pass

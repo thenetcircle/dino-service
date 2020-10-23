@@ -180,11 +180,11 @@ def _get_pub_host_port_db(gn_env: GNEnvironment) -> (str, int, int):
 
 
 def init_producer(gn_env: GNEnvironment) -> None:
-    from dinofw.endpoint.publisher import PublishHandler
-    from dinofw.endpoint.publisher import KafkaHandler
+    from dinofw.endpoint.mqtt import MqttPublishHandler
+    from dinofw.endpoint.kafka import KafkaPublishHandler
 
-    gn_env.client_publisher = PublishHandler(gn_env)
-    gn_env.server_publisher = KafkaHandler(gn_env)
+    gn_env.client_publisher = MqttPublishHandler(gn_env)
+    gn_env.server_publisher = KafkaPublishHandler(gn_env)
 
 
 def initialize_env(dino_env):
