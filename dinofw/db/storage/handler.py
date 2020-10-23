@@ -186,7 +186,7 @@ class CassandraHandler:
         group_id: str,
         group_created_at: dt,
         user_id: int
-    ) -> (List[str], List[str]):
+    ) -> List[MessageBase]:
         now = arrow.utcnow().datetime
 
         def set_removed_at(msg: MessageModel):
@@ -212,7 +212,7 @@ class CassandraHandler:
 
         # no un-deleted attachments in this group
         if not len(file_ids):
-            return list(), list()
+            return list()
 
         messages_all = (
             MessageModel.objects(
