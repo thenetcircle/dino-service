@@ -109,6 +109,9 @@ class KafkaPublishHandler(IServerPublishHandler):
         self.logger = logging.getLogger(__name__)
         self.publisher = KafkaPublisher(env)
 
+    def setup(self):
+        self.publisher.setup()
+
     def delete_attachments(
         self,
         group_id: str,
