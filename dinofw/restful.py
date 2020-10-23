@@ -639,6 +639,7 @@ async def delete_all_groups_for_user(user_id: int, db: Session = Depends(get_db)
 @app.on_event("startup")
 async def startup():
     await environ.env.client_publisher.setup()
+    environ.env.server_publisher.setup()
 
 
 def log_error_and_raise_unknown(exc_info, e):
