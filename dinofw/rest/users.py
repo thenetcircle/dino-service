@@ -66,18 +66,18 @@ class UserResource(BaseResource):
 
     def delete_all_user_attachments(self, user_id: int, db: Session) -> None:
         group_created_at = self.env.db.get_group_ids_and_created_at_for_user(user_id, db)
-        group_to_ids = self.env.storage.delete_attachments_in_all_groups(group_created_at, user_id)
+        group_to_atts = self.env.storage.delete_attachments_in_all_groups(group_created_at, user_id)
 
         now = arrow.utcnow().float_timestamp
 
-        for group_id, (msg_ids, file_ids) in group_to_ids.items():
+        for group_id, attachments in group_to_atts.items():
             user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db).keys()
 
             if not len(user_ids):
                 continue
 
             for publisher in [self.env.client_publisher, self.env.server_publisher]:
-                publisher.delete_attachments(group_id, msg_ids, file_ids, user_ids, now)
+                publisher.delete_attachments(group_id, attachments, user_ids, now)
 
             # TODO: how to tell apps an attachment was deleted?
             # self.env.db.update_group_updated_at ?

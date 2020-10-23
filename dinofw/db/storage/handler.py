@@ -162,24 +162,24 @@ class CassandraHandler:
         self,
         group_created_at: List[Tuple[str, dt]],
         user_id: int
-    ) -> Dict[str, Tuple[List[str], List[str]]]:
-        group_to_ids = dict()
+    ) -> Dict[str, List[MessageBase]]:
+        group_to_atts = dict()
         start = time()
 
         for group_id, created_at in group_created_at:
-            msg_ids, file_ids = self.delete_attachments(group_id, created_at, user_id)
+            attachments = self.delete_attachments(group_id, created_at, user_id)
 
-            if len(msg_ids):
-                group_to_ids[group_id] = msg_ids, file_ids
+            if len(attachments):
+                group_to_atts[group_id] = attachments
 
         elapsed = time() - start
         if elapsed > 5:
-            n = len(group_to_ids)
+            n = len(group_to_atts)
             self.logger.info(
                 f"batch delete attachments in {n} groups for user {user_id} took {elapsed:.2f}s"
             )
 
-        return group_to_ids
+        return group_to_atts
 
     def delete_attachments(
         self,
@@ -203,8 +203,12 @@ class CassandraHandler:
             .allow_filtering()
             .all()
         )
+
         file_ids = {attachment.file_id for attachment in attachments}
         attachment_msg_ids = {attachment.message_id for attachment in attachments}
+        attachment_bases = [
+            CassandraHandler.message_base_from_entity(attachment) for attachment in attachments
+        ]
 
         # no un-deleted attachments in this group
         if not len(file_ids):
@@ -244,7 +248,7 @@ class CassandraHandler:
         if elapsed > 1:
             self.logger.info(f"batch deleted {len(attachments)} attachments in {elapsed:.2f}s")
 
-        return attachment_msg_ids, file_ids
+        return attachment_bases
 
     def delete_attachment(
         self,
@@ -262,6 +266,9 @@ class CassandraHandler:
             .first()
         )
 
+        # to be returned
+        attachment_base = CassandraHandler.message_base_from_entity(attachment)
+
         # convert uuid to str
         message_id = str(attachment.message_id)
 
@@ -275,7 +282,7 @@ class CassandraHandler:
         # delete attachment after message; delete_message() throws NoSuchMessage if not found
         attachment.delete()
 
-        return message_id, query.file_id
+        return attachment_base
 
     def delete_message(
         self, group_id: str, user_id: int, message_id: str, created_at: dt

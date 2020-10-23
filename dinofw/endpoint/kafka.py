@@ -5,8 +5,10 @@ from abc import ABC
 from abc import abstractmethod
 from typing import List
 
+from dinofw.db.storage.schemas import MessageBase
 from dinofw.endpoint import IServerPublishHandler
 from dinofw.endpoint import IServerPublisher
+from dinofw.utils import split_into_chunks
 from dinofw.utils.activity import ActivityBuilder
 from dinofw.utils.config import ConfigKeys
 
@@ -110,24 +112,31 @@ class KafkaPublishHandler(IServerPublishHandler):
     def delete_attachments(
         self,
         group_id: str,
-        message_ids: List[str],
-        file_ids: List[str],
+        attachments: List[MessageBase],
         user_ids: List[int],
         now: float
     ) -> None:
-        event = self.generate_event(group_id, file_ids)
-        self.publisher.send(event)
+        # batch it in case there's a ton of images, don't want the events to become too large
+        for attachments_chunk in split_into_chunks(attachments, 100):
+            event = self.generate_event(group_id, attachments_chunk)
+            self.publisher.send(event)
 
-    def generate_event(self, group_id: str, file_ids: List[str]) -> dict:
+    def generate_event(self, group_id: str, attachments: List[MessageBase]) -> dict:
+        # same owner for all attachments
+        owner_id = attachments[0].user_id
+
         return ActivityBuilder.enrich(self.env, {
+            "actor": {
+                "id": owner_id,
+            },
             "verb": "delete",
             "title": "messenger.attachment.delete",
             "object": {
                 "objectType": "files",
                 "attachments": [{
-                    "objectType": "file_id",
-                    "content": file_id
-                } for file_id in file_ids]
+                    "objectType": str(attachment.message_type),
+                    "content": attachment.file_id
+                } for attachment in attachments]
             },
             "target": {
                 "objectType": "group",

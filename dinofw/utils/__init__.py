@@ -1,9 +1,4 @@
-import logging
-from abc import ABC, abstractmethod
-from base64 import b64decode
-from base64 import b64encode
-from typing import List
-
-from dinofw.db.storage.schemas import MessageBase
-
-logger = logging.getLogger(__name__)
+def split_into_chunks(objects, n):
+    for i in range(0, len(objects), n):
+        # yields successive n-sized chunks of data
+        yield objects[i:i + n]

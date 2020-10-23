@@ -78,8 +78,7 @@ class MqttPublishHandler(IClientPublishHandler):
     def delete_attachments(
         self,
         group_id: str,
-        message_ids: List[str],
-        file_ids: List[str],
+        attachments: List[MessageBase],
         user_ids: List[int],
         now: float
     ) -> None:
@@ -88,8 +87,8 @@ class MqttPublishHandler(IClientPublishHandler):
             group_id=group_id,
             now=now,
         )
-        data["message_ids"] = message_ids
-        data["file_ids"] = file_ids
+        data["message_ids"] = [att.message_id for att in attachments]
+        data["file_ids"] = [att.file_id for att in attachments]
 
         self.send(user_ids, data)
 

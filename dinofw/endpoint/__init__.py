@@ -20,8 +20,7 @@ class IServerPublishHandler(ABC):
     def delete_attachments(
         self,
         group_id: str,
-        message_ids: List[str],
-        file_ids: List[str],
+        attachments: List[MessageBase],
         user_ids: List[int],
         now: float
     ) -> None:

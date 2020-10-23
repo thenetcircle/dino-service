@@ -1,12 +1,12 @@
 import logging
 from datetime import datetime as dt
-from typing import List, Optional, Dict, Tuple, Any
+from typing import List, Optional, Dict, Tuple
 from uuid import uuid4 as uuid
 
 import arrow
 from sqlalchemy import func
-from sqlalchemy import or_
 from sqlalchemy import literal
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from dinofw.db.rdbms import models
@@ -14,11 +14,13 @@ from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.rdbms.schemas import UserGroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.schemas import MessageBase
-from dinofw.rest.models import CreateGroupQuery, AbstractQuery
+from dinofw.rest.models import AbstractQuery
+from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import GroupQuery
 from dinofw.rest.models import GroupUpdatesQuery
 from dinofw.rest.models import UpdateGroupQuery
 from dinofw.rest.models import UpdateUserGroupStats
+from dinofw.utils import split_into_chunks
 from dinofw.utils.config import GroupTypes
 from dinofw.utils.exceptions import NoSuchGroupException
 from dinofw.utils.exceptions import UserNotInGroupException
@@ -42,12 +44,6 @@ def group_id_to_users(group_id: str) -> (int, int):
     user_b = int(group_id[16:].lstrip("0"), 16)
 
     return sorted([user_a, user_b])
-
-
-def split_into_chunks(l, n):
-    for i in range(0, len(l), n):
-        # yields successive n-sized chunks of data
-        yield l[i:i + n]
 
 
 class RelationalHandler:
