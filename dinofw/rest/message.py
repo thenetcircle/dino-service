@@ -123,7 +123,7 @@ class MessageResource(BaseResource):
 
         if len(user_ids):
             for publisher in [self.env.client_publisher, self.env.server_publisher]:
-                publisher.delete_attachments(group_id, [attachment.message_id], [attachment.file_id], user_ids, now)
+                publisher.delete_attachments(group_id, [attachment], user_ids, now)
 
             # TODO: how to tell apps an attachment was deleted?
             # self.env.db.update_group_updated_at ?
