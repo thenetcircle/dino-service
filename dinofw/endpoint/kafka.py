@@ -138,7 +138,7 @@ class KafkaPublishHandler(IServerPublishHandler):
                 "objectType": "files",
                 "attachments": [{
                     "objectType": str(attachment.message_type),
-                    "content": attachment.file_id
+                    "content": attachment.message_payload
                 } for attachment in attachments]
             },
             "target": {
