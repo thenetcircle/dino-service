@@ -255,7 +255,7 @@ class CassandraHandler:
         group_id: str,
         group_created_at: dt,
         query: AttachmentQuery
-    ) -> (str, str):
+    ) -> MessageBase:
         attachment = (
             AttachmentModel.objects(
                 AttachmentModel.group_id == group_id,
@@ -265,6 +265,9 @@ class CassandraHandler:
             .allow_filtering()
             .first()
         )
+
+        if attachment is None:
+            raise NoSuchAttachmentException(query.file_id)
 
         # to be returned
         attachment_base = CassandraHandler.message_base_from_entity(attachment)

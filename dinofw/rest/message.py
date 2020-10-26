@@ -114,7 +114,7 @@ class MessageResource(BaseResource):
     def delete_attachment(self, group_id: str, query: AttachmentQuery, db: Session) -> None:
         group = self.env.db.get_group_from_id(group_id, db)
 
-        message_id, file_id = self.env.storage.delete_attachment(
+        attachment = self.env.storage.delete_attachment(
             group_id, group.created_at, query
         )
 
@@ -123,7 +123,7 @@ class MessageResource(BaseResource):
 
         if len(user_ids):
             for publisher in [self.env.client_publisher, self.env.server_publisher]:
-                publisher.delete_attachments(group_id, [message_id], [file_id], user_ids, now)
+                publisher.delete_attachments(group_id, [attachment.message_id], [attachment.file_id], user_ids, now)
 
             # TODO: how to tell apps an attachment was deleted?
             # self.env.db.update_group_updated_at ?
