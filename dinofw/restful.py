@@ -642,14 +642,6 @@ async def startup():
     environ.env.server_publisher.setup()
 
 
-@app.on_event("startup")
-async def startup_event():
-    uvicorn_logger = logging.getLogger("uvicorn.access")
-    handler = logging.StreamHandler()
-    handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
-    uvicorn_logger.addHandler(handler)
-
-
 def log_error_and_raise_unknown(exc_info, e):
     func_name = inspect.currentframe().f_back.f_code.co_name
     logger.error(f"{func_name}: {str(e)}")
