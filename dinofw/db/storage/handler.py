@@ -187,13 +187,6 @@ class CassandraHandler:
         group_created_at: dt,
         user_id: int
     ) -> List[MessageBase]:
-        now = arrow.utcnow().datetime
-
-        def set_removed_at(msg: MessageModel):
-            msg.removed_at = now
-            msg.updated_at = now
-            msg.message_payload = None
-
         attachments = (
             AttachmentModel.objects(
                 AttachmentModel.group_id == group_id,
@@ -229,24 +222,8 @@ class CassandraHandler:
             if message.message_id in attachment_msg_ids
         ]
 
-        start = time()
-        self._update_messages(
-            messages=messages,
-            callback=set_removed_at
-        )
-
-        elapsed = time() - start
-        if elapsed > 1:
-            self.logger.info(f"batch updating {len(messages)} messages for deletion in {elapsed:.2f}s")
-
-        start = time()
-        with BatchQuery() as b:
-            for attachment in attachments:
-                attachment.batch(b).delete()
-
-        elapsed = time() - start
-        if elapsed > 1:
-            self.logger.info(f"batch deleted {len(attachments)} attachments in {elapsed:.2f}s")
+        self._delete_messages(messages, "messages")
+        self._delete_messages(attachments, "attachments")
 
         return attachment_bases
 
@@ -467,6 +444,16 @@ class CassandraHandler:
 
             amount += len(messages)
             until = self._update_messages(messages, callback)
+
+    def _delete_messages(self, messages, types: str) -> None:
+        start = time()
+        with BatchQuery() as b:
+            for message in messages:
+                message.batch(b).delete()
+
+        elapsed = time() - start
+        if elapsed > 1:
+            self.logger.info(f"batch deleted {len(message)} {types} in {elapsed:.2f}s")
 
     def _update_messages(
         self, messages: List[MessageModel], callback: callable
