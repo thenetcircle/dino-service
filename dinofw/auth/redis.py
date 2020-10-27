@@ -1,7 +1,8 @@
 import logging
 import traceback
-import redis
 from typing import Union
+
+import redis
 
 from dinofw.auth import IAuth
 from dinofw.utils.config import ConfigKeys

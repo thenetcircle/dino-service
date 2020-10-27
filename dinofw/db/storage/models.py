@@ -1,9 +1,9 @@
 import uuid
 
-from cassandra.cqlengine.columns import UUID
 from cassandra.cqlengine.columns import DateTime
 from cassandra.cqlengine.columns import Integer
 from cassandra.cqlengine.columns import Text
+from cassandra.cqlengine.columns import UUID
 from cassandra.cqlengine.models import Model
 
 

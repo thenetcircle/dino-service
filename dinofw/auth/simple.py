@@ -1,5 +1,6 @@
-import fakeredis
 from typing import Union
+
+import fakeredis
 
 from dinofw.auth import IAuth
 

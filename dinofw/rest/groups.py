@@ -4,9 +4,9 @@ from typing import List, Optional
 import arrow
 from sqlalchemy.orm import Session
 
-from dinofw.db.rdbms.schemas import UserGroupStatsBase, UserGroupBase
+from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import AbstractQuery, GroupQuery
+from dinofw.rest.models import AbstractQuery
 from dinofw.rest.models import CreateActionLogQuery
 from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import Group

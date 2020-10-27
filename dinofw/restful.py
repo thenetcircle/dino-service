@@ -6,12 +6,14 @@ from typing import List
 from fastapi import Depends, HTTPException
 from fastapi import FastAPI
 from fastapi import status
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from starlette.background import BackgroundTask
 from starlette.responses import Response
 from starlette.status import HTTP_201_CREATED
 
-from dinofw.rest.models import CreateActionLogQuery, AttachmentQuery
+from dinofw.rest.models import AttachmentQuery
+from dinofw.rest.models import CreateActionLogQuery
 from dinofw.rest.models import CreateAttachmentQuery
 from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import Group
@@ -26,14 +28,15 @@ from dinofw.rest.models import OneToOneStats
 from dinofw.rest.models import SendMessageQuery
 from dinofw.rest.models import UpdateGroupQuery
 from dinofw.rest.models import UpdateUserGroupStats
-from fastapi.middleware.cors import CORSMiddleware
 from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UserGroupStats
 from dinofw.rest.models import UserStats
 from dinofw.utils import environ
 from dinofw.utils.config import ErrorCodes
-from dinofw.utils.exceptions import NoSuchGroupException, NoSuchUserException, NoSuchAttachmentException, \
-    NoSuchMessageException
+from dinofw.utils.exceptions import NoSuchAttachmentException
+from dinofw.utils.exceptions import NoSuchGroupException
+from dinofw.utils.exceptions import NoSuchMessageException
+from dinofw.utils.exceptions import NoSuchUserException
 from dinofw.utils.exceptions import UserNotInGroupException
 
 logger = logging.getLogger(__name__)

@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from zope.interface import implementer
-
 from dino.cache import ICache
+from zope.interface import implementer
 
 __author__ = "Oscar Eriksson <oscar.eriks@gmail.com>"
 

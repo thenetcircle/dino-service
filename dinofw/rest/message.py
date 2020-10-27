@@ -5,7 +5,7 @@ import arrow
 from sqlalchemy.orm import Session
 
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import AdminQuery, AttachmentQuery
+from dinofw.rest.models import AttachmentQuery
 from dinofw.rest.models import CreateAttachmentQuery
 from dinofw.rest.models import Message
 from dinofw.rest.models import MessageQuery
