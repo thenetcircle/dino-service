@@ -57,7 +57,11 @@ class MqttPublishHandler(IClientPublishHandler):
         self.publisher = MqttPublisher(env)
 
     async def setup(self):
-        await self.publisher.setup()
+        try:
+            await self.publisher.setup()
+        except Exception as e:
+            self.logger.error(f"count not connect to mqtt: {str(e)}")
+            self.logger.exception(e)
 
     def message(self, message: MessageBase, user_ids: List[int]) -> None:
         data = MqttPublishHandler.message_base_to_event(message)
