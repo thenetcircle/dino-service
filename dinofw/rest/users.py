@@ -30,15 +30,26 @@ class UserResource(BaseResource):
         return BaseResource.to_user_group(user_groups)
 
     async def get_user_stats(self, user_id: int, query: UserStatsQuery, db: Session) -> UserStats:
+        count_unread = True
+        only_unread = True
+        hidden = False
+
+        if query.only_unread is not None:
+            only_unread = query.only_unread
+        if query.count_unread is not None:
+            count_unread = query.count_unread
+        if query.hidden is not None:
+            hidden = query.hidden
+
         # if the user has more than 100 groups with unread messages in
         # it won't matter if the count is exact or not, just forget about
         # the super old ones (if a user reads a group, another unread
         # group will be selected next time for this query anyway)
         sub_query = GroupQuery(
             per_page=100,
-            only_unread=query.only_unread,
-            count_unread=query.count_unread,
-            hidden=query.hidden,
+            only_unread=only_unread,
+            count_unread=count_unread,
+            hidden=hidden,
         )
 
         user_groups: List[UserGroupBase] = self.env.db.get_groups_for_user(
@@ -52,7 +63,6 @@ class UserResource(BaseResource):
             GroupTypes.ONE_TO_ONE: -1,
         }
 
-        count_unread = sub_query.count_unread or True
         if count_unread:
             unread_amount = 0
             for user_group in user_groups:
