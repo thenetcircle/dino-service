@@ -86,13 +86,7 @@ class MqttPublishHandler(IClientPublishHandler):
         user_ids: List[int],
         now: float
     ) -> None:
-        data = MqttPublishHandler.create_simple_event(
-            event_type=EventTypes.DELETE_ATTACHMENT,
-            group_id=group_id,
-            now=now,
-        )
-        data["message_ids"] = [att.message_id for att in attachments]
-        data["file_ids"] = [att.file_id for att in attachments]
+        data = MqttPublishHandler.event_for_delete_attachments(group_id, attachments, now)
 
         # we're sending deletion events async, and gmqtt can't store qos > 0
         # without an eventloop, which we don't have since starlette runs

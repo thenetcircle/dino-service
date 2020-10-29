@@ -289,11 +289,12 @@ class BaseServerRestApi(BaseDatabaseTest):
         created_at: float,
         user_id: int = BaseTest.USER_ID,
         receiver_id: int = BaseTest.OTHER_USER_ID,
+        file_id: str = BaseTest.FILE_ID,
     ):
         raw_response = self.client.post(
             f"/v1/users/{user_id}/message/{message_id}/attachment",
             json={
-                "file_id": BaseTest.FILE_ID,
+                "file_id": file_id,
                 "status": BaseTest.FILE_STATUS,
                 "message_payload": BaseTest.FILE_CONTEXT,
                 "created_at": created_at,
@@ -315,6 +316,34 @@ class BaseServerRestApi(BaseDatabaseTest):
             self.assertEqual(raw_response.status_code, 200)
 
         return raw_response.json()
+
+    def delete_attachment(self, group_id: str, file_id: str = BaseTest.FILE_ID):
+        raw_response = self.client.delete(
+            f"/v1/groups/{group_id}/attachment",
+            json={"file_id": file_id}
+        )
+        self.assertEqual(raw_response.status_code, 201)
+
+        # async api
+        time.sleep(0.1)
+
+    def delete_attachments_in_group(self, group_id: str, user_id: str = BaseTest.USER_ID):
+        raw_response = self.client.delete(
+            f"/v1/groups/{group_id}/user/{user_id}/attachments"
+        )
+        self.assertEqual(raw_response.status_code, 201)
+
+        # async api
+        time.sleep(0.1)
+
+    def delete_attachments_in_all_groups(self, user_id: str = BaseTest.USER_ID):
+        raw_response = self.client.delete(
+            f"/v1/user/{user_id}/attachments"
+        )
+        self.assertEqual(raw_response.status_code, 201)
+
+        # async api
+        time.sleep(0.1)
 
     def assert_error(self, response, error_code):
         self.assertEqual(int(response["detail"].split(":")[0]), error_code)

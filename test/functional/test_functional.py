@@ -3,6 +3,7 @@ import time
 import arrow
 
 from dinofw.utils.config import MessageTypes, ErrorCodes
+from dinofw.utils.exceptions import NoSuchAttachmentException
 from test.base import BaseTest
 from test.functional.base_functional import BaseServerRestApi
 
@@ -994,10 +995,77 @@ class TestServerRestApi(BaseServerRestApi):
         self.assertEqual(BaseTest.OTHER_USER_ID, self.env.publisher.sent_reads[BaseTest.USER_ID][0][1])
 
     def test_delete_one_attachment(self):
-        pass  # TODO: implement
+        message = self.send_1v1_message(message_type=MessageTypes.IMAGE)
+        message_id = message["message_id"]
+        created_at = message["created_at"]
+        group_id = message["group_id"]
+
+        # sets the file id we later delete by
+        self.update_attachment(message_id, created_at)
+
+        attachment = self.attachment_for_file_id(group_id, BaseTest.FILE_ID)
+        self.assertIsNotNone(attachment)
+
+        self.delete_attachment(group_id)
+
+        # next time we check it shouldn't exist
+        att = self.attachment_for_file_id(group_id, BaseTest.FILE_ID, assert_response=False)
+        self.assert_error(att, ErrorCodes.NO_SUCH_ATTACHMENT)
 
     def test_delete_all_attachments_in_one_group_for_user(self):
-        pass  # TODO: implement
+        group_id = None
+
+        for file_id in [str(i) for i in range(10)]:
+            message = self.send_1v1_message(message_type=MessageTypes.IMAGE)
+            message_id = message["message_id"]
+            group_id = message["group_id"]
+            created_at = message["created_at"]
+
+            self.update_attachment(message_id, created_at, file_id=file_id)
+
+        for file_id in [str(i) for i in range(10)]:
+            attachment = self.attachment_for_file_id(group_id, file_id)
+            self.assertNotIn("detail", attachment)  # will have 'detail' if there was an error
+            self.assertIsNotNone(attachment)
+
+        self.delete_attachments_in_group(group_id)
+
+        # next time we check it shouldn't exist
+        for file_id in [str(i) for i in range(10)]:
+            att = self.attachment_for_file_id(group_id, file_id, assert_response=False)
+            self.assert_error(att, ErrorCodes.NO_SUCH_ATTACHMENT)
 
     def test_delete_all_attachments_in_all_groups_for_user(self):
-        pass  # TODO: implement
+        group_id = None
+
+        file_ids = {
+            BaseTest.USER_ID: [str(i) for i in range(5)],
+            BaseTest.OTHER_USER_ID: [str(i+10) for i in range(5)],
+        }
+
+        for user_id in [BaseTest.USER_ID, BaseTest.OTHER_USER_ID]:
+            for file_id in file_ids[user_id]:
+                message = self.send_1v1_message(message_type=MessageTypes.IMAGE, user_id=user_id)
+                message_id = message["message_id"]
+                group_id = message["group_id"]
+                created_at = message["created_at"]
+
+                self.update_attachment(message_id, created_at, user_id=user_id, file_id=file_id)
+
+            for file_id in file_ids[user_id]:
+                attachment = self.attachment_for_file_id(group_id, file_id)
+                self.assertNotIn("detail", attachment)  # will have 'detail' if there was an error
+                self.assertIsNotNone(attachment)
+
+        self.delete_attachments_in_all_groups()
+
+        # next time we check it shouldn't exist
+        for should_exist, user_id in [(False, BaseTest.USER_ID), (True, BaseTest.OTHER_USER_ID)]:
+            for file_id in file_ids[user_id]:
+                if should_exist:
+                    attachment = self.attachment_for_file_id(group_id, file_id)
+                    self.assertNotIn("detail", attachment)
+                    self.assertIsNotNone(attachment)
+                else:
+                    att = self.attachment_for_file_id(group_id, file_id, assert_response=False)
+                    self.assert_error(att, ErrorCodes.NO_SUCH_ATTACHMENT)

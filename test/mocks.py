@@ -18,8 +18,8 @@ from dinofw.rest.models import EditMessageQuery
 from dinofw.rest.models import GroupQuery
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
-from dinofw.utils.config import MessageTypes
-from dinofw.utils.exceptions import NoSuchGroupException, NoSuchAttachmentException
+from dinofw.utils.exceptions import NoSuchGroupException
+from dinofw.utils.exceptions import NoSuchAttachmentException
 
 
 class FakeStorage:
@@ -32,6 +32,66 @@ class FakeStorage:
         self.attachments_by_group = dict()
         self.attachments_by_message = dict()
         self.action_log = dict()
+
+    def delete_attachment(self, group_id: str, created_at: dt, query: AttachmentQuery) -> MessageBase:
+        file_id = query.file_id
+        att_copy = None
+
+        for group, atts in self.attachments_by_group.items():
+            for att in atts:
+                if att.file_id == file_id:
+                    att_copy = att.copy()
+                    self.attachments_by_group[group].remove(att)
+                    break
+
+        for message, att in self.attachments_by_message.items():
+            if att.file_id == file_id:
+                del self.attachments_by_message[message]
+                break
+
+        if att_copy is None:
+            raise NoSuchAttachmentException(query.file_id)
+
+        return att_copy
+
+    def delete_attachments(
+        self,
+        group_id: str,
+        group_created_at: dt,
+        user_id: int
+    ) -> List[MessageBase]:
+        attachments = list()
+
+        if group_id in self.attachments_by_group:
+            to_keep = list()
+
+            for att in self.attachments_by_group[group_id]:
+                if att.user_id == user_id:
+                    attachments.append(att.copy())
+                else:
+                    to_keep.append(att)
+
+            self.attachments_by_group[group_id] = to_keep
+
+        to_keep = dict()
+        for message, att in self.attachments_by_message.items():
+            if att.user_id != user_id:
+                to_keep[message] = att
+        self.attachments_by_message = to_keep
+
+        return attachments
+
+    def delete_attachments_in_all_groups(
+        self,
+        group_created_at: List[Tuple[str, dt]],
+        user_id: int
+    ) -> Dict[str, List[MessageBase]]:
+        attachments = dict()
+
+        for group_id, created_at in group_created_at:
+            attachments[group_id] = self.delete_attachments(group_id, created_at, user_id)
+
+        return attachments
 
     def get_unread_in_group(self, group_id: str, user_id: int, last_read: dt) -> int:
         unread = self.env.cache.get_unread_in_group(group_id, user_id)
@@ -576,7 +636,22 @@ class FakePublisherHandler(IClientPublishHandler):
     def __init__(self):
         self.sent_messages = dict()
         self.sent_attachments = dict()
+        self.sent_deletions = dict()
         self.sent_reads = dict()
+
+    def delete_attachments(
+        self,
+        group_id: str,
+        attachments: List[MessageBase],
+        user_ids: List[int],
+        now: float
+    ) -> None:
+        data = FakePublisherHandler.event_for_delete_attachments(group_id, attachments, now)
+
+        if group_id not in self.sent_deletions:
+            self.sent_deletions[group_id] = list()
+
+        self.sent_deletions[group_id].append(data)
 
     def message(self, message: MessageBase, user_ids: List[int]) -> None:
         if message.group_id not in self.sent_messages:
@@ -640,7 +715,8 @@ class FakeEnv:
         self.config = FakeEnv.Config()
         self.storage = FakeStorage(self)
         self.db = FakeDatabase()
-        self.publisher = FakePublisherHandler()
+        self.client_publisher = FakePublisherHandler()
+        self.server_publisher = FakePublisherHandler()
         self.cache = CacheRedis(self, host="mock")
 
         from dinofw.rest.groups import GroupResource
