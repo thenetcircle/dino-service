@@ -237,6 +237,7 @@ class CacheRedis(ICache):
             return None
 
         types = str(count, "utf-8")
+        # TODO: log and check this, was blank in redis once
         if len(types) == 0 or "," not in types:
             return None
 
