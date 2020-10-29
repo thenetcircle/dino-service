@@ -32,7 +32,7 @@ class UserResource(BaseResource):
     async def get_user_stats(self, user_id: int, query: UserStatsQuery, db: Session) -> UserStats:
         count_unread = True
         only_unread = True
-        hidden = False
+        hidden = None
 
         if query.only_unread is not None:
             only_unread = query.only_unread

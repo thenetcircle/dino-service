@@ -643,41 +643,41 @@ class TestServerRestApi(BaseServerRestApi):
         self.assertEqual(1, len(all_attachments))
 
     def test_count_group_types_in_user_stats(self):
-        stats = self.get_global_user_stats()
+        stats = self.get_global_user_stats(hidden=False)
         self.assertEqual(0, stats["group_amount"])
         self.assertEqual(0, stats["one_to_one_amount"])
 
         self.send_1v1_message()
 
-        stats = self.get_global_user_stats()
+        stats = self.get_global_user_stats(hidden=False)
         self.assertEqual(0, stats["group_amount"])
         self.assertEqual(1, stats["one_to_one_amount"])
 
         self.create_and_join_group()
 
-        stats = self.get_global_user_stats()
+        stats = self.get_global_user_stats(hidden=False)
         self.assertEqual(1, stats["group_amount"])
         self.assertEqual(1, stats["one_to_one_amount"])
 
         self.create_and_join_group()
 
-        stats = self.get_global_user_stats()
+        stats = self.get_global_user_stats(hidden=False)
         self.assertEqual(2, stats["group_amount"])
         self.assertEqual(1, stats["one_to_one_amount"])
 
         self.send_1v1_message(receiver_id=8844)
 
-        stats = self.get_global_user_stats()
+        stats = self.get_global_user_stats(hidden=False)
         self.assertEqual(2, stats["group_amount"])
         self.assertEqual(2, stats["one_to_one_amount"])
 
     def test_user_stats_group_read_and_send_times(self):
-        stats = self.get_global_user_stats()
+        stats = self.get_global_user_stats(hidden=False)
         self.assertEqual(0, stats["group_amount"])
         self.assertEqual(0, stats["one_to_one_amount"])
 
         message = self.send_1v1_message()
-        stats = self.get_global_user_stats()
+        stats = self.get_global_user_stats(hidden=False)
 
         last_sent_time_first = stats["last_sent_time"]
         last_sent_group_id = stats["last_sent_group_id"]
@@ -686,7 +686,7 @@ class TestServerRestApi(BaseServerRestApi):
         self.assertIsNotNone(last_sent_time_first)
 
         message = self.send_1v1_message()
-        stats = self.get_global_user_stats()
+        stats = self.get_global_user_stats(hidden=False)
 
         last_sent_time_second = stats["last_sent_time"]
         last_sent_group_id = stats["last_sent_group_id"]
@@ -1084,34 +1084,34 @@ class TestServerRestApi(BaseServerRestApi):
         group_id0 = message0["group_id"]
         group_id1 = message1["group_id"]
 
-        stats = self.get_global_user_stats()
+        stats = self.get_global_user_stats(hidden=False)
         self.assertEqual(0, stats["group_amount"])
         self.assertEqual(2, stats["one_to_one_amount"])
 
         self.update_hide_group_for(group_id0, hide=True)
 
-        stats = self.get_global_user_stats()
+        stats = self.get_global_user_stats(hidden=False)
         self.assertEqual(1, stats["one_to_one_amount"])
 
         self.update_hide_group_for(group_id1, hide=True)
 
-        stats = self.get_global_user_stats()
+        stats = self.get_global_user_stats(hidden=False)
         self.assertEqual(0, stats["one_to_one_amount"])
 
         self.update_hide_group_for(group_id0, hide=False)
 
-        stats = self.get_global_user_stats()
+        stats = self.get_global_user_stats(hidden=False)
         self.assertEqual(1, stats["one_to_one_amount"])
 
     def test_hidden_groups_is_counted_in_user_stats_api_if_specified_in_request(self):
         message0 = self.send_1v1_message(receiver_id=4444)
         message1 = self.send_1v1_message(receiver_id=5555)
-        message2 = self.send_1v1_message(receiver_id=6666)
+        self.send_1v1_message(receiver_id=6666)
 
         group_id0 = message0["group_id"]
         group_id1 = message1["group_id"]
 
-        stats = self.get_global_user_stats()
+        stats = self.get_global_user_stats(hidden=False)
         self.assertEqual(0, stats["group_amount"])
         self.assertEqual(3, stats["one_to_one_amount"])
 
@@ -1126,3 +1126,31 @@ class TestServerRestApi(BaseServerRestApi):
         self.assertEqual(1, stats["one_to_one_amount"])
         stats = self.get_global_user_stats(hidden=True)
         self.assertEqual(2, stats["one_to_one_amount"])
+
+    def test_both_visible_and_hidden_groups_is_counted_if_not_specified(self):
+        message0 = self.send_1v1_message(receiver_id=4444)
+        message1 = self.send_1v1_message(receiver_id=5555)
+        self.send_1v1_message(receiver_id=6666)
+
+        group_id0 = message0["group_id"]
+        group_id1 = message1["group_id"]
+
+        stats = self.get_global_user_stats(hidden=None)
+        self.assertEqual(0, stats["group_amount"])
+        self.assertEqual(3, stats["one_to_one_amount"])
+
+        self.update_hide_group_for(group_id0, hide=True)
+        stats = self.get_global_user_stats(hidden=False)
+        self.assertEqual(2, stats["one_to_one_amount"])
+        stats = self.get_global_user_stats(hidden=True)
+        self.assertEqual(1, stats["one_to_one_amount"])
+        stats = self.get_global_user_stats(hidden=None)
+        self.assertEqual(3, stats["one_to_one_amount"])
+
+        self.update_hide_group_for(group_id1, hide=True)
+        stats = self.get_global_user_stats(hidden=False)
+        self.assertEqual(1, stats["one_to_one_amount"])
+        stats = self.get_global_user_stats(hidden=True)
+        self.assertEqual(2, stats["one_to_one_amount"])
+        stats = self.get_global_user_stats(hidden=None)
+        self.assertEqual(3, stats["one_to_one_amount"])

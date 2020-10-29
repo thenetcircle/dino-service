@@ -224,6 +224,9 @@ class CacheRedis(ICache):
         self.redis.expire(key, ONE_DAY)
 
     def get_count_group_types_for_user(self, user_id: int, hidden: bool) -> Optional[List[Tuple[int, int]]]:
+        if hidden is None:
+            return None
+
         if hidden:
             key = RedisKeys.count_group_types_including_hidden(user_id)
         else:

@@ -143,7 +143,6 @@ class RelationalHandler:
         limit per_page
         """
         until = GroupQuery.to_dt(query.until)
-        hidden = query.hidden or False
 
         statement = (
             db.query(
@@ -156,7 +155,6 @@ class RelationalHandler:
             )
             .filter(
                 models.GroupEntity.last_message_time <= until,
-                models.UserGroupStatsEntity.hide.is_(hidden),
                 models.UserGroupStatsEntity.delete_before <= models.GroupEntity.updated_at,
                 # TODO: when joining a "group", the last message was before you joined; if we create
                 #  an action log when a user joins it will update `last_message_time` and we can use
@@ -165,6 +163,11 @@ class RelationalHandler:
                 models.UserGroupStatsEntity.user_id == user_id,
             )
         )
+
+        if query.hidden is not None:
+            statement = statement.filter(
+                models.UserGroupStatsEntity.hide.is_(query.hidden),
+            )
 
         if query.only_unread:
             statement = statement.filter(
@@ -609,13 +612,13 @@ class RelationalHandler:
         self.env.cache.set_last_read_in_group_for_users(group_id, read_times)
 
     def count_group_types_for_user(self, user_id: int, query: GroupQuery, db: Session) -> List[Tuple[int, int]]:
-        hidden = query.hidden or False
+        hidden = query.hidden
 
         types = self.env.cache.get_count_group_types_for_user(user_id, hidden)
         if types is not None:
             return types
 
-        types = (
+        statement = (
             db.query(
                 models.GroupEntity.group_type,
                 func.count(models.GroupEntity.group_type),
@@ -627,9 +630,16 @@ class RelationalHandler:
             .filter(
                 models.UserGroupStatsEntity.user_id == user_id,
                 models.UserGroupStatsEntity.delete_before < models.GroupEntity.last_message_time,
-                models.UserGroupStatsEntity.hide.is_(hidden),
             )
-            .group_by(
+        )
+
+        if query.hidden is not None:
+            statement = statement.filter(
+                models.UserGroupStatsEntity.hide.is_(hidden)
+            )
+
+        types = (
+            statement.group_by(
                 models.GroupEntity.group_type
             )
             .limit(
@@ -638,7 +648,10 @@ class RelationalHandler:
             .all()
         )
 
-        self.env.cache.set_count_group_types_for_user(user_id, types, hidden)
+        # if hidden is None, we're counting for both types
+        if query.hidden is not None:
+            self.env.cache.set_count_group_types_for_user(user_id, types, hidden)
+
         return types
 
     def set_last_updated_at_on_all_stats_related_to_user(self, user_id: int, db: Session):
