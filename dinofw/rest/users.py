@@ -52,9 +52,15 @@ class UserResource(BaseResource):
             GroupTypes.ONE_TO_ONE: -1,
         }
 
-        unread_amount = 0
-        for user_group in user_groups:
-            unread_amount += user_group.unread
+        count_unread = sub_query.count_unread or True
+        if count_unread:
+            unread_amount = 0
+            for user_group in user_groups:
+                if user_group.unread == -1:
+                    continue
+                unread_amount += user_group.unread
+        else:
+            unread_amount = -1
 
         # most calls to this api only needs to know the unread count and nothing else, and it's called OFTEN
         if not query.only_unread:
