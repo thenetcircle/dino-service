@@ -236,7 +236,11 @@ class CacheRedis(ICache):
         if count is None:
             return None
 
-        types = str(count, "utf-8").split(",")
+        types = str(count, "utf-8")
+        if len(types) == 0 or "," not in types:
+            return None
+
+        types = types.split(",")
         types = [
             group_type.split(":", maxsplit=1)
             for group_type in types
