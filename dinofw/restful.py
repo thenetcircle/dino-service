@@ -555,10 +555,15 @@ async def get_user_statistics(user_id: int, query: UserStatsQuery, db: Session =
     """
     Get a user's statistics globally (not only for one group).
 
-    TODO: use a UserStatsQuery, flexible selection, often this
-     api is called mostly for unread count, and we don't need
-     to count everything else; also include hidden yes/no in
-     the query
+    Request body can specify `hidden` (default False), `only_unread`
+    (default True), and `count_unread` (default True).
+
+    If `hidden=true`, the `one_to_one_amount` and `group_amount`
+    fields will ONLY include hidden groups. If `hidden=false` the
+    fields will only include NOT HIDDEN groups. If
+    `count_unread=false` the `unread_amount` will be `-1`, and if
+    `only_unread=true` only the `unread_amount` field will have a
+    value that is not `null` or `-1`.
 
     **Potential error codes in response:**
     * `250`: if an unknown error occurred.
