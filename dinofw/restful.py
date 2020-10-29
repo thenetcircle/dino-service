@@ -12,7 +12,7 @@ from starlette.background import BackgroundTask
 from starlette.responses import Response
 from starlette.status import HTTP_201_CREATED
 
-from dinofw.rest.models import AttachmentQuery
+from dinofw.rest.models import AttachmentQuery, UserStatsQuery
 from dinofw.rest.models import CreateActionLogQuery
 from dinofw.rest.models import CreateAttachmentQuery
 from dinofw.rest.models import CreateGroupQuery
@@ -550,16 +550,21 @@ async def update_user_statistics_in_group(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@app.get("/v1/userstats/{user_id}", response_model=UserStats)
-async def get_user_statistics(user_id: int, db: Session = Depends(get_db)) -> UserStats:
+@app.post("/v1/userstats/{user_id}", response_model=UserStats)
+async def get_user_statistics(user_id: int, query: UserStatsQuery, db: Session = Depends(get_db)) -> UserStats:
     """
     Get a user's statistics globally (not only for one group).
+
+    TODO: use a UserStatsQuery, flexible selection, often this
+     api is called mostly for unread count, and we don't need
+     to count everything else; also include hidden yes/no in
+     the query
 
     **Potential error codes in response:**
     * `250`: if an unknown error occurred.
     """
     try:
-        return await environ.env.rest.user.get_user_stats(user_id, db)
+        return await environ.env.rest.user.get_user_stats(user_id, query, db)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 

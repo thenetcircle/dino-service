@@ -124,8 +124,11 @@ class BaseServerRestApi(BaseDatabaseTest):
 
         return float(now_ts)
 
-    def get_global_user_stats(self, user_id: int = BaseTest.USER_ID):
-        raw_response = self.client.get(f"/v1/userstats/{user_id}")
+    def get_global_user_stats(self, user_id: int = BaseTest.USER_ID, hidden: bool = False):
+        raw_response = self.client.post(
+            f"/v1/userstats/{user_id}",
+            json={"hidden": hidden}
+        )
         self.assertEqual(raw_response.status_code, 200)
 
         return raw_response.json()

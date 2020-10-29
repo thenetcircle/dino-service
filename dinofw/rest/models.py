@@ -77,10 +77,14 @@ class CreateGroupQuery(AbstractQuery):
     weight: Optional[int]
 
 
-class GroupQuery(PaginationQuery):
+class UserStatsQuery(AbstractQuery):
+    hidden: Optional[bool]
     count_unread: Optional[bool]
     only_unread: Optional[bool]
-    hidden: Optional[bool]
+
+
+class GroupQuery(PaginationQuery, UserStatsQuery):
+    pass
 
 
 class GroupUpdatesQuery(GroupQuery):
