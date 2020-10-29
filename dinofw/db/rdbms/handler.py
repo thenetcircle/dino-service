@@ -624,6 +624,8 @@ class RelationalHandler:
             )
             .filter(
                 models.UserGroupStatsEntity.user_id == user_id,
+                models.UserGroupStatsEntity.delete_before < models.GroupEntity.last_message_time,
+                models.UserGroupStatsEntity.hide.is_(False),
             )
             .group_by(
                 models.GroupEntity.group_type
@@ -835,6 +837,9 @@ class RelationalHandler:
             elif query.hide is not None:
                 user_stats.hide = query.hide
                 self.env.cache.set_hide_group(group_id, query.hide, [user_id])
+
+            if query.hide is not None or query.delete_before is not None:
+                self.env.cache.reset_count_group_types_for_user(user_id)
 
         db.add(user_stats)
         db.commit()

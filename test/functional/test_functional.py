@@ -1076,3 +1076,29 @@ class TestServerRestApi(BaseServerRestApi):
         # only one deletion event even though we deleted five attachments
         self.assertEqual(1, len(self.env.client_publisher.sent_deletions))
         self.assertEqual(1, len(self.env.server_publisher.sent_deletions))
+
+    def test_hidden_groups_is_not_counted_in_user_stats_api(self):
+        message0 = self.send_1v1_message(receiver_id=4444)
+        message1 = self.send_1v1_message(receiver_id=5555)
+
+        group_id0 = message0["group_id"]
+        group_id1 = message1["group_id"]
+
+        stats = self.get_global_user_stats()
+        self.assertEqual(0, stats["group_amount"])
+        self.assertEqual(2, stats["one_to_one_amount"])
+
+        self.update_hide_group_for(group_id0, hide=True)
+
+        stats = self.get_global_user_stats()
+        self.assertEqual(1, stats["one_to_one_amount"])
+
+        self.update_hide_group_for(group_id1, hide=True)
+
+        stats = self.get_global_user_stats()
+        self.assertEqual(0, stats["one_to_one_amount"])
+
+        self.update_hide_group_for(group_id0, hide=False)
+
+        stats = self.get_global_user_stats()
+        self.assertEqual(1, stats["one_to_one_amount"])
