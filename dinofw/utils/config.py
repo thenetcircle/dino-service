@@ -22,7 +22,8 @@ class RedisKeys:
     RKEY_HIDE_GROUP = "group:hide:{}"  # group:hide:group_id
     RKEY_USER_MESSAGE_STATUS = "user:status:{}"  # user:status:user_id
     RKEY_MESSAGES_IN_GROUP = "group:messages:{}"  # group:messages:group_id
-    RKEY_GROUP_COUNT = "group:count:{}"  # group:count:user_id
+    RKEY_GROUP_COUNT_INCL_HIDDEN = "group:count:inclhidden:{}"  # group:count:inclhidden:user_id
+    RKEY_GROUP_COUNT_NO_HIDDEN = "group:count:visible:{}"  # group:count:visible:user_id
     RKEY_LAST_SENT_TIME_USER = "user:lastsent:{}"  # user:lastsent:user_id
     RKEY_LAST_READ_TIME_USER = "user:lastread:{}"  # user:lastread:user_id
     RKEY_LAST_MESSAGE_TIME = "group:lastmsgtime:{}"  # group:lastmsgtime:group_id
@@ -40,8 +41,12 @@ class RedisKeys:
         return RedisKeys.RKEY_LAST_SENT_TIME_USER.format(user_id)
 
     @staticmethod
-    def count_group_types_for(user_id: int) -> str:
-        return RedisKeys.RKEY_GROUP_COUNT.format(user_id)
+    def count_group_types_including_hidden(user_id: int) -> str:
+        return RedisKeys.RKEY_GROUP_COUNT_INCL_HIDDEN.format(user_id)
+
+    @staticmethod
+    def count_group_types_not_including_hidden(user_id: int) -> str:
+        return RedisKeys.RKEY_GROUP_COUNT_NO_HIDDEN.format(user_id)
 
     @staticmethod
     def messages_in_group(group_id: str) -> str:

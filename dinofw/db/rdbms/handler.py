@@ -609,7 +609,9 @@ class RelationalHandler:
         self.env.cache.set_last_read_in_group_for_users(group_id, read_times)
 
     def count_group_types_for_user(self, user_id: int, query: GroupQuery, db: Session) -> List[Tuple[int, int]]:
-        types = self.env.cache.get_count_group_types_for_user(user_id)
+        hidden = query.hidden or False
+
+        types = self.env.cache.get_count_group_types_for_user(user_id, hidden)
         if types is not None:
             return types
 
@@ -625,7 +627,7 @@ class RelationalHandler:
             .filter(
                 models.UserGroupStatsEntity.user_id == user_id,
                 models.UserGroupStatsEntity.delete_before < models.GroupEntity.last_message_time,
-                models.UserGroupStatsEntity.hide.is_(False),
+                models.UserGroupStatsEntity.hide.is_(hidden),
             )
             .group_by(
                 models.GroupEntity.group_type
@@ -636,7 +638,7 @@ class RelationalHandler:
             .all()
         )
 
-        self.env.cache.set_count_group_types_for_user(user_id, types)
+        self.env.cache.set_count_group_types_for_user(user_id, types, hidden)
         return types
 
     def set_last_updated_at_on_all_stats_related_to_user(self, user_id: int, db: Session):

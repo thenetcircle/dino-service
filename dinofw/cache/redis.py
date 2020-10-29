@@ -193,7 +193,10 @@ class CacheRedis(ICache):
         return float(str(last_message_time, "utf-8"))
 
     def reset_count_group_types_for_user(self, user_id: int) -> None:
-        key = RedisKeys.count_group_types_for(user_id)
+        key = RedisKeys.count_group_types_including_hidden(user_id)
+        self.redis.delete(key)
+
+        key = RedisKeys.count_group_types_not_including_hidden(user_id)
         self.redis.delete(key)
 
     def set_last_sent_for_user(self, user_id: int, group_id: str, last_time: float) -> None:
@@ -209,15 +212,22 @@ class CacheRedis(ICache):
         group_id, last_time = str(values, "utf-8").split(":", maxsplit=1)
         return group_id, float(last_time)
 
-    def set_count_group_types_for_user(self, user_id: int, counts: List[Tuple[int, int]]) -> None:
-        key = RedisKeys.count_group_types_for(user_id)
+    def set_count_group_types_for_user(self, user_id: int, counts: List[Tuple[int, int]], hidden: bool) -> None:
+        if hidden:
+            key = RedisKeys.count_group_types_including_hidden(user_id)
+        else:
+            key = RedisKeys.count_group_types_not_including_hidden(user_id)
+
         types = ",".join([":".join(map(str, values)) for values in counts])
 
         self.redis.set(key, types)
         self.redis.expire(key, ONE_DAY)
 
-    def get_count_group_types_for_user(self, user_id: int) -> Optional[List[Tuple[int, int]]]:
-        key = RedisKeys.count_group_types_for(user_id)
+    def get_count_group_types_for_user(self, user_id: int, hidden: bool) -> Optional[List[Tuple[int, int]]]:
+        if hidden:
+            key = RedisKeys.count_group_types_including_hidden(user_id)
+        else:
+            key = RedisKeys.count_group_types_not_including_hidden(user_id)
 
         count = self.redis.get(key)
         if count is None:
