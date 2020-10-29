@@ -970,29 +970,29 @@ class TestServerRestApi(BaseServerRestApi):
 
     def test_read_receipt_published_when_opening_conversation(self):
         message = self.send_1v1_message()
-        self.assertEqual(0, len(self.env.publisher.sent_reads))
+        self.assertEqual(0, len(self.env.client_publisher.sent_reads))
 
         self.histories_for(message["group_id"], user_id=BaseTest.OTHER_USER_ID)
 
         # USER_ID should have gotten a read-receipt from OTHER_USER_ID
-        self.assertEqual(1, len(self.env.publisher.sent_reads[BaseTest.USER_ID]))
-        self.assertEqual(BaseTest.OTHER_USER_ID, self.env.publisher.sent_reads[BaseTest.USER_ID][0][1])
+        self.assertEqual(1, len(self.env.client_publisher.sent_reads[BaseTest.USER_ID]))
+        self.assertEqual(BaseTest.OTHER_USER_ID, self.env.client_publisher.sent_reads[BaseTest.USER_ID][0][1])
 
     def test_read_receipt_not_duplicated_when_opening_conversation(self):
         message = self.send_1v1_message()
-        self.assertEqual(0, len(self.env.publisher.sent_reads))
+        self.assertEqual(0, len(self.env.client_publisher.sent_reads))
 
         self.histories_for(message["group_id"], user_id=BaseTest.OTHER_USER_ID)
 
         # USER_ID should have gotten a read-receipt from OTHER_USER_ID
-        self.assertEqual(1, len(self.env.publisher.sent_reads[BaseTest.USER_ID]))
-        self.assertEqual(BaseTest.OTHER_USER_ID, self.env.publisher.sent_reads[BaseTest.USER_ID][0][1])
+        self.assertEqual(1, len(self.env.client_publisher.sent_reads[BaseTest.USER_ID]))
+        self.assertEqual(BaseTest.OTHER_USER_ID, self.env.client_publisher.sent_reads[BaseTest.USER_ID][0][1])
 
         self.histories_for(message["group_id"], user_id=BaseTest.OTHER_USER_ID)
 
         # should not have another one
-        self.assertEqual(1, len(self.env.publisher.sent_reads[BaseTest.USER_ID]))
-        self.assertEqual(BaseTest.OTHER_USER_ID, self.env.publisher.sent_reads[BaseTest.USER_ID][0][1])
+        self.assertEqual(1, len(self.env.client_publisher.sent_reads[BaseTest.USER_ID]))
+        self.assertEqual(BaseTest.OTHER_USER_ID, self.env.client_publisher.sent_reads[BaseTest.USER_ID][0][1])
 
     def test_delete_one_attachment(self):
         message = self.send_1v1_message(message_type=MessageTypes.IMAGE)
@@ -1057,6 +1057,9 @@ class TestServerRestApi(BaseServerRestApi):
                 self.assertNotIn("detail", attachment)  # will have 'detail' if there was an error
                 self.assertIsNotNone(attachment)
 
+        self.assertEqual(0, len(self.env.client_publisher.sent_deletions))
+        self.assertEqual(0, len(self.env.server_publisher.sent_deletions))
+
         self.delete_attachments_in_all_groups()
 
         # next time we check it shouldn't exist
@@ -1069,3 +1072,7 @@ class TestServerRestApi(BaseServerRestApi):
                 else:
                     att = self.attachment_for_file_id(group_id, file_id, assert_response=False)
                     self.assert_error(att, ErrorCodes.NO_SUCH_ATTACHMENT)
+
+        # only one deletion event even though we deleted five attachments
+        self.assertEqual(1, len(self.env.client_publisher.sent_deletions))
+        self.assertEqual(1, len(self.env.server_publisher.sent_deletions))
