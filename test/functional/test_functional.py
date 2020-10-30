@@ -602,7 +602,7 @@ class TestServerRestApi(BaseServerRestApi):
         self.assertGreater(groups[0]["stats"]["last_updated_time"], last_updated_at)
 
     def test_get_groups_updated_since(self):
-        when = arrow.utcnow().float_timestamp - 100
+        when = round(arrow.utcnow().float_timestamp, 3) - 100
 
         groups = self.groups_updated_since(user_id=BaseTest.OTHER_USER_ID, since=when)
         self.assertEqual(0, len(groups))
@@ -753,7 +753,7 @@ class TestServerRestApi(BaseServerRestApi):
         delete_before = groups[0]["stats"]["delete_before"]
         self.assertEqual(receiver_delete_before, delete_before)
 
-        delete_time = arrow.utcnow().float_timestamp
+        delete_time = round(arrow.utcnow().float_timestamp, 3)
         self.update_delete_before(message["group_id"], delete_time, user_id=BaseTest.OTHER_USER_ID)
 
         groups = self.groups_for_user()
@@ -899,7 +899,7 @@ class TestServerRestApi(BaseServerRestApi):
         delete_before_original = group_and_stats[0]["stats"]["delete_before"]
         self.assertEqual(join_time, delete_before_original)
 
-        yesterday = arrow.utcnow().shift(days=-1).float_timestamp
+        yesterday = round(arrow.utcnow().shift(days=-1).float_timestamp, 3)
         self.update_delete_before(message["group_id"], delete_before=yesterday)
 
         group_and_stats = self.groups_for_user()
@@ -909,7 +909,7 @@ class TestServerRestApi(BaseServerRestApi):
         self.assertNotEqual(join_time, delete_before_updated)
 
         # update it again so the next message resets it to join_time
-        now = arrow.utcnow().float_timestamp
+        now = round(arrow.utcnow().float_timestamp, 3)
         self.update_delete_before(message["group_id"], delete_before=now)
 
         # should reset 'delete_before' to 'join_time'
