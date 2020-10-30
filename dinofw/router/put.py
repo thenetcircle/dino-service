@@ -73,46 +73,6 @@ async def mark_all_groups_as_read(user_id: int, db: Session = Depends(get_db)) -
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.put("/groups/{group_id}")
-async def edit_group_information(
-    group_id, query: UpdateGroupQuery, db: Session = Depends(get_db)
-) -> Group:
-    """
-    Update group details.
-
-    **Potential error codes in response:**
-    * `601`: if the group does not exist,
-    * `250`: if an unknown error occurred.
-    """
-    try:
-        return await environ.env.rest.group.update_group_information(
-            group_id, query, db
-        )
-    except NoSuchGroupException as e:
-        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
-    except Exception as e:
-        log_error_and_raise_unknown(sys.exc_info(), e)
-
-
-@router.put("/groups/{group_id}/user/{user_id}/join")
-async def join_group(
-    group_id: str, user_id: int, db: Session = Depends(get_db)
-) -> None:
-    """
-    Join a group.
-
-    **Potential error codes in response:**
-    * `601`: if the group does not exist,
-    * `250`: if an unknown error occurred.
-    """
-    try:
-        return await environ.env.rest.group.join_group(group_id, user_id, db)
-    except NoSuchGroupException as e:
-        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
-    except Exception as e:
-        log_error_and_raise_unknown(sys.exc_info(), e)
-
-
 @router.put("/groups/{group_id}/user/{user_id}/update")
 async def update_user_statistics_in_group(
     group_id: str,
@@ -152,5 +112,45 @@ async def update_user_statistics_in_group(
         log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
     except UserNotInGroupException as e:
         log_error_and_raise_known(ErrorCodes.USER_NOT_IN_GROUP, e)
+    except Exception as e:
+        log_error_and_raise_unknown(sys.exc_info(), e)
+
+
+@router.put("/groups/{group_id}")
+async def edit_group_information(
+    group_id, query: UpdateGroupQuery, db: Session = Depends(get_db)
+) -> Group:
+    """
+    Update group details.
+
+    **Potential error codes in response:**
+    * `601`: if the group does not exist,
+    * `250`: if an unknown error occurred.
+    """
+    try:
+        return await environ.env.rest.group.update_group_information(
+            group_id, query, db
+        )
+    except NoSuchGroupException as e:
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
+    except Exception as e:
+        log_error_and_raise_unknown(sys.exc_info(), e)
+
+
+@router.put("/groups/{group_id}/user/{user_id}/join")
+async def join_group(
+    group_id: str, user_id: int, db: Session = Depends(get_db)
+) -> None:
+    """
+    Join a group.
+
+    **Potential error codes in response:**
+    * `601`: if the group does not exist,
+    * `250`: if an unknown error occurred.
+    """
+    try:
+        return await environ.env.rest.group.join_group(group_id, user_id, db)
+    except NoSuchGroupException as e:
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)

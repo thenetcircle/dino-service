@@ -18,6 +18,26 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+@router.get("/groups/{group_id}/users", response_model=GroupUsers)
+async def get_users_in_group(
+    group_id: str, db: Session = Depends(get_db)
+) -> GroupUsers:
+    """
+    Get a list of users in the group. The response will contain the owner of the group, and a list of
+    user IDs and their join time, so clients can list users in order of joining.
+
+    **Potential error codes in response:**
+    * `601`: if the group does not exist,
+    * `250`: if an unknown error occurred.
+    """
+    try:
+        return await environ.env.rest.group.get_users_in_group(group_id, db)
+    except NoSuchGroupException as e:
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
+    except Exception as e:
+        log_error_and_raise_unknown(sys.exc_info(), e)
+
+
 @router.get("/groups/{group_id}/user/{user_id}", response_model=UserGroupStats)
 async def get_user_statistics_in_group(
     group_id: str,
@@ -39,26 +59,6 @@ async def get_user_statistics_in_group(
         log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
     except UserNotInGroupException as e:
         log_error_and_raise_known(ErrorCodes.USER_NOT_IN_GROUP, e)
-    except Exception as e:
-        log_error_and_raise_unknown(sys.exc_info(), e)
-
-
-@router.get("/groups/{group_id}/users", response_model=GroupUsers)
-async def get_users_in_group(
-    group_id: str, db: Session = Depends(get_db)
-) -> GroupUsers:
-    """
-    Get a list of users in the group. The response will contain the owner of the group, and a list of
-    user IDs and their join time, so clients can list users in order of joining.
-
-    **Potential error codes in response:**
-    * `601`: if the group does not exist,
-    * `250`: if an unknown error occurred.
-    """
-    try:
-        return await environ.env.rest.group.get_users_in_group(group_id, db)
-    except NoSuchGroupException as e:
-        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 

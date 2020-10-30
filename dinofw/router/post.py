@@ -37,60 +37,35 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.post("/groups/{group_id}/actions", response_model=List[Message])
-async def create_action_logs(
-    group_id: str, query: CreateActionLogQuery, db: Session = Depends(get_db)
-) -> None:
+@router.post("/users/{user_id}/send", response_model=Message)
+async def send_message_to_user(
+    user_id: int, query: SendMessageQuery, db: Session = Depends(get_db)
+) -> List[Message]:
     """
-    Create one or more action logs in group.
+    User sends a message in a **1-to-1** conversation. It is not always known on client side if a
+    **1-to-1** group exists between two users, so this API can then be used; Dino will do a group
+    lookup and see if a group with `group_type=1` exists for them, send a message to it and return
+    the group_id.
+
+    If no group exists, Dino will create a __new__ **1-to-1** group, send the message and return the
+    `group_id`.
+
+    This API should NOT be used for EVERY **1-to-1** message. It should only be used if the client
+    doesn't know if a group exists for them or not. After this API has been called once, the client
+    should use the `POST /v1/groups/{group_id}/users/{user_id}/send` API for future messages as
+    much as possible.
+
+    When listing recent history, the client will know the group_id for recent **1-to-1** conversations
+    (since the groups that are **1-to-1** have `group_type=1`), and should thus use the other send API.
 
     **Potential error codes in response:**
+    * `604`: if the user does not exist,
     * `250`: if an unknown error occurred.
     """
     try:
-        return await environ.env.rest.group.create_action_logs(group_id, query, db)
-    except Exception as e:
-        log_error_and_raise_unknown(sys.exc_info(), e)
-
-
-@router.post("/users/{user_id}/groups/create", response_model=Group)
-async def create_a_new_group(
-    user_id: int, query: CreateGroupQuery, db: Session = Depends(get_db)
-) -> Group:
-    """
-    Create a new group. A list of user IDs can be specified to make them auto-join
-    this new group.
-
-    **Potential error codes in response:**
-    * `250`: if an unknown error occurred.
-    """
-    try:
-        return await environ.env.rest.group.create_new_group(user_id, query, db)
-    except Exception as e:
-        log_error_and_raise_unknown(sys.exc_info(), e)
-
-
-@router.post("/userstats/{user_id}", response_model=UserStats)
-async def get_user_statistics(user_id: int, query: UserStatsQuery, db: Session = Depends(get_db)) -> UserStats:
-    """
-    Get a user's statistics globally (not only for one group).
-
-    Request body can specify `hidden` (default will count both
-    hidden and not hidden), `only_unread` (default True), and
-    `count_unread` (default True).
-
-    If `hidden=true`, the `one_to_one_amount` and `group_amount`
-    fields will ONLY include hidden groups. If `hidden=false` the
-    fields will only include NOT HIDDEN groups. If
-    `count_unread=false` the `unread_amount` will be `-1`, and if
-    `only_unread=true` only the `unread_amount` field will have a
-    value that is not `null` or `-1`.
-
-    **Potential error codes in response:**
-    * `250`: if an unknown error occurred.
-    """
-    try:
-        return await environ.env.rest.user.get_user_stats(user_id, query, db)
+        return await environ.env.rest.message.send_message_to_user(user_id, query, db)
+    except NoSuchUserException as e:
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_USER, e)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 
@@ -119,35 +94,6 @@ async def get_group_history_for_user(
     """
     try:
         return await environ.env.rest.group.histories(group_id, user_id, query, db)
-    except NoSuchGroupException as e:
-        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
-    except UserNotInGroupException as e:
-        log_error_and_raise_known(ErrorCodes.USER_NOT_IN_GROUP, e)
-    except Exception as e:
-        log_error_and_raise_unknown(sys.exc_info(), e)
-
-
-@router.post("/groups/{group_id}/user/{user_id}/send", response_model=Message)
-async def send_message_to_group(
-    group_id: str,
-    user_id: int,
-    query: SendMessageQuery,
-    db: Session = Depends(get_db)
-) -> List[Message]:
-    """
-    User sends a message in a group. This API should also be used for **1-to-1** conversations
-    if the client knows the `group_id` for the **1-to-1** conversations. Otherwise the
-    `POST /v1/users/{user_id}/send` API can be used to send a message and get the `group_id`.
-
-    **Potential error codes in response:**
-    * `600`: if the user is not in the group,
-    * `601`: if the group does not exist,
-    * `250`: if an unknown error occurred.
-    """
-    try:
-        return await environ.env.rest.message.send_message_to_group(
-            group_id, user_id, query, db
-        )
     except NoSuchGroupException as e:
         log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
     except UserNotInGroupException as e:
@@ -198,6 +144,60 @@ async def get_groups_updated_since(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
+@router.post("/userstats/{user_id}", response_model=UserStats)
+async def get_user_statistics(user_id: int, query: UserStatsQuery, db: Session = Depends(get_db)) -> UserStats:
+    """
+    Get a user's statistics globally (not only for one group).
+
+    Request body can specify `hidden` (default will count both
+    hidden and not hidden), `only_unread` (default True), and
+    `count_unread` (default True).
+
+    If `hidden=true`, the `one_to_one_amount` and `group_amount`
+    fields will ONLY include hidden groups. If `hidden=false` the
+    fields will only include NOT HIDDEN groups. If
+    `count_unread=false` the `unread_amount` will be `-1`, and if
+    `only_unread=true` only the `unread_amount` field will have a
+    value that is not `null` or `-1`.
+
+    **Potential error codes in response:**
+    * `250`: if an unknown error occurred.
+    """
+    try:
+        return await environ.env.rest.user.get_user_stats(user_id, query, db)
+    except Exception as e:
+        log_error_and_raise_unknown(sys.exc_info(), e)
+
+
+@router.post("/groups/{group_id}/user/{user_id}/send", response_model=Message)
+async def send_message_to_group(
+    group_id: str,
+    user_id: int,
+    query: SendMessageQuery,
+    db: Session = Depends(get_db)
+) -> List[Message]:
+    """
+    User sends a message in a group. This API should also be used for **1-to-1** conversations
+    if the client knows the `group_id` for the **1-to-1** conversations. Otherwise the
+    `POST /v1/users/{user_id}/send` API can be used to send a message and get the `group_id`.
+
+    **Potential error codes in response:**
+    * `600`: if the user is not in the group,
+    * `601`: if the group does not exist,
+    * `250`: if an unknown error occurred.
+    """
+    try:
+        return await environ.env.rest.message.send_message_to_group(
+            group_id, user_id, query, db
+        )
+    except NoSuchGroupException as e:
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
+    except UserNotInGroupException as e:
+        log_error_and_raise_known(ErrorCodes.USER_NOT_IN_GROUP, e)
+    except Exception as e:
+        log_error_and_raise_unknown(sys.exc_info(), e)
+
+
 @router.post("/users/{user_id}/group", response_model=OneToOneStats)
 async def get_one_to_one_information(
     user_id: int, query: OneToOneQuery, db: Session = Depends(get_db)
@@ -213,39 +213,6 @@ async def get_one_to_one_information(
         return await environ.env.rest.group.get_1v1_info(user_id, query.receiver_id, db)
     except NoSuchGroupException as e:
         log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
-    except Exception as e:
-        log_error_and_raise_unknown(sys.exc_info(), e)
-
-
-@router.post("/users/{user_id}/send", response_model=Message)
-async def send_message_to_user(
-    user_id: int, query: SendMessageQuery, db: Session = Depends(get_db)
-) -> List[Message]:
-    """
-    User sends a message in a **1-to-1** conversation. It is not always known on client side if a
-    **1-to-1** group exists between two users, so this API can then be used; Dino will do a group
-    lookup and see if a group with `group_type=1` exists for them, send a message to it and return
-    the group_id.
-
-    If no group exists, Dino will create a __new__ **1-to-1** group, send the message and return the
-    `group_id`.
-
-    This API should NOT be used for EVERY **1-to-1** message. It should only be used if the client
-    doesn't know if a group exists for them or not. After this API has been called once, the client
-    should use the `POST /v1/groups/{group_id}/users/{user_id}/send` API for future messages as
-    much as possible.
-
-    When listing recent history, the client will know the group_id for recent **1-to-1** conversations
-    (since the groups that are **1-to-1** have `group_type=1`), and should thus use the other send API.
-
-    **Potential error codes in response:**
-    * `604`: if the user does not exist,
-    * `250`: if an unknown error occurred.
-    """
-    try:
-        return await environ.env.rest.message.send_message_to_user(user_id, query, db)
-    except NoSuchUserException as e:
-        log_error_and_raise_known(ErrorCodes.NO_SUCH_USER, e)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 
@@ -324,5 +291,38 @@ async def get_attachments_in_group_for_user(
         log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
     except UserNotInGroupException as e:
         log_error_and_raise_known(ErrorCodes.USER_NOT_IN_GROUP, e)
+    except Exception as e:
+        log_error_and_raise_unknown(sys.exc_info(), e)
+
+
+@router.post("/groups/{group_id}/actions", response_model=List[Message])
+async def create_action_logs(
+    group_id: str, query: CreateActionLogQuery, db: Session = Depends(get_db)
+) -> None:
+    """
+    Create one or more action logs in group.
+
+    **Potential error codes in response:**
+    * `250`: if an unknown error occurred.
+    """
+    try:
+        return await environ.env.rest.group.create_action_logs(group_id, query, db)
+    except Exception as e:
+        log_error_and_raise_unknown(sys.exc_info(), e)
+
+
+@router.post("/users/{user_id}/groups/create", response_model=Group)
+async def create_a_new_group(
+    user_id: int, query: CreateGroupQuery, db: Session = Depends(get_db)
+) -> Group:
+    """
+    Create a new group. A list of user IDs can be specified to make them auto-join
+    this new group.
+
+    **Potential error codes in response:**
+    * `250`: if an unknown error occurred.
+    """
+    try:
+        return await environ.env.rest.group.create_new_group(user_id, query, db)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)

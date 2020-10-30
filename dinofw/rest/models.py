@@ -27,9 +27,9 @@ class AbstractQuery(BaseModel):
             return None
 
         if ds is None:
-            return arrow.utcnow().float_timestamp
+            return round(arrow.utcnow().float_timestamp, 3)
 
-        return arrow.get(ds).float_timestamp
+        return round(arrow.get(ds).float_timestamp, 3)
 
 
 class PaginationQuery(AbstractQuery):
