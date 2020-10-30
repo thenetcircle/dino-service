@@ -159,15 +159,20 @@ class BaseServerRestApi(BaseDatabaseTest):
             count_unread: bool = False,
             only_unread: bool = False,
             hidden: bool = False,
+            until: float = None,
     ):
+        json_data = {
+            "per_page": "10",
+            "count_unread": count_unread,
+            "only_unread": only_unread,
+            "hidden": hidden,
+        }
+        if until is not None:
+            json_data["until"] = until
+
         raw_response = self.client.post(
             f"/v1/users/{user_id}/groups",
-            json={
-                "per_page": "10",
-                "count_unread": count_unread,
-                "only_unread": only_unread,
-                "hidden": hidden,
-            },
+            json=json_data,
         )
         self.assertEqual(raw_response.status_code, 200)
 
@@ -372,8 +377,8 @@ class BaseServerRestApi(BaseDatabaseTest):
         self.assertEqual(raw_response.status_code, 200)
         self.assertEqual(hidden, raw_response.json()["hide"])
 
-    def assert_groups_for_user(self, amount_of_groups, user_id: int = BaseTest.USER_ID) -> None:
-        response = self.groups_for_user(user_id)
+    def assert_groups_for_user(self, amount_of_groups, user_id: int = BaseTest.USER_ID, until: float = None) -> None:
+        response = self.groups_for_user(user_id, until=until)
         self.assertEqual(amount_of_groups, len(response))
 
     def assert_total_unread_count(self, user_id: int, unread_count: int):

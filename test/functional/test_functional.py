@@ -1157,4 +1157,22 @@ class TestServerRestApi(BaseServerRestApi):
         self.assertEqual(3, stats["one_to_one_amount"])
 
     def test_until_param_excluded_matching_group_in_list(self):
-        message = self.send_1v1_message()
+        self.send_1v1_message(receiver_id=22)
+        self.assert_groups_for_user(1)
+
+        # need a different timestamp on the other group
+        time.sleep(0.1)
+
+        self.send_1v1_message(receiver_id=44)
+        self.assert_groups_for_user(2)
+
+        time.sleep(0.1)
+
+        all_groups = self.groups_for_user()
+        self.assertEqual(2, len(all_groups))
+
+        groups = self.groups_for_user(until=all_groups[1]["group"]["last_message_time"])
+        self.assertEqual(0, len(groups))
+
+        groups = self.groups_for_user(until=all_groups[0]["group"]["last_message_time"])
+        self.assertEqual(1, len(groups))
