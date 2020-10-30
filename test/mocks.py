@@ -18,6 +18,7 @@ from dinofw.rest.models import EditMessageQuery
 from dinofw.rest.models import GroupQuery
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
+from dinofw.utils import utcnow_dt
 from dinofw.utils.exceptions import NoSuchGroupException
 from dinofw.utils.exceptions import NoSuchAttachmentException
 
@@ -146,7 +147,7 @@ class FakeStorage:
 
         attachment = MessageBase(
             group_id=str(group_id),
-            created_at=arrow.utcnow().datetime,
+            created_at=utcnow_dt(),
             user_id=user_id,
             file_id=query.file_id,
             message_id=message_id,
@@ -168,7 +169,7 @@ class FakeStorage:
         if group_id not in self.messages_by_group:
             self.messages_by_group[group_id] = list()
 
-        now = arrow.utcnow().datetime
+        now = utcnow_dt()
 
         message = MessageBase(
             group_id=group_id,

@@ -2,6 +2,7 @@ import time
 
 import arrow
 
+from dinofw.utils import utcnow_ts
 from dinofw.utils.config import MessageTypes, ErrorCodes
 from dinofw.utils.exceptions import NoSuchAttachmentException
 from test.base import BaseTest
@@ -112,13 +113,13 @@ class TestServerRestApi(BaseServerRestApi):
         messages_to_send_each = 4
 
         self.send_message_to_group_from(
-            group_id, user_id=BaseTest.USER_ID, amount=messages_to_send_each, delay=10
+            group_id, user_id=BaseTest.USER_ID, amount=messages_to_send_each, delay=20
         )
         messages = self.send_message_to_group_from(
             group_id,
             user_id=BaseTest.OTHER_USER_ID,
             amount=messages_to_send_each,
-            delay=10,
+            delay=20,
         )
 
         # first user deletes the first 5 messages in the group
@@ -142,7 +143,7 @@ class TestServerRestApi(BaseServerRestApi):
         last_update_time = group["group"]["updated_at"]
 
         # update time should not have changed form a new message
-        self.send_message_to_group_from(group_id, user_id=BaseTest.USER_ID, delay=10)
+        self.send_message_to_group_from(group_id, user_id=BaseTest.USER_ID, delay=20)
         group = self.get_group(group_id)
         self.assertEqual(group["group"]["updated_at"], last_update_time)
 
@@ -156,7 +157,7 @@ class TestServerRestApi(BaseServerRestApi):
 
         self.user_joins_group(group_id1, BaseTest.OTHER_USER_ID)
         self.send_message_to_group_from(
-            group_id1, user_id=BaseTest.USER_ID, amount=10, delay=10
+            group_id1, user_id=BaseTest.USER_ID, amount=10, delay=20
         )
         self.assert_total_unread_count(user_id=BaseTest.USER_ID, unread_count=0)
         self.assert_total_unread_count(user_id=BaseTest.OTHER_USER_ID, unread_count=10)
@@ -165,7 +166,7 @@ class TestServerRestApi(BaseServerRestApi):
 
         self.user_joins_group(group_id2, BaseTest.OTHER_USER_ID)
         self.send_message_to_group_from(
-            group_id2, user_id=BaseTest.USER_ID, amount=10, delay=10
+            group_id2, user_id=BaseTest.USER_ID, amount=10, delay=20
         )
         self.assert_total_unread_count(user_id=BaseTest.USER_ID, unread_count=0)
         self.assert_total_unread_count(user_id=BaseTest.OTHER_USER_ID, unread_count=20)
@@ -302,7 +303,7 @@ class TestServerRestApi(BaseServerRestApi):
         self.user_joins_group(group_id1, BaseTest.OTHER_USER_ID)
         self.user_joins_group(group_id2, BaseTest.OTHER_USER_ID)
 
-        self.send_message_to_group_from(group_id1, user_id=BaseTest.USER_ID, delay=100)
+        self.send_message_to_group_from(group_id1, user_id=BaseTest.USER_ID, delay=200)
         self.send_message_to_group_from(group_id2, user_id=BaseTest.USER_ID)
         self.assert_order_of_groups(BaseTest.USER_ID, group_id2, group_id1)
 
