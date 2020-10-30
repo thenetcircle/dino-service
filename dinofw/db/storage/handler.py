@@ -53,6 +53,10 @@ class CassandraHandler:
                 # should probably be changed to QUORUM when having more than 3 nodes in the cluster
                 consistency_level=ConsistencyLevel.LOCAL_ONE,
             ),
+            # TODO: there doesn't seem to be a way to specify execution profile when
+            #  using the library's object mapping approach, only when writing pure
+            #  cql queries:
+            #  https://docs.datastax.com/en/developer/python-driver/3.24/execution_profiles/
             # batch profile has longer timeout since they are run async anyway
             "batch": ExecutionProfile(
                 load_balancing_policy=TokenAwarePolicy(DCAwareRoundRobinPolicy()),
