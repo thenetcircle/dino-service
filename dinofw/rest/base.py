@@ -15,6 +15,7 @@ from dinofw.rest.models import GroupLastRead
 from dinofw.rest.models import Message
 from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UserGroupStats
+from dinofw.utils import utcnow_ts, utcnow_dt
 
 
 class BaseResource(ABC):
@@ -36,9 +37,8 @@ class BaseResource(ABC):
 
         # if a user opens a conversation a second time and nothing has changed, we don't need to update
         if BaseResource.need_to_update_stats_in_group(user_stats, last_message_time):
-            now_arrow = arrow.utcnow()
-            now_dt = now_arrow.datetime
-            now_ts = now_arrow.float_timestamp
+            now_ts = utcnow_ts()
+            now_dt = utcnow_dt(now_ts)
 
             # something changed, so update and set last_updated_time to sync to apps
             self.env.db.update_last_read_and_highlight_in_group_for_user(

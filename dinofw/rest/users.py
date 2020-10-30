@@ -11,6 +11,7 @@ from dinofw.rest.models import GroupUpdatesQuery
 from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UserStats
 from dinofw.rest.models import UserStatsQuery
+from dinofw.utils import utcnow_ts
 from dinofw.utils.config import GroupTypes
 
 logger = logging.getLogger(__name__)
@@ -97,7 +98,7 @@ class UserResource(BaseResource):
         group_created_at = self.env.db.get_group_ids_and_created_at_for_user(user_id, db)
         group_to_atts = self.env.storage.delete_attachments_in_all_groups(group_created_at, user_id)
 
-        now = arrow.utcnow().float_timestamp
+        now = utcnow_ts()
 
         for group_id, attachments in group_to_atts.items():
             user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db).keys()

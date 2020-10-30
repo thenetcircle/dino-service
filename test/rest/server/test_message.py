@@ -105,36 +105,3 @@ class TestMessageResource(BaseTest):
         )
         self.assertEqual(1, len(messages))
         self.assertEqual(type(messages[0]), Message)
-
-    """
-    @async_test
-    async def test_edit_message(self):
-        new_text = "edited message"
-        old_text = "a new message"
-
-        send_query = SendMessageQuery(message_payload=old_text, message_type="text")
-        edit_query = EditMessageQuery(message_payload=new_text, created_at=arrow.utcnow().float_timestamp)
-        message_query = MessageQuery(per_page=10,)
-
-        message = await self.resource.send_message_to_group(
-            group_id=BaseTest.GROUP_ID,
-            user_id=BaseTest.USER_ID,
-            query=send_query,
-            db=None,  # noqa
-        )
-        messages = await self.resource.messages_for_user(
-            BaseTest.GROUP_ID, BaseTest.USER_ID, message_query, db=None  # noqa
-        )
-        self.assertEqual(messages[0].message_payload, old_text)
-        self.assertIsNone(messages[0].updated_at)
-
-        await self.resource.edit_message(
-            BaseTest.GROUP_ID, message.message_id, edit_query, db=None  # noqa
-        )
-
-        messages = await self.resource.messages_for_user(
-            BaseTest.GROUP_ID, BaseTest.USER_ID, message_query, db=None  # noqa
-        )
-        self.assertEqual(messages[0].message_payload, new_text)
-        self.assertIsNotNone(messages[0].updated_at)
-    """

@@ -4,6 +4,9 @@ from typing import Optional, List
 import arrow
 from pydantic import BaseModel
 
+from dinofw.utils import utcnow_dt
+from dinofw.utils import utcnow_ts
+
 
 class AbstractQuery(BaseModel):
     @staticmethod
@@ -15,9 +18,10 @@ class AbstractQuery(BaseModel):
             return None
 
         if s is None:
-            s = arrow.utcnow().datetime
+            s = utcnow_dt()
         else:
-            s = arrow.get(float(s)).datetime
+            # millis not micros
+            s = arrow.get(round(float(s), 3)).datetime
 
         return s
 
@@ -27,8 +31,9 @@ class AbstractQuery(BaseModel):
             return None
 
         if ds is None:
-            return round(arrow.utcnow().float_timestamp, 3)
+            return utcnow_ts()
 
+        # millis not micros
         return round(arrow.get(ds).float_timestamp, 3)
 
 

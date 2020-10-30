@@ -10,6 +10,7 @@ from dinofw.rest.models import CreateAttachmentQuery
 from dinofw.rest.models import Message
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
+from dinofw.utils import utcnow_ts
 from dinofw.utils.exceptions import NoSuchGroupException, NoSuchUserException
 
 logger = logging.getLogger(__name__)
@@ -118,7 +119,7 @@ class MessageResource(BaseResource):
             group_id, group.created_at, query
         )
 
-        now = arrow.utcnow().float_timestamp
+        now = utcnow_ts()
         user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db).keys()
 
         if len(user_ids):

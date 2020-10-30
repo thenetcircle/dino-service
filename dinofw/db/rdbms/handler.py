@@ -4,6 +4,8 @@ from typing import List, Optional, Dict, Tuple
 from uuid import uuid4 as uuid
 
 import arrow
+from dinofw.utils import utcnow_dt
+from dinofw.utils import utcnow_ts
 from sqlalchemy import func
 from sqlalchemy import literal
 from sqlalchemy import or_
@@ -667,7 +669,7 @@ class RelationalHandler:
 
         before = None
         if len(group_ids) > 250:
-            before = arrow.utcnow().float_timestamp
+            before = utcnow_ts()
 
         # some users have >10k conversations; split into chunks to not overload the db
         for group_id_chunk in split_into_chunks(group_ids, 500):
@@ -685,7 +687,7 @@ class RelationalHandler:
         db.commit()
 
         if before is not None:
-            the_time = arrow.utcnow().float_timestamp - before
+            the_time = utcnow_ts() - before
             the_time = "%.2f" % the_time
 
             self.logger.info(f"updating {len(group_ids)} user group stats took {the_time}s")

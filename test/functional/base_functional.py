@@ -4,6 +4,7 @@ from uuid import uuid4 as uuid
 import arrow
 
 from dinofw.rest.models import AbstractQuery
+from dinofw.utils import utcnow_ts
 from dinofw.utils.config import MessageTypes
 from test.base import BaseTest
 from test.functional.base_db import BaseDatabaseTest
@@ -280,7 +281,7 @@ class BaseServerRestApi(BaseDatabaseTest):
         return raw_response.json()
 
     def attachments_for(self, group_id: str, user_id: int = BaseTest.USER_ID):
-        now = arrow.utcnow().float_timestamp
+        now = utcnow_ts()
 
         raw_response = self.client.post(
             f"/v1/groups/{group_id}/user/{user_id}/attachments",

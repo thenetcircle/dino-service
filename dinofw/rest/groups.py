@@ -19,6 +19,7 @@ from dinofw.rest.models import OneToOneStats
 from dinofw.rest.models import UpdateGroupQuery
 from dinofw.rest.models import UpdateUserGroupStats
 from dinofw.rest.models import UserGroupStats
+from dinofw.utils import utcnow_ts
 from dinofw.utils.exceptions import NoSuchGroupException
 
 logger = logging.getLogger(__name__)
@@ -132,7 +133,7 @@ class GroupResource(BaseResource):
 
         messages_since = self.env.storage.count_messages_in_group_since(group_id, until)
         total_messages = n_messages + messages_since
-        now = arrow.utcnow().float_timestamp
+        now = utcnow_ts()
 
         self.env.cache.set_messages_in_group(group_id, total_messages, now)
         return total_messages
@@ -268,7 +269,7 @@ class GroupResource(BaseResource):
             group_id, group.created_at, user_id
         )
 
-        now = arrow.utcnow().float_timestamp
+        now = utcnow_ts()
         user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db).keys()
 
         if len(user_ids):
