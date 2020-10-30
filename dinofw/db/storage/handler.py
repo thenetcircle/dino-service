@@ -5,10 +5,12 @@ from typing import List, Optional, Dict, Tuple
 from uuid import uuid4 as uuid
 
 import arrow
-from cassandra.cluster import PlainTextAuthProvider
+from cassandra.cluster import PlainTextAuthProvider, ExecutionProfile, EXEC_PROFILE_DEFAULT, Session
+from cassandra.connection import ConsistencyLevel
 from cassandra.cqlengine import connection
 from cassandra.cqlengine.management import sync_table
 from cassandra.cqlengine.query import BatchQuery
+from cassandra.policies import WhiteListRoundRobinPolicy, TokenAwarePolicy, DCAwareRoundRobinPolicy, RetryPolicy
 
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.models import AttachmentModel
@@ -40,28 +42,56 @@ class CassandraHandler:
         hosts = self.env.config.get(ConfigKeys.HOST, domain=ConfigKeys.STORAGE)
         hosts = hosts.split(",")
 
-        if ConfigKeys.PASSWORD in self.env.config.get(ConfigKeys.STORAGE):
+        # required to specify execution profiles in future versions
+        profiles = {
+            # override the default so we can set consistency level later
+            EXEC_PROFILE_DEFAULT: ExecutionProfile(
+                load_balancing_policy=TokenAwarePolicy(DCAwareRoundRobinPolicy()),
+                retry_policy=RetryPolicy(),
+                request_timeout=10.0,
+                row_factory=Session._row_factory,  # noqa
+                # should probably be changed to QUORUM when having more than 3 nodes in the cluster
+                consistency_level=ConsistencyLevel.LOCAL_ONE,
+            ),
+            # batch profile has longer timeout since they are run async anyway
+            "batch": ExecutionProfile(
+                load_balancing_policy=TokenAwarePolicy(DCAwareRoundRobinPolicy()),
+                request_timeout=120.0,
+                consistency_level=ConsistencyLevel.LOCAL_ONE,
+            )
+        }
+
+        kwargs = {
+            "default_keyspace": key_space,
+            "protocol_version": 3,
+            "retry_connect": True,
+            "execution_profiles": profiles,
+        }
+
+        username = self._get_from_conf(ConfigKeys.USER, ConfigKeys.STORAGE)
+        password = self._get_from_conf(ConfigKeys.PASSWORD, ConfigKeys.STORAGE)
+
+        if password is not None:
             auth_provider = PlainTextAuthProvider(
-                username=self.env.config.get(ConfigKeys.USER, domain=ConfigKeys.STORAGE),
-                password=self.env.config.get(ConfigKeys.PASSWORD, domain=ConfigKeys.STORAGE),
+                username=username,
+                password=password,
             )
-            connection.setup(
-                hosts,
-                default_keyspace=key_space,
-                protocol_version=3,
-                retry_connect=True,
-                auth_provider=auth_provider,
-            )
-        else:
-            connection.setup(
-                hosts,
-                default_keyspace=key_space,
-                protocol_version=3,
-                retry_connect=True,
-            )
+            kwargs["auth_provider"] = auth_provider
+
+        connection.setup(hosts, **kwargs)
 
         sync_table(MessageModel)
         sync_table(AttachmentModel)
+
+    def _get_from_conf(self, key, domain):
+        if key not in self.env.config.get(domain):
+            return None
+
+        value = self.env.config.get(key, domain=domain)
+        if value is None or not len(value.strip()):
+            return None
+
+        return value
 
     def get_messages_in_group(
             self,

@@ -28,6 +28,9 @@ class MessageModel(Model):
         required=True,
         default=uuid.uuid4
     )
+
+    # TODO: db has 'status', not needed?
+
     file_id = Text(
         required=False
     )
@@ -66,6 +69,9 @@ class AttachmentModel(Model):
     file_id = Text(
         required=True
     )
+
+    # TODO: db has 'status', not needed?
+
     message_payload = Text(
         required=False
     )
