@@ -12,7 +12,7 @@ from sqlalchemy.orm import sessionmaker
 from dinofw.db.rdbms.database import init_db
 from test.mocks import FakeEnv
 from dinofw.restful import app
-from dinofw.restful import get_db
+from dinofw.utils.api import get_db
 
 
 class BaseDatabaseTest(BaseTest):

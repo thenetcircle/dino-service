@@ -155,7 +155,7 @@ class RelationalHandler:
             )
             .filter(
                 models.GroupEntity.last_message_time < until,
-                models.UserGroupStatsEntity.delete_before < models.GroupEntity.updated_at,
+                models.UserGroupStatsEntity.delete_before <= models.GroupEntity.updated_at,
                 # TODO: when joining a "group", the last message was before you joined; if we create
                 #  an action log when a user joins it will update `last_message_time` and we can use
                 #  that instead of `updated_at`, which would make more sense
