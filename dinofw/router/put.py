@@ -109,9 +109,9 @@ async def update_user_statistics_in_group(
             group_id, user_id, query, db
         )
     except NoSuchGroupException as e:
-        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
     except UserNotInGroupException as e:
-        log_error_and_raise_known(ErrorCodes.USER_NOT_IN_GROUP, e)
+        log_error_and_raise_known(ErrorCodes.USER_NOT_IN_GROUP, sys.exc_info(), e)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 
@@ -132,7 +132,7 @@ async def edit_group_information(
             group_id, query, db
         )
     except NoSuchGroupException as e:
-        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 
@@ -151,6 +151,6 @@ async def join_group(
     try:
         return await environ.env.rest.group.join_group(group_id, user_id, db)
     except NoSuchGroupException as e:
-        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)

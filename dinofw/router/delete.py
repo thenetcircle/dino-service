@@ -33,7 +33,7 @@ async def leave_group(
     try:
         return environ.env.rest.group.leave_group(group_id, user_id, db)
     except NoSuchGroupException as e:
-        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 

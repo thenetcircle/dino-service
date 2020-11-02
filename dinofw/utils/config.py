@@ -1,3 +1,6 @@
+from typing import Final
+
+
 class GroupTypes:
     GROUP = 0
     ONE_TO_ONE = 1
@@ -10,6 +13,14 @@ class MessageTypes:
     IMAGE = 3
     VIDEO = 4  # TODO: example for video, not decided
     ACTION = 5  # maybe negative or very large, to distinguish from normal messages
+
+
+class DefaultValues:
+    PER_PAGE: Final = 100
+
+    # TODO: when actions have been defined, use an ActionTypes class or similar
+    ACTION_TYPE_JOIN: Final = 0
+    ACTION_TYPE_LEAVE: Final = 1
 
 
 class RedisKeys:

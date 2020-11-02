@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime as dt
 from time import time
-from typing import List, Optional, Dict, Tuple
+from typing import List, Optional, Dict, Tuple, Final
 from uuid import uuid4 as uuid
 
 import arrow
@@ -21,14 +21,12 @@ from dinofw.rest.models import CreateActionLogQuery
 from dinofw.rest.models import CreateAttachmentQuery
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
-from dinofw.utils.config import ConfigKeys, MessageTypes
+from dinofw.utils import utcnow_dt
+from dinofw.utils.config import ConfigKeys, MessageTypes, DefaultValues
 from dinofw.utils.exceptions import NoSuchMessageException, NoSuchAttachmentException
 
 
 class CassandraHandler:
-    ACTION_TYPE_JOIN = 0
-    ACTION_TYPE_LEAVE = 1
-
     def __init__(self, env):
         self.env = env
         self.logger = logging.getLogger(__name__)
@@ -109,7 +107,7 @@ class CassandraHandler:
                 MessageModel.group_id == group_id,
                 MessageModel.created_at < until,
             )
-            .limit(query.per_page or 100)
+            .limit(query.per_page or DefaultValues.PER_PAGE)
             .all()
         )
 
@@ -134,7 +132,7 @@ class CassandraHandler:
                 AttachmentModel.created_at <= until,
                 AttachmentModel.created_at > user_stats.delete_before,
             )
-            .limit(query.per_page or 100)
+            .limit(query.per_page or DefaultValues.PER_PAGE)
             .all()
         )
 
@@ -159,7 +157,7 @@ class CassandraHandler:
                 MessageModel.created_at < until,
                 MessageModel.created_at > user_stats.delete_before,
             )
-            .limit(query.per_page or 100)
+            .limit(query.per_page or DefaultValues.PER_PAGE)
             .all()
         )
 
@@ -441,7 +439,7 @@ class CassandraHandler:
         )
 
     def store_message(self, group_id: str, user_id: int, query: SendMessageQuery) -> MessageBase:
-        created_at = arrow.utcnow().datetime
+        created_at = utcnow_dt()
         message_id = uuid()
 
         message = MessageModel.create(

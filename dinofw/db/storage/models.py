@@ -80,7 +80,7 @@ class AttachmentModel(Model):
     )
     updated_at = DateTime()
 
-    # TODO: figure out if use a json body or all just fields, dont' need to filter on them, but need to update some
+    # TODO: figure out if use a json body or all just fields, don't need to filter on them, but need to update some
     """
     is_resized = Boolean(
         required=True,

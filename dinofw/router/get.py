@@ -33,7 +33,7 @@ async def get_users_in_group(
     try:
         return await environ.env.rest.group.get_users_in_group(group_id, db)
     except NoSuchGroupException as e:
-        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 
@@ -56,9 +56,9 @@ async def get_user_statistics_in_group(
         message_amount = await environ.env.rest.group.count_messages_in_group(group_id)
         return await environ.env.rest.group.get_user_group_stats(group_id, user_id, message_amount, db)
     except NoSuchGroupException as e:
-        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), sys.exc_info(), e)
     except UserNotInGroupException as e:
-        log_error_and_raise_known(ErrorCodes.USER_NOT_IN_GROUP, e)
+        log_error_and_raise_known(ErrorCodes.USER_NOT_IN_GROUP, sys.exc_info(), sys.exc_info(), e)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 
@@ -75,6 +75,6 @@ async def get_group_information(group_id, db: Session = Depends(get_db)) -> Grou
     try:
         return await environ.env.rest.group.get_group(group_id, db)
     except NoSuchGroupException as e:
-        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)

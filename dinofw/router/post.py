@@ -65,7 +65,7 @@ async def send_message_to_user(
     try:
         return await environ.env.rest.message.send_message_to_user(user_id, query, db)
     except NoSuchUserException as e:
-        log_error_and_raise_known(ErrorCodes.NO_SUCH_USER, e)
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_USER, sys.exc_info(), e)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 
@@ -95,9 +95,9 @@ async def get_group_history_for_user(
     try:
         return await environ.env.rest.group.histories(group_id, user_id, query, db)
     except NoSuchGroupException as e:
-        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
     except UserNotInGroupException as e:
-        log_error_and_raise_known(ErrorCodes.USER_NOT_IN_GROUP, e)
+        log_error_and_raise_known(ErrorCodes.USER_NOT_IN_GROUP, sys.exc_info(), e)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 
@@ -191,9 +191,9 @@ async def send_message_to_group(
             group_id, user_id, query, db
         )
     except NoSuchGroupException as e:
-        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
     except UserNotInGroupException as e:
-        log_error_and_raise_known(ErrorCodes.USER_NOT_IN_GROUP, e)
+        log_error_and_raise_known(ErrorCodes.USER_NOT_IN_GROUP, sys.exc_info(), e)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 
@@ -212,7 +212,7 @@ async def get_one_to_one_information(
     try:
         return await environ.env.rest.group.get_1v1_info(user_id, query.receiver_id, db)
     except NoSuchGroupException as e:
-        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 
@@ -242,9 +242,9 @@ async def create_an_attachment(
     try:
         return await environ.env.rest.message.create_attachment(user_id, message_id, query, db)
     except NoSuchGroupException as e:
-        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
     except NoSuchMessageException as e:
-        log_error_and_raise_known(ErrorCodes.NO_SUCH_MESSAGE, e)
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_MESSAGE, sys.exc_info(), e)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 
@@ -264,9 +264,9 @@ async def get_attachment_info_from_file_id(
     try:
         return await environ.env.rest.message.get_attachment_info(group_id, query, db)
     except NoSuchGroupException as e:
-        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
     except NoSuchAttachmentException as e:
-        log_error_and_raise_known(ErrorCodes.NO_SUCH_ATTACHMENT, e)
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_ATTACHMENT, sys.exc_info(), e)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 
@@ -288,9 +288,9 @@ async def get_attachments_in_group_for_user(
             group_id, user_id, query, db
         )
     except NoSuchGroupException as e:
-        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, e)
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
     except UserNotInGroupException as e:
-        log_error_and_raise_known(ErrorCodes.USER_NOT_IN_GROUP, e)
+        log_error_and_raise_known(ErrorCodes.USER_NOT_IN_GROUP, sys.exc_info(), e)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 
