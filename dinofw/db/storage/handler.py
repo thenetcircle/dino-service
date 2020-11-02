@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime as dt
 from time import time
-from typing import List, Optional, Dict, Tuple, Final
+from typing import List, Optional, Dict, Tuple
 from uuid import uuid4 as uuid
 
 import arrow
@@ -10,7 +10,9 @@ from cassandra.connection import ConsistencyLevel
 from cassandra.cqlengine import connection
 from cassandra.cqlengine.management import sync_table
 from cassandra.cqlengine.query import BatchQuery
-from cassandra.policies import WhiteListRoundRobinPolicy, TokenAwarePolicy, DCAwareRoundRobinPolicy, RetryPolicy
+from cassandra.policies import DCAwareRoundRobinPolicy
+from cassandra.policies import RetryPolicy
+from cassandra.policies import TokenAwarePolicy
 
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.models import AttachmentModel
@@ -22,8 +24,11 @@ from dinofw.rest.models import CreateAttachmentQuery
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
 from dinofw.utils import utcnow_dt
-from dinofw.utils.config import ConfigKeys, MessageTypes, DefaultValues
-from dinofw.utils.exceptions import NoSuchMessageException, NoSuchAttachmentException
+from dinofw.utils.config import ConfigKeys
+from dinofw.utils.config import DefaultValues
+from dinofw.utils.config import MessageTypes
+from dinofw.utils.exceptions import NoSuchAttachmentException
+from dinofw.utils.exceptions import NoSuchMessageException
 
 
 class CassandraHandler:
@@ -315,7 +320,7 @@ class CassandraHandler:
         if message is None:
             raise NoSuchMessageException(message_id)
 
-        removed_at = arrow.utcnow().datetime
+        removed_at = utcnow_dt()
 
         message.update(
             message_payload="",
@@ -350,7 +355,7 @@ class CassandraHandler:
         # quite often, which will become very slow after a group has a long
         # message history...
         created_at = query.created_at
-        now = arrow.utcnow().datetime
+        now = utcnow_dt()
 
         # querying by exact datetime seems to be shifty in cassandra, so just
         # filter by a minute before and after
@@ -396,7 +401,7 @@ class CassandraHandler:
             message.removed_at = removed_at
             message.removed_by_user = query.admin_id
 
-        removed_at = arrow.utcnow().datetime
+        removed_at = utcnow_dt()
 
         self._update_all_messages_in_group(group_id=group_id, callback=callback)
 
@@ -407,7 +412,7 @@ class CassandraHandler:
     ) -> List[MessageBase]:
         logs = list()
 
-        action_time = arrow.utcnow().datetime
+        action_time = utcnow_dt()
 
         for user_id in query.user_ids:
             log = MessageModel.create(
@@ -432,7 +437,7 @@ class CassandraHandler:
             message.removed_at = removed_at
             message.removed_by_user = query.admin_id
 
-        removed_at = arrow.utcnow().datetime
+        removed_at = utcnow_dt()
 
         self._update_all_messages_in_group(
             group_id=group_id, callback=callback, user_id=user_id,
@@ -456,7 +461,7 @@ class CassandraHandler:
     def _update_all_messages_in_group(
         self, group_id: str, callback: callable, user_id: int = None
     ):
-        until = arrow.utcnow().datetime
+        until = utcnow_dt()
         start = time()
         amount = 0
 

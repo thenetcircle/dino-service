@@ -4,7 +4,7 @@ from typing import List, Optional, Dict, Tuple
 from uuid import uuid4 as uuid
 
 import arrow
-from dinofw.utils import utcnow_dt
+from dinofw.utils import utcnow_dt, trim_micros
 from dinofw.utils import utcnow_ts
 from sqlalchemy import func
 from sqlalchemy import literal
@@ -602,7 +602,7 @@ class RelationalHandler:
             db.add(user_ids_to_stats[user_id])
 
         db.commit()
-        now_ts = GroupQuery.to_ts(arrow.utcnow().datetime)
+        now_ts = utcnow_ts()
 
         join_times = {
             user_id: GroupQuery.to_ts(stats.join_time)
@@ -657,7 +657,7 @@ class RelationalHandler:
         return types
 
     def set_last_updated_at_on_all_stats_related_to_user(self, user_id: int, db: Session):
-        now = arrow.utcnow().datetime
+        now = utcnow_dt()
 
         group_ids = (
             db.query(models.UserGroupStatsEntity.group_id)
@@ -693,7 +693,7 @@ class RelationalHandler:
             self.logger.info(f"updating {len(group_ids)} user group stats took {the_time}s")
 
     def set_last_updated_at_for_all_in_group(self, group_id: str, db: Session):
-        now = arrow.utcnow().datetime
+        now = utcnow_dt()
 
         _ = (
             db.query(models.UserGroupStatsEntity)
@@ -715,7 +715,7 @@ class RelationalHandler:
         if group_entity is None:
             return None
 
-        now = arrow.utcnow().datetime
+        now = utcnow_dt()
 
         if query.name is not None:
             group_entity.name = query.name
@@ -758,7 +758,7 @@ class RelationalHandler:
         # sqlalchemy returns a list of tuples: [(group_id1,), (group_id2,), ...]
         group_ids = [group_id[0] for group_id in group_ids]
 
-        now = arrow.utcnow().datetime
+        now = utcnow_dt()
 
         # some users have >10k conversations; split into chunks to not overload the db
         for group_id_chunk in split_into_chunks(group_ids, 500):
@@ -813,7 +813,7 @@ class RelationalHandler:
         highlight_time = UpdateUserGroupStats.to_dt(
             query.highlight_time, allow_none=True
         )
-        now = arrow.utcnow().datetime
+        now = utcnow_dt()
 
         if user_stats is None:
             raise UserNotInGroupException(
@@ -942,7 +942,7 @@ class RelationalHandler:
         self, owner_id: int, query: CreateGroupQuery, db: Session
     ) -> GroupBase:
         utc_now = arrow.utcnow()
-        last_message_time = utc_now.datetime
+        last_message_time = trim_micros(utc_now.datetime)
 
         # can't be exactly the same, because when listing groups for a
         # user, any group with only one message would not be included,
@@ -951,7 +951,7 @@ class RelationalHandler:
         # "delete_before = join_time = created_at"; if we set
         # last_message_time to this time as well the filter won't include
         # the group
-        created_at = utc_now.shift(seconds=-1).datetime
+        created_at = trim_micros(utc_now.shift(seconds=-1).datetime)
 
         if query.group_type == GroupTypes.ONE_TO_ONE:
             group_id = users_to_group_id(*query.users)
@@ -998,7 +998,7 @@ class RelationalHandler:
     def _create_user_stats(
         self, group_id: str, user_id: int, default_dt: dt
     ) -> models.UserGroupStatsEntity:
-        now = arrow.utcnow().datetime
+        now = utcnow_dt()
 
         return models.UserGroupStatsEntity(
             group_id=group_id,

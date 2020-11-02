@@ -19,7 +19,7 @@ from dinofw.rest.models import OneToOneStats
 from dinofw.rest.models import UpdateGroupQuery
 from dinofw.rest.models import UpdateUserGroupStats
 from dinofw.rest.models import UserGroupStats
-from dinofw.utils import utcnow_ts
+from dinofw.utils import utcnow_ts, utcnow_dt
 from dinofw.utils.exceptions import NoSuchGroupException
 
 logger = logging.getLogger(__name__)
@@ -195,7 +195,7 @@ class GroupResource(BaseResource):
     ) -> Group:
         group_base = self.env.db.create_group(user_id, query, db)
 
-        now = arrow.utcnow().datetime
+        now = utcnow_dt()
         now_ts = CreateGroupQuery.to_ts(now)
 
         users = {user_id: float(now_ts)}
@@ -230,7 +230,7 @@ class GroupResource(BaseResource):
         self.env.client_publisher.group_change(group, user_ids)
 
     async def join_group(self, group_id: str, user_id: int, db: Session) -> None:
-        now = arrow.utcnow().datetime
+        now = utcnow_dt()
         now_ts = AbstractQuery.to_ts(now)
 
         user_id_and_last_read = {user_id: float(now_ts)}
@@ -247,7 +247,7 @@ class GroupResource(BaseResource):
         self.env.client_publisher.join(group_id, user_ids_in_group, user_id, now_ts)
 
     def leave_group(self, group_id: str, user_id: int, db: Session) -> None:
-        now = arrow.utcnow().datetime
+        now = utcnow_dt()
         now_ts = AbstractQuery.to_ts(now)
 
         self.env.db.remove_last_read_in_group_for_user(group_id, user_id, db)

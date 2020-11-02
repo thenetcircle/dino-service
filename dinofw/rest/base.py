@@ -61,7 +61,7 @@ class BaseResource(ABC):
         update database and cache with everything related to sending a message
         """
         # cassandra DT is different from python DT
-        now = arrow.utcnow().datetime
+        now = utcnow_dt()
 
         self.env.db.update_group_new_message(message, now, db)
 
@@ -83,7 +83,7 @@ class BaseResource(ABC):
         self, group_id: str, messages: List[MessageBase], db
     ):
         # cassandra DT is different from python DT
-        now = arrow.utcnow().datetime
+        now = utcnow_dt()
 
         self.env.db.update_group_new_message(
             messages[-1],  # just update with the last one created
@@ -100,7 +100,7 @@ class BaseResource(ABC):
 
     def _user_sends_an_attachment(self, group_id: str, attachment: MessageBase, db):
         # cassandra DT is different from python DT
-        now = arrow.utcnow().datetime
+        now = utcnow_dt()
 
         self.env.db.update_group_new_message(attachment, now, db)
         user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
