@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import AbstractQuery
+from dinofw.rest.models import AbstractQuery, GroupInfoQuery
 from dinofw.rest.models import CreateActionLogQuery
 from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import Group
@@ -40,8 +40,11 @@ class GroupResource(BaseResource):
             group_id=group_id, owner_id=group.owner_id, user_count=n_users, users=users,
         )
 
-    async def get_group(self, group_id: str, db: Session) -> Optional[Group]:
+    async def get_group(self, group_id: str, query: GroupInfoQuery, db: Session) -> Optional[Group]:
         group, first_users, n_users = self.env.db.get_users_in_group(group_id, db)
+
+        if query.count_messages:
+            self.env.storage.count_messages_in_group_since(utcnow_dt())
 
         return GroupResource.group_base_to_group(
             group, users=first_users, user_count=n_users,

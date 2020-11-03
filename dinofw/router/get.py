@@ -56,28 +56,8 @@ async def get_user_statistics_in_group(
         message_amount = await environ.env.rest.group.count_messages_in_group(group_id)
         return await environ.env.rest.group.get_user_group_stats(group_id, user_id, message_amount, db)
     except NoSuchGroupException as e:
-        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), sys.exc_info(), e)
-    except UserNotInGroupException as e:
-        log_error_and_raise_known(ErrorCodes.USER_NOT_IN_GROUP, sys.exc_info(), sys.exc_info(), e)
-    except Exception as e:
-        log_error_and_raise_unknown(sys.exc_info(), e)
-
-
-@router.get("/groups/{group_id}", response_model=Group)
-async def get_group_information(group_id, db: Session = Depends(get_db)) -> Group:
-    """
-    Get details about one group.
-
-    TODO: add a query to specify if to count all messages in the group (for admin
-     site and gdpr reasons)
-
-    **Potential error codes in response:**
-    * `601`: if the group does not exist,
-    * `250`: if an unknown error occurred.
-    """
-    try:
-        return await environ.env.rest.group.get_group(group_id, db)
-    except NoSuchGroupException as e:
         log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
+    except UserNotInGroupException as e:
+        log_error_and_raise_known(ErrorCodes.USER_NOT_IN_GROUP, sys.exc_info(), e)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)

@@ -1,6 +1,6 @@
 from dinofw.rest.groups import GroupResource
 from dinofw.rest.message import MessageResource
-from dinofw.rest.models import CreateActionLogQuery
+from dinofw.rest.models import CreateActionLogQuery, GroupInfoQuery
 from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import Group
 from dinofw.rest.models import GroupUsers
@@ -56,10 +56,14 @@ class TestGroupResource(BaseTest):
 
     @async_test
     async def test_get_group(self):
+        group_info_query = GroupInfoQuery(count_messages=False)
+
         with self.assertRaises(NoSuchGroupException):
-            group = await self.group.get_group(
-                group_id=BaseTest.GROUP_ID, db=None
-            )  # noqa
+            await self.group.get_group(
+                group_id=BaseTest.GROUP_ID,
+                query=group_info_query,
+                db=None  # noqa
+            )
 
         query = CreateGroupQuery(
             group_name="some group name", group_type=0, users=[BaseTest.USER_ID],
@@ -71,7 +75,11 @@ class TestGroupResource(BaseTest):
         self.assertIsNotNone(group)
         self.assertEqual(type(group), Group)
 
-        group = await self.group.get_group(group_id=group.group_id, db=None)  # noqa
+        group = await self.group.get_group(
+            group_id=group.group_id,
+            query=group_info_query,
+            db=None  # noqa
+        )
 
         self.assertIsNotNone(group)
         self.assertEqual(type(group), Group)

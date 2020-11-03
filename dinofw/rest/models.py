@@ -88,6 +88,10 @@ class UserStatsQuery(AbstractQuery):
     only_unread: Optional[bool]
 
 
+class GroupInfoQuery(AbstractQuery):
+    count_messages: Optional[bool] = False
+
+
 class GroupQuery(PaginationQuery, UserStatsQuery):
     pass
 
