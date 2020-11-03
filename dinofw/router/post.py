@@ -174,6 +174,10 @@ async def get_group_information(group_id: str, query: GroupInfoQuery, db: Sessio
     """
     Get details about one group.
 
+    If `count_messages` is set to `true`, a count of all messages in the group
+    will be returned in `message_amount`. If `count_messages` is set to `false`,
+    `message_amount` will be `-1`. Default value is `false`.
+
     **Potential error codes in response:**
     * `601`: if the group does not exist,
     * `250`: if an unknown error occurred.
