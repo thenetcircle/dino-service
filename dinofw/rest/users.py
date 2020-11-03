@@ -31,26 +31,15 @@ class UserResource(BaseResource):
         return BaseResource.to_user_group(user_groups)
 
     async def get_user_stats(self, user_id: int, query: UserStatsQuery, db: Session) -> UserStats:
-        count_unread = True
-        only_unread = True
-        hidden = None
-
-        if query.only_unread is not None:
-            only_unread = query.only_unread
-        if query.count_unread is not None:
-            count_unread = query.count_unread
-        if query.hidden is not None:
-            hidden = query.hidden
-
         # if the user has more than 100 groups with unread messages in
         # it won't matter if the count is exact or not, just forget about
         # the super old ones (if a user reads a group, another unread
         # group will be selected next time for this query anyway)
         sub_query = GroupQuery(
             per_page=100,
-            only_unread=only_unread,
-            count_unread=count_unread,
-            hidden=hidden,
+            only_unread=query.only_unread,
+            count_unread=query.count_unread,
+            hidden=query.hidden,
         )
 
         user_groups: List[UserGroupBase] = self.env.db.get_groups_for_user(
@@ -64,14 +53,19 @@ class UserResource(BaseResource):
             GroupTypes.ONE_TO_ONE: -1,
         }
 
-        if count_unread:
+        if query.count_unread:
             unread_amount = 0
+            n_unread_groups = 0
+
             for user_group in user_groups:
                 if user_group.unread == -1:
                     continue
+
                 unread_amount += user_group.unread
+                n_unread_groups += 1
         else:
             unread_amount = -1
+            n_unread_groups = -1
 
         # most calls to this api only needs to know the unread count and nothing else, and it's called OFTEN
         if not query.only_unread:
@@ -88,6 +82,7 @@ class UserResource(BaseResource):
         return UserStats(
             user_id=user_id,
             unread_amount=unread_amount,
+            unread_groups_amount=n_unread_groups,
             group_amount=group_amounts.get(GroupTypes.GROUP, 0),
             one_to_one_amount=group_amounts.get(GroupTypes.ONE_TO_ONE, 0),
             last_sent_time=last_sent_time_ts,

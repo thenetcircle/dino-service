@@ -55,7 +55,7 @@ class BaseServerRestApi(BaseDatabaseTest):
         return raw_response.json()
 
     def send_message_to_group_from(
-        self, group_id: str, user_id: int = BaseTest.USER_ID, amount: int = 1, delay: int = 0
+        self, group_id: str, user_id: int = BaseTest.USER_ID, amount: int = 1, delay: int = 50
     ) -> list:
         messages = list()
 
@@ -125,10 +125,12 @@ class BaseServerRestApi(BaseDatabaseTest):
 
         return float(now_ts)
 
-    def get_global_user_stats(self, user_id: int = BaseTest.USER_ID, hidden: bool = None):
+    def get_global_user_stats(self, user_id: int = BaseTest.USER_ID, hidden: bool = None, count_unread: bool = None):
         json_data = {}
         if hidden is not None:
-            json_data = {"hidden": hidden}
+            json_data["hidden"] = hidden
+        if count_unread is not None:
+            json_data["count_unread"] = count_unread
 
         raw_response = self.client.post(
             f"/v1/userstats/{user_id}",
@@ -279,6 +281,7 @@ class BaseServerRestApi(BaseDatabaseTest):
         message_type: int = MessageTypes.MESSAGE,
         user_id: int = BaseTest.USER_ID,
         receiver_id: int = BaseTest.OTHER_USER_ID,
+        delay: int = 50,
     ) -> dict:
         json_data = {
             "receiver_id": receiver_id,
@@ -290,6 +293,9 @@ class BaseServerRestApi(BaseDatabaseTest):
             json=json_data,
         )
         self.assertEqual(raw_response.status_code, 200)
+
+        if delay > 0:
+            time.sleep(delay / 1000)
 
         return raw_response.json()
 

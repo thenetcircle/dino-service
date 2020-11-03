@@ -84,8 +84,8 @@ class CreateGroupQuery(AbstractQuery):
 
 class UserStatsQuery(AbstractQuery):
     hidden: Optional[bool]
-    count_unread: Optional[bool]
-    only_unread: Optional[bool]
+    count_unread: Optional[bool] = True
+    only_unread: Optional[bool] = True
 
 
 class GroupInfoQuery(AbstractQuery):
@@ -153,12 +153,19 @@ class GroupUsers(BaseModel):
 
 class UserStats(BaseModel):
     user_id: int
-    unread_amount: int
-    group_amount: int
-    one_to_one_amount: int
     last_update_time: Optional[float]
     last_sent_time: Optional[float]
     last_sent_group_id: Optional[str]
+
+    # total number of unread messages in all 1v1/groups
+    unread_amount: int
+
+    # number of 1v1/groups the user has joined
+    group_amount: int
+    one_to_one_amount: int
+
+    # number of 1v1/groups with at least one unread message
+    unread_groups_amount: int
 
 
 class UserGroupStats(BaseModel):

@@ -1191,3 +1191,27 @@ class TestServerRestApi(BaseServerRestApi):
         message = self.send_1v1_message()
         info = self.get_group_info(message["group_id"], count_messages=True)
         self.assertEqual(2, info["message_amount"])
+
+    def test_unread_groups_amount_in_user_stats(self):
+        # default is to count
+        stats = self.get_global_user_stats()
+        self.assertEqual(0, stats["unread_groups_amount"])
+
+        stats = self.get_global_user_stats(count_unread=True)
+        self.assertEqual(0, stats["unread_groups_amount"])
+
+        stats = self.get_global_user_stats(count_unread=False)
+        self.assertEqual(-1, stats["unread_groups_amount"])
+
+        self.send_1v1_message(user_id=50, receiver_id=BaseTest.USER_ID)
+        stats = self.get_global_user_stats(count_unread=True)
+        self.assertEqual(1, stats["unread_groups_amount"])
+
+        self.send_1v1_message(user_id=51, receiver_id=BaseTest.USER_ID)
+        stats = self.get_global_user_stats(count_unread=True)
+        self.assertEqual(2, stats["unread_groups_amount"])
+
+        # not a new group so should not change number of unread groups
+        self.send_1v1_message(user_id=51, receiver_id=BaseTest.USER_ID)
+        stats = self.get_global_user_stats(count_unread=True)
+        self.assertEqual(2, stats["unread_groups_amount"])
