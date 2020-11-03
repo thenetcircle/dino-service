@@ -1,9 +1,8 @@
 import asyncio
-from datetime import datetime as dt
 from unittest import TestCase
 from uuid import uuid4 as uuid
 
-import pytz
+import arrow
 
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from test.mocks import FakeEnv
@@ -29,8 +28,7 @@ class BaseTest(TestCase):
     def setUp(self) -> None:
         # used when no `hide_before` is specified in a query
         beginning_of_1995 = 789_000_000
-        long_ago = dt.utcfromtimestamp(beginning_of_1995)
-        long_ago = long_ago.replace(tzinfo=pytz.UTC)
+        long_ago = arrow.Arrow.utcfromtimestamp(beginning_of_1995).datetime
 
         self.fake_env = FakeEnv()
         self.fake_env.db.stats[BaseTest.USER_ID] = [

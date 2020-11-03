@@ -25,4 +25,4 @@ def utcnow_dt(ts: float = None):
 
 def trim_micros(dt: datetime):
     ts_millis = round(dt.timestamp(), 3)
-    return datetime.fromtimestamp(ts_millis)
+    return datetime.fromtimestamp(ts_millis, tz=dt.tzinfo)

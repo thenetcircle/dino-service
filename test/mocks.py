@@ -3,7 +3,6 @@ from typing import Dict, List, Optional, Tuple
 from uuid import uuid4 as uuid
 
 import arrow
-import pytz
 
 from dinofw.cache.redis import CacheRedis
 from dinofw.db.rdbms.schemas import GroupBase, UserGroupBase
@@ -363,8 +362,7 @@ class FakeDatabase:
         self.last_sent = dict()
 
         beginning_of_1995 = 789_000_000
-        self.long_ago = dt.utcfromtimestamp(beginning_of_1995)
-        self.long_ago = self.long_ago.replace(tzinfo=pytz.UTC)
+        self.long_ago = arrow.Arrow.utcfromtimestamp(beginning_of_1995).datetime
 
     def get_last_message_time_in_group(self, group_id: str, _) -> dt:
         if group_id not in self.groups:

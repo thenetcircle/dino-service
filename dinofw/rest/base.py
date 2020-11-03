@@ -4,7 +4,6 @@ from datetime import datetime as dt
 from typing import Dict, List
 
 import arrow
-import pytz
 
 from dinofw.db.rdbms.schemas import UserGroupStatsBase, GroupBase, UserGroupBase
 from dinofw.db.storage.schemas import MessageBase
@@ -24,8 +23,7 @@ class BaseResource(ABC):
 
         # used when no `hide_before` is specified in a query
         beginning_of_1995 = 789_000_000
-        self.long_ago = dt.utcfromtimestamp(beginning_of_1995)
-        self.long_ago = self.long_ago.replace(tzinfo=pytz.UTC)
+        self.long_ago = arrow.Arrow.utcfromtimestamp(beginning_of_1995).datetime
 
         self.logger = logging.getLogger(__name__)
 
