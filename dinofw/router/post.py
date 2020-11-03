@@ -155,10 +155,16 @@ async def get_user_statistics(user_id: int, query: UserStatsQuery, db: Session =
 
     If `hidden=true`, the `one_to_one_amount` and `group_amount`
     fields will ONLY include hidden groups. If `hidden=false` the
-    fields will only include NOT HIDDEN groups. If
-    `count_unread=false` the `unread_amount` will be `-1`, and if
-    `only_unread=true` only the `unread_amount` field will have a
-    value that is not `null` or `-1`.
+    fields will only include NOT HIDDEN groups. If not specified,
+    both will be included.
+
+    If `count_unread=false` the flags `unread_amount` and
+    `unread_groups_amount` will both be `-1`. Default value is
+    `true`.
+
+    If `only_unread=true`, only groups with unread messages will
+    be counted. Defaults to `true`. The fields `group_amount` and
+    `one_to_one_amount` will be `-1`. Defaults to `true`.
 
     **Potential error codes in response:**
     * `250`: if an unknown error occurred.
