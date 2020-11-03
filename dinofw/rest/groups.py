@@ -43,11 +43,12 @@ class GroupResource(BaseResource):
     async def get_group(self, group_id: str, query: GroupInfoQuery, db: Session) -> Optional[Group]:
         group, first_users, n_users = self.env.db.get_users_in_group(group_id, db)
 
+        message_amount = -1
         if query.count_messages:
-            self.env.storage.count_messages_in_group_since(utcnow_dt())
+            message_amount = self.env.storage.count_messages_in_group_since(group_id, group.created_at)
 
         return GroupResource.group_base_to_group(
-            group, users=first_users, user_count=n_users,
+            group, users=first_users, user_count=n_users, message_amount=message_amount,
         )
 
     async def get_attachments_in_group_for_user(

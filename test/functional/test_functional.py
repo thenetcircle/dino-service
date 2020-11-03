@@ -1176,3 +1176,18 @@ class TestServerRestApi(BaseServerRestApi):
 
         groups = self.groups_for_user(until=all_groups[0]["group"]["last_message_time"])
         self.assertEqual(1, len(groups))
+
+    def test_get_group_information(self):
+        message = self.send_1v1_message()
+
+        # defaults to -1 if not counting
+        info = self.get_group_info(message["group_id"], count_messages=False)
+        self.assertEqual(-1, info["message_amount"])
+
+        info = self.get_group_info(message["group_id"], count_messages=True)
+        self.assertEqual(1, info["message_amount"])
+
+        # should be two now
+        message = self.send_1v1_message()
+        info = self.get_group_info(message["group_id"], count_messages=True)
+        self.assertEqual(2, info["message_amount"])

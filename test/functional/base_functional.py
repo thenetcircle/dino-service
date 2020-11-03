@@ -266,6 +266,14 @@ class BaseServerRestApi(BaseDatabaseTest):
 
         return raw_response.json()
 
+    def get_group_info(self, group_id: str, count_messages: bool):
+        raw_response = self.client.post(
+            f"/v1/groups/{group_id}", json={"count_messages": count_messages},
+        )
+        self.assertEqual(raw_response.status_code, 200)
+
+        return raw_response.json()
+
     def send_1v1_message(
         self,
         message_type: int = MessageTypes.MESSAGE,

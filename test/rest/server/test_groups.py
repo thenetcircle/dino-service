@@ -43,10 +43,10 @@ class TestGroupResource(BaseTest):
 
         group = await self.group.create_new_group(
             user_id=BaseTest.USER_ID, query=query, db=None
-        )  # noqa
+        )
         group_users = await self.group.get_users_in_group(
             group_id=group.group_id, db=None
-        )  # noqa
+        )
 
         self.assertIsNotNone(group_users)
         self.assertEqual(type(group_users), GroupUsers)
@@ -126,31 +126,31 @@ class TestGroupResource(BaseTest):
         # create a new group
         group = await self.group.create_new_group(
             BaseTest.USER_ID, create_query, None
-        )  # noqa
+        )
         count = await self.group.count_messages_in_group(group.group_id)
         stats = await self.group.get_user_group_stats(
             group.group_id, BaseTest.USER_ID, count, None
-        )  # noqa
+        )
         self.assertEqual(0, stats.unread)
 
         # send a message, should have 0 unread since we sent it
         await self.message.send_message_to_group(
             group.group_id, BaseTest.USER_ID, send_query, None
-        )  # noqa
+        )
         count = await self.group.count_messages_in_group(group.group_id)
         stats = await self.group.get_user_group_stats(
             group.group_id, BaseTest.USER_ID, count, None
-        )  # noqa
+        )
         self.assertEqual(0, stats.unread)
 
         # another user sends a message, should have 1 unread now
         await self.message.send_message_to_group(
             group.group_id, BaseTest.OTHER_USER_ID, send_query, None
-        )  # noqa
+        )
         count = await self.group.count_messages_in_group(group.group_id)
         stats = await self.group.get_user_group_stats(
             group.group_id, BaseTest.USER_ID, count, None
-        )  # noqa
+        )
         self.assertEqual(1, stats.unread)
 
     @async_test
@@ -162,7 +162,7 @@ class TestGroupResource(BaseTest):
         # create a new group
         group = await self.group.create_new_group(
             BaseTest.USER_ID, create_query, None
-        )  # noqa
+        )
 
         # check we only have one user in the group, the creator
         group_users = await self.group.get_users_in_group(group.group_id, None)  # noqa
@@ -174,7 +174,7 @@ class TestGroupResource(BaseTest):
         # other user joins it
         await self.group.join_group(
             group.group_id, BaseTest.OTHER_USER_ID, None
-        )  # noqa
+        )
 
         # check the other user is now in the group as well
         group_users = await self.group.get_users_in_group(group.group_id, None)  # noqa
@@ -198,7 +198,7 @@ class TestGroupResource(BaseTest):
         # create a new group
         group = await self.group.create_new_group(
             BaseTest.USER_ID, create_query, None
-        )  # noqa
+        )
 
         # check we only have one user in the group, the creator
         group_users = await self.group.get_users_in_group(group.group_id, None)  # noqa

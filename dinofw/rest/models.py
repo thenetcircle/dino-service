@@ -216,6 +216,7 @@ class Group(BaseModel):
     last_message_time: float
     last_message_type: Optional[int]
     user_count: int
+    message_amount: Optional[int] = -1
 
 
 class OneToOneStats(BaseModel):

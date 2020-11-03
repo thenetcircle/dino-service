@@ -148,7 +148,10 @@ class BaseResource(ABC):
 
     @staticmethod
     def group_base_to_group(
-        group: GroupBase, users: Dict[int, float], user_count: int,
+        group: GroupBase,
+        users: Dict[int, float],
+        user_count: int,
+        message_amount: int = -1
     ) -> Group:
         group_dict = group.dict()
 
@@ -167,6 +170,7 @@ class BaseResource(ABC):
         )
         group_dict["users"] = users
         group_dict["user_count"] = user_count
+        group_dict["message_amount"] = message_amount
 
         return Group(**group_dict)
 
