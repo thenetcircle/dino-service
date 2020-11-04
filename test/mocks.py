@@ -347,7 +347,7 @@ class FakeStorage:
         messages = list()
 
         for message in self.messages_by_group[group_id]:
-            if message.created_at < since:
+            if message.created_at <= since:
                 continue
 
             messages.append(message)

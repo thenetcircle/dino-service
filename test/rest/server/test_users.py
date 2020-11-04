@@ -56,23 +56,23 @@ class TestUserResource(BaseTest):
         )
 
         # make sure we're not in a group in the beginning
-        stats = await self.user.get_user_stats(BaseTest.USER_ID, UserStatsQuery(), None)  # noqa
+        stats = await self.user.get_user_stats(BaseTest.USER_ID, UserStatsQuery(only_unread=False), None)  # noqa
         self.assertEqual(0, stats.group_amount)
 
         # create and join a new group
         await self.group.create_new_group(BaseTest.USER_ID, create_query, None)  # noqa
 
         # should be in the group we just created
-        stats = await self.user.get_user_stats(BaseTest.USER_ID, UserStatsQuery(), None)  # noqa
+        stats = await self.user.get_user_stats(BaseTest.USER_ID, UserStatsQuery(only_unread=False), None)  # noqa
         self.assertEqual(1, stats.group_amount)
 
         # create and join second new group
         await self.group.create_new_group(BaseTest.USER_ID, create_query, None)  # noqa
 
         # we should now be in two groups
-        stats = await self.user.get_user_stats(BaseTest.USER_ID, UserStatsQuery(), None)  # noqa
+        stats = await self.user.get_user_stats(BaseTest.USER_ID, UserStatsQuery(only_unread=False), None)  # noqa
         self.assertEqual(2, stats.group_amount)
 
         # check another user, should be in zero groups
-        stats = await self.user.get_user_stats(BaseTest.OTHER_USER_ID, UserStatsQuery(), None)  # noqa
+        stats = await self.user.get_user_stats(BaseTest.OTHER_USER_ID, UserStatsQuery(only_unread=False), None)  # noqa
         self.assertEqual(0, stats.group_amount)

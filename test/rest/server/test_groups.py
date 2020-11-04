@@ -1,3 +1,5 @@
+import time
+
 from dinofw.rest.groups import GroupResource
 from dinofw.rest.message import MessageResource
 from dinofw.rest.models import CreateActionLogQuery, GroupInfoQuery
@@ -137,6 +139,7 @@ class TestGroupResource(BaseTest):
         await self.message.send_message_to_group(
             group.group_id, BaseTest.USER_ID, send_query, None
         )
+        time.sleep(0.1)
         count = await self.group.count_messages_in_group(group.group_id)
         stats = await self.group.get_user_group_stats(
             group.group_id, BaseTest.USER_ID, count, None
@@ -147,6 +150,7 @@ class TestGroupResource(BaseTest):
         await self.message.send_message_to_group(
             group.group_id, BaseTest.OTHER_USER_ID, send_query, None
         )
+        time.sleep(0.1)
         count = await self.group.count_messages_in_group(group.group_id)
         stats = await self.group.get_user_group_stats(
             group.group_id, BaseTest.USER_ID, count, None

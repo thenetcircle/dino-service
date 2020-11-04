@@ -49,18 +49,23 @@ class UserResource(BaseResource):
         last_sent_time_ts = None
         last_sent_group_id = None
         group_amounts = {
-            GroupTypes.GROUP: -1,
-            GroupTypes.ONE_TO_ONE: -1,
+            GroupTypes.GROUP: 0,
+            GroupTypes.ONE_TO_ONE: 0,
         }
 
         if query.count_unread:
             unread_amount = 0
             n_unread_groups = 0
 
+            if len(user_groups) == 0:
+                unread_amount = 0
+                n_unread_groups = 0
+
             for user_group in user_groups:
                 if user_group.unread == -1:
                     continue
 
+                group_amounts[user_group.group.group_type] += 1
                 unread_amount += user_group.unread
                 n_unread_groups += 1
         else:
@@ -68,7 +73,9 @@ class UserResource(BaseResource):
             n_unread_groups = -1
 
         # most calls to this api only needs to know the unread count and nothing else, and it's called OFTEN
-        if not query.only_unread:
+        if query.only_unread:
+            pass
+        else:
             group_amounts = self.env.db.count_group_types_for_user(user_id, sub_query, db)
             group_amounts = dict(group_amounts)
 
