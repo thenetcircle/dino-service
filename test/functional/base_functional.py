@@ -13,7 +13,10 @@ from test.functional.base_db import BaseDatabaseTest
 class BaseServerRestApi(BaseDatabaseTest):
     def get_group(self, group_id: str, user_id: int = BaseTest.USER_ID) -> dict:
         raw_response = self.client.post(
-            f"/v1/users/{user_id}/groups", json={"per_page": "10"},
+            f"/v1/users/{user_id}/groups", json={
+                "per_page": "10",
+                "only_unread": False,
+            },
         )
         self.assertEqual(raw_response.status_code, 200)
 
@@ -55,7 +58,7 @@ class BaseServerRestApi(BaseDatabaseTest):
         return raw_response.json()
 
     def send_message_to_group_from(
-        self, group_id: str, user_id: int = BaseTest.USER_ID, amount: int = 1, delay: int = 50
+        self, group_id: str, user_id: int = BaseTest.USER_ID, amount: int = 1, delay: int = 10
     ) -> list:
         messages = list()
 
@@ -78,9 +81,10 @@ class BaseServerRestApi(BaseDatabaseTest):
     def create_and_join_group(self, user_id: int = BaseTest.USER_ID) -> str:
         raw_response = self.client.post(
             f"/v1/users/{user_id}/groups/create",
-            json={"group_name": "a new group", "group_type": 0, "users": [user_id],},
+            json={"group_name": "a new group", "group_type": 0, "users": [user_id]},
         )
         self.assertEqual(raw_response.status_code, 200)
+        time.sleep(0.01)
 
         return raw_response.json()["group_id"]
 
@@ -106,6 +110,7 @@ class BaseServerRestApi(BaseDatabaseTest):
     def user_joins_group(self, group_id: str, user_id: int = BaseTest.USER_ID) -> None:
         raw_response = self.client.put(f"/v1/groups/{group_id}/user/{user_id}/join")
         self.assertEqual(raw_response.status_code, 200)
+        time.sleep(0.01)
 
     def update_hide_group_for(self, group_id: str, hide: bool, user_id: int = BaseTest.USER_ID):
         raw_response = self.client.put(
@@ -187,7 +192,7 @@ class BaseServerRestApi(BaseDatabaseTest):
         self.assertEqual(raw_response.status_code, 201)
 
         # async api
-        time.sleep(0.1)
+        time.sleep(0.01)
 
     def leave_all_groups(self, user_id: int = BaseTest.USER_ID):
         raw_response = self.client.delete(
@@ -196,7 +201,7 @@ class BaseServerRestApi(BaseDatabaseTest):
         self.assertEqual(raw_response.status_code, 201)
 
         # async api
-        time.sleep(0.1)
+        time.sleep(0.01)
 
     def pin_group_for(self, group_id: str, user_id: int = BaseTest.USER_ID) -> None:
         self._set_pin_group_for(group_id, user_id, pinned=True)
@@ -281,7 +286,7 @@ class BaseServerRestApi(BaseDatabaseTest):
         message_type: int = MessageTypes.MESSAGE,
         user_id: int = BaseTest.USER_ID,
         receiver_id: int = BaseTest.OTHER_USER_ID,
-        delay: int = 50,
+        delay: int = 10,
     ) -> dict:
         json_data = {
             "receiver_id": receiver_id,
@@ -352,7 +357,7 @@ class BaseServerRestApi(BaseDatabaseTest):
         self.assertEqual(raw_response.status_code, 201)
 
         # async api
-        time.sleep(0.1)
+        time.sleep(0.01)
 
     def delete_attachments_in_group(self, group_id: str, user_id: str = BaseTest.USER_ID):
         raw_response = self.client.delete(
@@ -361,7 +366,7 @@ class BaseServerRestApi(BaseDatabaseTest):
         self.assertEqual(raw_response.status_code, 201)
 
         # async api
-        time.sleep(0.1)
+        time.sleep(0.01)
 
     def delete_attachments_in_all_groups(self, user_id: str = BaseTest.USER_ID):
         raw_response = self.client.delete(
@@ -370,7 +375,7 @@ class BaseServerRestApi(BaseDatabaseTest):
         self.assertEqual(raw_response.status_code, 201)
 
         # async api
-        time.sleep(0.1)
+        time.sleep(0.01)
 
     def assert_error(self, response, error_code):
         self.assertEqual(int(response["detail"].split(":")[0]), error_code)

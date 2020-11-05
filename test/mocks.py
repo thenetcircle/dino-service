@@ -1,4 +1,4 @@
-from datetime import datetime as dt
+from datetime import datetime as dt, timedelta
 from typing import Dict, List, Optional, Tuple
 from uuid import uuid4 as uuid
 
@@ -347,7 +347,7 @@ class FakeStorage:
         messages = list()
 
         for message in self.messages_by_group[group_id]:
-            if message.created_at < since:
+            if message.created_at <= since:
                 continue
 
             messages.append(message)

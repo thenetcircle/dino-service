@@ -46,13 +46,6 @@ class UserResource(BaseResource):
             user_id, sub_query, db, count_receiver_unread=False,
         )
 
-        last_sent_time_ts = None
-        last_sent_group_id = None
-        group_amounts = {
-            GroupTypes.GROUP: -1,
-            GroupTypes.ONE_TO_ONE: -1,
-        }
-
         if query.count_unread:
             unread_amount = 0
             n_unread_groups = 0
@@ -67,16 +60,14 @@ class UserResource(BaseResource):
             unread_amount = -1
             n_unread_groups = -1
 
-        # most calls to this api only needs to know the unread count and nothing else, and it's called OFTEN
-        if not query.only_unread:
-            group_amounts = self.env.db.count_group_types_for_user(user_id, sub_query, db)
-            group_amounts = dict(group_amounts)
+        group_amounts = self.env.db.count_group_types_for_user(user_id, sub_query, db)
+        group_amounts = dict(group_amounts)
 
-            last_sent_group_id, last_sent_time = self.env.db.get_last_sent_for_user(user_id, db)
-            if last_sent_time is None:
-                last_sent_time = self.long_ago
+        last_sent_group_id, last_sent_time = self.env.db.get_last_sent_for_user(user_id, db)
+        if last_sent_time is None:
+            last_sent_time = self.long_ago
 
-            last_sent_time_ts = GroupQuery.to_ts(last_sent_time)
+        last_sent_time_ts = GroupQuery.to_ts(last_sent_time)
 
         # TODO: what about last_update_time? it's in the model
         return UserStats(

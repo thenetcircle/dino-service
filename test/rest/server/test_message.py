@@ -1,3 +1,5 @@
+import time
+
 from dinofw.rest.message import MessageResource
 from dinofw.rest.models import Message
 from dinofw.rest.models import MessageQuery
@@ -25,6 +27,7 @@ class TestMessageResource(BaseTest):
             query=query,
             db=None,  # noqa
         )
+        time.sleep(0.01)
         self.assertEqual(
             1, len(self.resource.env.client_publisher.sent_messages[BaseTest.GROUP_ID])
         )
@@ -45,6 +48,7 @@ class TestMessageResource(BaseTest):
             query=query,
             db=None,  # noqa
         )
+        time.sleep(0.01)
         self.assertEqual(
             2, len(self.resource.env.client_publisher.sent_messages[BaseTest.GROUP_ID])
         )
