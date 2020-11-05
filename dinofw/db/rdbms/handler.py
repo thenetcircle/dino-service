@@ -105,6 +105,7 @@ class RelationalHandler:
 
         return group_id, last_sent
 
+    # noinspection PyMethodMayBeStatic
     def get_group_ids_and_created_at_for_user(self, user_id: int, db: Session) -> List[Tuple[str, dt]]:
         groups = (
             db.query(
@@ -266,6 +267,7 @@ class RelationalHandler:
             db, results, receiver_stats_base, user_id, count_unread
         )
 
+    # noinspection PyMethodMayBeStatic
     def get_receiver_user_stats(self, group_ids: List[str], user_id: int, db: Session):
         return (
             db.query(models.UserGroupStatsEntity)
@@ -383,7 +385,7 @@ class RelationalHandler:
 
         for user_stat in user_stats:
             # when creating action logs, we want to sync changes to apps, but not necessarily un-hide a group
-            # TODO: make we actually want to wake them up, check with stakeholders
+            # TODO: maybe we actually want to wake them up, check with stakeholders
             if wakeup_users:
                 user_stat.hide = False
                 user_stat.delete_before = user_stat.join_time
@@ -440,6 +442,7 @@ class RelationalHandler:
 
         return last_reads
 
+    # noinspection PyMethodMayBeStatic
     def get_all_group_ids_for_user(self, user_id: int, db: Session) -> List[str]:
         """
         used only when a user is deleting their profile, no need
@@ -466,6 +469,7 @@ class RelationalHandler:
         group = self.get_group_for_1to1(user_a, user_b, db)
         return group.group_id
 
+    # noinspection PyMethodMayBeStatic
     def get_group_from_id(self, group_id: str, db: Session) -> GroupBase:
         group = (
             db.query(models.GroupEntity)
@@ -480,6 +484,7 @@ class RelationalHandler:
 
         return GroupBase(**group.__dict__)
 
+    # noinspection PyMethodMayBeStatic
     def get_group_for_1to1(
         self, user_a: int, user_b: int, db: Session, parse_result: bool = True
     ):
@@ -552,6 +557,7 @@ class RelationalHandler:
         self.env.cache.remove_last_read_in_group_for_user(group_id, user_id)
         self.env.cache.clear_user_ids_and_join_time_in_group(group_id)
 
+    # noinspection PyMethodMayBeStatic
     def group_exists(self, group_id: str, db: Session) -> bool:
         group = (
             db.query(literal(True))
@@ -561,6 +567,7 @@ class RelationalHandler:
 
         return group is not None
 
+    # noinspection PyMethodMayBeStatic
     def set_group_updated_at(self, group_id: str, now: dt, db: Session) -> None:
         group = (
             db.query(models.GroupEntity)
@@ -696,6 +703,7 @@ class RelationalHandler:
 
             self.logger.info(f"updating {len(group_ids)} user group stats took {the_time}s")
 
+    # noinspection PyMethodMayBeStatic
     def set_last_updated_at_for_all_in_group(self, group_id: str, db: Session):
         now = utcnow_dt()
 
@@ -707,6 +715,7 @@ class RelationalHandler:
 
         db.commit()
 
+    # noinspection PyMethodMayBeStatic
     def update_group_information(
         self, group_id: str, query: UpdateGroupQuery, db: Session
     ) -> Optional[GroupBase]:
@@ -785,6 +794,7 @@ class RelationalHandler:
 
         db.commit()
 
+    # noinspection PyMethodMayBeStatic
     def get_user_stats_in_group(
         self, group_id: str, user_id: int, db: Session
     ) -> Optional[UserGroupStatsBase]:
@@ -989,6 +999,7 @@ class RelationalHandler:
 
         return base
 
+    # noinspection PyMethodMayBeStatic
     def _get_user_stats_for(self, group_id: str, user_id: int, db: Session):
         return (
             db.query(models.UserGroupStatsEntity)
@@ -1008,7 +1019,7 @@ class RelationalHandler:
             group_id=group_id,
             user_id=user_id,
             last_read=default_dt,
-            delete_before=default_dt,  # TODO: for group chats, should this be long_ago or join_time? see old history
+            delete_before=default_dt,  # TODO: for group chats, should this be long_ago or join_time? to see old history
             last_sent=default_dt,
             join_time=default_dt,
             last_updated_time=now,

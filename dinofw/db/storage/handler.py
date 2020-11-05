@@ -106,10 +106,11 @@ class CassandraHandler:
 
         return value
 
+    # noinspection PyMethodMayBeStatic
     def get_messages_in_group(
-            self,
-            group_id: str,
-            query: MessageQuery
+        self,
+        group_id: str,
+        query: MessageQuery
     ) -> List[MessageBase]:
         until = MessageQuery.to_dt(query.until)
 
@@ -129,6 +130,7 @@ class CassandraHandler:
 
         return messages
 
+    # noinspection PyMethodMayBeStatic
     def get_attachments_in_group_for_user(
             self,
             group_id: str,
@@ -154,6 +156,7 @@ class CassandraHandler:
 
         return attachments
 
+    # noinspection PyMethodMayBeStatic
     def get_messages_in_group_for_user(
             self,
             group_id: str,
@@ -179,6 +182,7 @@ class CassandraHandler:
 
         return messages
 
+    # noinspection PyMethodMayBeStatic
     def count_messages_in_group_since(self, group_id: str, since: dt) -> int:
         return (
             MessageModel.objects(
@@ -307,6 +311,7 @@ class CassandraHandler:
 
         return attachment_base
 
+    # noinspection PyMethodMayBeStatic
     def delete_message(
         self, group_id: str, user_id: int, message_id: str, created_at: dt
     ) -> None:
@@ -334,6 +339,7 @@ class CassandraHandler:
             updated_at=removed_at,
         )
 
+    # noinspection PyMethodMayBeStatic
     def get_attachment_from_file_id(self, group_id: str, created_at: dt, query: AttachmentQuery) -> MessageBase:
         approx_date = arrow.get(created_at).shift(minutes=-1).datetime
 
@@ -352,6 +358,7 @@ class CassandraHandler:
 
         return CassandraHandler.message_base_from_entity(attachment)
 
+    # noinspection PyMethodMayBeStatic
     def store_attachment(
             self, group_id: str, user_id: int, message_id: str, query: CreateAttachmentQuery
     ) -> MessageBase:
@@ -411,6 +418,7 @@ class CassandraHandler:
 
         self._update_all_messages_in_group(group_id=group_id, callback=callback)
 
+    # noinspection PyMethodMayBeStatic
     def create_action_logs(
             self,
             group_id: str,
@@ -449,6 +457,7 @@ class CassandraHandler:
             group_id=group_id, callback=callback, user_id=user_id,
         )
 
+    # noinspection PyMethodMayBeStatic
     def store_message(self, group_id: str, user_id: int, query: SendMessageQuery) -> MessageBase:
         created_at = utcnow_dt()
         message_id = uuid()
@@ -498,6 +507,7 @@ class CassandraHandler:
         if elapsed > 1:
             self.logger.info(f"batch deleted {len(message)} {types} in {elapsed:.2f}s")
 
+    # noinspection PyMethodMayBeStatic
     def _update_messages(
         self, messages: List[MessageModel], callback: callable
     ) -> Optional[dt]:
@@ -512,6 +522,7 @@ class CassandraHandler:
 
         return until
 
+    # noinspection PyMethodMayBeStatic
     def _get_batch_of_messages_in_group(
         self, group_id: str, until: dt, user_id: int = None
     ) -> List[MessageModel]:
