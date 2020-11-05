@@ -6,11 +6,12 @@ from fastapi import APIRouter
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
-from dinofw.rest.models import AttachmentQuery, GroupInfoQuery
+from dinofw.rest.models import AttachmentQuery
 from dinofw.rest.models import CreateActionLogQuery
 from dinofw.rest.models import CreateAttachmentQuery
 from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import Group
+from dinofw.rest.models import GroupInfoQuery
 from dinofw.rest.models import GroupQuery
 from dinofw.rest.models import GroupUpdatesQuery
 from dinofw.rest.models import Histories

@@ -1,15 +1,16 @@
 import logging
-from typing import List, Optional
+from typing import List
+from typing import Optional
 
-import arrow
 from sqlalchemy.orm import Session
 
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import AbstractQuery, GroupInfoQuery
+from dinofw.rest.models import AbstractQuery
 from dinofw.rest.models import CreateActionLogQuery
 from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import Group
+from dinofw.rest.models import GroupInfoQuery
 from dinofw.rest.models import GroupJoinTime
 from dinofw.rest.models import GroupUsers
 from dinofw.rest.models import Histories
@@ -19,7 +20,8 @@ from dinofw.rest.models import OneToOneStats
 from dinofw.rest.models import UpdateGroupQuery
 from dinofw.rest.models import UpdateUserGroupStats
 from dinofw.rest.models import UserGroupStats
-from dinofw.utils import utcnow_ts, utcnow_dt
+from dinofw.utils import utcnow_dt
+from dinofw.utils import utcnow_ts
 from dinofw.utils.exceptions import NoSuchGroupException
 
 logger = logging.getLogger(__name__)

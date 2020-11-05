@@ -1,5 +1,6 @@
-import arrow
 from datetime import datetime
+
+import arrow
 
 
 def split_into_chunks(objects, n):

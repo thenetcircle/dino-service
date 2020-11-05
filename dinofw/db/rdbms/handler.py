@@ -1,11 +1,12 @@
 import logging
 from datetime import datetime as dt
-from typing import List, Optional, Dict, Tuple
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Tuple
 from uuid import uuid4 as uuid
 
 import arrow
-from dinofw.utils import utcnow_dt, trim_micros
-from dinofw.utils import utcnow_ts
 from sqlalchemy import func
 from sqlalchemy import literal
 from sqlalchemy import or_
@@ -23,6 +24,9 @@ from dinofw.rest.models import GroupUpdatesQuery
 from dinofw.rest.models import UpdateGroupQuery
 from dinofw.rest.models import UpdateUserGroupStats
 from dinofw.utils import split_into_chunks
+from dinofw.utils import trim_micros
+from dinofw.utils import utcnow_dt
+from dinofw.utils import utcnow_ts
 from dinofw.utils.config import GroupTypes
 from dinofw.utils.exceptions import NoSuchGroupException
 from dinofw.utils.exceptions import UserNotInGroupException

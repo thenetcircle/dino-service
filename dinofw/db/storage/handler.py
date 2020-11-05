@@ -1,11 +1,17 @@
 import logging
 from datetime import datetime as dt
 from time import time
-from typing import List, Optional, Dict, Tuple
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Tuple
 from uuid import uuid4 as uuid
 
 import arrow
-from cassandra.cluster import PlainTextAuthProvider, ExecutionProfile, EXEC_PROFILE_DEFAULT, Session
+from cassandra.cluster import EXEC_PROFILE_DEFAULT
+from cassandra.cluster import ExecutionProfile
+from cassandra.cluster import PlainTextAuthProvider
+from cassandra.cluster import Session
 from cassandra.connection import ConsistencyLevel
 from cassandra.cqlengine import connection
 from cassandra.cqlengine.management import sync_table

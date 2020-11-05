@@ -1,7 +1,6 @@
 import logging
 from typing import List
 
-import arrow
 from sqlalchemy.orm import Session
 
 from dinofw.rest.base import BaseResource
@@ -11,7 +10,8 @@ from dinofw.rest.models import Message
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
 from dinofw.utils import utcnow_ts
-from dinofw.utils.exceptions import NoSuchGroupException, NoSuchUserException
+from dinofw.utils.exceptions import NoSuchGroupException
+from dinofw.utils.exceptions import NoSuchUserException
 
 logger = logging.getLogger(__name__)
 

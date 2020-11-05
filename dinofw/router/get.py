@@ -1,10 +1,10 @@
 import logging
 import sys
 
-from fastapi import Depends, APIRouter
+from fastapi import APIRouter
+from fastapi import Depends
 from sqlalchemy.orm import Session
 
-from dinofw.rest.models import Group
 from dinofw.rest.models import GroupUsers
 from dinofw.rest.models import UserGroupStats
 from dinofw.utils import environ
@@ -12,7 +12,8 @@ from dinofw.utils.api import get_db
 from dinofw.utils.api import log_error_and_raise_known
 from dinofw.utils.api import log_error_and_raise_unknown
 from dinofw.utils.config import ErrorCodes
-from dinofw.utils.exceptions import NoSuchGroupException, UserNotInGroupException
+from dinofw.utils.exceptions import NoSuchGroupException
+from dinofw.utils.exceptions import UserNotInGroupException
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

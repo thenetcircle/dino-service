@@ -1,7 +1,6 @@
 import logging
 from typing import List
 
-import arrow
 from sqlalchemy.orm import Session
 
 from dinofw.db.rdbms.schemas import UserGroupBase
