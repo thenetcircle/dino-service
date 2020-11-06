@@ -1,5 +1,6 @@
-import arrow
 from datetime import datetime
+
+import arrow
 
 
 def split_into_chunks(objects, n):
@@ -12,7 +13,7 @@ def utcnow_ts():
     # force the use of milliseconds instead microseconds
     now = arrow.utcnow()
     seconds = now.int_timestamp
-    ms = int(now.format("SSS"))
+    ms = now.format("SSS")
 
     return round(float(f"{seconds}.{ms}"), 3)
 

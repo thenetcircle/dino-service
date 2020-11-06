@@ -1,7 +1,8 @@
 import logging
 import sys
 
-from fastapi import Depends, APIRouter
+from fastapi import APIRouter
+from fastapi import Depends
 from sqlalchemy.orm import Session
 from starlette.background import BackgroundTask
 from starlette.responses import Response

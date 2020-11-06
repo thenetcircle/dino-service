@@ -113,13 +113,12 @@ class TestServerRestApi(BaseServerRestApi):
         messages_to_send_each = 4
 
         self.send_message_to_group_from(
-            group_id, user_id=BaseTest.USER_ID, amount=messages_to_send_each, delay=20
+            group_id, user_id=BaseTest.USER_ID, amount=messages_to_send_each
         )
         messages = self.send_message_to_group_from(
             group_id,
             user_id=BaseTest.OTHER_USER_ID,
             amount=messages_to_send_each,
-            delay=20,
         )
 
         # first user deletes the first 5 messages in the group
@@ -143,7 +142,7 @@ class TestServerRestApi(BaseServerRestApi):
         last_update_time = group["group"]["updated_at"]
 
         # update time should not have changed form a new message
-        self.send_message_to_group_from(group_id, user_id=BaseTest.USER_ID, delay=20)
+        self.send_message_to_group_from(group_id, user_id=BaseTest.USER_ID)
         group = self.get_group(group_id)
         self.assertEqual(group["group"]["updated_at"], last_update_time)
 
@@ -157,7 +156,7 @@ class TestServerRestApi(BaseServerRestApi):
 
         self.user_joins_group(group_id1, BaseTest.OTHER_USER_ID)
         self.send_message_to_group_from(
-            group_id1, user_id=BaseTest.USER_ID, amount=10, delay=20
+            group_id1, user_id=BaseTest.USER_ID, amount=10
         )
         self.assert_total_unread_count(user_id=BaseTest.USER_ID, unread_count=0)
         self.assert_total_unread_count(user_id=BaseTest.OTHER_USER_ID, unread_count=10)
@@ -166,7 +165,7 @@ class TestServerRestApi(BaseServerRestApi):
 
         self.user_joins_group(group_id2, BaseTest.OTHER_USER_ID)
         self.send_message_to_group_from(
-            group_id2, user_id=BaseTest.USER_ID, amount=10, delay=20
+            group_id2, user_id=BaseTest.USER_ID, amount=10
         )
         self.assert_total_unread_count(user_id=BaseTest.USER_ID, unread_count=0)
         self.assert_total_unread_count(user_id=BaseTest.OTHER_USER_ID, unread_count=20)
@@ -190,7 +189,7 @@ class TestServerRestApi(BaseServerRestApi):
         group_id1 = self.create_and_join_group(BaseTest.USER_ID)
         group_id2 = self.create_and_join_group(BaseTest.USER_ID)
 
-        self.send_message_to_group_from(group_id1, user_id=BaseTest.USER_ID, delay=50)
+        self.send_message_to_group_from(group_id1, user_id=BaseTest.USER_ID)
 
         # group 2 should now be on top
         self.send_message_to_group_from(group_id2, user_id=BaseTest.USER_ID)
@@ -220,7 +219,7 @@ class TestServerRestApi(BaseServerRestApi):
             histories, BaseTest.OTHER_USER_ID
         )
 
-        self.send_message_to_group_from(group_id, user_id=BaseTest.USER_ID, delay=50)
+        self.send_message_to_group_from(group_id, user_id=BaseTest.USER_ID)
 
         histories = self.histories_for(group_id, BaseTest.USER_ID)
         last_read_user_1_after = self.last_read_in_histories_for(
@@ -269,7 +268,7 @@ class TestServerRestApi(BaseServerRestApi):
         self.user_joins_group(group_id1, BaseTest.OTHER_USER_ID)
         self.user_joins_group(group_id2, BaseTest.OTHER_USER_ID)
 
-        self.send_message_to_group_from(group_id1, user_id=BaseTest.USER_ID, delay=50)
+        self.send_message_to_group_from(group_id1, user_id=BaseTest.USER_ID)
         self.send_message_to_group_from(group_id2, user_id=BaseTest.USER_ID)
         self.assert_order_of_groups(BaseTest.USER_ID, group_id2, group_id1)
 
@@ -303,7 +302,7 @@ class TestServerRestApi(BaseServerRestApi):
         self.user_joins_group(group_id1, BaseTest.OTHER_USER_ID)
         self.user_joins_group(group_id2, BaseTest.OTHER_USER_ID)
 
-        self.send_message_to_group_from(group_id1, user_id=BaseTest.USER_ID, delay=200)
+        self.send_message_to_group_from(group_id1, user_id=BaseTest.USER_ID)
         self.send_message_to_group_from(group_id2, user_id=BaseTest.USER_ID)
         self.assert_order_of_groups(BaseTest.USER_ID, group_id2, group_id1)
 
@@ -324,7 +323,7 @@ class TestServerRestApi(BaseServerRestApi):
         # first send a message to each group with a short delay
         for group_id in [group_1, group_2, group_3]:
             self.send_message_to_group_from(
-                group_id, user_id=BaseTest.USER_ID, delay=50
+                group_id, user_id=BaseTest.USER_ID
             )
 
         # last group to receive a message should be on top
@@ -339,7 +338,7 @@ class TestServerRestApi(BaseServerRestApi):
         self.assert_order_of_groups(BaseTest.USER_ID, group_1, group_2, group_3)
 
         # sending a message to group 3 should not change anything, since 1 and 2 are highlighted and pinned respectively
-        self.send_message_to_group_from(group_3, user_id=BaseTest.USER_ID, delay=50)
+        self.send_message_to_group_from(group_3, user_id=BaseTest.USER_ID)
         self.assert_order_of_groups(BaseTest.USER_ID, group_1, group_2, group_3)
 
         # group 2 and 3 are pinned, but 3 has more recent message now
@@ -810,7 +809,8 @@ class TestServerRestApi(BaseServerRestApi):
     def test_action_log_changes_last_update_time(self):
         message = self.send_1v1_message()
 
-        last_updated_time_before = self.groups_for_user()[0]["stats"]["last_updated_time"]
+        groups = self.groups_for_user()
+        last_updated_time_before = groups[0]["stats"]["last_updated_time"]
         self.assertIsNotNone(last_updated_time_before)
 
         self.action_log(message["group_id"])
@@ -1161,12 +1161,12 @@ class TestServerRestApi(BaseServerRestApi):
         self.assert_groups_for_user(1)
 
         # need a different timestamp on the other group
-        time.sleep(0.1)
+        time.sleep(0.01)
 
         self.send_1v1_message(receiver_id=44)
         self.assert_groups_for_user(2)
 
-        time.sleep(0.1)
+        time.sleep(0.01)
 
         all_groups = self.groups_for_user()
         self.assertEqual(2, len(all_groups))

@@ -100,10 +100,12 @@ class TestGroupResource(BaseTest):
 
         # create a new group
         group = await self.group.create_new_group(BaseTest.USER_ID, create_query, None)  # noqa
+        time.sleep(0.01)
         await self.group.create_action_logs(group.group_id, log_query, None)  # noqa
 
         # send message and get histories
         await self.message.send_message_to_group(group.group_id, BaseTest.USER_ID, send_query, None)  # noqa
+        time.sleep(0.01)
         histories = await self.group.histories(group.group_id, BaseTest.USER_ID, message_query, db=None)  # noqa
 
         # one join event and one message
@@ -111,6 +113,7 @@ class TestGroupResource(BaseTest):
 
         # send another message
         await self.message.send_message_to_group(group.group_id, BaseTest.USER_ID, send_query, None)  # noqa
+        time.sleep(0.01)
         histories = await self.group.histories(group.group_id, BaseTest.USER_ID, message_query, db=None)  # noqa
 
         # now we should have two messages but still only one join event
@@ -139,7 +142,6 @@ class TestGroupResource(BaseTest):
         await self.message.send_message_to_group(
             group.group_id, BaseTest.USER_ID, send_query, None
         )
-        time.sleep(0.1)
         count = await self.group.count_messages_in_group(group.group_id)
         stats = await self.group.get_user_group_stats(
             group.group_id, BaseTest.USER_ID, count, None
@@ -150,7 +152,7 @@ class TestGroupResource(BaseTest):
         await self.message.send_message_to_group(
             group.group_id, BaseTest.OTHER_USER_ID, send_query, None
         )
-        time.sleep(0.1)
+        time.sleep(0.01)
         count = await self.group.count_messages_in_group(group.group_id)
         stats = await self.group.get_user_group_stats(
             group.group_id, BaseTest.USER_ID, count, None

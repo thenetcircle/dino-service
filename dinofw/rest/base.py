@@ -1,11 +1,14 @@
 import logging
 from abc import ABC
 from datetime import datetime as dt
-from typing import Dict, List
+from typing import Dict
+from typing import List
 
 import arrow
 
-from dinofw.db.rdbms.schemas import UserGroupStatsBase, GroupBase, UserGroupBase
+from dinofw.db.rdbms.schemas import GroupBase
+from dinofw.db.rdbms.schemas import UserGroupBase
+from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.schemas import MessageBase
 from dinofw.rest.models import AbstractQuery
 from dinofw.rest.models import Group
@@ -14,7 +17,8 @@ from dinofw.rest.models import GroupLastRead
 from dinofw.rest.models import Message
 from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UserGroupStats
-from dinofw.utils import utcnow_ts, utcnow_dt
+from dinofw.utils import utcnow_dt
+from dinofw.utils import utcnow_ts
 
 
 class BaseResource(ABC):

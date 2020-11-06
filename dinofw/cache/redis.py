@@ -237,6 +237,7 @@ class CacheRedis(ICache):
             return None
 
         types = str(count, "utf-8")
+
         # TODO: log and check this, was blank in redis once
         if len(types) == 0 or "," not in types:
             return None
@@ -273,7 +274,7 @@ class CacheRedis(ICache):
 
         if len(users):
             self.add_user_ids_and_join_time_in_group(group_id, users)
-            self.redis.expire(key, ONE_HOUR)  # TODO: maybe expire quicker
+            self.redis.expire(key, ONE_HOUR)
 
     def add_user_ids_and_join_time_in_group(
         self, group_id: str, users: Dict[int, float]

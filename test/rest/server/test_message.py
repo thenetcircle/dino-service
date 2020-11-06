@@ -1,9 +1,12 @@
+import time
+
 from dinofw.rest.message import MessageResource
 from dinofw.rest.models import Message
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
 from dinofw.utils.config import MessageTypes
-from test.base import async_test, BaseTest
+from test.base import BaseTest
+from test.base import async_test
 
 
 class TestMessageResource(BaseTest):
@@ -25,11 +28,11 @@ class TestMessageResource(BaseTest):
             query=query,
             db=None,  # noqa
         )
+        time.sleep(0.01)
         self.assertEqual(
             1, len(self.resource.env.client_publisher.sent_messages[BaseTest.GROUP_ID])
         )
         self.assertEqual(type(message), Message)
-
         self.assertIsNotNone(message.message_id)
 
         last_sent = self.resource.env.db.stats[BaseTest.USER_ID][0].last_sent
@@ -45,6 +48,7 @@ class TestMessageResource(BaseTest):
             query=query,
             db=None,  # noqa
         )
+        time.sleep(0.01)
         self.assertEqual(
             2, len(self.resource.env.client_publisher.sent_messages[BaseTest.GROUP_ID])
         )

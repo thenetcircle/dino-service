@@ -1,5 +1,6 @@
 from datetime import datetime as dt
-from typing import Optional, List
+from typing import List
+from typing import Optional
 
 import arrow
 from pydantic import BaseModel
