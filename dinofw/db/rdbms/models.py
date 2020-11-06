@@ -12,7 +12,7 @@ class GroupEntity(env.Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
 
-    group_id = Column(String(36), index=True)
+    group_id = Column(String(36), index=True, unique=True)
     name = Column(String(128))
 
     owner_id = Column(Integer)
