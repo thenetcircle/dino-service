@@ -80,7 +80,6 @@ class CreateGroupQuery(AbstractQuery):
     description: Optional[str]
     meta: Optional[int]
     context: Optional[str]
-    weight: Optional[int]
 
 
 class UserStatsQuery(AbstractQuery):
@@ -105,7 +104,6 @@ class UpdateGroupQuery(AbstractQuery):
     status: Optional[int]
     owner: Optional[int]
     name: Optional[str]
-    weight: Optional[int]
     context: Optional[str]
 
 

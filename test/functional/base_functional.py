@@ -221,7 +221,6 @@ class BaseServerRestApi(BaseDatabaseTest):
         self,
         group_id: str,
         name: str = "test name",
-        weight: int = 1,
         context: str = "",
         owner: int = None,
     ):
@@ -230,7 +229,7 @@ class BaseServerRestApi(BaseDatabaseTest):
 
         raw_response = self.client.put(
             f"/v1/groups/{group_id}",
-            json={"owner": owner, "name": name, "weight": weight, "context": context,},
+            json={"owner": owner, "name": name, "context": context},
         )
         self.assertEqual(raw_response.status_code, 200)
 

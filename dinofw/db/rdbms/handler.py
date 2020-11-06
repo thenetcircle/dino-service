@@ -729,9 +729,6 @@ class RelationalHandler:
         if query.name is not None:
             group_entity.name = query.name
 
-        if query.weight is not None:
-            group_entity.group_weight = query.weight
-
         if query.context is not None:
             group_entity.group_context = query.context
 
