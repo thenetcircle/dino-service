@@ -389,32 +389,6 @@ class RelationalHandler:
                 models.UserGroupStatsEntity.last_updated_time: sent_time,
             })
 
-        """
-        user_stats = (
-            db.query(models.UserGroupStatsEntity)
-            .filter(
-                models.UserGroupStatsEntity.group_id == message.group_id,
-                # TODO: don't filter; need to set 'last_updated_time' on every new message to sync?
-                # we want to reset 'hide' and 'delete_before' when a new message is sent
-                # or_(
-                #     models.UserGroupStatsEntity.hide.is_(True),
-                #     models.UserGroupStatsEntity.delete_before > models.UserGroupStatsEntity.join_time
-                # )
-            )
-            .all()
-        )
-
-        for user_stat in user_stats:
-            # when creating action logs, we want to sync changes to apps, but not necessarily un-hide a group
-            # TODO: maybe we actually want to wake them up, check with stakeholders
-            if wakeup_users:
-                user_stat.hide = False
-                user_stat.delete_before = user_stat.join_time
-
-            user_stat.last_updated_time = sent_time
-            db.add(user_stat)
-        """
-
         db.add(group)
         db.commit()
 
