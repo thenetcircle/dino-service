@@ -369,6 +369,27 @@ class RelationalHandler:
         group.last_message_type = message.message_type
         group.last_message_user_id = message.user_id
 
+        statement = (
+            db.query(models.UserGroupStatsEntity)
+            .filter(
+                models.UserGroupStatsEntity.group_id == message.group_id
+            )
+        )
+
+        # when creating action logs, we want to sync changes to apps, but not necessarily un-hide a group
+        # TODO: maybe we actually want to wake them up, check with stakeholders
+        if wakeup_users:
+            statement.update({
+                models.UserGroupStatsEntity.last_updated_time: sent_time,
+                models.UserGroupStatsEntity.delete_before: models.UserGroupStatsEntity.join_time,
+                models.UserGroupStatsEntity.hide: False,
+            })
+        else:
+            statement.update({
+                models.UserGroupStatsEntity.last_updated_time: sent_time,
+            })
+
+        """
         user_stats = (
             db.query(models.UserGroupStatsEntity)
             .filter(
@@ -392,6 +413,7 @@ class RelationalHandler:
 
             user_stat.last_updated_time = sent_time
             db.add(user_stat)
+        """
 
         db.add(group)
         db.commit()

@@ -68,6 +68,7 @@ class BaseResource(ABC):
         self.env.db.update_group_new_message(message, now, db)
 
         # TODO: should we update this for all? or only if it was hidden/deleted before?
+        # TODO: last_updated_time is set in update_group_new_message() above
         self.env.db.set_last_updated_at_for_all_in_group(group_id, db)
 
         self.env.db.update_last_read_and_sent_in_group_for_user(
