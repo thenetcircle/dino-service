@@ -12,6 +12,7 @@ from dinofw.utils.api import get_db
 from dinofw.utils.api import log_error_and_raise_known
 from dinofw.utils.api import log_error_and_raise_unknown
 from dinofw.utils.config import ErrorCodes
+from dinofw.utils.decorators import timeit
 from dinofw.utils.exceptions import NoSuchGroupException
 from dinofw.utils.exceptions import UserNotInGroupException
 
@@ -20,6 +21,7 @@ router = APIRouter()
 
 
 @router.get("/groups/{group_id}/users", response_model=GroupUsers)
+@timeit(logger, "GET", "/groups/{group_id}/users")
 async def get_users_in_group(
     group_id: str, db: Session = Depends(get_db)
 ) -> GroupUsers:

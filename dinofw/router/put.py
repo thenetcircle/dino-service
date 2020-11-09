@@ -16,6 +16,7 @@ from dinofw.utils.api import get_db
 from dinofw.utils.api import log_error_and_raise_known
 from dinofw.utils.api import log_error_and_raise_unknown
 from dinofw.utils.config import ErrorCodes
+from dinofw.utils.decorators import timeit
 from dinofw.utils.exceptions import NoSuchGroupException
 from dinofw.utils.exceptions import UserNotInGroupException
 
@@ -24,6 +25,7 @@ router = APIRouter()
 
 
 @router.put("/userstats/{user_id}", status_code=HTTP_201_CREATED)
+@timeit(logger, "PUT", "/userstats/{user_id}")
 async def update_user_stats(user_id: int, db: Session = Depends(get_db)) -> Response:
     """
     Update user status, e.g. because the user got blocked, is a bot, was
@@ -50,6 +52,7 @@ async def update_user_stats(user_id: int, db: Session = Depends(get_db)) -> Resp
 
 
 @router.put("/user/{user_id}/read", status_code=HTTP_201_CREATED)
+@timeit(logger, "PUT", "/user/{user_id}/read")
 async def mark_all_groups_as_read(user_id: int, db: Session = Depends(get_db)) -> Response:
     """
     Mark all groups as read, including removing any bookmarks done by the
@@ -74,6 +77,7 @@ async def mark_all_groups_as_read(user_id: int, db: Session = Depends(get_db)) -
 
 
 @router.put("/groups/{group_id}/user/{user_id}/update")
+@timeit(logger, "PUT", "/groups/{group_id}/user/{user_id}/update")
 async def update_user_statistics_in_group(
     group_id: str,
     user_id: int,
@@ -117,6 +121,7 @@ async def update_user_statistics_in_group(
 
 
 @router.put("/groups/{group_id}")
+@timeit(logger, "PUT", "/groups/{group_id}")
 async def edit_group_information(
     group_id, query: UpdateGroupQuery, db: Session = Depends(get_db)
 ) -> Group:
@@ -138,6 +143,7 @@ async def edit_group_information(
 
 
 @router.put("/groups/{group_id}/user/{user_id}/join")
+@timeit(logger, "PUT", "/groups/{group_id}/user/{user_id}/join")
 async def join_group(
     group_id: str, user_id: int, db: Session = Depends(get_db)
 ) -> None:
