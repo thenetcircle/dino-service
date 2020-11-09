@@ -28,6 +28,7 @@ from dinofw.utils.api import get_db
 from dinofw.utils.api import log_error_and_raise_known
 from dinofw.utils.api import log_error_and_raise_unknown
 from dinofw.utils.config import ErrorCodes
+from dinofw.utils.decorators import timeit
 from dinofw.utils.exceptions import NoSuchAttachmentException
 from dinofw.utils.exceptions import NoSuchGroupException
 from dinofw.utils.exceptions import NoSuchMessageException
@@ -39,6 +40,7 @@ router = APIRouter()
 
 
 @router.post("/users/{user_id}/send", response_model=Message)
+@timeit(logger, "POST", "/users/{user_id}/send")
 async def send_message_to_user(
     user_id: int, query: SendMessageQuery, db: Session = Depends(get_db)
 ) -> List[Message]:
@@ -72,6 +74,7 @@ async def send_message_to_user(
 
 
 @router.post("/groups/{group_id}/user/{user_id}/histories", response_model=Histories)
+@timeit(logger, "POST", "/groups/{group_id}/user/{user_id}/histories")
 async def get_group_history_for_user(
     group_id: str,
     user_id: int,
@@ -104,6 +107,7 @@ async def get_group_history_for_user(
 
 
 @router.post("/users/{user_id}/groups", response_model=List[UserGroup])
+@timeit(logger, "POST", "/users/{user_id}/groups")
 async def get_groups_for_user(
     user_id: int,
     query: GroupQuery,
@@ -129,6 +133,7 @@ async def get_groups_for_user(
 
 
 @router.post("/users/{user_id}/groups/updates", response_model=List[UserGroup])
+@timeit(logger, "POST", "/users/{user_id}/groups/updates")
 async def get_groups_updated_since(
     user_id: int, query: GroupUpdatesQuery, db: Session = Depends(get_db)
 ) -> List[UserGroup]:
@@ -146,6 +151,7 @@ async def get_groups_updated_since(
 
 
 @router.post("/userstats/{user_id}", response_model=UserStats)
+@timeit(logger, "POST", "/userstats/{user_id}")
 async def get_user_statistics(user_id: int, query: UserStatsQuery, db: Session = Depends(get_db)) -> UserStats:
     """
     Get a user's statistics globally (not only for one group).
@@ -177,6 +183,7 @@ async def get_user_statistics(user_id: int, query: UserStatsQuery, db: Session =
 
 
 @router.post("/groups/{group_id}", response_model=Group)
+@timeit(logger, "POST", "/groups/{group_id}")
 async def get_group_information(group_id: str, query: GroupInfoQuery, db: Session = Depends(get_db)) -> Group:
     """
     Get details about one group.
@@ -198,6 +205,7 @@ async def get_group_information(group_id: str, query: GroupInfoQuery, db: Sessio
 
 
 @router.post("/groups/{group_id}/user/{user_id}/send", response_model=Message)
+@timeit(logger, "POST", "/groups/{group_id}/user/{user_id}/send")
 async def send_message_to_group(
     group_id: str,
     user_id: int,
@@ -227,6 +235,7 @@ async def send_message_to_group(
 
 
 @router.post("/users/{user_id}/group", response_model=OneToOneStats)
+@timeit(logger, "POST", "/users/{user_id}/group")
 async def get_one_to_one_information(
     user_id: int, query: OneToOneQuery, db: Session = Depends(get_db)
 ) -> OneToOneStats:
@@ -246,6 +255,7 @@ async def get_one_to_one_information(
 
 
 @router.post("/users/{user_id}/message/{message_id}/attachment")
+@timeit(logger, "POST", "/users/{user_id}/message/{message_id}/attachment")
 async def create_an_attachment(
         user_id: int, message_id: str, query: CreateAttachmentQuery, db: Session = Depends(get_db)
 ) -> None:
@@ -278,6 +288,7 @@ async def create_an_attachment(
 
 
 @router.post("/groups/{group_id}/attachment", response_model=Message)
+@timeit(logger, "POST", "/groups/{group_id}/attachment")
 async def get_attachment_info_from_file_id(
     group_id: str, query: AttachmentQuery, db: Session = Depends(get_db)
 ) -> Message:
@@ -300,6 +311,7 @@ async def get_attachment_info_from_file_id(
 
 
 @router.post("/groups/{group_id}/user/{user_id}/attachments", response_model=List[Message])
+@timeit(logger, "POST", "/groups/{group_id}/user/{user_id}/attachments")
 async def get_attachments_in_group_for_user(
     group_id: str, user_id: int, query: MessageQuery, db: Session = Depends(get_db)
 ) -> List[Message]:
@@ -324,6 +336,7 @@ async def get_attachments_in_group_for_user(
 
 
 @router.post("/groups/{group_id}/actions", response_model=List[Message])
+@timeit(logger, "POST", "/groups/{group_id}/actions")
 async def create_action_logs(
     group_id: str, query: CreateActionLogQuery, db: Session = Depends(get_db)
 ) -> None:
@@ -340,6 +353,7 @@ async def create_action_logs(
 
 
 @router.post("/users/{user_id}/groups/create", response_model=Group)
+@timeit(logger, "POST", "/users/{user_id}/groups/create")
 async def create_a_new_group(
     user_id: int, query: CreateGroupQuery, db: Session = Depends(get_db)
 ) -> Group:
