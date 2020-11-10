@@ -43,9 +43,7 @@ async def get_users_in_group(
 
 @router.get("/groups/{group_id}/user/{user_id}", response_model=UserGroupStats)
 async def get_user_statistics_in_group(
-    group_id: str,
-    user_id: int,
-    db: Session = Depends(get_db)
+    group_id: str, user_id: int, db: Session = Depends(get_db)
 ) -> UserGroupStats:
     """
     Get a user's statistic in a group (last read, hidden, etc.).
@@ -57,7 +55,9 @@ async def get_user_statistics_in_group(
     """
     try:
         message_amount = await environ.env.rest.group.count_messages_in_group(group_id)
-        return await environ.env.rest.group.get_user_group_stats(group_id, user_id, message_amount, db)
+        return await environ.env.rest.group.get_user_group_stats(
+            group_id, user_id, message_amount, db
+        )
     except NoSuchGroupException as e:
         log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
     except UserNotInGroupException as e:

@@ -76,10 +76,7 @@ async def send_message_to_user(
 @router.post("/groups/{group_id}/user/{user_id}/histories", response_model=Histories)
 @timeit(logger, "POST", "/groups/{group_id}/user/{user_id}/histories")
 async def get_group_history_for_user(
-    group_id: str,
-    user_id: int,
-    query: MessageQuery,
-    db: Session = Depends(get_db)
+    group_id: str, user_id: int, query: MessageQuery, db: Session = Depends(get_db)
 ) -> Histories:
     """
     Get user visible history in a group for a user. Sorted by creation time in descendent.
@@ -109,9 +106,7 @@ async def get_group_history_for_user(
 @router.post("/users/{user_id}/groups", response_model=List[UserGroup])
 @timeit(logger, "POST", "/users/{user_id}/groups")
 async def get_groups_for_user(
-    user_id: int,
-    query: GroupQuery,
-    db: Session = Depends(get_db)
+    user_id: int, query: GroupQuery, db: Session = Depends(get_db)
 ) -> List[UserGroup]:
     """
     Get a list of groups for this user, sorted by last message sent. For paying users,
@@ -152,7 +147,9 @@ async def get_groups_updated_since(
 
 @router.post("/userstats/{user_id}", response_model=UserStats)
 @timeit(logger, "POST", "/userstats/{user_id}")
-async def get_user_statistics(user_id: int, query: UserStatsQuery, db: Session = Depends(get_db)) -> UserStats:
+async def get_user_statistics(
+    user_id: int, query: UserStatsQuery, db: Session = Depends(get_db)
+) -> UserStats:
     """
     Get a user's statistics globally (not only for one group).
 
@@ -184,7 +181,9 @@ async def get_user_statistics(user_id: int, query: UserStatsQuery, db: Session =
 
 @router.post("/groups/{group_id}", response_model=Group)
 @timeit(logger, "POST", "/groups/{group_id}")
-async def get_group_information(group_id: str, query: GroupInfoQuery, db: Session = Depends(get_db)) -> Group:
+async def get_group_information(
+    group_id: str, query: GroupInfoQuery, db: Session = Depends(get_db)
+) -> Group:
     """
     Get details about one group.
 
@@ -207,10 +206,7 @@ async def get_group_information(group_id: str, query: GroupInfoQuery, db: Sessio
 @router.post("/groups/{group_id}/user/{user_id}/send", response_model=Message)
 @timeit(logger, "POST", "/groups/{group_id}/user/{user_id}/send")
 async def send_message_to_group(
-    group_id: str,
-    user_id: int,
-    query: SendMessageQuery,
-    db: Session = Depends(get_db)
+    group_id: str, user_id: int, query: SendMessageQuery, db: Session = Depends(get_db)
 ) -> List[Message]:
     """
     User sends a message in a group. This API should also be used for **1-to-1** conversations
@@ -257,7 +253,10 @@ async def get_one_to_one_information(
 @router.post("/users/{user_id}/message/{message_id}/attachment")
 @timeit(logger, "POST", "/users/{user_id}/message/{message_id}/attachment")
 async def create_an_attachment(
-        user_id: int, message_id: str, query: CreateAttachmentQuery, db: Session = Depends(get_db)
+    user_id: int,
+    message_id: str,
+    query: CreateAttachmentQuery,
+    db: Session = Depends(get_db),
 ) -> None:
     """
     Create an attachment.
@@ -278,7 +277,9 @@ async def create_an_attachment(
     * `250`: if an unknown error occurred.
     """
     try:
-        return await environ.env.rest.message.create_attachment(user_id, message_id, query, db)
+        return await environ.env.rest.message.create_attachment(
+            user_id, message_id, query, db
+        )
     except NoSuchGroupException as e:
         log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
     except NoSuchMessageException as e:
@@ -310,7 +311,9 @@ async def get_attachment_info_from_file_id(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.post("/groups/{group_id}/user/{user_id}/attachments", response_model=List[Message])
+@router.post(
+    "/groups/{group_id}/user/{user_id}/attachments", response_model=List[Message]
+)
 @timeit(logger, "POST", "/groups/{group_id}/user/{user_id}/attachments")
 async def get_attachments_in_group_for_user(
     group_id: str, user_id: int, query: MessageQuery, db: Session = Depends(get_db)
