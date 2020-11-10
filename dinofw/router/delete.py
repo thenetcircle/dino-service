@@ -14,6 +14,7 @@ from dinofw.utils.api import get_db
 from dinofw.utils.api import log_error_and_raise_known
 from dinofw.utils.api import log_error_and_raise_unknown
 from dinofw.utils.config import ErrorCodes
+from dinofw.utils.decorators import timeit
 from dinofw.utils.exceptions import NoSuchGroupException
 
 logger = logging.getLogger(__name__)
@@ -21,6 +22,7 @@ router = APIRouter()
 
 
 @router.delete("/groups/{group_id}/user/{user_id}/join")
+@timeit(logger, "DELETE", "/groups/{group_id}/user/{user_id}/join")
 async def leave_group(
     user_id: int, group_id: str, db: Session = Depends(get_db)
 ) -> None:
