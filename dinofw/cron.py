@@ -12,6 +12,8 @@ class Deleter:
         logger.info("initializing Deleter...")
 
     def run_deletions(self):
+        # TODO: add timings and report to grafana
+
         logger.info("fetching groups with un-deleted messages...")
         session = environ.env.SessionLocal()
         groups = self.env.db.get_groups_with_undeleted_messages(session)
