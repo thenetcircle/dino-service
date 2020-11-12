@@ -13,7 +13,8 @@ class Deleter:
 
     def run_deletions(self):
         logger.info("fetching groups with un-deleted messages...")
-        groups = self.env.db.get_groups_with_undeleted_messages()
+        session = environ.env.SessionLocal()
+        groups = self.env.db.get_groups_with_undeleted_messages(session)
 
         logger.info(f"about to batch deletions for {len(groups)} groups...")
         pass
