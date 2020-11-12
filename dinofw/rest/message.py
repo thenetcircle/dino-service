@@ -109,7 +109,7 @@ class MessageResource(BaseResource):
             group_id, user_id, message_id, group.created_at
         )
 
-        # TODO: how to tell apps a message was deleted?
+        # TODO: how to tell apps a message was deleted? <-- update: create action log on deletions
         # TODO: self.env.publisher.delete_message(group_id, message_id)
 
     def delete_attachment(self, group_id: str, query: AttachmentQuery, db: Session) -> None:
@@ -126,7 +126,7 @@ class MessageResource(BaseResource):
             for publisher in [self.env.client_publisher, self.env.server_publisher]:
                 publisher.delete_attachments(group_id, [attachment], user_ids, now)
 
-            # TODO: how to tell apps an attachment was deleted?
+            # TODO: how to tell apps an attachment was deleted? <-- update: create action log on deletions
             # self.env.db.update_group_updated_at ?
 
     async def update_messages(self, group_id: str, query: MessageQuery):

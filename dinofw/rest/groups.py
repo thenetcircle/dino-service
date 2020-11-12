@@ -282,7 +282,7 @@ class GroupResource(BaseResource):
             for publisher in [self.env.client_publisher, self.env.server_publisher]:
                 publisher.delete_attachments(group_id, attachments, user_ids, now)
 
-            # TODO: how to tell apps an attachment was deleted?
+            # TODO: how to tell apps an attachment was deleted? <-- update: create action log on deletions
             # self.env.db.update_group_updated_at ?
 
     def delete_all_groups_for_user(self, user_id: int, db: Session) -> None:
