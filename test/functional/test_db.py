@@ -46,3 +46,13 @@ class TestDatabaseQueries(BaseDatabaseTest):
 
         for group_id, created_at in group_and_created_at:
             self.assertEqual(created_at, groups[group_id])
+
+    def test_get_groups_with_undeleted_messages(self):
+        session = self.env.session_maker()
+
+        user_id = 50
+        receivers = [51, 52, 53, 54, 55]
+
+        for _ in list(range(5)):
+            time.sleep(0.01)
+            group_base = self.env.db.create_group(user_id, query, session)

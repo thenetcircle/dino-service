@@ -20,6 +20,11 @@ class GroupEntity(env.Base):
     group_type = Column(Integer, server_default="0")
     created_at = Column(DateTime(timezone=True))
 
+    # used to schedule batch deletions; if every user in a group has delete_before
+    # after this time, we remove messages up to the older delete_before, and set
+    # this field to the time of the new first message
+    first_message_time = Column(DateTime(timezone=True), index=True, nullable=False)
+
     # used by clients to sync changed (new name, user left etc.)
     updated_at = Column(DateTime(timezone=True), index=True)
 

@@ -190,13 +190,17 @@ def init_producer(gn_env: GNEnvironment) -> None:
 def initialize_env(dino_env):
     logging.basicConfig(level="DEBUG", format=ConfigKeys.DEFAULT_LOG_FORMAT)
 
+    is_deleter_service = os.getenv("DINO_DELETER") is not None
+
     init_logging(dino_env)
     init_database(dino_env)
     init_cassandra(dino_env)
     init_cache_service(dino_env)
-    init_stats_service(dino_env)
-    init_rest(dino_env)
-    init_producer(dino_env)
+
+    if not is_deleter_service:
+        init_stats_service(dino_env)
+        init_rest(dino_env)
+        init_producer(dino_env)
 
 
 ENV_KEY_ENVIRONMENT = "DINO_ENVIRONMENT"

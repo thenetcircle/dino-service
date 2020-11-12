@@ -9,6 +9,7 @@ from uuid import uuid4 as uuid
 import arrow
 from sqlalchemy import func
 from sqlalchemy import literal
+from sqlalchemy import case
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
@@ -991,6 +992,58 @@ class RelationalHandler:
         db.commit()
 
         return base
+
+    def get_groups_with_undeleted_messages(self, db: Session):
+        """
+        Used for removing old messages from the system. It queries for the time
+        of which every previous message for a group can be removed. Messages are
+        to be removed when every user has a `delete_before` older than
+        `first_message_time`. After removal, the new oldest message will be set
+        as the value of `first_message_time`.
+
+        What we want to do:
+
+            select
+                g.group_id,
+                min(u.delete_before)
+            from
+                groups g,
+                user_group_stats u
+            where
+                g.group_id = u.group_id
+            group by
+                g.group_id
+            having
+                coalesce(
+                    sum(
+                        case when u.delete_before <= g.first_message_time then 1
+                        else 0 end
+                    ),
+                0) = 0;
+        """
+        return (
+            db.query(
+                models.GroupEntity.group_id,
+                func.min(models.UserGroupStatsEntity.delete_before)
+            )
+            .join(
+                models.UserGroupStatsEntity,
+                models.UserGroupStatsEntity.group_id == models.GroupEntity.group_id
+            )
+            .group(
+                models.GroupEntity.group_id
+            )
+            .having(
+                func.coalesce(
+                    func.sum(case(
+                        (models.UserGroupStatsEntity.delete_before <= models.GroupEntity.first_message_time, 1),
+                        else_=0
+                    )),
+                    0
+                )
+            )
+            .all()
+        )
 
     # noinspection PyMethodMayBeStatic
     def _get_user_stats_for(self, group_id: str, user_id: int, db: Session):
