@@ -6,6 +6,21 @@ from functools import wraps
 from dinofw.utils import environ
 
 
+def time_method(_logger, prefix: str):
+    def factory(view_func):
+        @wraps(view_func)
+        def decorator(*args, **kwargs):
+            before = time.time()
+            try:
+                return view_func(*args, **kwargs)
+            finally:
+                the_time = (time.time() - before) * 1000
+                if the_time > 25:
+                    _logger.debug(f"{prefix} took {the_time:.2f}ms")
+        return decorator
+    return factory
+
+
 def timeit(_logger, method: str, tag: str):
     def factory(view_func):
         @wraps(view_func)

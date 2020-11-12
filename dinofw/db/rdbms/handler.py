@@ -7,11 +7,12 @@ from typing import Tuple
 from uuid import uuid4 as uuid
 
 import arrow
+from sqlalchemy import case
 from sqlalchemy import func
 from sqlalchemy import literal
-from sqlalchemy import case
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
+from time import time
 
 from dinofw.db.rdbms import models
 from dinofw.db.rdbms.schemas import GroupBase
@@ -29,6 +30,7 @@ from dinofw.utils import trim_micros
 from dinofw.utils import utcnow_dt
 from dinofw.utils import utcnow_ts
 from dinofw.utils.config import GroupTypes
+from dinofw.utils.decorators import time_method
 from dinofw.utils.exceptions import NoSuchGroupException
 from dinofw.utils.exceptions import UserNotInGroupException
 
@@ -150,73 +152,85 @@ class RelationalHandler:
             greatest(u.highlight_time, g.last_message_time) desc
         limit per_page
         """
-        until = GroupQuery.to_dt(query.until)
+        @time_method(self.logger, "get_groups_for_user(): query groups")
+        def query_groups():
+            until = GroupQuery.to_dt(query.until)
 
-        statement = (
-            db.query(
-                models.GroupEntity,
-                models.UserGroupStatsEntity
-            )
-            .join(
-                models.UserGroupStatsEntity,
-                models.UserGroupStatsEntity.group_id == models.GroupEntity.group_id
-            )
-            .filter(
-                models.GroupEntity.last_message_time < until,
-                models.UserGroupStatsEntity.delete_before <= models.GroupEntity.updated_at,
-                # TODO: when joining a "group", the last message was before you joined; if we create
-                #  an action log when a user joins it will update `last_message_time` and we can use
-                #  that instead of `updated_at`, which would make more sense
-                # models.UserGroupStatsEntity.delete_before < models.GroupEntity.last_message_time,
-                models.UserGroupStatsEntity.user_id == user_id,
-            )
-        )
-
-        if query.hidden is not None:
-            statement = statement.filter(
-                models.UserGroupStatsEntity.hide.is_(query.hidden),
-            )
-
-        if query.only_unread:
-            statement = statement.filter(
-                or_(
-                    models.UserGroupStatsEntity.last_read < models.GroupEntity.last_message_time,
-                    models.UserGroupStatsEntity.bookmark.is_(True),
+            statement = (
+                db.query(
+                    models.GroupEntity,
+                    models.UserGroupStatsEntity
+                )
+                .join(
+                    models.UserGroupStatsEntity,
+                    models.UserGroupStatsEntity.group_id == models.GroupEntity.group_id
+                )
+                .filter(
+                    models.GroupEntity.last_message_time < until,
+                    models.UserGroupStatsEntity.delete_before <= models.GroupEntity.updated_at,
+                    # TODO: when joining a "group", the last message was before you joined; if we create
+                    #  an action log when a user joins it will update `last_message_time` and we can use
+                    #  that instead of `updated_at`, which would make more sense
+                    # models.UserGroupStatsEntity.delete_before < models.GroupEntity.last_message_time,
+                    models.UserGroupStatsEntity.user_id == user_id,
                 )
             )
 
-        results = (
-            statement.order_by(
-                models.UserGroupStatsEntity.pin.desc(),
-                func.greatest(
-                    models.UserGroupStatsEntity.highlight_time,
-                    models.GroupEntity.last_message_time,
-                ).desc(),
+            if query.hidden is not None:
+                statement = statement.filter(
+                    models.UserGroupStatsEntity.hide.is_(query.hidden),
+                )
+
+            if query.only_unread:
+                statement = statement.filter(
+                    or_(
+                        models.UserGroupStatsEntity.last_read < models.GroupEntity.last_message_time,
+                        models.UserGroupStatsEntity.bookmark.is_(True),
+                    )
+                )
+
+            return (
+                statement.order_by(
+                    models.UserGroupStatsEntity.pin.desc(),
+                    func.greatest(
+                        models.UserGroupStatsEntity.highlight_time,
+                        models.GroupEntity.last_message_time,
+                    ).desc(),
+                )
+                .limit(query.per_page)
+                .all()
             )
-            .limit(query.per_page)
-            .all()
-        )
 
-        receiver_stats_base = list()
-        if receiver_stats:
+        @time_method(self.logger, "get_groups_for_user(): get receiver stats")
+        def get_receiver_stats():
+            if not receiver_stats:
+                return list()
+
             group_ids = list()
-
             for group, stats in results:
                 if group.group_type != GroupTypes.ONE_TO_ONE:
                     continue
                 group_ids.append(group.group_id)
 
-            receiver_stats_base = self.get_receiver_user_stats(group_ids, user_id, db)
+            return self.get_receiver_user_stats(group_ids, user_id, db)
 
-        count_unread = query.count_unread or False
-        return self._group_and_stats_to_user_group_base(
-            db,
-            results,
-            receiver_stats=receiver_stats_base,
-            user_id=user_id,
-            count_unread=count_unread,
-            count_receiver=count_receiver_unread,  # when getting user stats we don't care about receivers
-        )
+        @time_method(self.logger, "get_groups_for_user(): format results and count unread")
+        def format_results_and_count_unread():
+            count_unread = query.count_unread or False
+            return self._group_and_stats_to_user_group_base(
+                db,
+                results,
+                receiver_stats=receiver_stats_base,
+                user_id=user_id,
+                count_unread=count_unread,
+                count_receiver=count_receiver_unread,  # when getting user stats we don't care about receivers
+            )
+
+        results = query_groups()
+        receiver_stats_base = get_receiver_stats()
+        formatted_results = format_results_and_count_unread()
+
+        return formatted_results
 
     def get_groups_updated_since(
         self,
@@ -288,57 +302,88 @@ class RelationalHandler:
         count_unread: bool,
         count_receiver: bool = True,
     ) -> List[UserGroupBase]:
+        @time_method(self.logger, "_group_and_stats_to_user_group_base(): count unread")
+        def count_for_group():
+            _unread_count = -1
+            _receiver_unread_count = -1
+
+            if not count_unread:
+                return _unread_count, _receiver_unread_count
+
+            # only count for receiver if it's a 1v1 group
+            if group.group_type == GroupTypes.ONE_TO_ONE and count_receiver:
+                user_a, user_b = group_id_to_users(group.group_id)
+                user_to_count_for = (
+                    user_a if user_b == user_id else user_b
+                )
+                _receiver_unread_count = self.env.storage.get_unread_in_group(
+                    group_id=group.group_id,
+                    user_id=user_to_count_for,
+                    last_read=user_group_stats.last_read,
+                )
+
+            _unread_count = self.env.storage.get_unread_in_group(
+                group_id=group.group_id,
+                user_id=user_id,
+                last_read=user_group_stats.last_read,
+            )
+
+            return _unread_count, _receiver_unread_count
+
         groups = list()
 
         receivers = dict()
         for stat in receiver_stats:
             receivers[stat.group_id] = UserGroupStatsBase(**stat.__dict__)
 
+        time_format = 0
+        time_get_join_time = 0
+        time_convert = 0
+        time_count = 0
+
         for group_entity, user_group_stats_entity in results:
+            before = time()
             group = GroupBase(**group_entity.__dict__)
             user_group_stats = UserGroupStatsBase(**user_group_stats_entity.__dict__)
+            time_convert += time() - before
 
+            before = time()
+            # TODO: use a pipeline, get for all groups, then query for all groups;
+            #  this becomes slow if there's many groups
             users_join_time = self.get_user_ids_and_join_time_in_group(
                 group_entity.group_id, db
             )
-            user_count = len(users_join_time)
+            time_get_join_time += time() - before
 
-            unread_count = -1
-            receiver_unread_count = -1
-
-            if count_unread:
-                # only count for receiver if it's a 1v1 group
-                if group.group_type == GroupTypes.ONE_TO_ONE and count_receiver:
-                    user_a, user_b = group_id_to_users(group.group_id)
-                    user_to_count_for = (
-                        user_a if user_b == user_id else user_b
-                    )
-                    receiver_unread_count = self.env.storage.get_unread_in_group(
-                        group_id=group.group_id,
-                        user_id=user_to_count_for,
-                        last_read=user_group_stats.last_read,
-                    )
-
-                unread_count = self.env.storage.get_unread_in_group(
-                    group_id=group.group_id,
-                    user_id=user_id,
-                    last_read=user_group_stats.last_read,
-                )
+            before = time()
+            unread_count, receiver_unread_count = count_for_group()
+            time_count += time() - before
 
             receiver_stat = None
             if group.group_id in receivers:
                 receiver_stat = receivers[group.group_id]
 
+            before = time()
             user_group = UserGroupBase(
                 group=group,
                 user_stats=user_group_stats,
                 user_join_times=users_join_time,
-                user_count=user_count,
+                user_count=len(users_join_time),
                 unread=unread_count,
                 receiver_unread=receiver_unread_count,
                 receiver_user_stats=receiver_stat,
             )
+            time_format += time() - before
             groups.append(user_group)
+
+        time_format *= 1000
+        self.logger.debug(f"formatting took {time_format:.2f}ms")
+        time_get_join_time *= 1000
+        self.logger.debug(f"getting join time took {time_get_join_time:.2f}ms")
+        time_convert *= 1000
+        self.logger.debug(f"converting took {time_convert:.2f}ms")
+        time_count *= 1000
+        self.logger.debug(f"counting took {time_count:.2f}ms")
 
         return groups
 
