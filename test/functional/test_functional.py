@@ -2,6 +2,7 @@ import time
 
 import arrow
 
+from dinofw.rest.models import AbstractQuery
 from dinofw.utils import utcnow_ts
 from dinofw.utils.config import MessageTypes, ErrorCodes
 from dinofw.utils.exceptions import NoSuchAttachmentException
@@ -1218,13 +1219,38 @@ class TestServerRestApi(BaseServerRestApi):
 
     def test_get_groups_with_undeleted_messages(self):
         groups = list()
+        users = [BaseTest.USER_ID, 50, 51, 52, 53, 54]
 
+        # first create some groups and send some messages
         for _ in list(range(5)):
             groups.append(self.create_and_join_group(
-                BaseTest.USER_ID, users=[BaseTest.USER_ID, 50, 51, 52, 53, 54]
+                BaseTest.USER_ID, users=users
             ))
             time.sleep(0.01)
             self.send_message_to_group_from(groups[0], BaseTest.USER_ID)
 
-        session = self.env.session_maker()
-        self.env.db.get_groups_with_undeleted_messages(session)
+        # check that initially there should be now groups to consider for deleting
+        # messages
+        to_del = self.env.db.get_groups_with_undeleted_messages(self.env.session_maker())
+        self.assertEqual(0, len(to_del))
+
+        delete_time = utcnow_ts()
+
+        # of only one user has delete_before > first_message_time, the group should
+        # not be considered for message deletion (since other users haven't changed
+        # their delete_before)
+        self.update_delete_before(groups[0], delete_time, users[0])
+        to_del = self.env.db.get_groups_with_undeleted_messages(self.env.session_maker())
+        self.assertEqual(0, len(to_del))
+
+        # if all users have a delete_before > first_message_time, then the deletion
+        # query should find it
+        for user in users:
+            self.update_delete_before(groups[0], delete_time, user)
+
+        to_del = self.env.db.get_groups_with_undeleted_messages(self.env.session_maker())
+        self.assertEqual(1, len(to_del))
+
+        # returns a list of tuples: [(group_id, min(delete_before)),]
+        self.assertEqual(to_del[0][0], groups[0])
+        self.assertEqual(to_del[0][1], AbstractQuery.to_dt(delete_time))
