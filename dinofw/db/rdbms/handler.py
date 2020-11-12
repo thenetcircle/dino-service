@@ -1031,17 +1031,17 @@ class RelationalHandler:
                 models.UserGroupStatsEntity,
                 models.UserGroupStatsEntity.group_id == models.GroupEntity.group_id
             )
-            .group(
+            .group_by(
                 models.GroupEntity.group_id
             )
             .having(
                 func.coalesce(
                     func.sum(case(
-                        (models.UserGroupStatsEntity.delete_before <= models.GroupEntity.first_message_time, 1),
+                        [(models.UserGroupStatsEntity.delete_before <= models.GroupEntity.first_message_time, 1)],
                         else_=0
                     )),
                     0
-                )
+                ) == 0
             )
             .all()
         )

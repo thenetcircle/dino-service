@@ -714,6 +714,7 @@ class FakeEnv:
         self.config = FakeEnv.Config()
         self.storage = FakeStorage(self)
         self.db = FakeDatabase()
+        self.stats = None
         self.client_publisher = FakePublisherHandler()
         self.server_publisher = FakePublisherHandler()
         self.cache = CacheRedis(self, host="mock")
