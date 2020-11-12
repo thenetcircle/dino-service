@@ -994,6 +994,17 @@ class RelationalHandler:
 
         return base
 
+    def update_first_message_time(self, group_id: str, first_message_time: dt, db: Session) -> None:
+        self.logger.info(f"group {group_id}: setting first_message_time = {first_message_time}")
+
+        _ = (
+            db.query(models.GroupEntity)
+            .filter(models.GroupEntity.group_id == group_id)
+            .update({models.GroupEntity.first_message_time: first_message_time})
+        )
+
+        db.commit()
+
     def get_groups_with_undeleted_messages(self, db: Session):
         """
         Used for removing old messages from the system. It queries for the time

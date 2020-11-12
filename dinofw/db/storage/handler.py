@@ -228,6 +228,30 @@ class CassandraHandler:
 
         return group_to_atts
 
+    def delete_messages_in_group_before(self, group_id: str, before: dt):
+        messages = (
+            MessageModel.objects(
+                MessageModel.group_id == group_id,
+                MessageModel.created_at <= before,
+            )
+            .all()
+        )
+
+        self.logger.info(f"deleting {len(messages)} messages in group {group_id}...")
+        self._delete_messages(messages, "messages")
+
+    def delete_attachments_in_group_before(self, group_id: str, before: dt):
+        attachments = (
+            AttachmentModel.objects(
+                AttachmentModel.group_id == group_id,
+                AttachmentModel.created_at <= before,
+            )
+            .all()
+        )
+
+        self.logger.info(f"deleting {len(attachments)} attachments in group {group_id}...")
+        self._delete_messages(attachments, "attachments")
+
     def delete_attachments(
         self,
         group_id: str,
