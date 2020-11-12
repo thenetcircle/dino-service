@@ -74,6 +74,8 @@ async def delete_attachment_with_file_id(
     """
     Delete an attachment.
 
+    TODO: create deletion action log to sync with apps
+
     **Potential error codes in response:**
     * `250`: if an unknown error occurred.
     """
@@ -98,6 +100,8 @@ async def delete_attachments_in_group_for_user(
 ) -> Response:
     """
     Delete all attachments in this group for this user.
+
+    TODO: create deletion action logs to sync with apps
 
     **Potential error codes in response:**
     * `250`: if an unknown error occurred.
@@ -126,6 +130,8 @@ async def delete_attachments_in_all_groups_from_user(
 ) -> Response:
     """
     Delete all attachments send by this user in all groups.
+
+    TODO: create deletion action logs to sync with apps
 
     **Potential error codes in response:**
     * `250`: if an unknown error occurred.
