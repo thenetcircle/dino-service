@@ -1,6 +1,8 @@
 import arrow
 import time
 
+from dinofw.rest.models import CreateGroupQuery
+from dinofw.utils.config import GroupTypes
 from test.base import BaseTest
 from test.functional.base_db import BaseDatabaseTest
 
@@ -47,12 +49,19 @@ class TestDatabaseQueries(BaseDatabaseTest):
         for group_id, created_at in group_and_created_at:
             self.assertEqual(created_at, groups[group_id])
 
-    def test_get_groups_with_undeleted_messages(self):
+    def test_get_groups_with_undeleted_messagesm(self):
         session = self.env.session_maker()
 
-        user_id = 50
-        receivers = [51, 52, 53, 54, 55]
+        users = [50, 51, 52, 53, 54, 55]
+        groups = list()
 
-        for _ in list(range(5)):
+        for i in list(range(5)):
             time.sleep(0.01)
-            group_base = self.env.db.create_group(user_id, query, session)
+            query = CreateGroupQuery(
+                users=users,
+                group_name=f"test group {i}",
+                group_type=GroupTypes.GROUP,
+            )
+
+            group_base = self.env.db.create_group(users[0], query, session)
+            groups.append(group_base)

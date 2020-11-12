@@ -217,9 +217,10 @@ class Group(BaseModel):
     owner_id: int
     meta: Optional[int]
     context: Optional[str]
+    last_message_time: float
+    first_message_time: float
     last_message_overview: Optional[str]
     last_message_user_id: Optional[int]
-    last_message_time: float
     last_message_type: Optional[int]
     user_count: int
     message_amount: Optional[int] = -1

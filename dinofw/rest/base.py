@@ -168,6 +168,9 @@ class BaseResource(ABC):
         group_dict["last_message_time"] = AbstractQuery.to_ts(
             group_dict["last_message_time"]
         )
+        group_dict["first_message_time"] = AbstractQuery.to_ts(
+            group_dict["first_message_time"]
+        )
         group_dict["users"] = users
         group_dict["user_count"] = user_count
         group_dict["message_amount"] = message_amount

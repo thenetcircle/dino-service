@@ -950,7 +950,7 @@ class RelationalHandler:
         self, owner_id: int, query: CreateGroupQuery, db: Session
     ) -> GroupBase:
         utc_now = arrow.utcnow()
-        last_message_time = trim_micros(utc_now.datetime)
+        now = trim_micros(utc_now.datetime)
 
         # can't be exactly the same, because when listing groups for a
         # user, any group with only one message would not be included,
@@ -970,7 +970,8 @@ class RelationalHandler:
             group_id=group_id,
             name=query.group_name,
             group_type=query.group_type,
-            last_message_time=last_message_time,
+            last_message_time=now,
+            first_message_time=now,
             updated_at=created_at,
             created_at=created_at,
             owner_id=owner_id,

@@ -1215,3 +1215,16 @@ class TestServerRestApi(BaseServerRestApi):
         self.send_1v1_message(user_id=51, receiver_id=BaseTest.USER_ID)
         stats = self.get_global_user_stats(count_unread=True)
         self.assertEqual(2, stats["unread_groups_amount"])
+
+    def test_get_groups_with_undeleted_messages(self):
+        groups = list()
+
+        for _ in list(range(5)):
+            groups.append(self.create_and_join_group(
+                BaseTest.USER_ID, users=[BaseTest.USER_ID, 50, 51, 52, 53, 54]
+            ))
+            time.sleep(0.01)
+            self.send_message_to_group_from(groups[0], BaseTest.USER_ID)
+
+        session = self.env.session_maker()
+        self.env.db.get_groups_with_undeleted_messages(session)
