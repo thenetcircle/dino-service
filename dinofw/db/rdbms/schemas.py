@@ -13,6 +13,7 @@ class GroupBase(BaseModel):
 
     first_message_time: datetime
     last_message_time: datetime
+    last_message_id: Optional[str]
     last_message_overview: Optional[str]
     last_message_type: Optional[int]
     last_message_user_id: Optional[int]

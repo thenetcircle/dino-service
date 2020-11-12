@@ -378,6 +378,7 @@ class FakeDatabase:
         self.groups[message.group_id].last_message_time = sent_time
         self.groups[message.group_id].last_message_overview = message.message_payload
         self.groups[message.group_id].last_message_type = message.message_type
+        self.groups[message.group_id].last_message_id = message.message_id
 
     def set_last_updated_at_for_all_in_group(self, group_id: str, _):
         now = arrow.utcnow().datetime

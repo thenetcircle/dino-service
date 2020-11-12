@@ -118,8 +118,6 @@ async def get_groups_for_user(
     If `hidden` is set to True in the query, only hidden groups will be returned.
     Defaults value is False.
 
-    TODO: return the last_message_id
-
     **Potential error codes in response:**
     * `250`: if an unknown error occurred.
     """
