@@ -240,6 +240,7 @@ class CacheRedis(ICache):
 
         # TODO: log and check this, was blank in redis once
         if len(types) == 0 or "," not in types:
+            logger.warning(f"group types was none in cache for key {key}")
             return None
 
         types = types.split(",")
