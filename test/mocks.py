@@ -17,6 +17,7 @@ from dinofw.rest.models import EditMessageQuery
 from dinofw.rest.models import GroupQuery
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
+from dinofw.utils import trim_micros
 from dinofw.utils import utcnow_dt
 from dinofw.utils.exceptions import NoSuchGroupException
 from dinofw.utils.exceptions import NoSuchAttachmentException
@@ -402,13 +403,16 @@ class FakeDatabase:
             stat.highlight_time = the_time
 
     def create_group(self, owner_id: int, query: CreateGroupQuery, _) -> GroupBase:
-        created_at = arrow.utcnow().datetime
+        utc_now = arrow.utcnow()
+        now = trim_micros(utc_now.datetime)
+        created_at = trim_micros(utc_now.shift(seconds=-1).datetime)
 
         group = GroupBase(
             group_id=str(uuid()),
             name=query.group_name,
             group_type=query.group_type,
-            last_message_time=created_at,
+            last_message_time=now,
+            first_message_time=now,
             created_at=created_at,
             updated_at=created_at,
             owner_id=owner_id,
