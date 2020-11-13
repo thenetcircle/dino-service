@@ -3,7 +3,6 @@ from datetime import datetime as dt
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Set
 from typing import Tuple
 from uuid import uuid4 as uuid
 
@@ -13,7 +12,6 @@ from sqlalchemy import func
 from sqlalchemy import literal
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
-from time import time
 
 from dinofw.db.rdbms import models
 from dinofw.db.rdbms.schemas import GroupBase
@@ -34,6 +32,8 @@ from dinofw.utils.config import GroupTypes
 from dinofw.utils.decorators import time_method
 from dinofw.utils.exceptions import NoSuchGroupException
 from dinofw.utils.exceptions import UserNotInGroupException
+
+logger = logging.getLogger(__name__)
 
 
 def users_to_group_id(user_a: int, user_b: int) -> str:
@@ -63,8 +63,6 @@ class RelationalHandler:
         # used when no `hide_before` is specified in a query
         beginning_of_1995 = 789_000_000
         self.long_ago = dt.utcfromtimestamp(beginning_of_1995)
-
-        self.logger = logging.getLogger(__name__)
 
     def get_users_in_group(
         self, group_id: str, db: Session
@@ -153,7 +151,7 @@ class RelationalHandler:
             greatest(u.highlight_time, g.last_message_time) desc
         limit per_page
         """
-        @time_method(self.logger, "get_groups_for_user(): query groups")
+        @time_method(logger, "get_groups_for_user(): query groups")
         def query_groups():
             until = GroupQuery.to_dt(query.until)
 
@@ -202,36 +200,18 @@ class RelationalHandler:
                 .all()
             )
 
-        @time_method(self.logger, "get_groups_for_user(): get receiver stats")
-        def get_receiver_stats():
-            if not receiver_stats:
-                return list()
-
-            group_ids = list()
-            for group, stats in results:
-                if group.group_type != GroupTypes.ONE_TO_ONE:
-                    continue
-                group_ids.append(group.group_id)
-
-            return self.get_receiver_user_stats(group_ids, user_id, db)
-
-        @time_method(self.logger, "get_groups_for_user(): format results and count unread")
-        def format_results_and_count_unread():
-            count_unread = query.count_unread or False
-            return self._group_and_stats_to_user_group_base(
-                db,
-                results,
-                receiver_stats=receiver_stats_base,
-                user_id=user_id,
-                count_unread=count_unread,
-                count_receiver=count_receiver_unread,  # when getting user stats we don't care about receivers
-            )
-
         results = query_groups()
-        receiver_stats_base = get_receiver_stats()
-        formatted_results = format_results_and_count_unread()
+        receiver_stats_base = self.get_receiver_stats(results, user_id, receiver_stats, db)
+        count_unread = query.count_unread or False
 
-        return formatted_results
+        return self.format_group_stats_and_count_unread(
+            db,
+            results,
+            receiver_stats=receiver_stats_base,
+            user_id=user_id,
+            count_unread=count_unread,
+            count_receiver=count_receiver_unread,  # when getting user stats we don't care about receivers
+        )
 
     def get_groups_updated_since(
         self,
@@ -247,7 +227,7 @@ class RelationalHandler:
         filtering by "since" instead of "until", because for syncing we're paginating
         "forwards" instead of "backwards"
         """
-        @time_method(self.logger, "get_groups_updated_since() query groups")
+        @time_method(logger, "get_groups_updated_since(): query groups")
         def query_groups():
             since = GroupUpdatesQuery.to_dt(query.since)
 
@@ -269,32 +249,28 @@ class RelationalHandler:
                 .all()
             )
 
-        @time_method(self.logger, "get_groups_updated_since() get receiver stats")
-        def get_receiver_stats():
-            if not receiver_stats:
-                return list()
-
-            group_ids = list()
-            for group, stats in results:
-                if group.group_type == GroupTypes.ONE_TO_ONE:
-                    group_ids.append(group.group_id)
-
-            if len(group_ids):
-                return self.get_receiver_user_stats(group_ids, user_id, db)
-
-            return list()
-
-        @time_method(self.logger, "get_groups_updated_since() format results and count unread()")
-        def format_results_and_count_unread():
-            return self._group_and_stats_to_user_group_base(
-                db, results, receiver_stats, user_id, count_unread
-            )
-
         results = query_groups()
-        receiver_stats = get_receiver_stats()
+        receiver_stats = self.get_receiver_stats(results, user_id, receiver_stats, db)
         count_unread = query.count_unread or False
 
-        return format_results_and_count_unread()
+        return self.format_group_stats_and_count_unread(
+            db, results, receiver_stats, user_id, count_unread
+        )
+
+    @time_method(logger, "get_receiver_stats()")
+    def get_receiver_stats(self, results, user_id, receiver_stats, db: Session):
+        if not receiver_stats:
+            return list()
+
+        group_ids = list()
+        for group, stats in results:
+            if group.group_type == GroupTypes.ONE_TO_ONE:
+                group_ids.append(group.group_id)
+
+        if len(group_ids):
+            return self.get_receiver_user_stats(group_ids, user_id, db)
+
+        return list()
 
     # noinspection PyMethodMayBeStatic
     def get_receiver_user_stats(self, group_ids: List[str], user_id: int, db: Session):
@@ -307,7 +283,8 @@ class RelationalHandler:
             .all()
         )
 
-    def _group_and_stats_to_user_group_base(
+    @time_method(logger, "format_group_stats_and_count_unread()")
+    def format_group_stats_and_count_unread(
         self,
         db: Session,
         results: List[Tuple[models.GroupEntity, models.UserGroupStatsEntity]],
@@ -436,6 +413,7 @@ class RelationalHandler:
         user_ids = list(users.keys())
         return self.get_last_read_in_group_for_users(group_id, user_ids, db)
 
+    @time_method(logger, "get_last_read_in_group_for_users()")
     def get_last_read_in_group_for_users(
         self, group_id: str, user_ids: List[int], db: Session
     ) -> Dict[int, float]:
@@ -443,27 +421,30 @@ class RelationalHandler:
             group_id, user_ids
         )
 
-        if len(not_cached):
-            reads = (
-                db.query(models.UserGroupStatsEntity)
-                .with_entities(
-                    models.UserGroupStatsEntity.user_id,
-                    models.UserGroupStatsEntity.last_read,
-                )
-                .filter(
-                    models.UserGroupStatsEntity.group_id == group_id,
-                    models.UserGroupStatsEntity.user_id.in_(not_cached),
-                )
-                .all()
-            )
+        # got everything from the cache
+        if not len(not_cached):
+            return last_reads
 
-            for user_id, last_read in reads:
-                last_read_float = GroupQuery.to_ts(last_read)
-                last_reads[user_id] = last_read_float
-
-            self.env.cache.set_last_read_in_group_for_users(
-                group_id, last_reads
+        reads = (
+            db.query(models.UserGroupStatsEntity)
+            .with_entities(
+                models.UserGroupStatsEntity.user_id,
+                models.UserGroupStatsEntity.last_read,
             )
+            .filter(
+                models.UserGroupStatsEntity.group_id == group_id,
+                models.UserGroupStatsEntity.user_id.in_(not_cached),
+            )
+            .all()
+        )
+
+        for user_id, last_read in reads:
+            last_read_float = GroupQuery.to_ts(last_read)
+            last_reads[user_id] = last_read_float
+
+        self.env.cache.set_last_read_in_group_for_users(
+            group_id, last_reads
+        )
 
         return last_reads
 
@@ -726,6 +707,7 @@ class RelationalHandler:
 
         return types
 
+    # noinspection PyMethodMayBeStatic
     def set_last_updated_at_on_all_stats_related_to_user(self, user_id: int, db: Session):
         now = utcnow_dt()
 
@@ -760,7 +742,7 @@ class RelationalHandler:
             the_time = utcnow_ts() - before
             the_time = "%.2f" % the_time
 
-            self.logger.info(f"updating {len(group_ids)} user group stats took {the_time}s")
+            logger.info(f"updating {len(group_ids)} user group stats took {the_time}s")
 
     # noinspection PyMethodMayBeStatic
     def set_last_updated_at_for_all_in_group(self, group_id: str, db: Session):
@@ -1056,8 +1038,9 @@ class RelationalHandler:
 
         return base
 
+    # noinspection PyMethodMayBeStatic
     def update_first_message_time(self, group_id: str, first_message_time: dt, db: Session) -> None:
-        self.logger.info(f"group {group_id}: setting first_message_time = {first_message_time}")
+        logger.info(f"group {group_id}: setting first_message_time = {first_message_time}")
 
         _ = (
             db.query(models.GroupEntity)
@@ -1067,6 +1050,7 @@ class RelationalHandler:
 
         db.commit()
 
+    @time_method(logger, "get_groups_with_undeleted_messages()")
     def get_groups_with_undeleted_messages(self, db: Session):
         """
         Used for removing old messages from the system. It queries for the time
