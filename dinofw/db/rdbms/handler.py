@@ -312,7 +312,7 @@ class RelationalHandler:
         count_unread: bool,
         count_receiver: bool = True,
     ) -> List[UserGroupBase]:
-        @time_method(self.logger, "_group_and_stats_to_user_group_base(): count unread")
+        @time_method(self.logger, "_group_and_stats_to_user_group_base(): count unread for one group")
         def count_for_group():
             _unread_count = -1
             _receiver_unread_count = -1
@@ -358,7 +358,6 @@ class RelationalHandler:
             group = GroupBase(**group_entity.__dict__)
             user_group_stats = UserGroupStatsBase(**user_group_stats_entity.__dict__)
 
-            # takes ~1ms/group to count with not too many messages
             before = time()
             unread_count, receiver_unread_count = count_for_group()
             time_count += time() - before
@@ -382,7 +381,7 @@ class RelationalHandler:
         # TODO: temporary until tests with many messages has been done
         time_count *= 1000
         if time_count > 10:
-            self.logger.debug(f"counting took {time_count:.2f}ms")
+            self.logger.debug(f"_group_and_stats_to_user_group_base(): count unread for groups took {time_count:.2f}ms")
 
         return groups
 
