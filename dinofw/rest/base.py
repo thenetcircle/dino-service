@@ -119,6 +119,7 @@ class BaseResource(ABC):
         return last_message_time > user_stats.last_read
 
     @staticmethod
+    @time_method(logger, "to_user_group()")
     def to_user_group(user_groups: List[UserGroupBase]):
         groups: List[UserGroup] = list()
 

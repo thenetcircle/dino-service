@@ -15,7 +15,7 @@ def time_method(_logger, prefix: str):
                 return view_func(*args, **kwargs)
             finally:
                 the_time = (time.time() - before) * 1000
-                if the_time > 20:
+                if the_time > 10:
                     _logger.debug(f"{prefix} took {the_time:.2f}ms")
         return decorator
     return factory

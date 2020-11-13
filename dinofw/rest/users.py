@@ -21,12 +21,8 @@ class UserResource(BaseResource):
     async def get_groups_for_user(
         self, user_id: int, query: GroupQuery, db: Session
     ) -> List[UserGroup]:
-        @time_method(logger, "get_groups_for_user()._format()")
-        def _format():
-            return BaseResource.to_user_group(user_groups)
-
         user_groups: List[UserGroupBase] = self.env.db.get_groups_for_user(user_id, query, db, receiver_stats=True)
-        return _format()
+        return BaseResource.to_user_group(user_groups)
 
     async def get_groups_updated_since(
         self, user_id: int, query: GroupUpdatesQuery, db: Session
