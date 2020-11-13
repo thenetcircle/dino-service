@@ -372,7 +372,7 @@ class RelationalHandler:
 
         # TODO: temporary until tests with many messages has been done
         time_count *= 1000
-        if time_count > 50:
+        if time_count > 10:
             self.logger.debug(f"counting took {time_count:.2f}ms")
 
         return groups
