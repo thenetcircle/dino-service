@@ -284,13 +284,17 @@ class RelationalHandler:
 
             return list()
 
+        @time_method(self.logger, "get_groups_updated_since().format_results_and_count_unread()")
+        def format_results_and_count_unread():
+            return self._group_and_stats_to_user_group_base(
+                db, results, receiver_stats, user_id, count_unread
+            )
+
         results = query_groups()
         receiver_stats = get_receiver_stats()
         count_unread = query.count_unread or False
 
-        return self._group_and_stats_to_user_group_base(
-            db, results, receiver_stats, user_id, count_unread
-        )
+        return format_results_and_count_unread()
 
     # noinspection PyMethodMayBeStatic
     def get_receiver_user_stats(self, group_ids: List[str], user_id: int, db: Session):
@@ -312,7 +316,6 @@ class RelationalHandler:
         count_unread: bool,
         count_receiver: bool = True,
     ) -> List[UserGroupBase]:
-        @time_method(self.logger, "_group_and_stats_to_user_group_base(): count unread for one group")
         def count_for_group():
             _unread_count = -1
             _receiver_unread_count = -1
@@ -352,15 +355,11 @@ class RelationalHandler:
             db
         )
 
-        time_count = 0
-
         for group_entity, user_group_stats_entity in results:
             group = GroupBase(**group_entity.__dict__)
             user_group_stats = UserGroupStatsBase(**user_group_stats_entity.__dict__)
 
-            before = time()
             unread_count, receiver_unread_count = count_for_group()
-            time_count += time() - before
 
             receiver_stat = None
             if group.group_id in receivers:
@@ -377,11 +376,6 @@ class RelationalHandler:
                 receiver_user_stats=receiver_stat,
             )
             groups.append(user_group)
-
-        # TODO: temporary until tests with many messages has been done
-        time_count *= 1000
-        if time_count > 10:
-            self.logger.debug(f"_group_and_stats_to_user_group_base(): count unread for groups took {time_count:.2f}ms")
 
         return groups
 
