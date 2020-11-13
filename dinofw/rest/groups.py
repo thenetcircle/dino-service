@@ -104,12 +104,12 @@ class GroupResource(BaseResource):
     async def histories(
         self, group_id: str, user_id: int, query: MessageQuery, db: Session
     ) -> Histories:
-        @time_method(logger, "histories()._user_stats()")
-        def _user_stats():
+        @time_method(logger, "histories().user_stats()")
+        def get_user_stats():
             return self.env.db.get_user_stats_in_group(group_id, user_id, db)
 
-        @time_method(logger, "histories()._get_messages()")
-        def _get_messages():
+        @time_method(logger, "histories().get_messages()")
+        def get_messages():
             return [
                 GroupResource.message_base_to_message(message)
                 for message in self.env.storage.get_messages_in_group_for_user(
@@ -117,8 +117,8 @@ class GroupResource(BaseResource):
                 )
             ]
 
-        @time_method(logger, "histories()._get_last_reads()")
-        def _get_last_reads():
+        @time_method(logger, "histories().get_last_reads()")
+        def get_last_reads():
             return [
                 GroupResource.to_last_read(this_user_id, last_read)
                 for this_user_id, last_read in self.env.db.get_last_reads_in_group(
@@ -126,12 +126,12 @@ class GroupResource(BaseResource):
                 ).items()
             ]
 
-        user_stats = _user_stats()
+        user_stats = get_user_stats()
         if user_stats.hide:
             return Histories(messages=list(), action_logs=list(), last_reads=list())
 
-        messages = _get_messages()
-        last_reads = _get_last_reads()
+        messages = get_messages()
+        last_reads = get_last_reads()
 
         if len(messages):
             self._user_opens_conversation(group_id, user_id, user_stats, db)
