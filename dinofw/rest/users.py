@@ -12,6 +12,7 @@ from dinofw.rest.models import UserStats
 from dinofw.rest.models import UserStatsQuery
 from dinofw.utils import utcnow_ts
 from dinofw.utils.config import GroupTypes
+from dinofw.utils.decorators import time_method
 
 logger = logging.getLogger(__name__)
 
@@ -20,8 +21,12 @@ class UserResource(BaseResource):
     async def get_groups_for_user(
         self, user_id: int, query: GroupQuery, db: Session
     ) -> List[UserGroup]:
+        @time_method(logger, "get_groups_for_user()._format()")
+        def _format():
+            return BaseResource.to_user_group(user_groups)
+
         user_groups: List[UserGroupBase] = self.env.db.get_groups_for_user(user_id, query, db, receiver_stats=True)
-        return BaseResource.to_user_group(user_groups)
+        return _format()
 
     async def get_groups_updated_since(
         self, user_id: int, query: GroupUpdatesQuery, db: Session
