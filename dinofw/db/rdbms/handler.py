@@ -247,40 +247,49 @@ class RelationalHandler:
         filtering by "since" instead of "until", because for syncing we're paginating
         "forwards" instead of "backwards"
         """
-        since = GroupUpdatesQuery.to_dt(query.since)
+        @time_method(self.logger, "get_groups_updated_since().query_groups()")
+        def query_groups():
+            since = GroupUpdatesQuery.to_dt(query.since)
+
+            return (
+                db.query(models.GroupEntity, models.UserGroupStatsEntity)
+                .filter(
+                    models.GroupEntity.group_id == models.UserGroupStatsEntity.group_id,
+                    models.UserGroupStatsEntity.user_id == user_id,
+                    models.UserGroupStatsEntity.last_updated_time >= since,
+                )
+                .order_by(
+                    models.UserGroupStatsEntity.pin.desc(),
+                    func.greatest(
+                        models.UserGroupStatsEntity.highlight_time,
+                        models.GroupEntity.last_message_time,
+                    ).desc(),
+                )
+                .limit(query.per_page)
+                .all()
+            )
+
+        @time_method(self.logger, "get_groups_updated_since().get_receiver_stats()")
+        def get_receiver_stats():
+            if not receiver_stats:
+                return list()
+
+            group_ids = list()
+            for group, stats in results:
+                if group.group_type == GroupTypes.ONE_TO_ONE:
+                    group_ids.append(group.group_id)
+
+            if len(group_ids):
+                return self.get_receiver_user_stats(group_ids, user_id, db)
+
+            return list()
+
+        results = query_groups()
+        receiver_stats = get_receiver_stats()
         count_unread = query.count_unread or False
 
-        results = (
-            db.query(models.GroupEntity, models.UserGroupStatsEntity)
-            .filter(
-                models.GroupEntity.group_id == models.UserGroupStatsEntity.group_id,
-                models.UserGroupStatsEntity.user_id == user_id,
-                models.UserGroupStatsEntity.last_updated_time >= since,
-            )
-            .order_by(
-                models.UserGroupStatsEntity.pin.desc(),
-                func.greatest(
-                    models.UserGroupStatsEntity.highlight_time,
-                    models.GroupEntity.last_message_time,
-                ).desc(),
-            )
-            .limit(query.per_page)
-            .all()
-        )
-
-        receiver_stats_base = list()
-        if receiver_stats:
-            group_ids = list()
-
-            for group, stats in results:
-                if group.group_type != GroupTypes.ONE_TO_ONE:
-                    continue
-                group_ids.append(group.group_id)
-
-            receiver_stats_base = self.get_receiver_user_stats(group_ids, user_id, db)
-
         return self._group_and_stats_to_user_group_base(
-            db, results, receiver_stats_base, user_id, count_unread
+            db, results, receiver_stats, user_id, count_unread
         )
 
     # noinspection PyMethodMayBeStatic
