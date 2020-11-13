@@ -19,6 +19,9 @@ from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UserGroupStats
 from dinofw.utils import utcnow_dt
 from dinofw.utils import utcnow_ts
+from dinofw.utils.decorators import time_method
+
+logger = logging.getLogger(__name__)
 
 
 class BaseResource(ABC):
@@ -31,6 +34,7 @@ class BaseResource(ABC):
 
         self.logger = logging.getLogger(__name__)
 
+    @time_method(logger, "_user_opens_conversation()")
     def _user_opens_conversation(self, group_id: str, user_id: int, user_stats: UserGroupStatsBase, db):
         """
         update database and cache with everything related to opening a conversation (if needed)

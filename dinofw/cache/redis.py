@@ -80,6 +80,26 @@ class CacheRedis(ICache):
 
         self.listen_host = socket.gethostname().split(".")[0]
 
+    def get_last_read_in_group_for_users(
+        self, group_id: str, user_ids: List[int]
+    ) -> Tuple[dict, list]:
+        p = self.redis.pipeline()
+
+        for user_id in user_ids:
+            key = RedisKeys.last_read_time(group_id)
+            p.hget(key, user_id)
+
+        not_cached = list()
+        last_reads = dict()
+
+        for user_id, last_read in zip(user_ids, p.execute()):
+            if last_read is None:
+                not_cached.append(user_id)
+            else:
+                last_reads[user_id] = float(str(last_read, "utf-8"))
+
+        return last_reads, not_cached
+
     def get_last_read_in_group_for_user(
         self, group_id: str, user_id: int
     ) -> Optional[float]:

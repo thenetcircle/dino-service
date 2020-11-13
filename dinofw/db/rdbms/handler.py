@@ -437,18 +437,9 @@ class RelationalHandler:
     def get_last_read_in_group_for_users(
         self, group_id: str, user_ids: List[int], db: Session
     ) -> Dict[int, float]:
-        not_cached = list()
-        last_reads = dict()
-
-        for user_id in user_ids:
-            last_read = self.env.cache.get_last_read_in_group_for_user(
-                group_id, user_id
-            )
-
-            if last_read is None:
-                not_cached.append(user_id)
-            else:
-                last_reads[user_id] = last_read
+        last_reads, not_cached = self.env.cache.get_last_read_in_group_for_users(
+            group_id, user_ids
+        )
 
         if len(not_cached):
             reads = (
@@ -459,7 +450,7 @@ class RelationalHandler:
                 )
                 .filter(
                     models.UserGroupStatsEntity.group_id == group_id,
-                    models.UserGroupStatsEntity.user_id.in_(user_ids),
+                    models.UserGroupStatsEntity.user_id.in_(not_cached),
                 )
                 .all()
             )
@@ -468,9 +459,9 @@ class RelationalHandler:
                 last_read_float = GroupQuery.to_ts(last_read)
                 last_reads[user_id] = last_read_float
 
-                self.env.cache.set_last_read_in_group_for_user(
-                    group_id, user_id, last_read_float
-                )
+            self.env.cache.set_last_read_in_group_for_users(
+                group_id, last_reads
+            )
 
         return last_reads
 

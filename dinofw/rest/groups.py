@@ -22,6 +22,7 @@ from dinofw.rest.models import UpdateUserGroupStats
 from dinofw.rest.models import UserGroupStats
 from dinofw.utils import utcnow_dt
 from dinofw.utils import utcnow_ts
+from dinofw.utils.decorators import time_method
 from dinofw.utils.exceptions import NoSuchGroupException
 
 logger = logging.getLogger(__name__)
@@ -103,22 +104,34 @@ class GroupResource(BaseResource):
     async def histories(
         self, group_id: str, user_id: int, query: MessageQuery, db: Session
     ) -> Histories:
-        user_stats = self.env.db.get_user_stats_in_group(group_id, user_id, db)
+        @time_method(logger, "histories()._user_stats()")
+        def _user_stats():
+            return self.env.db.get_user_stats_in_group(group_id, user_id, db)
+
+        @time_method(logger, "histories()._get_messages()")
+        def _get_messages():
+            return [
+                GroupResource.message_base_to_message(message)
+                for message in self.env.storage.get_messages_in_group_for_user(
+                    group_id, user_stats, query
+                )
+            ]
+
+        @time_method(logger, "histories()._get_last_reads()")
+        def _get_last_reads():
+            return [
+                GroupResource.to_last_read(this_user_id, last_read)
+                for this_user_id, last_read in self.env.db.get_last_reads_in_group(
+                    group_id, db
+                ).items()
+            ]
+
+        user_stats = _user_stats()
         if user_stats.hide:
             return Histories(messages=list(), action_logs=list(), last_reads=list())
 
-        messages = [
-            GroupResource.message_base_to_message(message)
-            for message in self.env.storage.get_messages_in_group_for_user(
-                group_id, user_stats, query
-            )
-        ]
-        last_reads = [
-            GroupResource.to_last_read(user_id, last_read)
-            for user_id, last_read in self.env.db.get_last_reads_in_group(
-                group_id, db
-            ).items()
-        ]
+        messages = _get_messages()
+        last_reads = _get_last_reads()
 
         if len(messages):
             self._user_opens_conversation(group_id, user_id, user_stats, db)
