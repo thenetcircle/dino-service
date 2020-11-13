@@ -247,7 +247,7 @@ class RelationalHandler:
         filtering by "since" instead of "until", because for syncing we're paginating
         "forwards" instead of "backwards"
         """
-        @time_method(self.logger, "get_groups_updated_since().query_groups()")
+        @time_method(self.logger, "get_groups_updated_since() query groups")
         def query_groups():
             since = GroupUpdatesQuery.to_dt(query.since)
 
@@ -269,7 +269,7 @@ class RelationalHandler:
                 .all()
             )
 
-        @time_method(self.logger, "get_groups_updated_since().get_receiver_stats()")
+        @time_method(self.logger, "get_groups_updated_since() get receiver stats")
         def get_receiver_stats():
             if not receiver_stats:
                 return list()
@@ -284,7 +284,7 @@ class RelationalHandler:
 
             return list()
 
-        @time_method(self.logger, "get_groups_updated_since().format_results_and_count_unread()")
+        @time_method(self.logger, "get_groups_updated_since() format results and count unread()")
         def format_results_and_count_unread():
             return self._group_and_stats_to_user_group_base(
                 db, results, receiver_stats, user_id, count_unread
