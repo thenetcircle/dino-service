@@ -42,7 +42,7 @@ def timeit(_logger, method: str, tag: str):
                     stats_tag = tag.lstrip("/").replace("/", ".").replace("{", "").replace("}", "")
                     stats_tag = f"{method.lower()}.{stats_tag}"
 
-                    if the_time > 75:
+                    if the_time > 10:
                         relevant_args = {
                             key: value for
                             key, value in kwargs.items()
