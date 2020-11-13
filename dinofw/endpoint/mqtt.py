@@ -20,6 +20,7 @@ class MqttPublisher(IClientPublisher):
         self.mqtt_host = env.config.get(ConfigKeys.HOST, domain=ConfigKeys.MQTT)
         self.mqtt_port = env.config.get(ConfigKeys.PORT, domain=ConfigKeys.MQTT)
         self.mqtt_ttl = int(env.config.get(ConfigKeys.TTL, domain=ConfigKeys.MQTT))
+        self.logger = logging.getLogger()
 
         client_id = str(uuid()).split("-")[0]
         client_id = f"dino-ms-{client_id}"
@@ -37,17 +38,24 @@ class MqttPublisher(IClientPublisher):
         )
 
     def send(self, user_id: int, fields: dict, qos: int = 1) -> None:
+        if self.mqtt is None:
+            return
+
         data = {
             key: value
             for key, value in fields.items()
             if value is not None
         }
-        self.mqtt.publish(
-            message_or_topic=str(user_id),
-            payload=data,
-            qos=qos,
-            message_expiry_interval=self.mqtt_ttl
-        )
+        try:
+            self.mqtt.publish(
+                message_or_topic=str(user_id),
+                payload=data,
+                qos=qos,
+                message_expiry_interval=self.mqtt_ttl
+            )
+        except Exception as e:
+            self.logger.error(f"count not publish to mqtt: {str(e)}")
+            self.logger.exception(e)
 
 
 class MqttPublishHandler(IClientPublishHandler):
