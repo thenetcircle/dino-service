@@ -3,6 +3,7 @@ from datetime import datetime as dt
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Set
 from typing import Tuple
 from uuid import uuid4 as uuid
 
@@ -336,25 +337,19 @@ class RelationalHandler:
         for stat in receiver_stats:
             receivers[stat.group_id] = UserGroupStatsBase(**stat.__dict__)
 
-        time_format = 0
-        time_get_join_time = 0
-        time_convert = 0
+        # batch all redis/db queries for join times
+        group_users_join_time = self.get_user_ids_and_join_time_in_groups(
+            [group.group_id for group, user_stats in results],
+            db
+        )
+
         time_count = 0
 
         for group_entity, user_group_stats_entity in results:
-            before = time()
             group = GroupBase(**group_entity.__dict__)
             user_group_stats = UserGroupStatsBase(**user_group_stats_entity.__dict__)
-            time_convert += time() - before
 
-            before = time()
-            # TODO: use a pipeline, get for all groups, then query for all groups;
-            #  this becomes slow if there's many groups
-            users_join_time = self.get_user_ids_and_join_time_in_group(
-                group_entity.group_id, db
-            )
-            time_get_join_time += time() - before
-
+            # takes ~1ms/group to count with not too many messages
             before = time()
             unread_count, receiver_unread_count = count_for_group()
             time_count += time() - before
@@ -363,27 +358,22 @@ class RelationalHandler:
             if group.group_id in receivers:
                 receiver_stat = receivers[group.group_id]
 
-            before = time()
+            join_times = group_users_join_time.get(group_entity.group_id, dict())
             user_group = UserGroupBase(
                 group=group,
                 user_stats=user_group_stats,
-                user_join_times=users_join_time,
-                user_count=len(users_join_time),
+                user_join_times=join_times,
+                user_count=len(join_times),
                 unread=unread_count,
                 receiver_unread=receiver_unread_count,
                 receiver_user_stats=receiver_stat,
             )
-            time_format += time() - before
             groups.append(user_group)
 
-        time_format *= 1000
-        self.logger.debug(f"formatting took {time_format:.2f}ms")
-        time_get_join_time *= 1000
-        self.logger.debug(f"getting join time took {time_get_join_time:.2f}ms")
-        time_convert *= 1000
-        self.logger.debug(f"converting took {time_convert:.2f}ms")
+        # TODO: temporary until tests with many messages has been done
         time_count *= 1000
-        self.logger.debug(f"counting took {time_count:.2f}ms")
+        if time_count > 50:
+            self.logger.debug(f"counting took {time_count:.2f}ms")
 
         return groups
 
@@ -558,6 +548,40 @@ class RelationalHandler:
         )
 
         return self.create_group(user_a, query, db)
+
+    def get_user_ids_and_join_time_in_groups(self, group_ids: List[str], db: Session) -> dict:
+        group_and_users: Dict[str, Dict[int, float]] = \
+            self.env.cache.get_user_ids_and_join_time_in_groups(group_ids)
+
+        if len(group_and_users) == len(group_ids):
+            return group_and_users
+
+        remaining_group_ids = [
+            group_id
+            for group_id in group_ids
+            if group_id not in group_and_users.keys()
+        ]
+
+        users = (
+            db.query(
+                models.UserGroupStatsEntity.group_id,
+                models.UserGroupStatsEntity.user_id,
+                models.UserGroupStatsEntity.join_time,
+            )
+            .filter(models.UserGroupStatsEntity.group_id.in_(remaining_group_ids))
+            .all()
+        )
+
+        if users is None or len(users) == 0:
+            return group_and_users
+
+        for group_id, user_id, join_time in users:
+            if group_id not in group_and_users:
+                group_and_users[group_id] = dict()
+            group_and_users[group_id][user_id] = GroupQuery.to_ts(join_time)
+
+        self.env.cache.set_user_ids_and_join_time_in_groups(group_and_users)
+        return group_and_users
 
     def get_user_ids_and_join_time_in_group(self, group_id: str, db: Session) -> dict:
         users = self.env.cache.get_user_ids_and_join_time_in_group(group_id)

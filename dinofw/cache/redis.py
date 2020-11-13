@@ -257,6 +257,40 @@ class CacheRedis(ICache):
 
         self.redis.set(key, messages_until)
 
+    def get_user_ids_and_join_time_in_groups(self, group_ids: List[str]):
+        join_times = dict()
+
+        p = self.redis.pipeline()
+        for group_id in group_ids:
+            p.hgetall(RedisKeys.user_in_group(group_id))
+
+        for group_id, users in zip(group_ids, p.execute()):
+            if not len(users):
+                continue
+
+            join_times[group_id] = {
+                int(user_id): float(join_time)
+                for user_id, join_time in users.items()
+            }
+
+        return join_times
+
+    def set_user_ids_and_join_time_in_groups(
+        self, group_users: Dict[str, Dict[int, float]]
+    ):
+        p = self.redis.pipeline()
+
+        for group_id, users in group_users.items():
+            key = RedisKeys.user_in_group(group_id)
+            self.redis.delete(key)
+
+            if len(users):
+                for user_id, join_time in users.items():
+                    p.hset(key, str(user_id), str(join_time))
+                p.expire(key, ONE_DAY)
+
+        p.execute()
+
     def get_user_ids_and_join_time_in_group(
         self, group_id: str
     ) -> Optional[Dict[int, float]]:
