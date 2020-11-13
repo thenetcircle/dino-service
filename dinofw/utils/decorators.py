@@ -15,7 +15,7 @@ def time_method(_logger, prefix: str):
                 return view_func(*args, **kwargs)
             finally:
                 the_time = (time.time() - before) * 1000
-                if the_time > 25:
+                if the_time > 20:
                     _logger.debug(f"{prefix} took {the_time:.2f}ms")
         return decorator
     return factory
@@ -42,7 +42,7 @@ def timeit(_logger, method: str, tag: str):
                     stats_tag = tag.lstrip("/").replace("/", ".").replace("{", "").replace("}", "")
                     stats_tag = f"{method.lower()}.{stats_tag}"
 
-                    if the_time > 100:
+                    if the_time > 75:
                         relevant_args = {
                             key: value for
                             key, value in kwargs.items()
