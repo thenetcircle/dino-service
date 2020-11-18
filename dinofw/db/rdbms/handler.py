@@ -198,7 +198,6 @@ class RelationalHandler:
                 )
                 .limit(query.per_page)
             )
-            logger.debug(f"get_groups_for_user(): {str(statement)}")
 
             return statement.all()
 
