@@ -116,7 +116,7 @@ class MqttPublisher(IClientPublisher):
                 message_expiry_interval=self.mqtt_ttl
             )
         except Exception as e:
-            self.logger.error(f"count not publish to mqtt: {str(e)}")
+            self.logger.error(f"could not publish to mqtt: {str(e)}")
             self.logger.exception(e)
 
 
@@ -130,7 +130,7 @@ class MqttPublishHandler(IClientPublishHandler):
         try:
             await self.publisher.setup()
         except Exception as e:
-            self.logger.error(f"count not connect to mqtt: {str(e)}")
+            self.logger.error(f"could not connect to mqtt: {str(e)}")
             self.logger.exception(e)
 
     def message(self, message: MessageBase, user_ids: List[int]) -> None:
