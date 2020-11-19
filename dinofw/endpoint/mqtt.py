@@ -26,8 +26,12 @@ class MqttPublisher(IClientPublisher):
         self.logger = logging.getLogger()
 
         mqtt_redis_host = env.config.get(ConfigKeys.HOST, domain=ConfigKeys.MQTT_AUTH)
-        mqtt_redis_port = env.config.get(ConfigKeys.PORT, domain=ConfigKeys.MQTT_AUTH)
-        mqtt_redis_db = env.config.get(ConfigKeys.DB, domain=ConfigKeys.MQTT_AUTH)
+        mqtt_redis_db = int(env.config.get(ConfigKeys.DB, domain=ConfigKeys.MQTT_AUTH, default=0))
+        mqtt_redis_port = 6379
+
+        if ":" in mqtt_redis_host:
+            mqtt_redis_host, mqtt_redis_port = mqtt_redis_host.split(":", 1)
+            mqtt_redis_port = int(mqtt_redis_port)
 
         # needs to be unique for each worker and node
         pid = os.getpid()
