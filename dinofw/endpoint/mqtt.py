@@ -170,7 +170,10 @@ class MqttPublishHandler(IClientPublishHandler):
         #     loop.close()
         #
         # for now, just use qos of 0 for deletion events, not the end of the
-        # world if they aren't delivered
+        # world if they aren't delivered, and vernemq will upgrade the qos for
+        # us as specified in the configuration:
+        #
+        #     upgrade_outgoing_qos = on
         self.send(user_ids, data, qos=0)
 
     def group_change(self, group_base: GroupBase, user_ids: List[int]) -> None:
