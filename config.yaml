@@ -1,6 +1,3 @@
-auth:
-    type: "allowall"
-
 cache:
     type: "redis"
     host: "$DINO_REDIS_HOST"
