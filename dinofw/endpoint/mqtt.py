@@ -1,11 +1,11 @@
 import logging
-import sys
 import os
 import socket
+import sys
 from typing import List
-import redis
-import bcrypt
 
+import bcrypt
+import redis
 from gmqtt import Client as MQTTClient
 from gmqtt.mqtt.constants import MQTTv50
 
@@ -25,6 +25,24 @@ class MqttPublisher(IClientPublisher):
         self.mqtt_ttl = int(env.config.get(ConfigKeys.TTL, domain=ConfigKeys.MQTT))
         self.logger = logging.getLogger()
 
+        # needs to be unique for each worker and node
+        pid = os.getpid()
+        client_id = socket.gethostname().split(".")[0]
+        client_id = f"dinoms-{client_id}-{pid}"
+
+        self.mqtt = MQTTClient(
+            client_id=client_id,
+            session_expiry_interval=60
+        )
+        self.set_auth_credentials(env, client_id)
+
+    def set_auth_credentials(self, env, client_id: str) -> None:
+        username = env.config.get(ConfigKeys.USER, domain=ConfigKeys.MQTT, default="")
+        password = env.config.get(ConfigKeys.PASSWORD, domain=ConfigKeys.MQTT, default="")
+
+        if username == "":
+            return
+
         mqtt_redis_host = env.config.get(ConfigKeys.HOST, domain=ConfigKeys.MQTT_AUTH)
         mqtt_redis_db = int(env.config.get(ConfigKeys.DB, domain=ConfigKeys.MQTT_AUTH, default=0))
         mqtt_redis_port = 6379
@@ -32,14 +50,6 @@ class MqttPublisher(IClientPublisher):
         if ":" in mqtt_redis_host:
             mqtt_redis_host, mqtt_redis_port = mqtt_redis_host.split(":", 1)
             mqtt_redis_port = int(mqtt_redis_port)
-
-        # needs to be unique for each worker and node
-        pid = os.getpid()
-        client_id = socket.gethostname().split(".")[0]
-        client_id = f"dinoms-{client_id}-{pid}"
-
-        username = env.config.get(ConfigKeys.USER, domain=ConfigKeys.MQTT, default="")
-        password = env.config.get(ConfigKeys.PASSWORD, domain=ConfigKeys.MQTT, default="")
 
         r_client = redis.Redis(
             host=mqtt_redis_host,
@@ -49,22 +59,35 @@ class MqttPublisher(IClientPublisher):
 
         salt = bcrypt.gensalt()
         hashed_pwd = str(bcrypt.hashpw(bytes(password, "utf-8"), salt), "utf-8")
+
+        # vernemq only supports 2a, not 2b which python's bcrypt
+        # produced (hashes are exactly the same regardless, it's
+        # a relic from an old OpenBSD bug):
+        #
+        #   The version $2b$ is not "better" or "stronger" than $2a$.
+        #   It is a remnant of one particular buggy implementation of
+        #   BCrypt. But since BCrypt canonically belongs to OpenBSD,
+        #   they get to change the version marker to whatever they want.
+        #
+        #   There is no difference between 2a, 2x, 2y, and 2b. If you
+        #   wrote your implementation correctly, they all output the
+        #   same result.
+        #
+        # reference: https://stackoverflow.com/questions/15733196/where-2x-prefix-are-used-in-bcrypt
         hashed_pwd = f"$2a${hashed_pwd[4:]}"
 
+        # this is the format that vernemq expects to be in redis
         mqtt_key = f"[\"\",\"{client_id}\",\"{username}\"]"
         mqtt_value = "{\"passhash\":\"" + hashed_pwd + "\"}"
 
+        # need to set it every time, since it has to be unique and
+        # pid will change for each worker on startup
         r_client.set(mqtt_key, mqtt_value)
 
-        self.mqtt = MQTTClient(
-            client_id=client_id,
-            session_expiry_interval=60
+        self.mqtt.set_auth_credentials(
+            username=username,
+            password=password,
         )
-        if username != "":
-            self.mqtt.set_auth_credentials(
-                username=username,
-                password=password,
-            )
 
     async def setup(self):
         await self.mqtt.connect(
