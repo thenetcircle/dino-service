@@ -48,7 +48,7 @@ class MqttPublisher(IClientPublisher):
         )
 
         salt = bcrypt.gensalt()
-        hashed_pwd = str(bcrypt.hashpw(password, salt), "utf-8")
+        hashed_pwd = str(bcrypt.hashpw(bytes(password), salt), "utf-8")
 
         mqtt_key = f"[\"\",\"{client_id}\",\"{username}\"]"
         mqtt_value = "{\"passhash\":\"" + hashed_pwd + "\"}"
