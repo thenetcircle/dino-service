@@ -1,7 +1,10 @@
 import logging
 import sys
+import os
+import socket
 from typing import List
-from uuid import uuid4 as uuid
+import redis
+import bcrypt
 
 from gmqtt import Client as MQTTClient
 from gmqtt.mqtt.constants import MQTTv50
@@ -22,11 +25,31 @@ class MqttPublisher(IClientPublisher):
         self.mqtt_ttl = int(env.config.get(ConfigKeys.TTL, domain=ConfigKeys.MQTT))
         self.logger = logging.getLogger()
 
-        client_id = str(uuid()).split("-")[0]
-        client_id = f"dino-ms-{client_id}"
+        mqtt_redis_host = env.config.get(ConfigKeys.HOST, domain=ConfigKeys.MQTT_AUTH)
+        mqtt_redis_port = env.config.get(ConfigKeys.PORT, domain=ConfigKeys.MQTT_AUTH)
+        mqtt_redis_db = env.config.get(ConfigKeys.DB, domain=ConfigKeys.MQTT_AUTH)
+
+        # needs to be unique for each worker and node
+        pid = os.getpid()
+        client_id = socket.gethostname().split(".")[0]
+        client_id = f"dinoms-{client_id}-{pid}"
 
         username = env.config.get(ConfigKeys.USER, domain=ConfigKeys.MQTT, default="")
         password = env.config.get(ConfigKeys.PASSWORD, domain=ConfigKeys.MQTT, default="")
+
+        r_client = redis.Redis(
+            host=mqtt_redis_host,
+            port=mqtt_redis_port,
+            db=mqtt_redis_db,
+        )
+
+        salt = bcrypt.gensalt()
+        hashed_pwd = str(bcrypt.hashpw(password, salt), "utf-8")
+
+        mqtt_key = f"[\"\",\"{client_id}\",\"{username}\"]"
+        mqtt_value = "{\"passhash\":\"" + hashed_pwd + "\"}"
+
+        r_client.set(mqtt_key, mqtt_value)
 
         self.mqtt = MQTTClient(
             client_id=client_id,

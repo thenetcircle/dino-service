@@ -36,6 +36,10 @@ mqtt:
     user: "$DINO_MQTT_USER"
     password: "$DINO_MQTT_PASS"
 
+mqtt_auth:
+    host: "$DINO_MQTT_REDIS_HOST"
+    db: $DINO_MQTT_REDIS_DB
+
 publisher:
     host: "$DINO_PUB_HOST"
     db: "$DINO_PUB_DB"

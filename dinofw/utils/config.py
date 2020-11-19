@@ -111,6 +111,7 @@ class ConfigKeys:
     KAFKA = "kafka"
     TOPIC = "topic"
     MQTT = "mqtt"
+    MQTT_AUTH = "mqtt_auth"
     HOST = "host"
     TYPE = "type"
     TTL = "ttl"
