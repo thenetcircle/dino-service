@@ -14,7 +14,11 @@ def init_db(env, engine=None):
         else:
             connection_args = {"options": "-c timezone=utc"}
 
-        engine = create_engine(database_uri, connect_args=connection_args)
+        engine = create_engine(
+            database_uri,
+            connect_args=connection_args,
+            echo=True,
+        )
 
     env.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     env.Base = declarative_base()

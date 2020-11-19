@@ -188,7 +188,7 @@ class RelationalHandler:
                     )
                 )
 
-            return (
+            statement = (
                 statement.order_by(
                     models.UserGroupStatsEntity.pin.desc(),
                     func.greatest(
@@ -197,8 +197,9 @@ class RelationalHandler:
                     ).desc(),
                 )
                 .limit(query.per_page)
-                .all()
             )
+
+            return statement.all()
 
         results = query_groups()
         receiver_stats_base = self.get_receiver_stats(results, user_id, receiver_stats, db)

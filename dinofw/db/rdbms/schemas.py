@@ -9,7 +9,7 @@ class GroupBase(BaseModel):
     name: str
     description: Optional[str]
     created_at: datetime
-    updated_at: datetime
+    updated_at: Optional[datetime]
 
     first_message_time: datetime
     last_message_time: datetime
