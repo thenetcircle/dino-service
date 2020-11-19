@@ -25,10 +25,18 @@ class MqttPublisher(IClientPublisher):
         client_id = str(uuid()).split("-")[0]
         client_id = f"dino-ms-{client_id}"
 
+        username = env.config.get(ConfigKeys.USER, domain=ConfigKeys.MQTT, default="")
+        password = env.config.get(ConfigKeys.PASSWORD, domain=ConfigKeys.MQTT, default="")
+
         self.mqtt = MQTTClient(
             client_id=client_id,
             session_expiry_interval=60
         )
+        if username != "":
+            self.mqtt.set_auth_credentials(
+                username=username,
+                password=password,
+            )
 
     async def setup(self):
         await self.mqtt.connect(

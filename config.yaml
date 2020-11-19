@@ -33,6 +33,8 @@ mqtt:
     host: "$DINO_MQTT_HOST"
     port: "$DINO_MQTT_PORT"
     ttl: "$DINO_MQTT_TTL"
+    user: "$DINO_MQTT_USER"
+    password: "$DINO_MQTT_PASS"
 
 publisher:
     host: "$DINO_PUB_HOST"
