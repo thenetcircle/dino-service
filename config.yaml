@@ -1,6 +1,3 @@
-auth:
-    type: "allowall"
-
 cache:
     type: "redis"
     host: "$DINO_REDIS_HOST"
@@ -33,6 +30,12 @@ mqtt:
     host: "$DINO_MQTT_HOST"
     port: "$DINO_MQTT_PORT"
     ttl: "$DINO_MQTT_TTL"
+    user: "$DINO_MQTT_USER"
+    password: "$DINO_MQTT_PASS"
+
+mqtt_auth:
+    host: "$DINO_MQTT_REDIS_HOST"
+    db: $DINO_MQTT_REDIS_DB
 
 publisher:
     host: "$DINO_PUB_HOST"

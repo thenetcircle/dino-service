@@ -1,8 +1,11 @@
 import logging
+import os
+import socket
 import sys
 from typing import List
-from uuid import uuid4 as uuid
 
+import bcrypt
+import redis
 from gmqtt import Client as MQTTClient
 from gmqtt.mqtt.constants import MQTTv50
 
@@ -22,12 +25,71 @@ class MqttPublisher(IClientPublisher):
         self.mqtt_ttl = int(env.config.get(ConfigKeys.TTL, domain=ConfigKeys.MQTT))
         self.logger = logging.getLogger()
 
-        client_id = str(uuid()).split("-")[0]
-        client_id = f"dino-ms-{client_id}"
+        # needs to be unique for each worker and node
+        pid = os.getpid()
+        client_id = socket.gethostname().split(".")[0]
+        client_id = f"dinoms-{client_id}-{pid}"
 
         self.mqtt = MQTTClient(
             client_id=client_id,
             session_expiry_interval=60
+        )
+        self.set_auth_credentials(env, client_id)
+
+    def set_auth_credentials(self, env, client_id: str) -> None:
+        username = env.config.get(ConfigKeys.USER, domain=ConfigKeys.MQTT, default="")
+        password = env.config.get(ConfigKeys.PASSWORD, domain=ConfigKeys.MQTT, default="")
+
+        # not using any auth in lab environment
+        if username == "":
+            return
+
+        mqtt_redis_host = env.config.get(ConfigKeys.HOST, domain=ConfigKeys.MQTT_AUTH)
+        mqtt_redis_db = int(env.config.get(ConfigKeys.DB, domain=ConfigKeys.MQTT_AUTH, default=0))
+        mqtt_redis_port = 6379
+
+        if ":" in mqtt_redis_host:
+            mqtt_redis_host, mqtt_redis_port = mqtt_redis_host.split(":", 1)
+            mqtt_redis_port = int(mqtt_redis_port)
+
+        r_client = redis.Redis(
+            host=mqtt_redis_host,
+            port=mqtt_redis_port,
+            db=mqtt_redis_db,
+        )
+
+        salt = bcrypt.gensalt()
+        hashed_pwd = str(bcrypt.hashpw(bytes(password, "utf-8"), salt), "utf-8")
+
+        # vernemq only supports 2a, not 2b which python's bcrypt
+        # produced (hashes are exactly the same regardless, it's
+        # a relic from an old OpenBSD bug):
+        #
+        #   The version $2b$ is not "better" or "stronger" than $2a$.
+        #   It is a remnant of one particular buggy implementation of
+        #   BCrypt. But since BCrypt canonically belongs to OpenBSD,
+        #   they get to change the version marker to whatever they want.
+        #
+        #   There is no difference between 2a, 2x, 2y, and 2b. If you
+        #   wrote your implementation correctly, they all output the
+        #   same result.
+        #
+        # reference: https://stackoverflow.com/questions/15733196/where-2x-prefix-are-used-in-bcrypt
+        hashed_pwd = f"$2a${hashed_pwd[4:]}"
+
+        # this is the format that vernemq expects to be in redis; also
+        # we don't set a publisher/subscriber acl pattern here, since
+        # this user needs to be able to publish to everyone
+        mqtt_key = f"[\"\",\"{client_id}\",\"{username}\"]"
+        mqtt_value = "{\"passhash\":\"" + hashed_pwd + "\"}"
+
+        # need to set it every time, since it has to be unique and
+        # pid will change for each worker on startup
+        r_client.set(mqtt_key, mqtt_value)
+
+        self.mqtt.set_auth_credentials(
+            username=username,
+            password=password,
         )
 
     async def setup(self):
@@ -54,7 +116,7 @@ class MqttPublisher(IClientPublisher):
                 message_expiry_interval=self.mqtt_ttl
             )
         except Exception as e:
-            self.logger.error(f"count not publish to mqtt: {str(e)}")
+            self.logger.error(f"could not publish to mqtt: {str(e)}")
             self.logger.exception(e)
 
 
@@ -68,7 +130,7 @@ class MqttPublishHandler(IClientPublishHandler):
         try:
             await self.publisher.setup()
         except Exception as e:
-            self.logger.error(f"count not connect to mqtt: {str(e)}")
+            self.logger.error(f"could not connect to mqtt: {str(e)}")
             self.logger.exception(e)
 
     def message(self, message: MessageBase, user_ids: List[int]) -> None:
@@ -108,7 +170,10 @@ class MqttPublishHandler(IClientPublishHandler):
         #     loop.close()
         #
         # for now, just use qos of 0 for deletion events, not the end of the
-        # world if they aren't delivered
+        # world if they aren't delivered, and vernemq will upgrade the qos for
+        # us as specified in the configuration:
+        #
+        #     upgrade_outgoing_qos = on
         self.send(user_ids, data, qos=0)
 
     def group_change(self, group_base: GroupBase, user_ids: List[int]) -> None:
