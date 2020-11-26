@@ -1,4 +1,3 @@
-import logging
 import random
 import time
 import sys
@@ -23,6 +22,7 @@ with open("users.txt", "r") as f:
 class ApiKeys:
     GROUPS = "groups"
     HISTORIES = "histories"
+    SEND = "send"
 
 
 ALL_API_KEYS = [ApiKeys.__dict__[key] for key in ApiKeys.__dict__ if key.isupper()]
@@ -31,10 +31,12 @@ ALL_API_KEYS = [ApiKeys.__dict__[key] for key in ApiKeys.__dict__ if key.isupper
 n_calls = {
     ApiKeys.GROUPS: 0,
     ApiKeys.HISTORIES: 0,
+    ApiKeys.SEND: 0,
 }
 t_calls = {
     ApiKeys.GROUPS: 0,
     ApiKeys.HISTORIES: 0,
+    ApiKeys.SEND: 0,
 }
 
 
@@ -43,6 +45,7 @@ class Endpoints:
 
     GROUPS = BASE + "/users/{user_id}/groups"
     HISTORIES = BASE + "/groups/{group_id}/user/{user_id}/histories"
+    SEND = BASE + "/users/{user_id}/send"
 
 
 def timeit(key: str):
@@ -62,11 +65,11 @@ def timeit(key: str):
 
 
 @timeit(ApiKeys.GROUPS)
-def call_groups(user_id):
+def call_groups(_user_id):
     r = requests.post(
         url=Endpoints.GROUPS.format(
             host=BASE_URL,
-            user_id=user_id
+            user_id=_user_id
         ),
         json={
             "only_unread": False,
@@ -78,16 +81,32 @@ def call_groups(user_id):
 
 
 @timeit(ApiKeys.HISTORIES)
-def call_histories(group_id, user_id):
+def call_histories(_group_id, _user_id):
     requests.post(
         url=Endpoints.HISTORIES.format(
             host=BASE_URL,
-            group_id=group_id,
-            user_id=user_id
+            group_id=_group_id,
+            user_id=_user_id
         ),
         json={
             "only_unread": False,
             "per_page": 50,
+        },
+        headers=HEADERS
+    )
+
+
+@timeit(ApiKeys.SEND)
+def call_send(_user_id, _receiver_id):
+    requests.post(
+        url=Endpoints.SEND.format(
+            host=BASE_URL,
+            user_id=_user_id
+        ),
+        json={
+            "receiver_id": _receiver_id,
+            "message_type": 0,
+            "message_payload": "{\"content\":\"stress test message\"}"
         },
         headers=HEADERS
     )
@@ -114,6 +133,15 @@ for _ in range(N_RUNS):
             for _ in range(max(5, min(5, len(groups)))):
                 group = random.choice(groups)
                 call_histories(group["group"]["group_id"], user)
+
+                users = group["group"]["users"].split(",")
+                receiver_ids = [int(a_user) for a_user in users if int(a_user) != user]
+                if not len(receiver_ids):
+                    continue
+
+                receiver_id = receiver_ids[0]
+                call_send(user, receiver_id)
+
             format_times()
 
     except Exception as e:
