@@ -134,7 +134,7 @@ for _ in range(N_RUNS):
                 group = random.choice(groups)
                 call_histories(group["group"]["group_id"], user)
 
-                users = group["group"]["users"].split(",")
+                users = [user["user_id"] for user in group["group"]["users"]]
                 receiver_ids = [int(a_user) for a_user in users if int(a_user) != user]
                 if not len(receiver_ids):
                     continue
