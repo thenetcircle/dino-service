@@ -38,6 +38,8 @@ t_calls = {
     ApiKeys.HISTORIES: 0,
     ApiKeys.SEND: 0,
 }
+n_groups = 0
+n_messages = 0
 
 
 class Endpoints:
@@ -76,13 +78,17 @@ def call_groups(_user_id):
             "per_page": 50,
         },
         headers=HEADERS
-    )
-    return r.json()
+    ).json()
+
+    global n_groups
+    n_groups += len(r)
+
+    return r
 
 
 @timeit(ApiKeys.HISTORIES)
 def call_histories(_group_id, _user_id):
-    requests.post(
+    r = requests.post(
         url=Endpoints.HISTORIES.format(
             host=BASE_URL,
             group_id=_group_id,
@@ -93,7 +99,10 @@ def call_histories(_group_id, _user_id):
             "per_page": 50,
         },
         headers=HEADERS
-    )
+    ).json()
+
+    global n_messages
+    n_messages += len(r["messages"])
 
 
 @timeit(ApiKeys.SEND)
@@ -120,6 +129,9 @@ def format_times():
         calls = n_calls[key]
         avg = t_calls[key] / n_calls[key]
         print(f"{key}: {calls}, avg. time {avg:.2f}ms")
+
+    print(f"number of groups: {n_groups}")
+    print(f"number of messages: {n_messages}")
 
     print()
 
