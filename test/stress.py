@@ -122,6 +122,9 @@ def call_send(_user_id, _receiver_id):
 
 
 def format_times():
+    if n_calls[ApiKeys.GROUPS] % 10 != 0:
+        return
+
     for key in ALL_API_KEYS:
         if n_calls[key] == 0:
             continue
