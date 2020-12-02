@@ -8,7 +8,7 @@ from functools import wraps
 import requests
 
 
-N_RUNS = 00
+N_RUNS = 100
 BASE_URL = sys.argv[1]
 USERS = list()
 HEADERS = {
@@ -34,6 +34,8 @@ t_calls = {
     ApiKeys.HISTORIES: list(),
     ApiKeys.SEND: list(),
 }
+n_groups = 0
+n_messages = 0
 
 
 class Endpoints:
@@ -71,13 +73,17 @@ def call_groups(_user_id):
             "per_page": 50,
         },
         headers=HEADERS
-    )
-    return r.json()
+    ).json()
+
+    global n_groups
+    n_groups += len(r)
+
+    return r
 
 
 @timeit(ApiKeys.HISTORIES)
 def call_histories(_group_id, _user_id):
-    requests.post(
+    r = requests.post(
         url=Endpoints.HISTORIES.format(
             host=BASE_URL,
             group_id=_group_id,
@@ -88,7 +94,10 @@ def call_histories(_group_id, _user_id):
             "per_page": 50,
         },
         headers=HEADERS
-    )
+    ).json()
+
+    global n_messages
+    n_messages += len(r["messages"])
 
 
 @timeit(ApiKeys.SEND)
@@ -107,13 +116,24 @@ def call_send(_user_id, _receiver_id):
     )
 
 
-def format_times():
+def format_times(elapsed):
+    print(f"time elapsed: {elapsed}")
+
     for key in ALL_API_KEYS:
         if not len(t_calls[key]):
             continue
 
-        avg = sum(t_calls[key]) / len(t_calls[key])
-        print(f"{key}: {len(t_calls[key])}, avg. time {avg:.2f}ms")
+        calls = t_calls[key]
+
+        mean = np.mean(calls)
+        median = np.median(calls)
+        p95 = np.percentile(calls, 95)
+        p99 = np.percentile(calls, 99)
+
+        print(f"{key}: {len(calls)}, mean {mean:.2f}ms, median {median:.2f}, 95%: {p95:.2f}ms, 99%: {p99:.2f}ms")
+
+    print(f"number of groups: {n_groups}")
+    print(f"number of messages: {n_messages}")
 
 
 test_start = time.time()
@@ -128,7 +148,7 @@ for _ in range(N_RUNS):
                 group = random.choice(groups)
                 call_histories(group["group"]["group_id"], user)
 
-                users = group["group"]["users"].split(",")
+                users = [user["user_id"] for user in group["group"]["users"]]
                 receiver_ids = [int(a_user) for a_user in users if int(a_user) != user]
                 if not len(receiver_ids):
                     continue
@@ -144,4 +164,4 @@ for _ in range(N_RUNS):
         break
 
 test_elapsed = time.time() - test_start
-format_times()
+format_times(test_elapsed)
