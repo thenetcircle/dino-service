@@ -24,6 +24,7 @@ class ApiKeys:
     GROUPS = "groups"
     HISTORIES = "histories"
     SEND = "send"
+    STATS = "stats"
 
 
 ALL_API_KEYS = [ApiKeys.__dict__[key] for key in ApiKeys.__dict__ if key.isupper()]
@@ -33,6 +34,7 @@ t_calls = {
     ApiKeys.GROUPS: list(),
     ApiKeys.HISTORIES: list(),
     ApiKeys.SEND: list(),
+    ApiKeys.STATS: list(),
 }
 n_groups = 0
 n_messages = 0
@@ -44,6 +46,7 @@ class Endpoints:
     GROUPS = BASE + "/users/{user_id}/groups"
     HISTORIES = BASE + "/groups/{group_id}/user/{user_id}/histories"
     SEND = BASE + "/users/{user_id}/send"
+    STATS = BASE + "/userstats/{user_id}"
 
 
 def timeit(key: str):
@@ -116,8 +119,24 @@ def call_send(_user_id, _receiver_id):
     )
 
 
+@timeit(ApiKeys.STATS)
+def call_user_stats(_user_id, _receiver_id):
+    requests.post(
+        url=Endpoints.STATS.format(
+            host=BASE_URL,
+            user_id=_user_id
+        ),
+        json={
+            "count_unread": True,
+            "only_unread": True,
+            "hidden": False
+        },
+        headers=HEADERS
+    )
+
+
 def format_times(elapsed):
-    print(f"time elapsed: {elapsed}")
+    print(f"time elapsed: {elapsed:.2f}s")
 
     for key in ALL_API_KEYS:
         if not len(t_calls[key]):
@@ -138,8 +157,18 @@ def format_times(elapsed):
 
         print(f"{p_api} {p_mean} {p_median} {p_p95} {p_p99}".expandtabs(10))
 
+    print()
     print(f"number of groups: {n_groups}")
     print(f"number of messages: {n_messages}")
+    print()
+
+    for prefix, key in [
+        ("groups/sec", ApiKeys.GROUPS),
+        ("histories/sec", ApiKeys.HISTORIES),
+        ("send/sec", ApiKeys.SEND)
+    ]:
+        calls_per_second = np.sum(t_calls[ApiKeys.GROUPS]) / elapsed
+        print(f"{prefix} \t {calls_per_second:.2f}".expandtabs(10))
 
 
 test_start = time.time()
