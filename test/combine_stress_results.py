@@ -54,6 +54,7 @@ def format_times(elapsed):
     print(f"number of messages: {n_messages}")
     print()
 
+    total_calls_per_second = 0
     for prefix, key in [
         ("groups/sec", ApiKeys.GROUPS),
         ("histories/sec", ApiKeys.HISTORIES),
@@ -61,7 +62,10 @@ def format_times(elapsed):
         ("stats/sec", ApiKeys.STATS),
     ]:
         calls_per_second = 1000 / np.median(t_calls[key])
+        total_calls_per_second += calls_per_second
         print(f"{prefix} \t {calls_per_second:.2f}".expandtabs(20))
+
+    print(f"total API calls per second: {total_calls_per_second:.2f}")
 
 
 for filename in sys.argv[1:]:
