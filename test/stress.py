@@ -8,7 +8,7 @@ from functools import wraps
 import requests
 
 
-N_RUNS = 100
+N_RUNS = 50
 BASE_URL = sys.argv[1]
 USERS = list()
 HEADERS = {
@@ -130,7 +130,13 @@ def format_times(elapsed):
         p95 = np.percentile(calls, 95)
         p99 = np.percentile(calls, 99)
 
-        print(f"{key}: {len(calls)}, mean {mean:.2f}ms, median {median:.2f}, 95%: {p95:.2f}ms, 99%: {p99:.2f}ms")
+        p_api = f"{key}: {len(calls)}\t"
+        p_mean = f"mean {mean:.2f}ms\t"
+        p_median = f"median {median:.2f}ms\t"
+        p_p95 = f"95%: {p95:.2f}ms\t"
+        p_p99 = f"99%: {p99:.2f}ms"
+
+        print(f"{p_api} {p_mean} {p_median} {p_p95} {p_p99}".expandtabs(10))
 
     print(f"number of groups: {n_groups}")
     print(f"number of messages: {n_messages}")
