@@ -120,7 +120,7 @@ def call_send(_user_id, _receiver_id):
 
 
 @timeit(ApiKeys.STATS)
-def call_user_stats(_user_id, _receiver_id):
+def call_user_stats(_user_id):
     requests.post(
         url=Endpoints.STATS.format(
             host=BASE_URL,
@@ -193,6 +193,7 @@ for _ in range(N_RUNS):
 
                 receiver_id = receiver_ids[0]
                 call_send(user, receiver_id)
+                call_user_stats(user)
 
     except Exception as e:
         print(f"ERROR: {str(e)}")
