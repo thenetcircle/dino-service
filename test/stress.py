@@ -10,7 +10,7 @@ from functools import wraps
 import requests
 
 
-N_RUNS = 1000
+N_RUNS = 100000
 BASE_URL = sys.argv[1]
 USERS = list()
 HEADERS = {
@@ -59,6 +59,9 @@ def timeit(key: str):
 
             try:
                 return view_func(*args, **kwargs)
+            except Exception as e:
+                print(f"could not call api: {str(e)}")
+                return None
             finally:
                 the_time = (time.time() - before) * 1000
                 t_calls[key].append(the_time)
@@ -192,6 +195,8 @@ for _ in range(N_RUNS):
     try:
         user = random.choice(USERS)
         groups = call_groups(user)
+        if groups is None:
+            continue
 
         if len(groups) and "detail" not in groups:
             for _ in range(max(5, min(5, len(groups)))):
