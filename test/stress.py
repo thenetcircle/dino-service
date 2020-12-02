@@ -1,6 +1,8 @@
 import random
 import time
 import sys
+import socket
+import os
 import numpy as np
 import traceback
 from functools import wraps
@@ -8,7 +10,7 @@ from functools import wraps
 import requests
 
 
-N_RUNS = 1000
+N_RUNS = 50
 BASE_URL = sys.argv[1]
 USERS = list()
 HEADERS = {
@@ -136,6 +138,15 @@ def call_user_stats(_user_id):
 
 
 def format_times(elapsed):
+    with open(f"{socket.gethostname().split('.')[0]}-p{os.getpid()}.txt", "w") as file:
+        file.write(f"{elapsed}\n")
+        file.write(f"{n_groups}\n")
+        file.write(f"{n_messages}\n")
+
+        for key, values in t_calls.items():
+            for value in values:
+                file.write(f"{key},{value}\n")
+
     print(f"time elapsed: {elapsed:.2f}s")
     print()
 
