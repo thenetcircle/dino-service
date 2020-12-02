@@ -65,6 +65,7 @@ def format_times(elapsed):
         total_calls_per_second += calls_per_second
         print(f"{prefix} \t {calls_per_second:.2f}".expandtabs(20))
 
+    print()
     print(f"total API calls per second: {total_calls_per_second:.2f}")
 
 
