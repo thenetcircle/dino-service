@@ -10,7 +10,7 @@ from functools import wraps
 import requests
 
 
-N_RUNS = 100000
+N_RUNS = 4000
 BASE_URL = sys.argv[1]
 USERS = list()
 HEADERS = {
