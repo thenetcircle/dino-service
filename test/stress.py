@@ -137,6 +137,7 @@ def call_user_stats(_user_id, _receiver_id):
 
 def format_times(elapsed):
     print(f"time elapsed: {elapsed:.2f}s")
+    print()
 
     for key in ALL_API_KEYS:
         if not len(t_calls[key]):
@@ -146,16 +147,18 @@ def format_times(elapsed):
 
         mean = np.mean(calls)
         median = np.median(calls)
+        p75 = np.percentile(calls, 75)
         p95 = np.percentile(calls, 95)
         p99 = np.percentile(calls, 99)
 
         p_api = f"{key}: {len(calls)}\t"
         p_mean = f"mean {mean:.2f}ms\t"
         p_median = f"median {median:.2f}ms\t"
+        p_p75 = f"75%: {p75:.2f}ms\t"
         p_p95 = f"95%: {p95:.2f}ms\t"
         p_p99 = f"99%: {p99:.2f}ms"
 
-        print(f"{p_api} {p_mean} {p_median} {p_p95} {p_p99}".expandtabs(10))
+        print(f"{p_api} {p_mean} {p_median} {p_p75} {p_p95} {p_p99}".expandtabs(15))
 
     print()
     print(f"number of groups: {n_groups}")
@@ -167,8 +170,8 @@ def format_times(elapsed):
         ("histories/sec", ApiKeys.HISTORIES),
         ("send/sec", ApiKeys.SEND)
     ]:
-        calls_per_second = np.sum(t_calls[ApiKeys.GROUPS]) / elapsed
-        print(f"{prefix} \t {calls_per_second:.2f}".expandtabs(10))
+        calls_per_second = 1000 / np.median(t_calls[key])
+        print(f"{prefix} \t {calls_per_second:.2f}".expandtabs(15))
 
 
 test_start = time.time()
