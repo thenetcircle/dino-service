@@ -8,7 +8,7 @@ from functools import wraps
 import requests
 
 
-N_RUNS = 50
+N_RUNS = 1000
 BASE_URL = sys.argv[1]
 USERS = list()
 HEADERS = {
@@ -158,7 +158,7 @@ def format_times(elapsed):
         p_p95 = f"95%: {p95:.2f}ms\t"
         p_p99 = f"99%: {p99:.2f}ms"
 
-        print(f"{p_api} {p_mean} {p_median} {p_p75} {p_p95} {p_p99}".expandtabs(15))
+        print(f"{p_api} {p_mean} {p_median} {p_p75} {p_p95} {p_p99}".expandtabs(20))
 
     print()
     print(f"number of groups: {n_groups}")
@@ -172,7 +172,7 @@ def format_times(elapsed):
         ("stats/sec", ApiKeys.STATS),
     ]:
         calls_per_second = 1000 / np.median(t_calls[key])
-        print(f"{prefix} \t {calls_per_second:.2f}".expandtabs(15))
+        print(f"{prefix} \t {calls_per_second:.2f}".expandtabs(20))
 
 
 test_start = time.time()
