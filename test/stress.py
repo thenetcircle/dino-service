@@ -1,13 +1,14 @@
 import random
 import time
 import sys
+import numpy as np
 import traceback
 from functools import wraps
 
 import requests
 
 
-N_RUNS = 500
+N_RUNS = 00
 BASE_URL = sys.argv[1]
 USERS = list()
 HEADERS = {
@@ -28,15 +29,10 @@ class ApiKeys:
 ALL_API_KEYS = [ApiKeys.__dict__[key] for key in ApiKeys.__dict__ if key.isupper()]
 
 
-n_calls = {
-    ApiKeys.GROUPS: 0,
-    ApiKeys.HISTORIES: 0,
-    ApiKeys.SEND: 0,
-}
 t_calls = {
-    ApiKeys.GROUPS: 0,
-    ApiKeys.HISTORIES: 0,
-    ApiKeys.SEND: 0,
+    ApiKeys.GROUPS: list(),
+    ApiKeys.HISTORIES: list(),
+    ApiKeys.SEND: list(),
 }
 
 
@@ -58,8 +54,7 @@ def timeit(key: str):
                 return view_func(*args, **kwargs)
             finally:
                 the_time = (time.time() - before) * 1000
-                t_calls[key] += the_time
-                n_calls[key] += 1
+                t_calls[key].append(the_time)
         return decorator
     return factory
 
@@ -114,15 +109,14 @@ def call_send(_user_id, _receiver_id):
 
 def format_times():
     for key in ALL_API_KEYS:
-        if n_calls[key] == 0:
+        if not len(t_calls[key]):
             continue
 
-        calls = n_calls[key]
-        avg = t_calls[key] / n_calls[key]
-        print(f"{key}: {calls}, avg. time {avg:.2f}ms")
+        avg = sum(t_calls[key]) / len(t_calls[key])
+        print(f"{key}: {len(t_calls[key])}, avg. time {avg:.2f}ms")
 
-    print()
 
+test_start = time.time()
 
 for _ in range(N_RUNS):
     try:
@@ -142,11 +136,12 @@ for _ in range(N_RUNS):
                 receiver_id = receiver_ids[0]
                 call_send(user, receiver_id)
 
-            format_times()
-
     except Exception as e:
         print(f"ERROR: {str(e)}")
         print(traceback.format_exc())
         time.sleep(2)
     except KeyboardInterrupt:
         break
+
+test_elapsed = time.time() - test_start
+format_times()
