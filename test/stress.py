@@ -168,7 +168,8 @@ def format_times(elapsed):
     for prefix, key in [
         ("groups/sec", ApiKeys.GROUPS),
         ("histories/sec", ApiKeys.HISTORIES),
-        ("send/sec", ApiKeys.SEND)
+        ("send/sec", ApiKeys.SEND),
+        ("stats/sec", ApiKeys.STATS),
     ]:
         calls_per_second = 1000 / np.median(t_calls[key])
         print(f"{prefix} \t {calls_per_second:.2f}".expandtabs(15))
