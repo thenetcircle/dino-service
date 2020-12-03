@@ -31,9 +31,6 @@ def call_groups(_user_id):
         headers=HEADERS
     ).json()
 
-    global n_groups
-    n_groups += len(r)
-
     return r
 
 
