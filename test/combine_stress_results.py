@@ -1,5 +1,5 @@
 import sys
-
+import datetime
 import numpy as np
 
 
@@ -25,7 +25,8 @@ elapsed_time = 0
 
 
 def format_times(elapsed):
-    print(f"time elapsed: {elapsed:.2f}s")
+    elapsed = str(datetime.timedelta(seconds=elapsed))
+    print(f"time elapsed: {elapsed}")
     print()
 
     for key in ALL_API_KEYS:
