@@ -25,8 +25,8 @@ elapsed_time = 0
 n_scripts = len(sys.argv[1:])
 
 
-def format_times(elapsed):
-    elapsed = str(datetime.timedelta(seconds=int(elapsed)))
+def format_times(elapsed_float):
+    elapsed = str(datetime.timedelta(seconds=int(elapsed_float)))
     print(f"time elapsed: {elapsed}")
     print()
 
@@ -65,10 +65,15 @@ def format_times(elapsed):
     ]:
         calls_per_second = int((1000 / np.median(t_calls[key])) * n_scripts)
         total_calls_per_second += calls_per_second
-        print(f"{prefix} \t {calls_per_second}".expandtabs(20))
+        print(f"{prefix} \t {calls_per_second} (median)".expandtabs(20))
+
+    total_calls = 0
+    for all_calls in t_calls.values():
+        total_calls += all_calls
 
     print()
-    print(f"total API calls per second: {total_calls_per_second}")
+    print(f"total median API calls per second: {total_calls_per_second}")
+    print(f"total API calls per second: {int(total_calls / elapsed_float)}")
 
 
 for filename in sys.argv[1:]:
