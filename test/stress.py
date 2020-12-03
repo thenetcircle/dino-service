@@ -40,6 +40,7 @@ t_calls = {
 }
 n_groups = 0
 n_messages = 0
+session = requests.Session()
 
 
 class Endpoints:
@@ -72,7 +73,7 @@ def timeit(key: str):
 
 @timeit(ApiKeys.GROUPS)
 def call_groups(_user_id):
-    r = requests.post(
+    r = session.post(
         url=Endpoints.GROUPS.format(
             host=BASE_URL,
             user_id=_user_id
@@ -95,7 +96,7 @@ def call_groups(_user_id):
 
 @timeit(ApiKeys.HISTORIES)
 def call_histories(_group_id, _user_id):
-    r = requests.post(
+    r = session.post(
         url=Endpoints.HISTORIES.format(
             host=BASE_URL,
             group_id=_group_id,
@@ -117,7 +118,7 @@ def call_histories(_group_id, _user_id):
 
 @timeit(ApiKeys.SEND)
 def call_send(_user_id, _receiver_id):
-    requests.post(
+    session.post(
         url=Endpoints.SEND.format(
             host=BASE_URL,
             user_id=_user_id
@@ -133,7 +134,7 @@ def call_send(_user_id, _receiver_id):
 
 @timeit(ApiKeys.STATS)
 def call_user_stats(_user_id):
-    requests.post(
+    session.post(
         url=Endpoints.STATS.format(
             host=BASE_URL,
             user_id=_user_id
