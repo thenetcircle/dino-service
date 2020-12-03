@@ -61,8 +61,8 @@ def timeit(key: str):
             try:
                 return view_func(*args, **kwargs)
             except Exception as e:
-                print(f"could not call api: {str(e)}")
-                print(traceback.format_exc(e))
+                print(f"could not call api: {e}")
+                print(traceback.format_exc(sys.exc_info()))
                 return None
             finally:
                 the_time = (time.time() - before) * 1000
@@ -113,12 +113,7 @@ def call_histories(_group_id, _user_id):
     r.close()
 
     global n_messages
-
-    try:
-        n_messages += len(json["messages"])
-    except KeyError as e2:
-        print(json)
-        raise e2
+    n_messages += len(json["messages"])
 
 
 @timeit(ApiKeys.SEND)
@@ -234,7 +229,6 @@ for i in range(N_RUNS):
     except Exception as e:
         print(f"ERROR: {str(e)}")
         print(traceback.format_exc())
-        time.sleep(2)
     except KeyboardInterrupt:
         break
 
