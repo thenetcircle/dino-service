@@ -113,7 +113,12 @@ def call_histories(_group_id, _user_id):
     r.close()
 
     global n_messages
-    n_messages += len(json["messages"])
+
+    try:
+        n_messages += len(json["messages"])
+    except KeyError as e2:
+        print(json)
+        raise e2
 
 
 @timeit(ApiKeys.SEND)
