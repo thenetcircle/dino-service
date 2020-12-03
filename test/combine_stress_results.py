@@ -65,7 +65,7 @@ def format_times(elapsed):
     ]:
         calls_per_second = int((1000 / np.median(t_calls[key])) * n_scripts)
         total_calls_per_second += calls_per_second
-        print(f"{prefix} \t {calls_per_second:.2f}".expandtabs(20))
+        print(f"{prefix} \t {calls_per_second}".expandtabs(20))
 
     print()
     print(f"total API calls per second: {total_calls_per_second:.2f}")
