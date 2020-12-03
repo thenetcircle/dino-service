@@ -26,7 +26,7 @@ n_scripts = len(sys.argv[1:])
 
 
 def format_times(elapsed):
-    elapsed = str(datetime.timedelta(seconds=elapsed))
+    elapsed = str(datetime.timedelta(seconds=int(elapsed)))
     print(f"time elapsed: {elapsed}")
     print()
 
