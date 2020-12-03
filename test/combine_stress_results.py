@@ -69,7 +69,7 @@ def format_times(elapsed_float):
 
     total_calls = 0
     for all_calls in t_calls.values():
-        total_calls += all_calls
+        total_calls += len(all_calls)
 
     print()
     print(f"total median API calls per second: {total_calls_per_second}")
