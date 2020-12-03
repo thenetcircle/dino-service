@@ -65,6 +65,12 @@ def format_times(elapsed_float):
         api_calls_per_second = int(len(t_calls[key]) / elapsed_float)
         print(f"{prefix} \t {api_calls_per_second}".expandtabs(20))
 
+    total_calls = 0
+    for all_calls in t_calls.values():
+        total_calls += len(all_calls)
+
+    print()
+    print(f"total API calls per second by scripts: {int(total_calls / elapsed_float)}")
     print()
 
     for prefix, key in [
@@ -75,13 +81,6 @@ def format_times(elapsed_float):
     ]:
         calls_per_second = int((1000 / np.median(t_calls[key])) * n_scripts)
         print(f"theoretical max {prefix} if only calling this API: \t {calls_per_second})".expandtabs(20))
-
-    total_calls = 0
-    for all_calls in t_calls.values():
-        total_calls += len(all_calls)
-
-    print()
-    print(f"total API calls per second by scripts: {int(total_calls / elapsed_float)}")
 
 
 for filename in sys.argv[1:]:
