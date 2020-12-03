@@ -22,6 +22,7 @@ t_calls = {
 n_groups = 0
 n_messages = 0
 elapsed_time = 0
+n_scripts = len(sys.argv[1:])
 
 
 def format_times(elapsed):
@@ -63,7 +64,7 @@ def format_times(elapsed):
         ("stats/sec", ApiKeys.STATS),
     ]:
         calls_per_second = 1000 / np.median(t_calls[key])
-        total_calls_per_second += calls_per_second
+        total_calls_per_second += calls_per_second * n_scripts
         print(f"{prefix} \t {calls_per_second:.2f}".expandtabs(20))
 
     print()
