@@ -37,12 +37,12 @@ class MqttPublisher(IClientPublisher):
             # 'receive_maximum' is defined as: "The Client uses this value to limit the number
             # of QoS 1 and QoS 2 publications that it is willing to process concurrently."
             #
-            # default is 2 ** 16 = 65536, which was reached during stress testing, but
+            # default is 2**16-1 = 65535, which was reached during stress testing, but
             # unfortunately we can't increase it because gmqtt builds a struct of this value,
             # and the format is 'H', which can't handle more than 65k:
             #
             #   struct.error: 'H' format requires 0 <= number <= 65535
-            receive_maximum=2 ** 16,
+            receive_maximum=2 ** 16 - 1,
         )
         self.set_auth_credentials(env, client_id)
 
