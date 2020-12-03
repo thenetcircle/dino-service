@@ -190,6 +190,7 @@ def format_times(elapsed):
 
 
 test_start = time.time()
+groups_per_user = list()
 
 for i in range(N_RUNS):
     try:
@@ -200,9 +201,9 @@ for i in range(N_RUNS):
             continue
 
         if "detail" not in groups:
-            # for _ in range(max(5, min(5, len(groups)))):
+            groups = random.choices(groups, 5)
+
             for group in groups:
-                # group = random.choice(groups)
                 call_histories(group["group"]["group_id"], user)
 
                 users = [user["user_id"] for user in group["group"]["users"]]
