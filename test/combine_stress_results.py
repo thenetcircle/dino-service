@@ -68,7 +68,7 @@ def format_times(elapsed):
         print(f"{prefix} \t {calls_per_second}".expandtabs(20))
 
     print()
-    print(f"total API calls per second: {total_calls_per_second:.2f}")
+    print(f"total API calls per second: {total_calls_per_second}")
 
 
 for filename in sys.argv[1:]:
