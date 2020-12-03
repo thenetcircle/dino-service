@@ -56,7 +56,17 @@ def format_times(elapsed_float):
     print(f"number of messages: {n_messages}")
     print()
 
-    total_calls_per_second = 0
+    for prefix, key in [
+        ("groups/sec", ApiKeys.GROUPS),
+        ("histories/sec", ApiKeys.HISTORIES),
+        ("send/sec", ApiKeys.SEND),
+        ("stats/sec", ApiKeys.STATS),
+    ]:
+        api_calls_per_second = int(len(t_calls[key]) / elapsed_float)
+        print(f"{prefix} \t {api_calls_per_second}".expandtabs(20))
+
+    print()
+
     for prefix, key in [
         ("groups/sec", ApiKeys.GROUPS),
         ("histories/sec", ApiKeys.HISTORIES),
@@ -64,10 +74,7 @@ def format_times(elapsed_float):
         ("stats/sec", ApiKeys.STATS),
     ]:
         calls_per_second = int((1000 / np.median(t_calls[key])) * n_scripts)
-        total_calls_per_second += calls_per_second
-
-        api_calls_per_second = int(len(t_calls[key]) / elapsed_float)
-        print(f"{prefix} \t {api_calls_per_second} (theoretical max: {calls_per_second})".expandtabs(20))
+        print(f"theoretical max {prefix} if only calling this API: \t {calls_per_second})".expandtabs(20))
 
     total_calls = 0
     for all_calls in t_calls.values():
