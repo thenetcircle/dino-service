@@ -195,10 +195,11 @@ for _ in range(N_RUNS):
     try:
         user = random.choice(USERS)
         groups = call_groups(user)
-        if groups is None:
+        if groups is None or not len(groups):
+            print(f"no groups for user {user}")
             continue
 
-        if len(groups) and "detail" not in groups:
+        if "detail" not in groups:
             for _ in range(max(5, min(5, len(groups)))):
                 group = random.choice(groups)
                 call_histories(group["group"]["group_id"], user)
@@ -206,11 +207,14 @@ for _ in range(N_RUNS):
                 users = [user["user_id"] for user in group["group"]["users"]]
                 receiver_ids = [int(a_user) for a_user in users if int(a_user) != user]
                 if not len(receiver_ids):
+                    print(f"no receivers in group {group['group']['group_id']} for user {user}, users was {groups['group']['users']}")
                     continue
 
                 receiver_id = receiver_ids[0]
                 call_send(user, receiver_id)
                 call_user_stats(user)
+        else:
+            print(f"problem in response: {groups}")
 
     except Exception as e:
         print(f"ERROR: {str(e)}")
