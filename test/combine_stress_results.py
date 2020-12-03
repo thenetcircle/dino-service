@@ -63,8 +63,8 @@ def format_times(elapsed):
         ("send/sec", ApiKeys.SEND),
         ("stats/sec", ApiKeys.STATS),
     ]:
-        calls_per_second = 1000 / np.median(t_calls[key])
-        total_calls_per_second += calls_per_second * n_scripts
+        calls_per_second = (1000 / np.median(t_calls[key])) * n_scripts
+        total_calls_per_second += calls_per_second
         print(f"{prefix} \t {calls_per_second:.2f}".expandtabs(20))
 
     print()
