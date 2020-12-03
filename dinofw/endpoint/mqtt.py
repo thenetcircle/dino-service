@@ -32,7 +32,13 @@ class MqttPublisher(IClientPublisher):
 
         self.mqtt = MQTTClient(
             client_id=client_id,
-            session_expiry_interval=60
+            session_expiry_interval=60,
+
+            # 'receive_maximum' is defined as: "The Client uses this value to limit the number
+            # of QoS 1 and QoS 2 publications that it is willing to process concurrently."
+            #
+            # default is 2 ** 16 = 65536, reached during stress testing
+            receive_maximum=2 ** 19,
         )
         self.set_auth_credentials(env, client_id)
 
@@ -62,7 +68,7 @@ class MqttPublisher(IClientPublisher):
         hashed_pwd = str(bcrypt.hashpw(bytes(password, "utf-8"), salt), "utf-8")
 
         # vernemq only supports 2a, not 2b which python's bcrypt
-        # produced (hashes are exactly the same regardless, it's
+        # produces (hashes are exactly the same regardless, it's
         # a relic from an old OpenBSD bug):
         #
         #   The version $2b$ is not "better" or "stronger" than $2a$.
