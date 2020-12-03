@@ -201,7 +201,7 @@ for i in range(N_RUNS):
             continue
 
         if "detail" not in groups:
-            groups = random.choices(groups, 5)
+            groups = random.choices(groups, k=5)
 
             for group in groups:
                 call_histories(group["group"]["group_id"], user)
