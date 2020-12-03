@@ -191,17 +191,18 @@ def format_times(elapsed):
 
 test_start = time.time()
 
-for _ in range(N_RUNS):
+for i in range(N_RUNS):
     try:
-        user = random.choice(USERS)
+        user = USERS[i]
         groups = call_groups(user)
         if groups is None or not len(groups):
             print(f"no groups for user {user}")
             continue
 
         if "detail" not in groups:
-            for _ in range(max(5, min(5, len(groups)))):
-                group = random.choice(groups)
+            # for _ in range(max(5, min(5, len(groups)))):
+            for group in groups:
+                # group = random.choice(groups)
                 call_histories(group["group"]["group_id"], user)
 
                 users = [user["user_id"] for user in group["group"]["users"]]
