@@ -61,6 +61,7 @@ def timeit(key: str):
                 return view_func(*args, **kwargs)
             except Exception as e:
                 print(f"could not call api: {str(e)}")
+                print(traceback.format_exc(e))
                 return None
             finally:
                 the_time = (time.time() - before) * 1000
@@ -81,12 +82,15 @@ def call_groups(_user_id):
             "per_page": 50,
         },
         headers=HEADERS
-    ).json()
+    )
+
+    json = r.json()
+    r.close()
 
     global n_groups
-    n_groups += len(r)
+    n_groups += len(json)
 
-    return r
+    return json
 
 
 @timeit(ApiKeys.HISTORIES)
@@ -102,10 +106,13 @@ def call_histories(_group_id, _user_id):
             "per_page": 50,
         },
         headers=HEADERS
-    ).json()
+    )
+
+    json = r.json()
+    r.close()
 
     global n_messages
-    n_messages += len(r["messages"])
+    n_messages += len(json["messages"])
 
 
 @timeit(ApiKeys.SEND)
@@ -121,7 +128,7 @@ def call_send(_user_id, _receiver_id):
             "message_payload": "{\"content\":\"stress test message\"}"
         },
         headers=HEADERS
-    )
+    ).close()
 
 
 @timeit(ApiKeys.STATS)
@@ -137,7 +144,7 @@ def call_user_stats(_user_id):
             "hidden": False
         },
         headers=HEADERS
-    )
+    ).close()
 
 
 def format_times(elapsed):
