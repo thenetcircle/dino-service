@@ -20,6 +20,7 @@ from dinofw.utils.config import ConfigKeys
 class MqttPublisher(IClientPublisher):
     def __init__(self, env):
         self.env = env
+        self.environment = env.config.get(ConfigKeys.ENVIRONMENT, default="test")
         self.mqtt_host = env.config.get(ConfigKeys.HOST, domain=ConfigKeys.MQTT)
         self.mqtt_port = env.config.get(ConfigKeys.PORT, domain=ConfigKeys.MQTT)
         self.mqtt_ttl = int(env.config.get(ConfigKeys.TTL, domain=ConfigKeys.MQTT))
@@ -120,7 +121,7 @@ class MqttPublisher(IClientPublisher):
         }
         try:
             self.mqtt.publish(
-                message_or_topic=str(user_id),
+                message_or_topic=f"{self.environment}-{user_id}",
                 payload=data,
                 qos=qos,
                 message_expiry_interval=self.mqtt_ttl
