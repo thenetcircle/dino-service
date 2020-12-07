@@ -26,6 +26,9 @@ class MqttPublisher(IClientPublisher):
         self.mqtt_ttl = int(env.config.get(ConfigKeys.TTL, domain=ConfigKeys.MQTT))
         self.logger = logging.getLogger()
 
+        if "," in self.mqtt_host:
+            self.mqtt_host = self.mqtt_host.split(",")[0]
+
         # needs to be unique for each worker and node
         pid = os.getpid()
         client_id = socket.gethostname().split(".")[0]
