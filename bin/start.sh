@@ -32,18 +32,21 @@ if [[ ${N_WORKERS} -lt 1 || ${N_WORKERS} -gt 40 ]]; then
 fi
 
 if [[ ! -d ${LOG_DIR} ]]; then
-    if ! [[ mkdir -p ${LOG_DIR} ]]; then
+    if ! mkdir -p ${LOG_DIR}; then
         echo "error: could not create missing log directory '$LOG_DIR'"
         exit 1
     fi
 fi
 
+# functions are not exported to subshells so need to re-evaluate them from install path
 source ~/.bashrc
-if ! [[ which conda >/dev/null ]]; then
+eval "$(conda shell.bash hook)"
+
+if ! which conda >/dev/null; then
     echo "error: conda executable not found"
     exit 1
 fi
-if ! [[ conda activate ${CONDA_ENV} ]]; then
+if ! conda activate ${CONDA_ENV}; then
     echo "error: could not activate conda environment '$CONDA_ENV'"
     exit 1
 fi
