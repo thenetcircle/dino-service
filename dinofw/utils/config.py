@@ -11,8 +11,10 @@ class MessageTypes:
     NO_THANKS = 1
     NO_THANKS_HIDE = 2
     IMAGE = 3
-    VIDEO = 4  # TODO: example for video, not decided
-    ACTION = 5  # maybe negative or very large, to distinguish from normal messages
+    GREETER_MEETER_AUTO = 4
+    GREETER_MEETER_MANUAL = 5
+
+    ACTION = 100
 
 
 class DefaultValues:
