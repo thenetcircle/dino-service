@@ -51,6 +51,7 @@ def timeit(_logger, method: str, tag: str):
                         _logger.debug(f"{method} {tag}... {the_time:.2f}ms {relevant_args}")
 
                     if environ.env.stats is not None:
+                        _logger.debug(f"calling statsd with tag '{stats_tag}' and time {the_time}")
                         environ.env.stats.timing('api.' + stats_tag, the_time)
         return decorator
     return factory
