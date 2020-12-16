@@ -42,7 +42,7 @@ class StatsdService(IStats):
             import statsd
 
             port = conf.get(ConfigKeys.PORT)
-            prefix = "dino"
+            prefix = "dinoms"
             if ConfigKeys.PREFIX in conf:
                 prefix = conf.get(ConfigKeys.PREFIX)
             if ConfigKeys.INCLUDE_HOST_NAME in conf:
