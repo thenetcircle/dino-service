@@ -17,7 +17,7 @@ def init_db(env, engine=None):
         engine = create_engine(
             database_uri,
             connect_args=connection_args,
-            echo=True,
+            echo=False,
         )
 
     env.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
