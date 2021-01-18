@@ -338,8 +338,8 @@ async def get_attachments_in_group_for_user(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.post("/groups/{user_id}/actions", response_model=Message)
-@timeit(logger, "POST", "/groups/{user_id}/actions")
+@router.post("/users/{user_id}/actions", response_model=Message)
+@timeit(logger, "POST", "/users/{user_id}/actions")
 async def create_action_log(
     user_id: int, query: CreateActionLogQuery, db: Session = Depends(get_db)
 ) -> None:
