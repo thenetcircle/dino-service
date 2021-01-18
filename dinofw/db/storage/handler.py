@@ -443,28 +443,23 @@ class CassandraHandler:
         self._update_all_messages_in_group(group_id=group_id, callback=callback)
 
     # noinspection PyMethodMayBeStatic
-    def create_action_logs(
+    def create_action_log(
             self,
             group_id: str,
             query: CreateActionLogQuery
-    ) -> List[MessageBase]:
-        logs = list()
-
+    ) -> MessageBase:
         action_time = utcnow_dt()
 
-        for user_id in query.user_ids:
-            log = MessageModel.create(
-                group_id=group_id,
-                user_id=user_id,
-                created_at=action_time,
-                message_type=query.action_type,
-                message_payload=query.payload,
-                message_id=uuid(),
-            )
+        log = MessageModel.create(
+            group_id=group_id,
+            user_id=query.user_id,
+            created_at=action_time,
+            message_type=MessageTypes.ACTION,
+            message_payload=query.payload,
+            message_id=uuid(),
+        )
 
-            logs.append(CassandraHandler.message_base_from_entity(log))
-
-        return logs
+        return CassandraHandler.message_base_from_entity(log)
 
     def delete_messages_in_group_for_user(
         self, group_id: str, user_id: int, query: MessageQuery

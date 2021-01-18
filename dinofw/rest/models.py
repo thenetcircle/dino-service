@@ -56,8 +56,7 @@ class MessageQuery(PaginationQuery, AdminQuery):
 
 
 class CreateActionLogQuery(AdminQuery):
-    user_ids: List[int]
-    action_type: int
+    user_id: int
     payload: Optional[str]
 
 

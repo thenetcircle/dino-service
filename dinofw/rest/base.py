@@ -81,14 +81,14 @@ class BaseResource(ABC):
         del user_ids[user_id]
         self.env.cache.increase_unread_in_group_for(group_id, user_ids)
 
-    def _user_sends_action_logs(
-        self, group_id: str, messages: List[MessageBase], db
+    def _user_sends_action_log(
+        self, group_id: str, message: MessageBase, db
     ):
         # cassandra DT is different from python DT
         now = utcnow_dt()
 
         self.env.db.update_group_new_message(
-            messages[-1],  # just update with the last one created
+            message,
             now,
             db,
             wakeup_users=False  # not for action logs
@@ -97,8 +97,7 @@ class BaseResource(ABC):
         self.env.db.set_last_updated_at_for_all_in_group(group_id, db)
         user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
 
-        for message in messages:
-            self.env.client_publisher.message(message, user_ids)
+        self.env.client_publisher.message(message, user_ids)
 
     def _user_sends_an_attachment(self, group_id: str, attachment: MessageBase, db):
         # cassandra DT is different from python DT
