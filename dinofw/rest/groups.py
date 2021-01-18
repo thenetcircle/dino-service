@@ -22,7 +22,6 @@ from dinofw.rest.models import UpdateUserGroupStats
 from dinofw.rest.models import UserGroupStats
 from dinofw.utils import utcnow_dt
 from dinofw.utils import utcnow_ts
-from dinofw.utils import users_to_group_id
 from dinofw.utils.decorators import time_method
 from dinofw.utils.exceptions import NoSuchGroupException
 

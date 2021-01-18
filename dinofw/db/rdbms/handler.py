@@ -24,8 +24,10 @@ from dinofw.rest.models import GroupQuery
 from dinofw.rest.models import GroupUpdatesQuery
 from dinofw.rest.models import UpdateGroupQuery
 from dinofw.rest.models import UpdateUserGroupStats
+from dinofw.utils import group_id_to_users
 from dinofw.utils import split_into_chunks
 from dinofw.utils import trim_micros
+from dinofw.utils import users_to_group_id
 from dinofw.utils import utcnow_dt
 from dinofw.utils import utcnow_ts
 from dinofw.utils.config import GroupTypes
