@@ -210,7 +210,9 @@ class GroupResource(BaseResource):
         if query.group_id is not None:
             group_id = query.group_id
         elif query.receiver_id is not None:
-            group_id = users_to_group_id(user_id, query.receiver_id)
+            group_id = await self._get_or_create_group_for_1v1(
+                user_id, query.receiver_id, db
+            )
         else:
             raise ValueError("either receiver_id or group_id is required in CreateActionLogQuery")
 

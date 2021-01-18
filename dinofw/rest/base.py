@@ -4,6 +4,8 @@ from datetime import datetime as dt
 from typing import Dict
 from typing import List
 
+from sqlalchemy.orm import Session
+
 import arrow
 
 from dinofw.db.rdbms.schemas import GroupBase
@@ -20,6 +22,7 @@ from dinofw.rest.models import UserGroupStats
 from dinofw.utils import utcnow_dt
 from dinofw.utils import utcnow_ts
 from dinofw.utils.decorators import time_method
+from dinofw.utils.exceptions import NoSuchGroupException
 
 logger = logging.getLogger(__name__)
 
@@ -106,6 +109,15 @@ class BaseResource(ABC):
         self.env.db.update_group_new_message(attachment, now, db)
         user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
         self.env.client_publisher.attachment(attachment, user_ids)
+
+    async def _get_or_create_group_for_1v1(
+        self, user_id: int, receiver_id: int, db: Session
+    ) -> str:
+        try:
+            return self.env.db.get_group_id_for_1to1(user_id, receiver_id, db)
+        except NoSuchGroupException:
+            group = self.env.db.create_group_for_1to1(user_id, receiver_id, db)
+            return group.group_id
 
     @staticmethod
     def need_to_update_stats_in_group(user_stats: UserGroupStatsBase, last_message_time: dt):

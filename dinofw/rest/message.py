@@ -25,15 +25,6 @@ class MessageResource(BaseResource):
 
         return MessageResource.message_base_to_message(message)
 
-    async def _get_or_create_group_for_1v1(
-        self, user_id: int, receiver_id: int, db: Session
-    ) -> str:
-        try:
-            return self.env.db.get_group_id_for_1to1(user_id, receiver_id, db)
-        except NoSuchGroupException:
-            group = self.env.db.create_group_for_1to1(user_id, receiver_id, db)
-            return group.group_id
-
     async def send_message_to_user(
         self, user_id: int, query: SendMessageQuery, db: Session
     ) -> Message:
