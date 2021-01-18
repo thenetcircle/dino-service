@@ -22,6 +22,7 @@ from dinofw.rest.models import UpdateUserGroupStats
 from dinofw.rest.models import UserGroupStats
 from dinofw.utils import utcnow_dt
 from dinofw.utils import utcnow_ts
+from dinofw.utils import users_to_group_id
 from dinofw.utils.decorators import time_method
 from dinofw.utils.exceptions import NoSuchGroupException
 
@@ -202,9 +203,18 @@ class GroupResource(BaseResource):
         self.env.db.update_user_group_stats(group_id, user_id, query, db)
 
     async def create_action_log(
-        self, group_id: str, query: CreateActionLogQuery, db: Session
+        self, user_id: int, query: CreateActionLogQuery, db: Session
     ) -> Message:
-        log = self.env.storage.create_action_log(group_id, query)
+        # if it's an e.g. friend request, they might not have a
+        # group from before, so the group_id is unknown
+        if query.group_id is not None:
+            group_id = query.group_id
+        elif query.receiver_id is not None:
+            group_id = users_to_group_id(user_id, query.receiver_id)
+        else:
+            raise ValueError("either receiver_id or group_id is required in CreateActionLogQuery")
+
+        log = self.env.storage.create_action_log(user_id, group_id, query)
         self._user_sends_action_log(group_id, log, db)
 
         return GroupResource.message_base_to_message(log)

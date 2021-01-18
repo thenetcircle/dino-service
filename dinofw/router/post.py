@@ -338,10 +338,10 @@ async def get_attachments_in_group_for_user(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.post("/groups/{group_id}/actions", response_model=Message)
-@timeit(logger, "POST", "/groups/{group_id}/actions")
+@router.post("/groups/{user_id}/actions", response_model=Message)
+@timeit(logger, "POST", "/groups/{user_id}/actions")
 async def create_action_log(
-    group_id: str, query: CreateActionLogQuery, db: Session = Depends(get_db)
+    user_id: int, query: CreateActionLogQuery, db: Session = Depends(get_db)
 ) -> None:
     """
     Create one or more action logs in group.
@@ -350,7 +350,7 @@ async def create_action_log(
     * `250`: if an unknown error occurred.
     """
     try:
-        return await environ.env.rest.group.create_action_log(group_id, query, db)
+        return await environ.env.rest.group.create_action_log(user_id, query, db)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 

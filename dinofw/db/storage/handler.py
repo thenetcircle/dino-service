@@ -445,6 +445,7 @@ class CassandraHandler:
     # noinspection PyMethodMayBeStatic
     def create_action_log(
             self,
+            user_id: int,
             group_id: str,
             query: CreateActionLogQuery
     ) -> MessageBase:
@@ -452,7 +453,7 @@ class CassandraHandler:
 
         log = MessageModel.create(
             group_id=group_id,
-            user_id=query.user_id,
+            user_id=user_id,
             created_at=action_time,
             message_type=MessageTypes.ACTION,
             message_payload=query.payload,

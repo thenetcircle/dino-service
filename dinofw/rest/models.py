@@ -55,9 +55,10 @@ class MessageQuery(PaginationQuery, AdminQuery):
     pass
 
 
-class CreateActionLogQuery(AdminQuery):
-    user_id: int
+class CreateActionLogQuery(AbstractQuery):
     payload: Optional[str]
+    group_id: Optional[str]
+    receiver_id: Optional[int]
 
 
 class SearchQuery(PaginationQuery):
