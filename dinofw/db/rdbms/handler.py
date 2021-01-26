@@ -124,14 +124,15 @@ class RelationalHandler:
         inner join
             user_group_stats u on u.group_id = g.group_id
         where
-            u.user_id = 1234 and
+            u.user_id = 5000441 and
             u.hide = false and
-            u.delete_before < g.last_message_time and
-            g.last_message_time <= until
+            u.delete_before <= g.updated_at and
+            g.last_message_time < now() and
+            g.group_id = '9be68f8c-6610-454f-815c-de8a92fc75e2'
         order by
             u.pin desc,
             greatest(u.highlight_time, g.last_message_time) desc
-        limit per_page
+        limit 10;
         """
         @time_method(logger, "get_groups_for_user(): query groups")
         def query_groups():
@@ -974,11 +975,8 @@ class RelationalHandler:
         db.commit()
 
     def create_group(
-        self, owner_id: int, query: CreateGroupQuery, db: Session
+        self, owner_id: int, query: CreateGroupQuery, utc_now, db: Session
     ) -> GroupBase:
-        utc_now = arrow.utcnow()
-        now = trim_micros(utc_now.datetime)
-
         # can't be exactly the same, because when listing groups for a
         # user, any group with only one message would not be included,
         # since we're doing a filter on delete_before < last_message_time,
@@ -986,6 +984,7 @@ class RelationalHandler:
         # "delete_before = join_time = created_at"; if we set
         # last_message_time to this time as well the filter won't include
         # the group
+        now_no_micros = trim_micros(utc_now)
         created_at = trim_micros(utc_now.shift(seconds=-1).datetime)
 
         if query.group_type == GroupTypes.ONE_TO_ONE:
@@ -997,8 +996,8 @@ class RelationalHandler:
             group_id=group_id,
             name=query.group_name,
             group_type=query.group_type,
-            last_message_time=now,
-            first_message_time=now,
+            last_message_time=now_no_micros,
+            first_message_time=now_no_micros,
             updated_at=created_at,
             created_at=created_at,
             owner_id=owner_id,

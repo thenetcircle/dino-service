@@ -223,11 +223,10 @@ class GroupResource(BaseResource):
     async def create_new_group(
         self, user_id: int, query: CreateGroupQuery, db: Session
     ) -> Group:
-        group_base = self.env.db.create_group(user_id, query, db)
-
         now = utcnow_dt()
         now_ts = CreateGroupQuery.to_ts(now)
 
+        group_base = self.env.db.create_group(user_id, query, now, db)
         users = {user_id: float(now_ts)}
 
         if query.users is not None and query.users:

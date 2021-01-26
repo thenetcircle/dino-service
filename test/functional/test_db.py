@@ -2,6 +2,7 @@ import arrow
 import time
 
 from dinofw.rest.models import CreateGroupQuery
+from dinofw.utils import utcnow_dt
 from dinofw.utils.config import GroupTypes
 from test.base import BaseTest
 from test.functional.base_db import BaseDatabaseTest
@@ -63,5 +64,6 @@ class TestDatabaseQueries(BaseDatabaseTest):
                 group_type=GroupTypes.GROUP,
             )
 
-            group_base = self.env.db.create_group(users[0], query, session)
+            now = utcnow_dt()
+            group_base = self.env.db.create_group(users[0], query, now, session)
             groups.append(group_base)
