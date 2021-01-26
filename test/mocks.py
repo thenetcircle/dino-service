@@ -403,10 +403,8 @@ class FakeDatabase:
             stat.last_read = the_time
             stat.highlight_time = the_time
 
-    def create_group(self, owner_id: int, query: CreateGroupQuery, _) -> GroupBase:
-        utc_now = arrow.utcnow()
-        now = trim_micros(utc_now.datetime)
-        created_at = trim_micros(utc_now.shift(seconds=-1).datetime)
+    def create_group(self, owner_id: int, query: CreateGroupQuery, now, _) -> GroupBase:
+        created_at = trim_micros(arrow.get(now).shift(seconds=-1).datetime)
 
         group = GroupBase(
             group_id=str(uuid()),

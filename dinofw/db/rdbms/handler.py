@@ -1007,7 +1007,10 @@ class RelationalHandler:
             description=query.description,
         )
 
-        for user_id in query.users:
+        user_ids = {owner_id}
+        user_ids.update(query.users)
+
+        for user_id in user_ids:
             self.env.cache.reset_count_group_types_for_user(user_id)
             user_stats = self._create_user_stats(
                 group_entity.group_id, user_id, created_at

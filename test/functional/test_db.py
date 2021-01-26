@@ -38,11 +38,10 @@ class TestDatabaseQueries(BaseDatabaseTest):
         receivers = [51, 52, 53, 54, 55]
 
         groups = dict()
-        now = utcnow_dt()
 
         for receiver_id in receivers:
             time.sleep(0.01)
-            group = self.env.db.create_group_for_1to1(user_id, receiver_id, now, session)
+            group = self.env.db.create_group_for_1to1(user_id, receiver_id, session)
             groups[group.group_id] = group.created_at
 
         group_and_created_at = self.env.db.get_group_ids_and_created_at_for_user(user_id, session)
