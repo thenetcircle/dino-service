@@ -500,12 +500,13 @@ class RelationalHandler:
     def create_group_for_1to1(self, user_a: int, user_b: int, db: Session) -> GroupBase:
         users = sorted([user_a, user_b])
         group_name = ",".join([str(user_id) for user_id in users])
+        now = utcnow_dt()
 
         query = CreateGroupQuery(
             group_name=group_name, group_type=GroupTypes.ONE_TO_ONE, users=users
         )
 
-        return self.create_group(user_a, query, db)
+        return self.create_group(user_a, query, now, db)
 
     def get_user_ids_and_join_time_in_groups(self, group_ids: List[str], db: Session) -> dict:
         group_and_users: Dict[str, Dict[int, float]] = \
@@ -985,8 +986,7 @@ class RelationalHandler:
         # "delete_before = join_time = created_at"; if we set
         # last_message_time to this time as well the filter won't include
         # the group
-        now_no_micros = trim_micros(utc_now)
-        created_at = trim_micros(utc_now.shift(seconds=-1).datetime)
+        created_at = trim_micros(arrow.get(utc_now).shift(seconds=-1).datetime)
 
         if query.group_type == GroupTypes.ONE_TO_ONE:
             group_id = users_to_group_id(*query.users)
@@ -997,8 +997,8 @@ class RelationalHandler:
             group_id=group_id,
             name=query.group_name,
             group_type=query.group_type,
-            last_message_time=now_no_micros,
-            first_message_time=now_no_micros,
+            last_message_time=utc_now,
+            first_message_time=utc_now,
             updated_at=created_at,
             created_at=created_at,
             owner_id=owner_id,
