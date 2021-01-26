@@ -8,7 +8,7 @@ from starlette.background import BackgroundTask
 from starlette.responses import Response
 from starlette.status import HTTP_201_CREATED
 
-from dinofw.rest.models import Group
+from dinofw.rest.models import Group, JoinGroupQuery
 from dinofw.rest.models import UpdateGroupQuery
 from dinofw.rest.models import UpdateUserGroupStats
 from dinofw.utils import environ
@@ -144,10 +144,10 @@ async def edit_group_information(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.put("/groups/{group_id}/user/{user_id}/join")
-@timeit(logger, "PUT", "/groups/{group_id}/user/{user_id}/join")
+@router.put("/groups/{group_id}/join")
+@timeit(logger, "PUT", "/groups/{group_id}/join")
 async def join_group(
-    group_id: str, user_id: int, db: Session = Depends(get_db)
+    group_id: str, query: JoinGroupQuery, db: Session = Depends(get_db)
 ) -> None:
     """
     Join a group.
@@ -157,7 +157,7 @@ async def join_group(
     * `250`: if an unknown error occurred.
     """
     try:
-        return await environ.env.rest.group.join_group(group_id, user_id, db)
+        return await environ.env.rest.group.join_group(group_id, query, db)
     except NoSuchGroupException as e:
         log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
     except Exception as e:

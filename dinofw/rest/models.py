@@ -100,6 +100,10 @@ class GroupUpdatesQuery(GroupQuery):
     since: Optional[float]
 
 
+class JoinGroupQuery(AbstractQuery):
+    users: List[int]
+
+
 class UpdateGroupQuery(AbstractQuery):
     status: Optional[int]
     owner: Optional[int]

@@ -678,7 +678,7 @@ class FakePublisherHandler(IClientPublishHandler):
         pass
 
     def join(
-        self, group_id: str, user_ids: List[int], joiner_id: int, now: float
+        self, group_id: str, user_ids: List[int], joiner_ids: List[int], now: float
     ) -> None:
         pass
 

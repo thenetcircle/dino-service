@@ -194,7 +194,7 @@ class MqttPublishHandler(IClientPublishHandler):
         data = MqttPublishHandler.group_base_to_event(group_base, user_ids)
         self.send(user_ids, data)
 
-    def join(self, group_id: str, user_ids: List[int], joiner_id: int, now: float) -> None:
+    def join(self, group_id: str, user_ids: List[int], joiner_ids: List[int], now: float) -> None:
         data = MqttPublishHandler.create_simple_event(EventTypes.JOIN, group_id, now, joiner_id)
         self.send(user_ids, data)
 

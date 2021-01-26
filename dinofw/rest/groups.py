@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import AbstractQuery
+from dinofw.rest.models import AbstractQuery, JoinGroupQuery
 from dinofw.rest.models import CreateActionLogQuery
 from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import Group
@@ -258,22 +258,25 @@ class GroupResource(BaseResource):
 
         self.env.client_publisher.group_change(group, user_ids)
 
-    async def join_group(self, group_id: str, user_id: int, db: Session) -> None:
+    async def join_group(self, group_id: str, query: JoinGroupQuery, db: Session) -> None:
         now = utcnow_dt()
         now_ts = AbstractQuery.to_ts(now)
 
-        user_id_and_last_read = {user_id: float(now_ts)}
+        user_ids_and_last_read = {
+            user_id: float(now_ts)
+            for user_id in query.users
+        }
 
         self.env.db.set_group_updated_at(group_id, now, db)
         self.env.db.update_user_stats_on_join_or_create_group(
-            group_id, user_id_and_last_read, now, db
+            group_id, user_ids_and_last_read, now, db
         )
 
         user_ids_and_join_times = self.env.db.get_user_ids_and_join_time_in_group(
             group_id, db
         )
         user_ids_in_group = user_ids_and_join_times.keys()
-        self.env.client_publisher.join(group_id, user_ids_in_group, user_id, now_ts)
+        self.env.client_publisher.join(group_id, user_ids_in_group, query.users, now_ts)
 
     def leave_group(self, group_id: str, user_id: int, db: Session) -> None:
         now = utcnow_dt()

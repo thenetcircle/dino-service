@@ -2,7 +2,7 @@ import time
 
 from dinofw.rest.groups import GroupResource
 from dinofw.rest.message import MessageResource
-from dinofw.rest.models import CreateActionLogQuery, GroupInfoQuery
+from dinofw.rest.models import CreateActionLogQuery, GroupInfoQuery, JoinGroupQuery
 from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import Group
 from dinofw.rest.models import GroupUsers
@@ -178,9 +178,11 @@ class TestGroupResource(BaseTest):
         self.assertEqual(1, len(group_users.users))
         self.assertTrue(any((g.user_id == BaseTest.USER_ID for g in group_users.users)))
 
+        join_query = JoinGroupQuery(users=[BaseTest.OTHER_USER_ID])
+
         # other user joins it
         await self.group.join_group(
-            group.group_id, BaseTest.OTHER_USER_ID, None
+            group.group_id, join_query, None
         )
 
         # check the other user is now in the group as well

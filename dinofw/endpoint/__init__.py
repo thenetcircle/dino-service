@@ -49,7 +49,7 @@ class IClientPublishHandler(IPublishHandler, ABC):
         """pass"""
 
     @abstractmethod
-    def join(self, group_id: str, user_ids: List[int], joiner_id: int, now: float) -> None:
+    def join(self, group_id: str, user_ids: List[int], joiner_ids: List[int], now: float) -> None:
         """pass"""
 
     @abstractmethod
@@ -74,7 +74,13 @@ class IClientPublishHandler(IPublishHandler, ABC):
         return data
 
     @staticmethod
-    def create_simple_event(event_type: str, group_id: str, now: float, user_id: int = None) -> dict:
+    def create_simple_event(
+            event_type: str,
+            group_id: str,
+            now: float,
+            user_id: int = None,
+            user_ids: List[int] = None
+    ) -> dict:
         data = {
             "event_type": event_type,
             "created_at": now,
@@ -83,6 +89,8 @@ class IClientPublishHandler(IPublishHandler, ABC):
 
         if user_id is not None:
             data["user_id"] = user_id
+        if user_ids is not None:
+            data["user_ids"] = user_ids
 
         return data
 
