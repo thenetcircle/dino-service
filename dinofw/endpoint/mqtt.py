@@ -195,11 +195,11 @@ class MqttPublishHandler(IClientPublishHandler):
         self.send(user_ids, data)
 
     def join(self, group_id: str, user_ids: List[int], joiner_ids: List[int], now: float) -> None:
-        data = MqttPublishHandler.create_simple_event(EventTypes.JOIN, group_id, now, joiner_id)
+        data = MqttPublishHandler.create_simple_event(EventTypes.JOIN, group_id, now, user_ids=joiner_ids)
         self.send(user_ids, data)
 
     def leave(self, group_id: str, user_ids: List[int], leaver_id: int, now: float) -> None:
-        data = MqttPublishHandler.create_simple_event(EventTypes.LEAVE, group_id, now, leaver_id)
+        data = MqttPublishHandler.create_simple_event(EventTypes.LEAVE, group_id, now, user_id=leaver_id)
         self.send(user_ids, data)
 
     def send(self, user_ids, data, qos: int = 1):
