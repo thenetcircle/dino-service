@@ -637,7 +637,8 @@ class RelationalHandler:
             db.add(user_ids_to_stats[user_id])
 
         db.commit()
-        now_ts = utcnow_ts()
+
+        now_ts = AbstractQuery.to_ts(now)
 
         join_times = {
             user_id: GroupQuery.to_ts(stats.join_time)
