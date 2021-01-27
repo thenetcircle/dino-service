@@ -1,6 +1,7 @@
 import logging
 from typing import List
 
+from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 from dinofw.rest.base import BaseResource
@@ -81,9 +82,18 @@ class MessageResource(BaseResource):
     async def create_attachment(
         self, user_id: int, message_id: str, query: CreateAttachmentQuery, db: Session
     ) -> Message:
-        group_id = await self._get_or_create_group_for_1v1(
-            user_id, query.receiver_id, db
-        )
+        if query.group_id is None and query.receiver_id is None:
+            raise ValidationError("both group_id and receiver_id is empty")
+        elif query.group_id is not None and query.receiver_id is not None:
+            raise ValidationError("can't use both group_id AND receiver_id, choose one")
+
+        group_id = query.group_id
+
+        if group_id is None:
+            group_id = await self._get_or_create_group_for_1v1(
+                user_id, query.receiver_id, db
+            )
+
         attachment = self.env.storage.store_attachment(
             group_id, user_id, message_id, query
         )

@@ -125,6 +125,7 @@ class AttachmentQuery(AbstractQuery):
 class CreateAttachmentQuery(AttachmentQuery, OneToOneQuery):
     message_payload: str
     created_at: float
+    group_id: Optional[str]
 
 
 class UpdateUserGroupStats(AbstractQuery):
