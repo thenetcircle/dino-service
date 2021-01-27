@@ -11,7 +11,7 @@ from dinofw.rest.models import Message
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
 from dinofw.utils import utcnow_ts
-from dinofw.utils.exceptions import NoSuchGroupException
+from dinofw.utils.exceptions import NoSuchGroupException, QueryValidationError
 from dinofw.utils.exceptions import NoSuchUserException
 
 logger = logging.getLogger(__name__)
@@ -83,9 +83,9 @@ class MessageResource(BaseResource):
         self, user_id: int, message_id: str, query: CreateAttachmentQuery, db: Session
     ) -> Message:
         if query.group_id is None and query.receiver_id is None:
-            raise ValidationError("both group_id and receiver_id is empty")
+            raise QueryValidationError("both group_id and receiver_id is empty")
         elif query.group_id is not None and query.receiver_id is not None:
-            raise ValidationError("can't use both group_id AND receiver_id, choose one")
+            raise QueryValidationError("can't use both group_id AND receiver_id, choose one")
 
         group_id = query.group_id
 

@@ -21,3 +21,8 @@ class NoSuchAttachmentException(Exception):
 class NoSuchUserException(Exception):
     def __init__(self, message):
         self.message = f"no such user: {message}"
+
+
+class QueryValidationError(Exception):
+    def __init__(self, message):
+        self.message = f"query validation error: {message}"

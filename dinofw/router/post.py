@@ -29,7 +29,7 @@ from dinofw.utils.api import log_error_and_raise_known
 from dinofw.utils.api import log_error_and_raise_unknown
 from dinofw.utils.config import ErrorCodes
 from dinofw.utils.decorators import timeit
-from dinofw.utils.exceptions import NoSuchAttachmentException
+from dinofw.utils.exceptions import NoSuchAttachmentException, QueryValidationError
 from dinofw.utils.exceptions import NoSuchGroupException
 from dinofw.utils.exceptions import NoSuchMessageException
 from dinofw.utils.exceptions import NoSuchUserException
@@ -280,6 +280,8 @@ async def create_an_attachment(
         return await environ.env.rest.message.create_attachment(
             user_id, message_id, query, db
         )
+    except QueryValidationError as e:
+        log_error_and_raise_known(ErrorCodes.WRONG_PARAMETERS, sys.exc_info(), e)
     except NoSuchGroupException as e:
         log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
     except NoSuchMessageException as e:
