@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import AbstractQuery, JoinGroupQuery
+from dinofw.rest.models import AbstractQuery, ActionLogQuery
 from dinofw.rest.models import CreateActionLogQuery
 from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import Group
@@ -14,6 +14,7 @@ from dinofw.rest.models import GroupInfoQuery
 from dinofw.rest.models import GroupJoinTime
 from dinofw.rest.models import GroupUsers
 from dinofw.rest.models import Histories
+from dinofw.rest.models import JoinGroupQuery
 from dinofw.rest.models import Message
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import OneToOneStats
@@ -201,25 +202,6 @@ class GroupResource(BaseResource):
     ) -> None:
         self.env.db.update_user_group_stats(group_id, user_id, query, db)
 
-    async def create_action_log(
-        self, user_id: int, query: CreateActionLogQuery, db: Session
-    ) -> Message:
-        # if it's an e.g. friend request, they might not have a
-        # group from before, so the group_id is unknown
-        if query.group_id is not None:
-            group_id = query.group_id
-        elif query.receiver_id is not None:
-            group_id = await self._get_or_create_group_for_1v1(
-                user_id, query.receiver_id, db
-            )
-        else:
-            raise ValueError("either receiver_id or group_id is required in CreateActionLogQuery")
-
-        log = self.env.storage.create_action_log(user_id, group_id, query)
-        self._user_sends_action_log(group_id, log, db)
-
-        return GroupResource.message_base_to_message(log)
-
     async def create_new_group(
         self, user_id: int, query: CreateGroupQuery, db: Session
     ) -> Group:
@@ -272,29 +254,19 @@ class GroupResource(BaseResource):
             group_id, user_ids_and_last_read, now, db
         )
 
-        user_ids_and_join_times = self.env.db.get_user_ids_and_join_time_in_group(
-            group_id, db
-        )
-        user_ids_in_group = user_ids_and_join_times.keys()
-        self.env.client_publisher.join(group_id, user_ids_in_group, query.users, now_ts)
+        self.create_action_log(query.action_log, db, group_id=group_id)
 
-    def leave_group(self, group_id: str, user_id: int, db: Session) -> None:
-        now = utcnow_dt()
-        now_ts = AbstractQuery.to_ts(now)
-
+    def leave_group(self, group_id: str, user_id: int, query: CreateActionLogQuery, db: Session) -> None:
         self.env.db.remove_last_read_in_group_for_user(group_id, user_id, db)
+        self.create_action_log(query.action_log, db, group_id=group_id)
 
-        # shouldn't send this event to the guy who left, so get from db/cache after removing the leaver id
-        user_ids_and_join_times = self.env.db.get_user_ids_and_join_time_in_group(
-            group_id, db
-        )
-
-        # if it's the last user we don't need to publish anything
-        if len(user_ids_and_join_times):
-            user_ids_in_group = user_ids_and_join_times.keys()
-            self.env.client_publisher.leave(group_id, user_ids_in_group, user_id, now_ts)
-
-    def delete_attachments_in_group_for_user(self, group_id: str, user_id: int, db: Session) -> None:
+    def delete_attachments_in_group_for_user(
+            self,
+            group_id: str,
+            user_id: int,
+            query: CreateActionLogQuery,
+            db: Session
+    ) -> None:
         group = self.env.db.get_group_from_id(group_id, db)
 
         attachments = self.env.storage.delete_attachments(
@@ -304,16 +276,12 @@ class GroupResource(BaseResource):
         now = utcnow_ts()
         user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db).keys()
 
-        if len(user_ids):
-            for publisher in [self.env.client_publisher, self.env.server_publisher]:
-                publisher.delete_attachments(group_id, attachments, user_ids, now)
+        self.env.server_publisher.delete_attachments(group_id, attachments, user_ids, now)
+        self.create_action_log(query.action_log, db, group_id=group_id)
 
-            # TODO: how to tell apps an attachment was deleted? <-- update: create action log on deletions
-            # self.env.db.update_group_updated_at ?
-
-    def delete_all_groups_for_user(self, user_id: int, db: Session) -> None:
+    def delete_all_groups_for_user(self, user_id: int, query: CreateActionLogQuery, db: Session) -> None:
         group_ids = self.env.db.get_all_group_ids_for_user(user_id, db)
 
         # TODO: this is async, but check how long time this would take for like 5-10k groups
         for group_id in group_ids:
-            self.leave_group(group_id, user_id, db)
+            self.leave_group(group_id, user_id, query, db)

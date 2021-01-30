@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from dinofw.db.rdbms.schemas import UserGroupBase
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import GroupQuery
+from dinofw.rest.models import GroupQuery, CreateActionLogQuery
 from dinofw.rest.models import GroupUpdatesQuery
 from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UserStats
@@ -80,7 +80,7 @@ class UserResource(BaseResource):
             last_sent_group_id=last_sent_group_id,
         )
 
-    def delete_all_user_attachments(self, user_id: int, db: Session) -> None:
+    def delete_all_user_attachments(self, user_id: int, query: CreateActionLogQuery, db: Session) -> None:
         group_created_at = self.env.db.get_group_ids_and_created_at_for_user(user_id, db)
         group_to_atts = self.env.storage.delete_attachments_in_all_groups(group_created_at, user_id)
 
@@ -88,12 +88,5 @@ class UserResource(BaseResource):
 
         for group_id, attachments in group_to_atts.items():
             user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db).keys()
-
-            if not len(user_ids):
-                continue
-
-            for publisher in [self.env.client_publisher, self.env.server_publisher]:
-                publisher.delete_attachments(group_id, attachments, user_ids, now)
-
-            # TODO: how to tell apps an attachment was deleted? <-- update: create action log on deletions
-            # self.env.db.update_group_updated_at ?
+            self.env.server_publisher.delete_attachments(group_id, attachments, user_ids, now)
+            self.create_action_log(query.action_log, db, group_id=group_id)

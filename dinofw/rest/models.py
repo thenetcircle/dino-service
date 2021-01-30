@@ -38,6 +38,16 @@ class AbstractQuery(BaseModel):
         return round(arrow.get(ds).float_timestamp, 3)
 
 
+class ActionLogQuery:
+    payload: Optional[str]
+    group_id: Optional[str]
+    receiver_id: Optional[int]
+
+
+class CreateActionLogQuery(AbstractQuery):
+    action_log: Optional[ActionLogQuery]
+
+
 class PaginationQuery(AbstractQuery):
     until: Optional[float]
     per_page: int
@@ -53,12 +63,6 @@ class OneToOneQuery(AbstractQuery):
 
 class MessageQuery(PaginationQuery, AdminQuery):
     pass
-
-
-class CreateActionLogQuery(AbstractQuery):
-    payload: Optional[str]
-    group_id: Optional[str]
-    receiver_id: Optional[int]
 
 
 class SearchQuery(PaginationQuery):
@@ -100,8 +104,12 @@ class GroupUpdatesQuery(GroupQuery):
     since: Optional[float]
 
 
-class JoinGroupQuery(AbstractQuery):
+class JoinGroupQuery(CreateActionLogQuery):
     users: List[int]
+
+
+class AttachmentQuery(CreateActionLogQuery):
+    file_id: str
 
 
 class UpdateGroupQuery(AbstractQuery):
@@ -116,10 +124,6 @@ class EditMessageQuery(AdminQuery):
     message_type: Optional[int]
     status: Optional[int]
     created_at: float
-
-
-class AttachmentQuery(AbstractQuery):
-    file_id: str
 
 
 class CreateAttachmentQuery(AttachmentQuery, OneToOneQuery):

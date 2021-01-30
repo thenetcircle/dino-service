@@ -352,7 +352,7 @@ async def create_action_log(
     * `250`: if an unknown error occurred.
     """
     try:
-        return await environ.env.rest.group.create_action_log(user_id, query, db)
+        return environ.env.rest.group.create_action_log(query, db, user_id=user_id)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 

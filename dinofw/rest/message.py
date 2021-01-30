@@ -1,7 +1,6 @@
 import logging
 from typing import List
 
-from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 from dinofw.rest.base import BaseResource
@@ -11,8 +10,8 @@ from dinofw.rest.models import Message
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
 from dinofw.utils import utcnow_ts
-from dinofw.utils.exceptions import NoSuchGroupException, QueryValidationError
 from dinofw.utils.exceptions import NoSuchUserException
+from dinofw.utils.exceptions import QueryValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -123,12 +122,8 @@ class MessageResource(BaseResource):
         now = utcnow_ts()
         user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db).keys()
 
-        if len(user_ids):
-            for publisher in [self.env.client_publisher, self.env.server_publisher]:
-                publisher.delete_attachments(group_id, [attachment], user_ids, now)
-
-            # TODO: how to tell apps an attachment was deleted? <-- update: create action log on deletions
-            # self.env.db.update_group_updated_at ?
+        self.create_action_log(query.action_log, db, group_id=group_id)
+        self.env.server_publisher.delete_attachments(group_id, [attachment], user_ids, now)
 
     async def update_messages(self, group_id: str, query: MessageQuery):
         self.env.storage.update_messages_in_group(group_id, query)

@@ -4,15 +4,15 @@ from datetime import datetime as dt
 from typing import Dict
 from typing import List
 
-from sqlalchemy.orm import Session
-
 import arrow
+from sqlalchemy.orm import Session
 
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.rdbms.schemas import UserGroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.schemas import MessageBase
 from dinofw.rest.models import AbstractQuery
+from dinofw.rest.models import ActionLogQuery
 from dinofw.rest.models import Group
 from dinofw.rest.models import GroupJoinTime
 from dinofw.rest.models import GroupLastRead
@@ -84,6 +84,37 @@ class BaseResource(ABC):
         del user_ids[user_id]
         self.env.cache.increase_unread_in_group_for(group_id, user_ids)
 
+    def create_action_log(
+        self,
+            query: ActionLogQuery,
+            db: Session,
+            user_id: int = None,
+            group_id: str = None,
+    ) -> Message:
+        # creating an action log is optional for the caller
+        if query is None:
+            return None
+
+        # group_id is optional on query, since it sometimes is set in the api route
+        if group_id is not None:
+            query.group_id = group_id
+
+        # if it's an e.g. friend request, they might not have a
+        # group from before, so the group_id is unknown
+        if query.group_id is not None:
+            group_id = query.group_id
+        elif query.receiver_id is not None:
+            group_id = await self._get_or_create_group_for_1v1(
+                user_id, query.receiver_id, db
+            )
+        else:
+            raise ValueError("either receiver_id or group_id is required in CreateActionLogQuery")
+
+        log = self.env.storage.create_action_log(user_id, group_id, query)
+        self._user_sends_action_log(group_id, log, db)
+
+        return BaseResource.message_base_to_message(log)
+
     def _user_sends_action_log(
         self, group_id: str, message: MessageBase, db
     ):
@@ -113,6 +144,11 @@ class BaseResource(ABC):
     async def _get_or_create_group_for_1v1(
         self, user_id: int, receiver_id: int, db: Session
     ) -> str:
+        if user_id is None or receiver_id is None:
+            raise ValueError(
+                f"either receiver_id ({receiver_id}) or user_id ({user_id}) is None for get/create 1v1 group"
+            )
+
         try:
             return self.env.db.get_group_id_for_1to1(user_id, receiver_id, db)
         except NoSuchGroupException:

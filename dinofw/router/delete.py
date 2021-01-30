@@ -9,6 +9,7 @@ from starlette.responses import Response
 from starlette.status import HTTP_201_CREATED
 
 from dinofw.rest.models import AttachmentQuery
+from dinofw.rest.models import CreateActionLogQuery
 from dinofw.utils import environ
 from dinofw.utils.api import get_db
 from dinofw.utils.api import log_error_and_raise_known
@@ -24,7 +25,7 @@ router = APIRouter()
 @router.delete("/groups/{group_id}/user/{user_id}/join")
 @timeit(logger, "DELETE", "/groups/{group_id}/user/{user_id}/join")
 async def leave_group(
-    user_id: int, group_id: str, db: Session = Depends(get_db)
+    user_id: int, group_id: str, query: CreateActionLogQuery, db: Session = Depends(get_db)
 ) -> None:
     """
     Leave a group.
@@ -34,7 +35,7 @@ async def leave_group(
     * `250`: if an unknown error occurred.
     """
     try:
-        return environ.env.rest.group.leave_group(group_id, user_id, db)
+        return environ.env.rest.group.leave_group(group_id, user_id, query, db)
     except NoSuchGroupException as e:
         log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
     except Exception as e:
@@ -43,7 +44,7 @@ async def leave_group(
 
 @router.delete("/users/{user_id}/groups", status_code=HTTP_201_CREATED)
 async def delete_all_groups_for_user(
-    user_id: int, db: Session = Depends(get_db)
+    user_id: int, query: CreateActionLogQuery, db: Session = Depends(get_db)
 ) -> Response:
     """
     When a user removes his/her profile, make the user leave all groups.
@@ -57,11 +58,11 @@ async def delete_all_groups_for_user(
     * `250`: if an unknown error occurred.
     """
 
-    def leave_all_groups(user_id_, db_):
-        environ.env.rest.group.delete_all_groups_for_user(user_id_, db_)
+    def leave_all_groups(user_id_, query_, db_):
+        environ.env.rest.group.delete_all_groups_for_user(user_id_, query_, db_)
 
     try:
-        task = BackgroundTask(leave_all_groups, user_id_=user_id, db_=db)
+        task = BackgroundTask(leave_all_groups, user_id_=user_id, query_=query, db_=db)
         return Response(background=task, status_code=HTTP_201_CREATED)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
@@ -73,8 +74,6 @@ async def delete_attachment_with_file_id(
 ) -> Response:
     """
     Delete an attachment.
-
-    TODO: create deletion action log to sync with apps
 
     **Potential error codes in response:**
     * `250`: if an unknown error occurred.
@@ -100,8 +99,6 @@ async def delete_attachments_in_group_for_user(
 ) -> Response:
     """
     Delete all attachments in this group for this user.
-
-    TODO: create deletion action logs to sync with apps
 
     **Potential error codes in response:**
     * `250`: if an unknown error occurred.
@@ -130,8 +127,6 @@ async def delete_attachments_in_all_groups_from_user(
 ) -> Response:
     """
     Delete all attachments send by this user in all groups.
-
-    TODO: create deletion action logs to sync with apps
 
     **Potential error codes in response:**
     * `250`: if an unknown error occurred.
