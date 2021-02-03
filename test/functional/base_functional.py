@@ -224,7 +224,7 @@ class BaseServerRestApi(BaseDatabaseTest):
         self,
         group_id: str,
         name: str = "test name",
-        context: str = "",
+        description: str = "",
         owner: int = None,
     ):
         if owner is None:
@@ -232,7 +232,7 @@ class BaseServerRestApi(BaseDatabaseTest):
 
         raw_response = self.client.put(
             f"/v1/groups/{group_id}",
-            json={"owner": owner, "name": name, "context": context},
+            json={"owner": owner, "group_name": name, "description": description},
         )
         self.assertEqual(raw_response.status_code, 200)
 

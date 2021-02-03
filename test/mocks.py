@@ -416,7 +416,6 @@ class FakeDatabase:
             updated_at=created_at,
             owner_id=owner_id,
             meta=query.meta,
-            context=query.context,
             description=query.description,
         )
 
