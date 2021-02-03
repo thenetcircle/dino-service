@@ -115,8 +115,8 @@ class AttachmentQuery(CreateActionLogQuery):
 class UpdateGroupQuery(AbstractQuery):
     status: Optional[int]
     owner: Optional[int]
-    group_name: Optional[str]
-    description: Optional[str]
+    name: Optional[str]
+    context: Optional[str]
 
 
 class EditMessageQuery(AdminQuery):
