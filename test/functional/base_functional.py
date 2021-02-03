@@ -44,19 +44,6 @@ class BaseServerRestApi(BaseDatabaseTest):
         )
         self.assertEqual(raw_response.status_code, 200)
 
-    def action_log(self, group_id: str, user_id: int = BaseTest.USER_ID):
-        raw_response = self.client.post(
-            f"/v1/groups/{group_id}/actions",
-            json={
-                "user_ids": [user_id],
-                "payload": f"User {user_id} joined the group.",
-                "action_type": 1
-            },
-        )
-        self.assertEqual(raw_response.status_code, 200)
-
-        return raw_response.json()
-
     def send_message_to_group_from(
         self, group_id: str, user_id: int = BaseTest.USER_ID, amount: int = 1, delay: int = 10
     ) -> list:
@@ -111,7 +98,10 @@ class BaseServerRestApi(BaseDatabaseTest):
         self.assertEqual(raw_response.status_code, 200)
 
     def user_joins_group(self, group_id: str, user_id: int = BaseTest.USER_ID) -> None:
-        raw_response = self.client.put(f"/v1/groups/{group_id}/user/{user_id}/join")
+        raw_response = self.client.put(
+            f"/v1/groups/{group_id}/join",
+            json={"users": [user_id]}
+        )
         self.assertEqual(raw_response.status_code, 200)
         time.sleep(0.01)
 
