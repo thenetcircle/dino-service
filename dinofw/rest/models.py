@@ -107,8 +107,8 @@ class JoinGroupQuery(AbstractQuery):
 class UpdateGroupQuery(AbstractQuery):
     status: Optional[int]
     owner: Optional[int]
-    name: Optional[str]
-    context: Optional[str]
+    group_name: Optional[str]
+    description: Optional[str]
 
 
 class EditMessageQuery(AdminQuery):
@@ -221,7 +221,6 @@ class Group(BaseModel):
     updated_at: Optional[float]
     owner_id: int
     meta: Optional[int]
-    context: Optional[str]
     first_message_time: float  # TODO: this is probably not needed for the rest api, just internal to track deletions
     last_message_time: float
     last_message_overview: Optional[str]

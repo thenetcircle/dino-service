@@ -134,7 +134,6 @@ class IClientPublishHandler(IPublishHandler, ABC):
             "group_type": group.group_type,
             "owner_id": group.owner_id,
             "meta": group.meta,
-            "context": group.context,
             "user_ids": user_ids,
         }
 
