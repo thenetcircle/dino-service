@@ -1190,6 +1190,16 @@ class TestServerRestApi(BaseServerRestApi):
         stats = self.get_global_user_stats(count_unread=True)
         self.assertEqual(2, stats["unread_groups_amount"])
 
+    def test_join_existing_group(self):
+        users = [BaseTest.USER_ID, 50]
+        other_users = [51, 52, 53, 54]
+
+        group = self.create_and_join_group(
+            BaseTest.USER_ID, users=users
+        )
+
+        self.user_joins_group(group, other_users[0])
+
     def test_get_groups_with_undeleted_messages(self):
         groups = list()
         users = [BaseTest.USER_ID, 50, 51, 52, 53, 54]

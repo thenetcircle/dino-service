@@ -107,7 +107,12 @@ class BaseServerRestApi(BaseDatabaseTest):
     def user_joins_group(self, group_id: str, user_id: int = BaseTest.USER_ID) -> None:
         raw_response = self.client.put(
             f"/v1/groups/{group_id}/join",
-            json={"users": [user_id]}
+            json={
+                "users": [user_id],
+                "action_log": {
+                    "payload": "some users joined the group"
+                }
+            }
         )
         self.assertEqual(raw_response.status_code, 200)
         time.sleep(0.01)

@@ -110,6 +110,11 @@ class BaseResource(ABC):
         else:
             raise ValueError("either receiver_id or group_id is required in CreateActionLogQuery")
 
+        # TODO: when a user invites e.g. 5 other users, we don't know what user_id to put
+        #  on the MessageModel in cassandra; just using 0 for this is okay?
+        if user_id is None:
+            user_id = 0
+
         log = self.env.storage.create_action_log(user_id, group_id, query)
         self._user_sends_action_log(group_id, log, db)
 
