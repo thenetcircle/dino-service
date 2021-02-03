@@ -757,8 +757,8 @@ class RelationalHandler:
 
         now = utcnow_dt()
 
-        if query.name is not None:
-            group_entity.name = query.name
+        if query.group_name is not None:
+            group_entity.name = query.group_name
 
         if query.context is not None:
             group_entity.group_context = query.context
