@@ -1007,11 +1007,6 @@ class TestServerRestApi(BaseServerRestApi):
             create_action_logs=True
         )
 
-    def test_delete_all_attachments_in_all_groups_for_user_no_action_logs(self):
-        self._delete_all_attachments_in_all_groups_for_user(
-            create_action_logs=False
-        )
-
     def _delete_all_attachments_in_all_groups_for_user(self, create_action_logs: bool):
         group_id = None
 

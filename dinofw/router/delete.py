@@ -26,7 +26,7 @@ router = APIRouter()
 @router.delete("/groups/{group_id}/user/{user_id}/join")
 @timeit(logger, "DELETE", "/groups/{group_id}/user/{user_id}/join")
 async def leave_group(
-    user_id: int, group_id: str, query: CreateActionLogQuery = None, db: Session = Depends(get_db)
+    user_id: int, group_id: str, query: CreateActionLogQuery, db: Session = Depends(get_db)
 ) -> None:
     """
     Leave a group.
@@ -35,9 +35,6 @@ async def leave_group(
     * `601`: if the group does not exist,
     * `250`: if an unknown error occurred.
     """
-    if query is None:
-        query = CreateActionLogQuery()
-
     try:
         return environ.env.rest.group.leave_group(group_id, user_id, query, db)
     except NoSuchGroupException as e:
@@ -128,7 +125,7 @@ async def delete_attachments_in_group_for_user(
 
 @router.delete("/user/{user_id}/attachments", status_code=HTTP_201_CREATED)
 async def delete_attachments_in_all_groups_from_user(
-    user_id: int, query: CreateActionLogQuery = None, db: Session = Depends(get_db)
+    user_id: int, query: CreateActionLogQuery, db: Session = Depends(get_db)
 ) -> Response:
     """
     Delete all attachments send by this user in all groups.
@@ -139,9 +136,6 @@ async def delete_attachments_in_all_groups_from_user(
 
     def _delete_attachments_in_all_groups_from_user(user_id_, query_, db_):
         environ.env.rest.user.delete_all_user_attachments(user_id_, query_, db_)
-
-    if query is None:
-        query = CreateActionLogQuery()
 
     try:
         task = BackgroundTask(
