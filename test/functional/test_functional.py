@@ -249,8 +249,6 @@ class TestServerRestApi(BaseServerRestApi):
         self.assert_in_histories(BaseTest.OTHER_USER_ID, histories, is_in=False)
 
     def test_group_exists_when_leaving(self):
-        self.user_leaves_group(BaseTest.GROUP_ID)
-
         groups = self.groups_for_user(BaseTest.USER_ID)
         self.assertEqual(0, len(groups))
 

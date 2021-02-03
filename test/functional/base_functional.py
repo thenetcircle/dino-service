@@ -94,7 +94,14 @@ class BaseServerRestApi(BaseDatabaseTest):
         return raw_response.json()
 
     def user_leaves_group(self, group_id: str, user_id: int = BaseTest.USER_ID) -> None:
-        raw_response = self.client.delete(f"/v1/groups/{group_id}/user/{user_id}/join")
+        raw_response = self.client.delete(
+            f"/v1/groups/{group_id}/user/{user_id}/join",
+            json={
+                "action_log": {
+                    "payload": "some payload for action log"
+                }
+            }
+        )
         self.assertEqual(raw_response.status_code, 200)
 
     def user_joins_group(self, group_id: str, user_id: int = BaseTest.USER_ID) -> None:
