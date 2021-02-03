@@ -79,7 +79,6 @@ class CreateGroupQuery(AbstractQuery):
     group_type: int
     description: Optional[str]
     meta: Optional[int]
-    context: Optional[str]
 
 
 class UserStatsQuery(AbstractQuery):
