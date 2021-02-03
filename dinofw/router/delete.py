@@ -1,5 +1,6 @@
 import logging
 import sys
+from typing import Optional
 
 from fastapi import APIRouter
 from fastapi import Depends
@@ -95,7 +96,7 @@ async def delete_attachment_with_file_id(
     "/groups/{group_id}/user/{user_id}/attachments", status_code=HTTP_201_CREATED
 )
 async def delete_attachments_in_group_for_user(
-    group_id: str, user_id: int, db: Session = Depends(get_db)
+    group_id: str, user_id: int, query: Optional[CreateActionLogQuery], db: Session = Depends(get_db)
 ) -> Response:
     """
     Delete all attachments in this group for this user.
@@ -104,9 +105,9 @@ async def delete_attachments_in_group_for_user(
     * `250`: if an unknown error occurred.
     """
 
-    def _delete_attachments_in_group_for_user(group_id_, user_id_, db_):
+    def _delete_attachments_in_group_for_user(group_id_, user_id_, query_, db_):
         environ.env.rest.group.delete_attachments_in_group_for_user(
-            group_id_, user_id_, db_
+            group_id_, user_id_, query_, db_
         )
 
     try:
@@ -114,6 +115,7 @@ async def delete_attachments_in_group_for_user(
             _delete_attachments_in_group_for_user,
             group_id_=group_id,
             user_id_=user_id,
+            query_=query,
             db_=db,
         )
         return Response(background=task, status_code=HTTP_201_CREATED)
@@ -123,7 +125,7 @@ async def delete_attachments_in_group_for_user(
 
 @router.delete("/user/{user_id}/attachments", status_code=HTTP_201_CREATED)
 async def delete_attachments_in_all_groups_from_user(
-    user_id: int, db: Session = Depends(get_db)
+    user_id: int, query: CreateActionLogQuery = None, db: Session = Depends(get_db)
 ) -> Response:
     """
     Delete all attachments send by this user in all groups.
@@ -132,12 +134,15 @@ async def delete_attachments_in_all_groups_from_user(
     * `250`: if an unknown error occurred.
     """
 
-    def _delete_attachments_in_all_groups_from_user(user_id_, db_):
-        environ.env.rest.user.delete_all_user_attachments(user_id_, db_)
+    def _delete_attachments_in_all_groups_from_user(user_id_, query_, db_):
+        environ.env.rest.user.delete_all_user_attachments(user_id_, query_, db_)
+
+    if query is None:
+        query = CreateActionLogQuery()
 
     try:
         task = BackgroundTask(
-            _delete_attachments_in_all_groups_from_user, user_id_=user_id, db_=db
+            _delete_attachments_in_all_groups_from_user, user_id_=user_id, query_=query, db_=db
         )
         return Response(background=task, status_code=HTTP_201_CREATED)
     except Exception as e:

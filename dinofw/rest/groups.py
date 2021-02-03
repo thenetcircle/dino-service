@@ -258,7 +258,7 @@ class GroupResource(BaseResource):
 
     def leave_group(self, group_id: str, user_id: int, query: CreateActionLogQuery, db: Session) -> None:
         self.env.db.remove_last_read_in_group_for_user(group_id, user_id, db)
-        self.create_action_log(query.action_log, db, group_id=group_id)
+        self.create_action_log(query.action_log, db, user_id=user_id, group_id=group_id)
 
     def delete_attachments_in_group_for_user(
             self,
@@ -277,7 +277,7 @@ class GroupResource(BaseResource):
         user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db).keys()
 
         self.env.server_publisher.delete_attachments(group_id, attachments, user_ids, now)
-        self.create_action_log(query.action_log, db, group_id=group_id)
+        self.create_action_log(query.action_log, db, user_id=user_id, group_id=group_id)
 
     def delete_all_groups_for_user(self, user_id: int, query: CreateActionLogQuery, db: Session) -> None:
         group_ids = self.env.db.get_all_group_ids_for_user(user_id, db)

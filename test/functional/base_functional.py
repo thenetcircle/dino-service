@@ -189,7 +189,12 @@ class BaseServerRestApi(BaseDatabaseTest):
 
     def leave_all_groups(self, user_id: int = BaseTest.USER_ID):
         raw_response = self.client.delete(
-            f"/v1/users/{user_id}/groups"
+            f"/v1/users/{user_id}/groups",
+            json={
+                "action_log": {
+                    "payload": "some payload for action log"
+                }
+            }
         )
         self.assertEqual(raw_response.status_code, 201)
 
@@ -353,16 +358,30 @@ class BaseServerRestApi(BaseDatabaseTest):
 
     def delete_attachments_in_group(self, group_id: str, user_id: str = BaseTest.USER_ID):
         raw_response = self.client.delete(
-            f"/v1/groups/{group_id}/user/{user_id}/attachments"
+            f"/v1/groups/{group_id}/user/{user_id}/attachments",
+            json={
+                "action_log": {
+                    "payload": "some deletion payload"
+                }
+            }
         )
         self.assertEqual(raw_response.status_code, 201)
 
         # async api
         time.sleep(0.01)
 
-    def delete_attachments_in_all_groups(self, user_id: str = BaseTest.USER_ID):
+    def delete_attachments_in_all_groups(self, user_id: str = BaseTest.USER_ID, send_action_log_query: bool = True):
+        json_value = None
+        if send_action_log_query:
+            json_value = {
+                "action_log": {
+                    "payload": "some deletion payload"
+                }
+            }
+
         raw_response = self.client.delete(
-            f"/v1/user/{user_id}/attachments"
+            f"/v1/user/{user_id}/attachments",
+            json=json_value
         )
         self.assertEqual(raw_response.status_code, 201)
 

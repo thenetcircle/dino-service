@@ -1004,7 +1004,17 @@ class TestServerRestApi(BaseServerRestApi):
             att = self.attachment_for_file_id(group_id, file_id, assert_response=False)
             self.assert_error(att, ErrorCodes.NO_SUCH_ATTACHMENT)
 
-    def test_delete_all_attachments_in_all_groups_for_user(self):
+    def test_delete_all_attachments_in_all_groups_for_user_with_action_logs(self):
+        self._delete_all_attachments_in_all_groups_for_user(
+            create_action_logs=True
+        )
+
+    def test_delete_all_attachments_in_all_groups_for_user_no_action_logs(self):
+        self._delete_all_attachments_in_all_groups_for_user(
+            create_action_logs=False
+        )
+
+    def _delete_all_attachments_in_all_groups_for_user(self, create_action_logs: bool):
         group_id = None
 
         file_ids = {
@@ -1029,7 +1039,7 @@ class TestServerRestApi(BaseServerRestApi):
         self.assertEqual(0, len(self.env.client_publisher.sent_deletions))
         self.assertEqual(0, len(self.env.server_publisher.sent_deletions))
 
-        self.delete_attachments_in_all_groups()
+        self.delete_attachments_in_all_groups(send_action_log_query=create_action_logs)
 
         # next time we check it shouldn't exist
         for should_exist, user_id in [(False, BaseTest.USER_ID), (True, BaseTest.OTHER_USER_ID)]:
@@ -1043,7 +1053,10 @@ class TestServerRestApi(BaseServerRestApi):
                     self.assert_error(att, ErrorCodes.NO_SUCH_ATTACHMENT)
 
         # only one deletion event even though we deleted five attachments
-        self.assertEqual(1, len(self.env.client_publisher.sent_deletions))
+        if create_action_logs:
+            # one message, one deletion; client published don't distinguish between the two, both are messages
+            self.assertEqual(2, len(self.env.client_publisher.sent_messages))
+
         self.assertEqual(1, len(self.env.server_publisher.sent_deletions))
 
     def test_hidden_groups_is_not_counted_in_user_stats_api(self):

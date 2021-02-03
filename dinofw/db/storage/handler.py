@@ -24,7 +24,7 @@ from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.models import AttachmentModel
 from dinofw.db.storage.models import MessageModel
 from dinofw.db.storage.schemas import MessageBase
-from dinofw.rest.models import AttachmentQuery
+from dinofw.rest.models import AttachmentQuery, ActionLogQuery
 from dinofw.rest.models import CreateActionLogQuery
 from dinofw.rest.models import CreateAttachmentQuery
 from dinofw.rest.models import MessageQuery
@@ -447,7 +447,7 @@ class CassandraHandler:
             self,
             user_id: int,
             group_id: str,
-            query: CreateActionLogQuery
+            query: ActionLogQuery
     ) -> MessageBase:
         action_time = utcnow_dt()
 

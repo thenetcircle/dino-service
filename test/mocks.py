@@ -9,7 +9,7 @@ from dinofw.db.rdbms.schemas import GroupBase, UserGroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.schemas import MessageBase
 from dinofw.endpoint import IClientPublishHandler, IClientPublisher
-from dinofw.rest.models import AbstractQuery, AttachmentQuery
+from dinofw.rest.models import AbstractQuery, AttachmentQuery, ActionLogQuery
 from dinofw.rest.models import CreateActionLogQuery
 from dinofw.rest.models import CreateAttachmentQuery
 from dinofw.rest.models import CreateGroupQuery
@@ -19,6 +19,7 @@ from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
 from dinofw.utils import trim_micros
 from dinofw.utils import utcnow_dt
+from dinofw.utils.config import MessageTypes
 from dinofw.utils.exceptions import NoSuchGroupException
 from dinofw.utils.exceptions import NoSuchAttachmentException
 
@@ -33,6 +34,22 @@ class FakeStorage:
         self.attachments_by_group = dict()
         self.attachments_by_message = dict()
         self.action_log = dict()
+
+    def create_action_log(self, user_id: int, group_id: str, query: ActionLogQuery):
+        if group_id not in self.action_log:
+            self.action_log[group_id] = list()
+
+        log = MessageBase(
+            group_id=group_id,
+            created_at=arrow.utcnow().datetime,
+            user_id=user_id,
+            message_id=str(uuid()),
+            message_type=MessageTypes.ACTION,
+            message_payload=query.payload
+        )
+
+        self.action_log[group_id].append(log)
+        return log
 
     def delete_attachment(self, group_id: str, created_at: dt, query: AttachmentQuery) -> MessageBase:
         file_id = query.file_id
@@ -108,29 +125,6 @@ class FakeStorage:
                 unread += 1
 
         return unread
-
-    def create_action_logs(
-        self, group_id: str, query: CreateActionLogQuery
-    ) -> List[MessageBase]:
-        if group_id not in self.action_log:
-            self.action_log[group_id] = list()
-
-        logs = list()
-
-        for user_id in query.user_ids:
-            log = MessageBase(
-                group_id=group_id,
-                created_at=arrow.utcnow().datetime,
-                user_id=user_id,
-                message_id=str(uuid()),
-                message_type=query.action_type,
-                admin_id=query.admin_id,
-            )
-
-            self.action_log[group_id].append(log)
-            logs.append(log)
-
-        return logs
 
     def store_attachment(
         self, group_id: str, user_id: int, message_id: str, query: CreateAttachmentQuery

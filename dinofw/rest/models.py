@@ -38,7 +38,7 @@ class AbstractQuery(BaseModel):
         return round(arrow.get(ds).float_timestamp, 3)
 
 
-class ActionLogQuery:
+class ActionLogQuery(BaseModel):
     payload: Optional[str]
     group_id: Optional[str]
     receiver_id: Optional[int]

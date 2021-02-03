@@ -89,4 +89,4 @@ class UserResource(BaseResource):
         for group_id, attachments in group_to_atts.items():
             user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db).keys()
             self.env.server_publisher.delete_attachments(group_id, attachments, user_ids, now)
-            self.create_action_log(query.action_log, db, group_id=group_id)
+            self.create_action_log(query.action_log, db, user_id=user_id, group_id=group_id)
