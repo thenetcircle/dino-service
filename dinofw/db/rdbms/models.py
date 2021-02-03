@@ -36,8 +36,8 @@ class GroupEntity(env.Base):
     last_message_overview = Column(String(512), nullable=True)
 
     meta = Column(Integer, nullable=True)
-    context = Column(String(512), nullable=True)
-    description = Column(String(256), nullable=True)
+    context = Column(String(512), nullable=True)  # TODO: remove, not needed
+    description = Column(String(512), nullable=True)
 
 
 class UserGroupStatsEntity(env.Base):

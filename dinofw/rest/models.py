@@ -116,7 +116,7 @@ class UpdateGroupQuery(AbstractQuery):
     status: Optional[int]
     owner: Optional[int]
     group_name: Optional[str]
-    context: Optional[str]
+    description: Optional[str]
 
 
 class EditMessageQuery(AdminQuery):

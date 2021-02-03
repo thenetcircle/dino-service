@@ -760,8 +760,8 @@ class RelationalHandler:
         if query.group_name is not None:
             group_entity.name = query.group_name
 
-        if query.context is not None:
-            group_entity.group_context = query.context
+        if query.description is not None:
+            group_entity.description = query.description
 
         if query.owner is not None:
             group_entity.owner_id = query.owner
