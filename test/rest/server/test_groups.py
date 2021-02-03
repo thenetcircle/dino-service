@@ -101,7 +101,6 @@ class TestGroupResource(BaseTest):
         # create a new group
         group = await self.group.create_new_group(BaseTest.USER_ID, create_query, None)  # noqa
         time.sleep(0.01)
-        await self.group.create_action_logs(group.group_id, log_query, None)  # noqa
 
         # send message and get histories
         await self.message.send_message_to_group(group.group_id, BaseTest.USER_ID, send_query, None)  # noqa

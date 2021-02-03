@@ -807,18 +807,6 @@ class TestServerRestApi(BaseServerRestApi):
         stats = self.groups_for_user(count_unread=True)[0]["stats"]
         self.assertEqual(0, stats["unread"])
 
-    def test_action_log_changes_last_update_time(self):
-        message = self.send_1v1_message()
-
-        groups = self.groups_for_user()
-        last_updated_time_before = groups[0]["stats"]["last_updated_time"]
-        self.assertIsNotNone(last_updated_time_before)
-
-        self.action_log(message["group_id"])
-
-        last_updated_time_after = self.groups_for_user()[0]["stats"]["last_updated_time"]
-        self.assertNotEqual(last_updated_time_before, last_updated_time_after)
-
     def test_groups_for_user_only_unread_includes_bookmarks(self):
         message = self.send_1v1_message()
         groups = self.groups_for_user(only_unread=True)
@@ -844,25 +832,6 @@ class TestServerRestApi(BaseServerRestApi):
         groups = self.groups_for_user(only_unread=True)
         self.assertEqual(0, len(groups))
 
-    def test_action_log_does_not_wakeup_users(self):
-        message = self.send_1v1_message()
-        groups = self.groups_for_user(only_unread=True)
-        self.assertEqual(0, len(groups))
-
-        self.update_hide_group_for(message["group_id"], hide=True)
-
-        # make sure it's hidden
-        group_and_stats = self.groups_for_user(hidden=True)
-        self.assertEqual(1, len(group_and_stats))
-        self.assertTrue(group_and_stats[0]["stats"]["hide"])
-
-        self.action_log(message["group_id"], user_id=BaseTest.OTHER_USER_ID)
-
-        # should still be hidden
-        group_and_stats = self.groups_for_user(hidden=True)
-        self.assertEqual(1, len(group_and_stats))
-        self.assertTrue(group_and_stats[0]["stats"]["hide"])
-
     def test_new_message_wakeup_users(self):
         message = self.send_1v1_message()
         groups = self.groups_for_user(only_unread=True)
@@ -874,8 +843,6 @@ class TestServerRestApi(BaseServerRestApi):
         group_and_stats = self.groups_for_user(hidden=True)
         self.assertEqual(1, len(group_and_stats))
         self.assertTrue(group_and_stats[0]["stats"]["hide"])
-
-        self.action_log(message["group_id"], user_id=BaseTest.OTHER_USER_ID)
 
         # should still be hidden
         group_and_stats = self.groups_for_user(hidden=True)
