@@ -29,6 +29,8 @@ async def get_users_in_group(
     Get a list of users in the group. The response will contain the owner of the group, and a list of
     user IDs and their join time, so clients can list users in order of joining.
 
+    TODO: remove this api, not needed since we have POST /v1/groups/{group_id}  (Get Group Information)
+
     **Potential error codes in response:**
     * `601`: if the group does not exist,
     * `250`: if an unknown error occurred.

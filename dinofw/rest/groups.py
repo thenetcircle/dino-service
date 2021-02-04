@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import AbstractQuery, ActionLogQuery
+from dinofw.rest.models import AbstractQuery
 from dinofw.rest.models import CreateActionLogQuery
 from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import Group
@@ -33,6 +33,9 @@ class GroupResource(BaseResource):
     async def get_users_in_group(
         self, group_id: str, db: Session
     ) -> Optional[GroupUsers]:
+        """
+        TODO: remove this api, not needed since we have POST /v1/groups/{group_id}  (Get Group Information)
+        """
         group, first_users, n_users = self.env.db.get_users_in_group(group_id, db)
 
         users = [
