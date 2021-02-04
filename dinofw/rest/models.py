@@ -40,6 +40,12 @@ class AbstractQuery(BaseModel):
 
 class ActionLogQuery(BaseModel):
     payload: Optional[str]
+
+    # in some cases the api route doesn't include the user id, e.g.
+    # invite/kick/etc., but should be recorded on the action log
+    user_id: Optional[int]
+
+    # TODO: remove these two, shouldn't be necessary
     group_id: Optional[str]
     receiver_id: Optional[int]
 
