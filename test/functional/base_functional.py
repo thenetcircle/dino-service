@@ -110,7 +110,8 @@ class BaseServerRestApi(BaseDatabaseTest):
             json={
                 "users": [user_id],
                 "action_log": {
-                    "payload": "some users joined the group"
+                    "payload": "some users joined the group",
+                    "user_id": user_id
                 }
             }
         )

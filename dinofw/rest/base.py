@@ -95,25 +95,15 @@ class BaseResource(ABC):
         if query is None:
             return None
 
-        # group_id is optional on query, since it sometimes is set in the api route
-        if group_id is not None:
-            query.group_id = group_id
-
-        # if it's an e.g. friend request, they might not have a
-        # group from before, so the group_id is unknown
-        if query.group_id is not None:
-            group_id = query.group_id
-        elif query.receiver_id is not None:
-            group_id = self._get_or_create_group_for_1v1(
-                user_id, query.receiver_id, db
-            )
-        else:
+        if user_id is None and group_id is None:
             raise ValueError("either receiver_id or group_id is required in CreateActionLogQuery")
 
-        # TODO: when a user invites e.g. 5 other users, we don't know what user_id to put
-        #  on the MessageModel in cassandra; just using 0 for this is okay?
+        if query.user_id is not None:
+            user_id = query.user_id
+
+        # TODO: check if this is a possibility, and if so fix it, or remove the this check if not
         if user_id is None:
-            user_id = 0
+            raise ValueError("no user_id in api path(?) and no user_id on ActionLogQuery; need one of them")
 
         log = self.env.storage.create_action_log(user_id, group_id, query)
         self._user_sends_action_log(group_id, log, db)

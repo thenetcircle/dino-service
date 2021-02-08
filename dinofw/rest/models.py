@@ -45,10 +45,6 @@ class ActionLogQuery(BaseModel):
     # invite/kick/etc., but should be recorded on the action log
     user_id: Optional[int]
 
-    # TODO: remove these two, shouldn't be necessary
-    group_id: Optional[str]
-    receiver_id: Optional[int]
-
 
 class CreateActionLogQuery(AbstractQuery):
     action_log: Optional[ActionLogQuery]
