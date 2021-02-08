@@ -7,7 +7,7 @@ from fastapi import Depends
 from sqlalchemy.orm import Session
 
 from dinofw.rest.models import AttachmentQuery
-from dinofw.rest.models import CreateActionLogQuery
+from dinofw.rest.models import ActionLogQuery
 from dinofw.rest.models import CreateAttachmentQuery
 from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import Group
@@ -343,7 +343,7 @@ async def get_attachments_in_group_for_user(
 @router.post("/users/{user_id}/actions", response_model=Message)
 @timeit(logger, "POST", "/users/{user_id}/actions")
 async def create_action_log(
-    user_id: int, query: CreateActionLogQuery, db: Session = Depends(get_db)
+    user_id: int, query: ActionLogQuery, db: Session = Depends(get_db)
 ) -> None:
     """
     Create one or more action logs in group.
