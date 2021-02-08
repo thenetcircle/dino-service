@@ -19,7 +19,7 @@ from dinofw.rest.models import GroupLastRead
 from dinofw.rest.models import Message
 from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UserGroupStats
-from dinofw.utils import utcnow_dt
+from dinofw.utils import utcnow_dt, users_to_group_id
 from dinofw.utils import utcnow_ts
 from dinofw.utils.decorators import time_method
 from dinofw.utils.exceptions import NoSuchGroupException
@@ -95,15 +95,19 @@ class BaseResource(ABC):
         if query is None:
             return None
 
-        if user_id is None and group_id is None:
-            raise ValueError("either receiver_id or group_id is required in CreateActionLogQuery")
-
         if query.user_id is not None:
             user_id = query.user_id
 
-        # TODO: check if this is a possibility, and if so fix it, or remove the this check if not
+        if user_id is None and group_id is None:
+            raise ValueError("either receiver_id or group_id is required in CreateActionLogQuery")
+
         if user_id is None:
             raise ValueError("no user_id in api path(?) and no user_id on ActionLogQuery; need one of them")
+
+        if query.group_id is not None:
+            group_id = query.group_id
+        elif query.receiver_id is not None:
+            group_id = users_to_group_id(user_id, query.receiver_id)
 
         log = self.env.storage.create_action_log(user_id, group_id, query)
         self._user_sends_action_log(group_id, log, db)
