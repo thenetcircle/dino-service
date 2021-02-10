@@ -888,6 +888,19 @@ class TestServerRestApi(BaseServerRestApi):
         # TODO: fix, is off by 50ms
         self.assertEqual(join_time, delete_before_auto_updated)
 
+    def test_create_action_log_updating_delete_before(self):
+        message = self.send_1v1_message(user_id=BaseTest.USER_ID, receiver_id=BaseTest.OTHER_USER_ID)
+        group_id = message["group_id"]
+
+        histories = self.histories_for(group_id)
+        self.assertEqual(1, len(histories["messages"]))
+
+        yesterday = round(arrow.utcnow().shift(days=-1).float_timestamp, 3)
+        self.update_delete_before(group_id, delete_before=yesterday, create_action_log=True)
+
+        histories = self.histories_for(group_id)
+        self.assertEqual(2, len(histories["messages"]))
+
     def test_delete_all_groups_for_user(self):
         self.send_1v1_message()
 

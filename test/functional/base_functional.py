@@ -27,11 +27,24 @@ class BaseServerRestApi(BaseDatabaseTest):
         return dict()
 
     def update_delete_before(
-        self, group_id: str, delete_before: float, user_id: int = BaseTest.USER_ID
+            self,
+            group_id: str,
+            delete_before: float,
+            user_id: int = BaseTest.USER_ID,
+            create_action_log: bool = False
     ):
+        the_json = {
+            "delete_before": delete_before
+        }
+
+        if create_action_log:
+            the_json["action_log"] = {
+                "payload": "user updated delete_before"
+            }
+
         raw_response = self.client.put(
             f"/v1/groups/{group_id}/user/{user_id}/update",
-            json={"delete_before": delete_before,},
+            json=the_json,
         )
         self.assertEqual(raw_response.status_code, 200)
 

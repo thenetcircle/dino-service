@@ -49,6 +49,7 @@ class FakeStorage:
         )
 
         self.action_log[group_id].append(log)
+        self.messages_by_group[group_id].append(log)
         return log
 
     def delete_attachment(self, group_id: str, created_at: dt, query: AttachmentQuery) -> MessageBase:
