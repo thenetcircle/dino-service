@@ -131,6 +131,22 @@ class BaseServerRestApi(BaseDatabaseTest):
         self.assertEqual(raw_response.status_code, 200)
         time.sleep(0.01)
 
+    def create_action_log(
+            self,
+            user_id: int = BaseTest.USER_ID,
+            receiver_id: int = BaseTest.OTHER_USER_ID
+    ) -> dict:
+        raw_response = self.client.post(
+            f"/v1/users/{user_id}/actions",
+            json={
+                "payload": "some users joined the group",
+                "receiver_id": receiver_id
+            }
+        )
+
+        self.assertEqual(raw_response.status_code, 200)
+        return raw_response.json()
+
     def update_hide_group_for(self, group_id: str, hide: bool, user_id: int = BaseTest.USER_ID):
         raw_response = self.client.put(
             f"/v1/groups/{group_id}/user/{user_id}/update", json={"hide": hide},

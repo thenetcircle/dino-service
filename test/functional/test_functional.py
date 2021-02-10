@@ -901,6 +901,15 @@ class TestServerRestApi(BaseServerRestApi):
         histories = self.histories_for(group_id)
         self.assertEqual(2, len(histories["messages"]))
 
+    def test_create_action_log_automatically_created_group(self):
+        # this group doesn't exist yet
+        log = self.create_action_log(
+            user_id=BaseTest.USER_ID,
+            receiver_id=BaseTest.OTHER_USER_ID
+        )
+
+        self.assertIsNotNone(log["group_id"])
+
     def test_delete_all_groups_for_user(self):
         self.send_1v1_message()
 

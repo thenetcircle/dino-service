@@ -348,6 +348,15 @@ async def create_action_log(
     """
     Create one or more action logs in group.
 
+    If `query.action_log.receiver_id` is specified, the 1-to-1 group will be
+    automatically created if it doesn't already exist. One case when this is
+    desirable is when user A sends a friend request to used B; the action log
+    is "user A requested to be a friend of user B", but the group needs to
+    be created first, and to avoid doing two API calls, the group is
+    automatically created.
+
+    Multi-user groups are NOT automatically created when this API is called.
+
     **Potential error codes in response:**
     * `250`: if an unknown error occurred.
     """

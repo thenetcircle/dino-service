@@ -107,7 +107,7 @@ class BaseResource(ABC):
         if query.group_id is not None:
             group_id = query.group_id
         elif query.receiver_id is not None:
-            group_id = users_to_group_id(user_id, query.receiver_id)
+            group_id = self._get_or_create_group_for_1v1(user_id, query.receiver_id, db)
 
         log = self.env.storage.create_action_log(user_id, group_id, query)
         self._user_sends_action_log(group_id, log, db)
@@ -140,7 +140,7 @@ class BaseResource(ABC):
         user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
         self.env.client_publisher.attachment(attachment, user_ids)
 
-    async def _get_or_create_group_for_1v1(
+    def _get_or_create_group_for_1v1(
         self, user_id: int, receiver_id: int, db: Session
     ) -> str:
         if user_id is None or receiver_id is None:

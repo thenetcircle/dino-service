@@ -31,7 +31,7 @@ class MessageResource(BaseResource):
         if query.receiver_id < 1:
             raise NoSuchUserException(query.receiver_id)
 
-        group_id = await self._get_or_create_group_for_1v1(
+        group_id = self._get_or_create_group_for_1v1(
             user_id, query.receiver_id, db
         )
         return await self.send_message_to_group(group_id, user_id, query, db)
@@ -89,7 +89,7 @@ class MessageResource(BaseResource):
         group_id = query.group_id
 
         if group_id is None:
-            group_id = await self._get_or_create_group_for_1v1(
+            group_id = self._get_or_create_group_for_1v1(
                 user_id, query.receiver_id, db
             )
 

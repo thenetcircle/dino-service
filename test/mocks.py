@@ -39,6 +39,9 @@ class FakeStorage:
         if group_id not in self.action_log:
             self.action_log[group_id] = list()
 
+        if group_id not in self.messages_by_group:
+            self.messages_by_group[group_id] = list()
+
         log = MessageBase(
             group_id=group_id,
             created_at=arrow.utcnow().datetime,
