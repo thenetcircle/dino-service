@@ -45,6 +45,7 @@ class ActionLogQuery(BaseModel):
     # join/kick/etc., but should be recorded on the action log
     user_id: Optional[int]
 
+    # POST /actions api specifies group_id/receiver_id on the query for generic action logs
     group_id: Optional[str]
     receiver_id: Optional[int]
 
