@@ -846,9 +846,9 @@ class RelationalHandler:
             .first()
         )
 
-        last_read = UpdateUserGroupStats.to_dt(query.last_read_time, allow_none=True)
-        delete_before = UpdateUserGroupStats.to_dt(query.delete_before, allow_none=True)
-        highlight_time = UpdateUserGroupStats.to_dt(
+        last_read = AbstractQuery.to_dt(query.last_read_time, allow_none=True)
+        delete_before = AbstractQuery.to_dt(query.delete_before, allow_none=True)
+        highlight_time = AbstractQuery.to_dt(
             query.highlight_time, allow_none=True
         )
         now = utcnow_dt()

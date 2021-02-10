@@ -204,6 +204,7 @@ class GroupResource(BaseResource):
         self, group_id: str, user_id: int, query: UpdateUserGroupStats, db: Session
     ) -> None:
         self.env.db.update_user_group_stats(group_id, user_id, query, db)
+        self.create_action_log(query.action_log, db, user_id=user_id, group_id=group_id)
 
     async def create_new_group(
         self, user_id: int, query: CreateGroupQuery, db: Session

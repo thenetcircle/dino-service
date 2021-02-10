@@ -137,7 +137,7 @@ class CreateAttachmentQuery(AttachmentQuery, OneToOneQuery):
     group_id: Optional[str]
 
 
-class UpdateUserGroupStats(AbstractQuery):
+class UpdateUserGroupStats(CreateActionLogQuery):
     last_read_time: Optional[float]
     delete_before: Optional[float]
     highlight_time: Optional[float]
