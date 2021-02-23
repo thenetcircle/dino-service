@@ -52,8 +52,8 @@ async def delete_all_groups_for_user(
 
     # TODO: discuss about deletion of messages; when? GDPR
 
-    This API is run asynchronously, and returns a 201 Created instead of
-    200 OK.
+    This API is run asynchronously, and returns a `201 Created` instead of
+    `200 OK`.
 
     **Potential error codes in response:**
     * `250`: if an unknown error occurred.
@@ -76,8 +76,8 @@ async def delete_attachment_with_file_id(
     """
     Delete an attachment.
 
-    This API is run asynchronously, and returns a 201 Created instead of
-    200 OK.
+    This API is run asynchronously, and returns a `201 Created` instead of
+    `200 OK`.
 
     **Potential error codes in response:**
     * `250`: if an unknown error occurred.
@@ -104,8 +104,8 @@ async def delete_attachments_in_group_for_user(
     """
     Delete all attachments in this group for this user.
 
-    This API is run asynchronously, and returns a 201 Created instead of
-    200 OK.
+    This API is run asynchronously, and returns a `201 Created` instead of
+    `200 OK`.
 
     **Potential error codes in response:**
     * `250`: if an unknown error occurred.
@@ -136,8 +136,8 @@ async def delete_attachments_in_all_groups_from_user(
     """
     Delete all attachments send by this user in all groups.
 
-    This API is run asynchronously, and returns a 201 Created instead of
-    200 OK.
+    This API is run asynchronously, and returns a `201 Created` instead of
+    `200 OK`.
 
     **Potential error codes in response:**
     * `250`: if an unknown error occurred.
