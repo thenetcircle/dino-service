@@ -349,7 +349,7 @@ async def create_action_log(
     user_id: int, query: ActionLogQuery, db: Session = Depends(get_db)
 ) -> None:
     """
-    Create an action logs in group.
+    Create an action log in a group.
 
     If `receiver_id` is specified, the 1-to-1 group will be
     automatically created if it doesn't already exist. One case when this is
@@ -375,7 +375,7 @@ async def create_action_log_in_all_groups_for_user(
     user_id: int, query: ActionLogQuery, db: Session = Depends(get_db)
 ) -> Response:
     """
-    Create an action logs in all groups this user has joined.
+    Create an action log in all groups this user has joined.
 
     Only the `payload` field in the request body will be used by this API,
     any other fields that are specified will be ignored.
