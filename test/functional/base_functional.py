@@ -320,6 +320,26 @@ class BaseServerRestApi(BaseDatabaseTest):
 
         return raw_response.json()
 
+    def create_action_log_in_all_groups_for_user(
+            self,
+            user_id: int = BaseTest.USER_ID,
+            delay: int = 20
+    ):
+        json_data = {
+            "payload": "some action log payload"
+        }
+
+        raw_response = self.client.post(
+            f"/v1/users/{user_id}/groups/actions",
+            json=json_data,
+        )
+
+        # async api, returns 201 instead of 200
+        self.assertEqual(raw_response.status_code, 201)
+
+        if delay > 0:
+            time.sleep(delay / 1000)
+
     def send_1v1_message(
         self,
         message_type: int = MessageTypes.MESSAGE,
@@ -329,7 +349,8 @@ class BaseServerRestApi(BaseDatabaseTest):
     ) -> dict:
         json_data = {
             "receiver_id": receiver_id,
-            "message_type": message_type
+            "message_type": message_type,
+            "message_payload": "some payload"
         }
 
         raw_response = self.client.post(

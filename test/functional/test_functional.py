@@ -435,6 +435,29 @@ class TestServerRestApi(BaseServerRestApi):
         groups = self.groups_for_user(user_id=BaseTest.USER_ID, count_unread=False)
         self.assertGreater(groups[0]["stats"]["last_updated_time"], last_updated_at)
 
+    def test_create_action_log_in_all_groups_for_user(self):
+        group_1 = self.send_1v1_message()["group_id"]
+        group_2 = self.create_and_join_group()
+        group_3 = self.create_and_join_group()
+
+        stats = self.get_global_user_stats(hidden=False)
+        self.assertEqual(2, stats["group_amount"])
+        self.assertEqual(1, stats["one_to_one_amount"])
+
+        # this group should only have 1 message, which we sent
+        self.assertEqual(1, len(self.histories_for(group_1)["messages"]))
+
+        # these two should have no messages
+        self.assertEqual(0, len(self.histories_for(group_2)["messages"]))
+        self.assertEqual(0, len(self.histories_for(group_3)["messages"]))
+
+        self.create_action_log_in_all_groups_for_user()
+
+        # all groups should now have one extra message, the action log we created
+        self.assertEqual(2, len(self.histories_for(group_1)["messages"]))
+        self.assertEqual(1, len(self.histories_for(group_2)["messages"]))
+        self.assertEqual(1, len(self.histories_for(group_3)["messages"]))
+
     def test_last_updated_at_changes_on_highlight(self):
         self.send_1v1_message(user_id=BaseTest.USER_ID, receiver_id=BaseTest.OTHER_USER_ID)
         groups = self.groups_for_user(user_id=BaseTest.USER_ID, count_unread=False)
