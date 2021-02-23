@@ -105,9 +105,10 @@ class TestServerRestApi(BaseServerRestApi):
         group_id = self.create_and_join_group(BaseTest.USER_ID)
         self.user_joins_group(group_id, BaseTest.OTHER_USER_ID)
 
-        self.assert_messages_in_group(group_id, user_id=BaseTest.USER_ID, amount=0)
+        # 'join' action log should exist for both user
+        self.assert_messages_in_group(group_id, user_id=BaseTest.USER_ID, amount=1)
         self.assert_messages_in_group(
-            group_id, user_id=BaseTest.OTHER_USER_ID, amount=0
+            group_id, user_id=BaseTest.OTHER_USER_ID, amount=1
         )
 
         # each user sends 4 messages each, then we delete some of them for one user
@@ -129,12 +130,12 @@ class TestServerRestApi(BaseServerRestApi):
 
         # first user should have 3, since we deleted everything before the other user's
         # first message (including that first message); second user should have all 8
-        # since he/she didn't delete anything
+        # since he/she didn't delete anything plus 1 more for the 'join' action log
         self.assert_messages_in_group(
             group_id, user_id=BaseTest.USER_ID, amount=messages_to_send_each - 1
         )
         self.assert_messages_in_group(
-            group_id, user_id=BaseTest.OTHER_USER_ID, amount=messages_to_send_each * 2
+            group_id, user_id=BaseTest.OTHER_USER_ID, amount=messages_to_send_each * 2 + 1
         )
 
     def test_joining_a_group_changes_last_update_time(self):
