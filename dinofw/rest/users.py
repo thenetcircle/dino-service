@@ -1,18 +1,19 @@
 import logging
-from typing import List
+from datetime import datetime as dt
+from typing import List, Tuple
 
 from sqlalchemy.orm import Session
 
 from dinofw.db.rdbms.schemas import UserGroupBase
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import GroupQuery, CreateActionLogQuery
+from dinofw.rest.models import GroupQuery, CreateActionLogQuery, ActionLogQuery
 from dinofw.rest.models import GroupUpdatesQuery
 from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UserStats
 from dinofw.rest.models import UserStatsQuery
 from dinofw.utils import utcnow_ts
+from time import time
 from dinofw.utils.config import GroupTypes
-from dinofw.utils.decorators import time_method
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,38 @@ class UserResource(BaseResource):
     ) -> List[UserGroup]:
         user_groups: List[UserGroupBase] = self.env.db.get_groups_for_user(user_id, query, db, receiver_stats=True)
         return BaseResource.to_user_group(user_groups)
+
+    def create_action_log_in_all_groups(
+            self, user_id: int, query: ActionLogQuery, db: Session
+    ) -> None:
+        """
+        This method is called only from an async rest api, so if it
+        takes a while it doesn't matter for the caller.
+        """
+        group_ids_and_created_at: Tuple[str, dt] = self.env.db.get_group_ids_and_created_at_for_user(
+            user_id, db
+        )
+
+        n_groups = len(group_ids_and_created_at)
+        before = None
+        if n_groups > 100:
+            before = time()
+
+        # ignore all fields except "payload"
+        query.receiver_id = None
+        query.user_id = None
+        query.group_id = None
+
+        for group_id, _ in group_ids_and_created_at:
+            try:
+                self.create_action_log(query, db, user_id=user_id, group_id=group_id)
+            except Exception as e:
+                self.logger.error(f"could not create action log in group {group_id} for user {user_id}: {str(e)}")
+                self.logger.exception(e)
+
+        if before is not None:
+            elapsed = time() - before
+            self.logger.info(f"creating action log in {n_groups} groups for user {user_id} took {elapsed:.1f}s")
 
     async def get_groups_updated_since(
         self, user_id: int, query: GroupUpdatesQuery, db: Session

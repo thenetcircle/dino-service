@@ -4,7 +4,10 @@ from typing import List
 
 from fastapi import APIRouter
 from fastapi import Depends
+from starlette.responses import Response
 from sqlalchemy.orm import Session
+from starlette.background import BackgroundTask
+from starlette.status import HTTP_201_CREATED
 
 from dinofw.rest.models import AttachmentQuery
 from dinofw.rest.models import ActionLogQuery
@@ -362,6 +365,36 @@ async def create_action_log(
     """
     try:
         return environ.env.rest.group.create_action_log(query, db, user_id=user_id)
+    except Exception as e:
+        log_error_and_raise_unknown(sys.exc_info(), e)
+
+
+@router.post("/users/{user_id}/groups/actions", response_model=Message)
+@timeit(logger, "POST", "/users/{user_id}/groups/actions")
+async def create_action_log_in_all_groups_for_user(
+    user_id: int, query: ActionLogQuery, db: Session = Depends(get_db)
+) -> Response:
+    """
+    Create one or more action logs in all groups this user has joined.
+
+    Only the `payload` field in the request body will be used by this API,
+    any other fields that are specified will be ignored.
+
+    This API is run asynchronously, and returns a 201 Created instead of
+    200 OK.
+
+    **Potential error codes in response:**
+    * `250`: if an unknown error occurred.
+    """
+
+    def _create_action_logs(user_id_, query_, db_):
+        environ.env.rest.user.create_action_log_in_all_groups(user_id_, query_, db_)
+
+    try:
+        task = BackgroundTask(
+            _create_action_logs, user_id_=user_id, query_=query, db_=db
+        )
+        return Response(background=task, status_code=HTTP_201_CREATED)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 

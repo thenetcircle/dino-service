@@ -5,7 +5,6 @@ from fastapi import APIRouter
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
-from dinofw.rest.models import GroupUsers
 from dinofw.rest.models import UserGroupStats
 from dinofw.utils import environ
 from dinofw.utils.api import get_db
