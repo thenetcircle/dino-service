@@ -79,37 +79,3 @@ class AttachmentModel(Model):
         required=True
     )
     updated_at = DateTime()
-
-    # TODO: figure out if use a json body or all just fields, don't need to filter on them, but need to update some
-    """
-    is_resized = Boolean(
-        required=True,
-        default=False,
-    )
-    const FIELD_EXT_NAME       = 'ext_name';
-    const FIELD_FILE_ID        = 'file_id';
-    const FIELD_ORIGIN_NAME    = 'origin_name';
-    const FIELD_SIZE           = 'size';
-    const FIELD_IP_ADDR        = 'ip_addr';
-    const FIELD_PLAY_TIME      = 'play_time';
-    const FIELD_SCREENSHOT     = 'screenshot';
-    const FIELD_WIDTH          = 'width';
-    const FIELD_HEIGHT         = 'height';
-    const FIELD_STATUS         = 'status';
-    const FIELD_UPDATED        = 'updated';
-    
-    id int(11) NOT NULL AUTO_INCREMENT,
-    msg_id int(11) NOT NULL,
-    sid int(11) NOT NULL,
-    ip_addr varchar(35) CHARACTER SET utf8 NOT NULL,
-    ip_addr_new varchar(64) NOT NULL,
-    filename varchar(32) CHARACTER SET utf8 NOT NULL,
-    filesize int(7) NOT NULL,
-    origname varchar(50) CHARACTER SET utf8 NOT NULL,
-    width int(4) DEFAULT '0',
-    height int(4) DEFAULT '0',
-    created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    deleted_on timestamp NULL DEFAULT NULL,
-    is_resized tinyint(1) DEFAULT '1',
-    new_msg_id varchar(23) CHARACTER SET utf8 DEFAULT NULL,
-    """
