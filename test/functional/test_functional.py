@@ -5,7 +5,6 @@ import arrow
 from dinofw.rest.models import AbstractQuery
 from dinofw.utils import utcnow_ts
 from dinofw.utils.config import MessageTypes, ErrorCodes
-from dinofw.utils.exceptions import NoSuchAttachmentException
 from test.base import BaseTest
 from test.functional.base_functional import BaseServerRestApi
 

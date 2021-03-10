@@ -92,7 +92,7 @@ async def get_group_history_for_user(
     * `250`: if an unknown error occurred.
     """
     try:
-        return await environ.env.rest.message.get_message_info(user_id, message_id, query, db)
+        return await environ.env.rest.message.get_message_info(user_id, message_id, query)
     except NoSuchMessageException as e:
         log_error_and_raise_known(ErrorCodes.NO_SUCH_MESSAGE, sys.exc_info(), e)
     except Exception as e:

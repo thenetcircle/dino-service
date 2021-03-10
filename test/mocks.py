@@ -1,4 +1,4 @@
-from datetime import datetime as dt, timedelta
+from datetime import datetime as dt
 from typing import Dict, List, Optional, Tuple
 from uuid import uuid4 as uuid
 
@@ -10,7 +10,6 @@ from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.schemas import MessageBase
 from dinofw.endpoint import IClientPublishHandler, IClientPublisher
 from dinofw.rest.models import AbstractQuery, AttachmentQuery, ActionLogQuery
-from dinofw.rest.models import CreateActionLogQuery
 from dinofw.rest.models import CreateAttachmentQuery
 from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import GroupQuery
@@ -21,6 +20,7 @@ from dinofw.utils import utcnow_dt
 from dinofw.utils.config import MessageTypes
 from dinofw.utils.exceptions import NoSuchGroupException
 from dinofw.utils.exceptions import NoSuchAttachmentException
+from dinofw.utils.exceptions import NoSuchMessageException
 
 
 class FakeStorage:
@@ -33,6 +33,20 @@ class FakeStorage:
         self.attachments_by_group = dict()
         self.attachments_by_message = dict()
         self.action_log = dict()
+
+    def get_message_with_id(self, group_id: str, user_id: int, message_id: str, created_at: float):
+        if group_id not in self.messages_by_group:
+            raise NoSuchMessageException(message_id)
+
+        for message in self.messages_by_group[group_id]:
+            if message.user_id != user_id:
+                continue
+
+            if message.message_id == message_id:
+                if created_at - 1 < arrow.get(message.created_at).timestamp < created_at + 1:
+                    return message
+
+        raise NoSuchMessageException(message_id)
 
     def create_action_log(self, user_id: int, group_id: str, query: ActionLogQuery):
         if group_id not in self.action_log:

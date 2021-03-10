@@ -57,6 +57,21 @@ class BaseServerRestApi(BaseDatabaseTest):
         )
         self.assertEqual(raw_response.status_code, 200)
 
+    def get_message_info(
+        self, user_id: int, message_id: str, group_id: str, created_at: float, expected_response_code: int = 200
+    ):
+
+        raw_response = self.client.post(
+            f"/v1/users/{user_id}/message/{message_id}/info",
+            json={
+                "group_id": group_id,
+                "created_at": created_at
+            },
+        )
+
+        self.assertEqual(raw_response.status_code, expected_response_code)
+        return raw_response.json()
+
     def send_message_to_group_from(
         self, group_id: str, user_id: int = BaseTest.USER_ID, amount: int = 1, delay: int = 10
     ) -> list:
