@@ -19,6 +19,7 @@ from dinofw.rest.models import GroupQuery
 from dinofw.rest.models import GroupUpdatesQuery
 from dinofw.rest.models import Histories
 from dinofw.rest.models import Message
+from dinofw.rest.models import MessageInfoQuery
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import OneToOneQuery
 from dinofw.rest.models import OneToOneStats
@@ -72,6 +73,28 @@ async def send_message_to_user(
         return await environ.env.rest.message.send_message_to_user(user_id, query, db)
     except NoSuchUserException as e:
         log_error_and_raise_known(ErrorCodes.NO_SUCH_USER, sys.exc_info(), e)
+    except Exception as e:
+        log_error_and_raise_unknown(sys.exc_info(), e)
+
+
+@router.post("/users/{user_id}/message/{message_id}/info", response_model=Message)
+@timeit(logger, "POST", "/groups/{group_id}/user/{user_id}/histories")
+async def get_group_history_for_user(
+        user_id: int, message_id: str, query: MessageInfoQuery, db: Session = Depends(get_db)
+) -> Message:
+    """
+    Get details about a message. The `created_at` field on the query is
+    needed to avoid large table scans when trying to find the message
+    in Cassandra.
+
+    **Potential error codes in response:**
+    * `602`: if the message doesn't exist for the given group and user,
+    * `250`: if an unknown error occurred.
+    """
+    try:
+        return await environ.env.rest.message.get_message_info(user_id, message_id, query, db)
+    except NoSuchMessageException as e:
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_MESSAGE, sys.exc_info(), e)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 

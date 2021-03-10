@@ -13,7 +13,6 @@ from dinofw.rest.models import AbstractQuery, AttachmentQuery, ActionLogQuery
 from dinofw.rest.models import CreateActionLogQuery
 from dinofw.rest.models import CreateAttachmentQuery
 from dinofw.rest.models import CreateGroupQuery
-from dinofw.rest.models import EditMessageQuery
 from dinofw.rest.models import GroupQuery
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
@@ -278,31 +277,6 @@ class FakeStorage:
                 break
 
         return messages
-
-    def edit_message(
-        self, group_id: str, message_id: str, query: EditMessageQuery
-    ) -> Optional[MessageBase]:
-
-        message = None
-
-        for m in self.messages_by_group[group_id]:
-            if m.message_id == message_id:
-                message = m
-                break
-
-        if message is None:
-            return None
-
-        if query.message_payload is not None:
-            message.message_payload = query.message_payload
-        if query.message_type is not None:
-            message.message_type = query.message_type
-        if query.status is not None:
-            message.status = query.status
-
-        message.updated_at = arrow.utcnow().datetime
-
-        return message
 
     def get_action_log_in_group(
         self, group_id: str, query: MessageQuery

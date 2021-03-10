@@ -124,11 +124,9 @@ class UpdateGroupQuery(CreateActionLogQuery):
     description: Optional[str]
 
 
-class EditMessageQuery(AdminQuery):
-    message_payload: Optional[str]
-    message_type: Optional[int]
-    status: Optional[int]
-    created_at: float
+class MessageInfoQuery(AbstractQuery):
+    group_id: str
+    created_at: float  # needed to avoid large table scans
 
 
 class CreateAttachmentQuery(AttachmentQuery, OneToOneQuery):

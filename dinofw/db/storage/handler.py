@@ -363,6 +363,27 @@ class CassandraHandler:
             updated_at=removed_at,
         )
 
+    def get_message_with_id(self, group_id: str, user_id: int, message_id: str, created_at: float):
+        approx_after = arrow.get(created_at).shift(minutes=-1).datetime
+        approx_before = arrow.get(created_at).shift(minutes=1).datetime
+
+        message = (
+            MessageModel.objects(
+                MessageModel.group_id == group_id,
+                MessageModel.user_id == user_id,
+                MessageModel.created_at > approx_after,
+                MessageModel.created_at > approx_before,
+                MessageModel.message_id == message_id,
+            )
+            .allow_filtering()
+            .first()
+        )
+
+        if message is None:
+            raise NoSuchAttachmentException(message_id)
+
+        return CassandraHandler.message_base_from_entity(message)
+
     # noinspection PyMethodMayBeStatic
     def get_attachment_from_file_id(self, group_id: str, created_at: dt, query: AttachmentQuery) -> MessageBase:
         approx_date = arrow.get(created_at).shift(minutes=-1).datetime

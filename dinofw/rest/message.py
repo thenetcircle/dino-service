@@ -7,9 +7,11 @@ from dinofw.rest.base import BaseResource
 from dinofw.rest.models import AttachmentQuery
 from dinofw.rest.models import CreateAttachmentQuery
 from dinofw.rest.models import Message
+from dinofw.rest.models import MessageInfoQuery
 from dinofw.rest.models import MessageQuery
 from dinofw.rest.models import SendMessageQuery
 from dinofw.utils import utcnow_ts
+from dinofw.utils.exceptions import NoSuchMessageException
 from dinofw.utils.exceptions import NoSuchUserException
 from dinofw.utils.exceptions import QueryValidationError
 
@@ -74,6 +76,16 @@ class MessageResource(BaseResource):
             group_id,
             group.created_at,
             query
+        )
+
+        return MessageResource.message_base_to_message(message_base)
+
+    async def get_message_info(self, user_id: int, message_id: str, query: MessageInfoQuery) -> Message:
+        message_base = self.env.storage.get_message_with_id(
+            group_id=query.group_id,
+            user_id=user_id,
+            message_id=message_id,
+            created_at=query.created_at
         )
 
         return MessageResource.message_base_to_message(message_base)
