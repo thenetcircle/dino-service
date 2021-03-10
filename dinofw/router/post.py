@@ -78,9 +78,9 @@ async def send_message_to_user(
 
 
 @router.post("/users/{user_id}/message/{message_id}/info", response_model=Message)
-@timeit(logger, "POST", "/groups/{group_id}/user/{user_id}/histories")
-async def get_group_history_for_user(
-        user_id: int, message_id: str, query: MessageInfoQuery, db: Session = Depends(get_db)
+@timeit(logger, "POST", "/users/{user_id}/message/{message_id}/info")
+async def get_message_info(
+        user_id: int, message_id: str, query: MessageInfoQuery
 ) -> Message:
     """
     Get details about a message. The `created_at` field on the query is
