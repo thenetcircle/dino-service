@@ -242,6 +242,7 @@ class GroupResource(BaseResource):
         )
         user_ids = user_ids_and_join_times.keys()
 
+        self.create_action_log(query.action_log, db, group_id=group_id)
         self.env.client_publisher.group_change(group, user_ids)
 
     async def join_group(self, group_id: str, query: JoinGroupQuery, db: Session) -> None:

@@ -117,7 +117,7 @@ class AttachmentQuery(CreateActionLogQuery):
     file_id: str
 
 
-class UpdateGroupQuery(AbstractQuery):
+class UpdateGroupQuery(CreateActionLogQuery):
     status: Optional[int]
     owner: Optional[int]
     group_name: Optional[str]

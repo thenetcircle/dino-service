@@ -126,7 +126,7 @@ async def update_user_statistics_in_group(
 @timeit(logger, "PUT", "/groups/{group_id}")
 async def edit_group_information(
     group_id, query: UpdateGroupQuery, db: Session = Depends(get_db)
-) -> Group:
+) -> None:
     """
     Update group details.
 
@@ -135,7 +135,7 @@ async def edit_group_information(
     * `250`: if an unknown error occurred.
     """
     try:
-        return await environ.env.rest.group.update_group_information(
+        await environ.env.rest.group.update_group_information(
             group_id, query, db
         )
     except NoSuchGroupException as e:
