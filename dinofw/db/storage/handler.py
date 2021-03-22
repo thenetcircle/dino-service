@@ -372,7 +372,7 @@ class CassandraHandler:
                 MessageModel.group_id == group_id,
                 MessageModel.user_id == user_id,
                 MessageModel.created_at > approx_after,
-                MessageModel.created_at > approx_before,
+                MessageModel.created_at <= approx_before,
                 MessageModel.message_id == message_id,
             )
             .allow_filtering()
