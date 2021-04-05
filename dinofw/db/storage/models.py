@@ -2,6 +2,7 @@ import uuid
 
 from cassandra.cqlengine.columns import DateTime
 from cassandra.cqlengine.columns import Integer
+from cassandra.cqlengine.columns import TinyInt
 from cassandra.cqlengine.columns import Text
 from cassandra.cqlengine.columns import UUID
 from cassandra.cqlengine.models import Model
@@ -28,9 +29,9 @@ class MessageModel(Model):
         required=True,
         default=uuid.uuid4
     )
-
-    # TODO: db has 'status', not needed?
-
+    status = TinyInt(
+        required=True
+    )
     file_id = Text(
         required=False
     )
@@ -69,9 +70,9 @@ class AttachmentModel(Model):
     file_id = Text(
         required=True
     )
-
-    # TODO: db has 'status', not needed?
-
+    status = TinyInt(
+        required=False
+    )
     message_payload = Text(
         required=False
     )

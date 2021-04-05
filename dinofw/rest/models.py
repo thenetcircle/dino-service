@@ -206,10 +206,12 @@ class Message(BaseModel):
     group_id: str
     created_at: float
     user_id: int
+
     message_id: str
+    message_type: int
     message_payload: Optional[str]
 
-    message_type: int
+    status: Optional[int]
     file_id: Optional[str]
     updated_at: Optional[float]
     removed_at: Optional[float]

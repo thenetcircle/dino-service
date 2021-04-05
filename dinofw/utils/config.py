@@ -2,19 +2,24 @@ from typing import Final
 
 
 class GroupTypes:
-    GROUP = 0
-    ONE_TO_ONE = 1
+    GROUP: Final = 0
+    ONE_TO_ONE: Final = 1
 
 
 class MessageTypes:
-    MESSAGE = 0
-    NO_THANKS = 1
-    NO_THANKS_HIDE = 2
-    IMAGE = 3
-    GREETER_MEETER_AUTO = 4
-    GREETER_MEETER_MANUAL = 5
+    MESSAGE: Final = 0
+    NO_THANKS: Final = 1
+    NO_THANKS_HIDE: Final = 2
+    IMAGE: Final = 3
+    GREETER_MEETER_AUTO: Final = 4
+    GREETER_MEETER_MANUAL: Final = 5
 
-    ACTION = 100
+    ACTION: Final = 100
+
+
+class MessageStatus:
+    # not a required field, so default value is null, and we don't filter queries on it
+    REVERTED: Final = 1
 
 
 class DefaultValues:
@@ -26,20 +31,20 @@ class DefaultValues:
 
 
 class RedisKeys:
-    RKEY_AUTH = "user:auth:{}"  # user:auth:user_id
-    RKEY_USERS_IN_GROUP = "group:users:{}"  # group:users:group_id
-    RKEY_LAST_SEND_TIME = "group:lastsent:{}"  # group:lastsent:group_id
-    RKEY_LAST_READ_TIME = "group:lastread:{}"  # group:lastread:group_id
-    RKEY_USER_STATS_IN_GROUP = "group:stats:{}"  # group:stats:group_id
-    RKEY_UNREAD_IN_GROUP = "group:unread:{}"  # user:unread:group_id
-    RKEY_HIDE_GROUP = "group:hide:{}"  # group:hide:group_id
-    RKEY_USER_MESSAGE_STATUS = "user:status:{}"  # user:status:user_id
-    RKEY_MESSAGES_IN_GROUP = "group:messages:{}"  # group:messages:group_id
-    RKEY_GROUP_COUNT_INCL_HIDDEN = "group:count:inclhidden:{}"  # group:count:inclhidden:user_id
-    RKEY_GROUP_COUNT_NO_HIDDEN = "group:count:visible:{}"  # group:count:visible:user_id
-    RKEY_LAST_SENT_TIME_USER = "user:lastsent:{}"  # user:lastsent:user_id
-    RKEY_LAST_READ_TIME_USER = "user:lastread:{}"  # user:lastread:user_id
-    RKEY_LAST_MESSAGE_TIME = "group:lastmsgtime:{}"  # group:lastmsgtime:group_id
+    RKEY_AUTH: Final = "user:auth:{}"  # user:auth:user_id
+    RKEY_USERS_IN_GROUP: Final = "group:users:{}"  # group:users:group_id
+    RKEY_LAST_SEND_TIME: Final = "group:lastsent:{}"  # group:lastsent:group_id
+    RKEY_LAST_READ_TIME: Final = "group:lastread:{}"  # group:lastread:group_id
+    RKEY_USER_STATS_IN_GROUP: Final = "group:stats:{}"  # group:stats:group_id
+    RKEY_UNREAD_IN_GROUP: Final = "group:unread:{}"  # user:unread:group_id
+    RKEY_HIDE_GROUP: Final = "group:hide:{}"  # group:hide:group_id
+    RKEY_USER_MESSAGE_STATUS: Final = "user:status:{}"  # user:status:user_id
+    RKEY_MESSAGES_IN_GROUP: Final = "group:messages:{}"  # group:messages:group_id
+    RKEY_GROUP_COUNT_INCL_HIDDEN: Final = "group:count:inclhidden:{}"  # group:count:inclhidden:user_id
+    RKEY_GROUP_COUNT_NO_HIDDEN: Final = "group:count:visible:{}"  # group:count:visible:user_id
+    RKEY_LAST_SENT_TIME_USER: Final = "user:lastsent:{}"  # user:lastsent:user_id
+    RKEY_LAST_READ_TIME_USER: Final = "user:lastread:{}"  # user:lastread:user_id
+    RKEY_LAST_MESSAGE_TIME: Final = "group:lastmsgtime:{}"  # group:lastmsgtime:group_id
 
     @staticmethod
     def last_message_time(group_id: str) -> str:
