@@ -2,12 +2,14 @@ import time
 
 from dinofw.rest.groups import GroupResource
 from dinofw.rest.message import MessageResource
-from dinofw.rest.models import CreateActionLogQuery, GroupInfoQuery, JoinGroupQuery
-from dinofw.rest.models import CreateGroupQuery
 from dinofw.rest.models import Group
 from dinofw.rest.models import GroupUsers
-from dinofw.rest.models import MessageQuery
-from dinofw.rest.models import SendMessageQuery
+from dinofw.rest.queries import CreateActionLogQuery
+from dinofw.rest.queries import CreateGroupQuery
+from dinofw.rest.queries import GroupInfoQuery
+from dinofw.rest.queries import JoinGroupQuery
+from dinofw.rest.queries import MessageQuery
+from dinofw.rest.queries import SendMessageQuery
 from dinofw.utils.config import MessageTypes
 from dinofw.utils.exceptions import NoSuchGroupException
 from test.base import async_test, BaseTest

@@ -2,8 +2,8 @@ import time
 
 from dinofw.rest.message import MessageResource
 from dinofw.rest.models import Message
-from dinofw.rest.models import MessageQuery
-from dinofw.rest.models import SendMessageQuery
+from dinofw.rest.queries import MessageQuery
+from dinofw.rest.queries import SendMessageQuery
 from dinofw.utils.config import MessageTypes
 from test.base import BaseTest
 from test.base import async_test

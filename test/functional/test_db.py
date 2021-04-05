@@ -1,7 +1,7 @@
 import arrow
 import time
 
-from dinofw.rest.models import CreateGroupQuery
+from dinofw.rest.queries import CreateGroupQuery
 from dinofw.utils import utcnow_dt
 from dinofw.utils.config import GroupTypes
 from test.base import BaseTest

@@ -1,9 +1,8 @@
 import time
-from uuid import uuid4 as uuid
 
 import arrow
 
-from dinofw.rest.models import AbstractQuery
+from dinofw.rest.queries import AbstractQuery
 from dinofw.utils import utcnow_ts
 from dinofw.utils.config import MessageTypes
 from test.base import BaseTest
@@ -204,7 +203,7 @@ class BaseServerRestApi(BaseDatabaseTest):
     def groups_updated_since(self, user_id: int, since: float):
         raw_response = self.client.post(
             f"/v1/users/{user_id}/groups/updates",
-            json={"since": since, "count_unread": False, "per_page": 100,},
+            json={"since": since, "count_unread": False, "per_page": 100},
         )
         self.assertEqual(raw_response.status_code, 200)
 
@@ -293,7 +292,7 @@ class BaseServerRestApi(BaseDatabaseTest):
     ):
         raw_response = self.client.put(
             f"/v1/groups/{group_id}/message/{message_id}/edit",
-            json={"created_at": created_at, "message_payload": new_payload,},
+            json={"created_at": created_at, "message_payload": new_payload},
         )
         self.assertEqual(raw_response.status_code, 200)
 
@@ -303,7 +302,7 @@ class BaseServerRestApi(BaseDatabaseTest):
 
         raw_response = self.client.put(
             f"/v1/groups/{group_id}/user/{user_id}/update",
-            json={"highlight_time": now_plus_2_days,},
+            json={"highlight_time": now_plus_2_days},
         )
         self.assertEqual(raw_response.status_code, 200)
 
@@ -312,7 +311,7 @@ class BaseServerRestApi(BaseDatabaseTest):
 
         raw_response = self.client.put(
             f"/v1/groups/{group_id}/user/{user_id}/update",
-            json={"last_read_time": now,},
+            json={"last_read_time": now},
         )
         self.assertEqual(raw_response.status_code, 200)
 
@@ -321,7 +320,7 @@ class BaseServerRestApi(BaseDatabaseTest):
             receiver_id = BaseTest.OTHER_USER_ID
 
         raw_response = self.client.post(
-            f"/v1/users/{user_id}/group", json={"receiver_id": receiver_id,},
+            f"/v1/users/{user_id}/group", json={"receiver_id": receiver_id},
         )
         self.assertEqual(raw_response.status_code, 200)
 
@@ -384,7 +383,7 @@ class BaseServerRestApi(BaseDatabaseTest):
 
         raw_response = self.client.post(
             f"/v1/groups/{group_id}/user/{user_id}/attachments",
-            json={"per_page": 100, "until": now,},
+            json={"per_page": 100, "until": now},
         )
         self.assertEqual(raw_response.status_code, 200)
 

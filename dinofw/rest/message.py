@@ -4,14 +4,13 @@ from typing import List
 from sqlalchemy.orm import Session
 
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import AttachmentQuery
-from dinofw.rest.models import CreateAttachmentQuery
 from dinofw.rest.models import Message
-from dinofw.rest.models import MessageInfoQuery
-from dinofw.rest.models import MessageQuery
-from dinofw.rest.models import SendMessageQuery
+from dinofw.rest.queries import AttachmentQuery
+from dinofw.rest.queries import CreateAttachmentQuery
+from dinofw.rest.queries import MessageInfoQuery
+from dinofw.rest.queries import MessageQuery
+from dinofw.rest.queries import SendMessageQuery
 from dinofw.utils import utcnow_ts
-from dinofw.utils.exceptions import NoSuchMessageException
 from dinofw.utils.exceptions import NoSuchUserException
 from dinofw.utils.exceptions import QueryValidationError
 

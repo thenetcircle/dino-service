@@ -2,7 +2,7 @@ import time
 
 import arrow
 
-from dinofw.rest.models import AbstractQuery
+from dinofw.rest.queries import AbstractQuery
 from dinofw.utils import utcnow_ts
 from dinofw.utils.config import MessageTypes, ErrorCodes
 from test.base import BaseTest

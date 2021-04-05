@@ -4,7 +4,7 @@ from gnenv.environ import find_config
 from gnenv.environ import load_secrets_file
 from gnenv.environ import ConfigDict
 
-from dinofw.rest.models import MessageQuery
+from dinofw.rest.queries import MessageQuery
 from dinofw.db.storage.handler import CassandraHandler
 
 

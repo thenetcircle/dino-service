@@ -1,7 +1,12 @@
 from dinofw.rest.groups import GroupResource
-from dinofw.rest.models import GroupQuery, CreateGroupQuery, Group, UserGroup, UserStatsQuery
+from dinofw.rest.models import Group
+from dinofw.rest.models import UserGroup
+from dinofw.rest.queries import CreateGroupQuery
+from dinofw.rest.queries import GroupQuery
+from dinofw.rest.queries import UserStatsQuery
 from dinofw.rest.users import UserResource
-from test.base import BaseTest, async_test
+from test.base import BaseTest
+from test.base import async_test
 
 
 class TestUserResource(BaseTest):

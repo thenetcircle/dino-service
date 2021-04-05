@@ -8,9 +8,9 @@ from starlette.background import BackgroundTask
 from starlette.responses import Response
 from starlette.status import HTTP_201_CREATED
 
-from dinofw.rest.models import Group, JoinGroupQuery
-from dinofw.rest.models import UpdateGroupQuery
-from dinofw.rest.models import UpdateUserGroupStats
+from dinofw.rest.queries import JoinGroupQuery
+from dinofw.rest.queries import UpdateGroupQuery
+from dinofw.rest.queries import UpdateUserGroupStats
 from dinofw.utils import environ
 from dinofw.utils.api import get_db
 from dinofw.utils.api import log_error_and_raise_known

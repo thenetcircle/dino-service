@@ -9,8 +9,8 @@ from starlette.background import BackgroundTask
 from starlette.responses import Response
 from starlette.status import HTTP_201_CREATED
 
-from dinofw.rest.models import AttachmentQuery
-from dinofw.rest.models import CreateActionLogQuery
+from dinofw.rest.queries import AttachmentQuery
+from dinofw.rest.queries import CreateActionLogQuery
 from dinofw.utils import environ
 from dinofw.utils.api import get_db
 from dinofw.utils.api import log_error_and_raise_known

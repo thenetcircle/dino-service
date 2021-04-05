@@ -11,15 +11,15 @@ from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.rdbms.schemas import UserGroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.schemas import MessageBase
-from dinofw.rest.models import AbstractQuery
-from dinofw.rest.models import ActionLogQuery
 from dinofw.rest.models import Group
 from dinofw.rest.models import GroupJoinTime
 from dinofw.rest.models import GroupLastRead
 from dinofw.rest.models import Message
 from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UserGroupStats
-from dinofw.utils import utcnow_dt, users_to_group_id
+from dinofw.rest.queries import AbstractQuery
+from dinofw.rest.queries import ActionLogQuery
+from dinofw.utils import utcnow_dt
 from dinofw.utils import utcnow_ts
 from dinofw.utils.decorators import time_method
 from dinofw.utils.exceptions import NoSuchGroupException
@@ -93,7 +93,7 @@ class BaseResource(ABC):
     ) -> Message:
         # creating an action log is optional for the caller
         if query is None:
-            return None
+            return None  # noqa
 
         if query.user_id is not None:
             user_id = query.user_id

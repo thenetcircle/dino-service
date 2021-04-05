@@ -1,18 +1,20 @@
 import logging
 from datetime import datetime as dt
+from time import time
 from typing import List, Tuple
 
 from sqlalchemy.orm import Session
 
 from dinofw.db.rdbms.schemas import UserGroupBase
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import GroupQuery, CreateActionLogQuery, ActionLogQuery
-from dinofw.rest.models import GroupUpdatesQuery
 from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UserStats
-from dinofw.rest.models import UserStatsQuery
+from dinofw.rest.queries import ActionLogQuery
+from dinofw.rest.queries import CreateActionLogQuery
+from dinofw.rest.queries import GroupQuery
+from dinofw.rest.queries import GroupUpdatesQuery
+from dinofw.rest.queries import UserStatsQuery
 from dinofw.utils import utcnow_ts
-from time import time
 from dinofw.utils.config import GroupTypes
 
 logger = logging.getLogger(__name__)
