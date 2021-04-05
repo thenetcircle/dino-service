@@ -1,25 +1,31 @@
 from datetime import datetime as dt
-from typing import Dict, List, Optional, Tuple
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Tuple
 from uuid import uuid4 as uuid
 
 import arrow
 
 from dinofw.cache.redis import CacheRedis
-from dinofw.db.rdbms.schemas import GroupBase, UserGroupBase
+from dinofw.db.rdbms.schemas import GroupBase
+from dinofw.db.rdbms.schemas import UserGroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.schemas import MessageBase
 from dinofw.endpoint import IClientPublishHandler, IClientPublisher
-from dinofw.rest.models import AbstractQuery, AttachmentQuery, ActionLogQuery
-from dinofw.rest.models import CreateAttachmentQuery
-from dinofw.rest.models import CreateGroupQuery
-from dinofw.rest.models import GroupQuery
-from dinofw.rest.models import MessageQuery
-from dinofw.rest.models import SendMessageQuery
+from dinofw.rest.queries import AbstractQuery
+from dinofw.rest.queries import ActionLogQuery
+from dinofw.rest.queries import AttachmentQuery
+from dinofw.rest.queries import CreateAttachmentQuery
+from dinofw.rest.queries import CreateGroupQuery
+from dinofw.rest.queries import GroupQuery
+from dinofw.rest.queries import MessageQuery
+from dinofw.rest.queries import SendMessageQuery
 from dinofw.utils import trim_micros
 from dinofw.utils import utcnow_dt
 from dinofw.utils.config import MessageTypes
-from dinofw.utils.exceptions import NoSuchGroupException
 from dinofw.utils.exceptions import NoSuchAttachmentException
+from dinofw.utils.exceptions import NoSuchGroupException
 from dinofw.utils.exceptions import NoSuchMessageException
 
 

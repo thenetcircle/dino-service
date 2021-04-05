@@ -4,7 +4,7 @@ from typing import List
 
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.storage.schemas import MessageBase
-from dinofw.rest.models import AbstractQuery
+from dinofw.rest.queries import AbstractQuery
 
 
 class EventTypes:
