@@ -24,11 +24,11 @@ from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.models import AttachmentModel
 from dinofw.db.storage.models import MessageModel
 from dinofw.db.storage.schemas import MessageBase
-from dinofw.rest.models import AttachmentQuery, ActionLogQuery
-from dinofw.rest.models import CreateActionLogQuery
-from dinofw.rest.models import CreateAttachmentQuery
-from dinofw.rest.models import MessageQuery
-from dinofw.rest.models import SendMessageQuery
+from dinofw.rest.queries import ActionLogQuery
+from dinofw.rest.queries import AttachmentQuery
+from dinofw.rest.queries import CreateAttachmentQuery
+from dinofw.rest.queries import MessageQuery
+from dinofw.rest.queries import SendMessageQuery
 from dinofw.utils import utcnow_dt
 from dinofw.utils.config import ConfigKeys
 from dinofw.utils.config import DefaultValues
