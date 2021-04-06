@@ -380,7 +380,7 @@ class CassandraHandler:
         )
 
         if message is None:
-            raise NoSuchAttachmentException(message_id)
+            raise NoSuchMessageException(message_id)
 
         return CassandraHandler.message_base_from_entity(message)
 
