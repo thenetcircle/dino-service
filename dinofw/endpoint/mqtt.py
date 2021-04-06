@@ -148,11 +148,15 @@ class MqttPublishHandler(IClientPublishHandler):
             self.logger.exception(e)
 
     def message(self, message: MessageBase, user_ids: List[int]) -> None:
-        data = MqttPublishHandler.message_base_to_event(message)
+        data = MqttPublishHandler.message_base_to_event(message, event_type=EventTypes.MESSAGE)
         self.send(user_ids, data)
 
     def attachment(self, attachment: MessageBase, user_ids: List[int]) -> None:
-        data = MqttPublishHandler.message_base_to_event(attachment)
+        data = MqttPublishHandler.message_base_to_event(attachment, event_type=EventTypes.MESSAGE)
+        self.send(user_ids, data)
+
+    def edit(self, message: MessageBase, user_ids: List[int]) -> None:
+        data = MqttPublishHandler.message_base_to_event(message, event_type=EventTypes.EDIT)
         self.send(user_ids, data)
 
     def read(self, group_id: str, user_id: int, user_ids: List[int], now: float) -> None:

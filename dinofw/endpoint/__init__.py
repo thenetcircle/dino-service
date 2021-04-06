@@ -12,6 +12,7 @@ class EventTypes:
     LEAVE = "leave"
     GROUP = "group"
     READ = "read"
+    EDIT = "edit"
     MESSAGE = "message"
     DELETE_ATTACHMENT = "delete_attachment"
     DELETE_MESSAGE = "delete_message"
@@ -38,6 +39,10 @@ class IServerPublishHandler(IPublishHandler, ABC):
 class IClientPublishHandler(IPublishHandler, ABC):
     @abstractmethod
     def message(self, message: MessageBase, user_ids: List[int]) -> None:
+        """pass"""
+
+    @abstractmethod
+    def edit(self, message: MessageBase, user_ids: List[int]) -> None:
         """pass"""
 
     @abstractmethod
@@ -104,9 +109,9 @@ class IClientPublishHandler(IPublishHandler, ABC):
         }
 
     @staticmethod
-    def message_base_to_event(message: MessageBase):
+    def message_base_to_event(message: MessageBase, event_type: EventTypes = EventTypes.MESSAGE):
         return {
-            "event_type": EventTypes.MESSAGE,
+            "event_type": event_type,
             "group_id": message.group_id,
             "sender_id": message.user_id,
             "file_id": message.file_id,

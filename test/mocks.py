@@ -658,6 +658,9 @@ class FakePublisherHandler(IClientPublishHandler):
     def attachment(self, attachment: MessageBase, user_ids: List[int]) -> None:
         pass
 
+    def edit(self, message: MessageBase, user_ids: List[int]) -> None:
+        self.message(message, user_ids)
+
     def read(self, group_id: str, user_id: int, user_ids: List[int], now) -> None:
         for receiver in user_ids:
             if receiver not in self.sent_reads:

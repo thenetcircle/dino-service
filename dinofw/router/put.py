@@ -8,7 +8,7 @@ from starlette.background import BackgroundTask
 from starlette.responses import Response
 from starlette.status import HTTP_201_CREATED
 
-from dinofw.rest.queries import JoinGroupQuery
+from dinofw.rest.queries import JoinGroupQuery, EditMessageQuery
 from dinofw.rest.queries import UpdateGroupQuery
 from dinofw.rest.queries import UpdateUserGroupStats
 from dinofw.utils import environ
@@ -17,7 +17,7 @@ from dinofw.utils.api import log_error_and_raise_known
 from dinofw.utils.api import log_error_and_raise_unknown
 from dinofw.utils.config import ErrorCodes
 from dinofw.utils.decorators import timeit
-from dinofw.utils.exceptions import NoSuchGroupException
+from dinofw.utils.exceptions import NoSuchGroupException, NoSuchMessageException
 from dinofw.utils.exceptions import UserNotInGroupException
 
 logger = logging.getLogger(__name__)
@@ -160,5 +160,25 @@ async def join_group(
         return await environ.env.rest.group.join_group(group_id, query, db)
     except NoSuchGroupException as e:
         log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
+    except Exception as e:
+        log_error_and_raise_unknown(sys.exc_info(), e)
+
+
+@router.put("/users/{user_id}/message/{message_id}/edit")
+@timeit(logger, "PUT", "/users/{user_id}/message/{message_id}/edit")
+async def edit_message(
+    user_id: int, message_id: str, query: EditMessageQuery
+) -> None:
+    """
+    Edit the payload and/or status of a message.
+
+    **Potential error codes in response:**
+    * `602`: if the message doesn't exist for the given group and user,
+    * `250`: if an unknown error occurred.
+    """
+    try:
+        return await environ.env.rest.message.edit(user_id, message_id, query)
+    except NoSuchMessageException as e:
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_MESSAGE, sys.exc_info(), e)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)

@@ -5,12 +5,12 @@ from sqlalchemy.orm import Session
 
 from dinofw.rest.base import BaseResource
 from dinofw.rest.models import Message
-from dinofw.rest.queries import AttachmentQuery
+from dinofw.rest.queries import AttachmentQuery, EditMessageQuery
 from dinofw.rest.queries import CreateAttachmentQuery
 from dinofw.rest.queries import MessageInfoQuery
 from dinofw.rest.queries import MessageQuery
 from dinofw.rest.queries import SendMessageQuery
-from dinofw.utils import utcnow_ts
+from dinofw.utils import utcnow_ts, users_to_group_id
 from dinofw.utils.exceptions import NoSuchUserException
 from dinofw.utils.exceptions import QueryValidationError
 
@@ -136,8 +136,21 @@ class MessageResource(BaseResource):
         self.create_action_log(query.action_log, db, group_id=group_id)
         self.env.server_publisher.delete_attachments(group_id, [attachment], user_ids, now)
 
-    async def update_messages(self, group_id: str, query: MessageQuery):
-        self.env.storage.update_messages_in_group(group_id, query)
+    async def edit(self, user_id: int, message_id: str, query: EditMessageQuery, db: Session):
+        if query.group_id is None and query.receiver_id is None:
+            raise QueryValidationError("both group_id and receiver_id is empty")
+        elif query.group_id is not None and query.receiver_id is not None:
+            raise QueryValidationError("can't use both group_id AND receiver_id, choose one")
+
+        group_id = query.group_id
+        if group_id is None:
+            group_id = users_to_group_id(user_id, query.receiver_id)
+
+        message = self.env.storage.edit_message(group_id, user_id, message_id, query)
+        self.create_action_log(query.action_log, db, group_id=group_id)
+
+        # we don't want to increase the unread count, but we want to notify users of the change
+        self._user_sends_a_message(group_id, user_id, message, db, should_increase_unread=False)
 
     async def delete_messages(self, group_id: str, query: MessageQuery):
         self.env.storage.delete_messages_in_group(group_id, query)

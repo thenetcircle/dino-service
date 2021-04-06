@@ -24,7 +24,7 @@ from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.models import AttachmentModel
 from dinofw.db.storage.models import MessageModel
 from dinofw.db.storage.schemas import MessageBase
-from dinofw.rest.queries import ActionLogQuery
+from dinofw.rest.queries import ActionLogQuery, EditMessageQuery
 from dinofw.rest.queries import AttachmentQuery
 from dinofw.rest.queries import CreateAttachmentQuery
 from dinofw.rest.queries import MessageQuery
@@ -511,6 +511,58 @@ class CassandraHandler:
             message_payload=query.message_payload,
             message_type=query.message_type,
         )
+
+        return CassandraHandler.message_base_from_entity(message)
+
+    def edit_message(self, group_id: str, user_id: int, message_id: str, query: EditMessageQuery) -> MessageBase:
+        created_at = query.created_at
+        now = utcnow_dt()
+
+        # querying by exact datetime seems to be shifty in cassandra, so just
+        # filter by a minute before and after
+        approx_date_after = arrow.get(created_at).shift(minutes=-1).datetime
+        approx_date_before = arrow.get(created_at).shift(minutes=1).datetime
+
+        message = (
+            MessageModel.objects(
+                MessageModel.group_id == group_id,
+                MessageModel.user_id == user_id,
+                MessageModel.created_at > approx_date_after,
+                MessageModel.created_at < approx_date_before,
+                MessageModel.message_id == message_id,
+            )
+            .allow_filtering()
+            .first()
+        )
+
+        if message is None:
+            raise NoSuchMessageException(message_id)
+
+        message.update(
+            message_payload=query.message_payload,
+            status=query.status,
+            updated_at=now,
+        )
+
+        attachment = (
+            AttachmentModel.objects(
+                AttachmentModel.group_id == group_id,
+                AttachmentModel.user_id == user_id,
+                AttachmentModel.created_at > approx_date_after,
+                AttachmentModel.created_at < approx_date_before,
+                AttachmentModel.message_id == message_id,
+            )
+            .allow_filtering()
+            .first()
+        )
+
+        # might not be an attachment
+        if attachment is not None:
+            attachment.update(
+                message_payload=query.message_payload,
+                status=query.status,
+                updated_at=now,
+            )
 
         return CassandraHandler.message_base_from_entity(message)
 

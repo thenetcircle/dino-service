@@ -11,6 +11,7 @@ from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.rdbms.schemas import UserGroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.schemas import MessageBase
+from dinofw.endpoint import EventTypes
 from dinofw.rest.models import Group
 from dinofw.rest.models import GroupJoinTime
 from dinofw.rest.models import GroupLastRead
@@ -64,7 +65,13 @@ class BaseResource(ABC):
                 self.env.cache.set_unread_in_group(group_id, user_id, 0)
 
     def _user_sends_a_message(
-        self, group_id: str, user_id: int, message: MessageBase, db
+            self,
+            group_id: str,
+            user_id: int,
+            message: MessageBase,
+            db,
+            should_increase_unread: bool = True,
+            event_type: EventTypes = EventTypes.MESSAGE
     ):
         """
         update database and cache with everything related to sending a message
@@ -78,11 +85,16 @@ class BaseResource(ABC):
         )
 
         user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
-        self.env.client_publisher.message(message, user_ids)
 
-        # don't increase unread for the sender
-        del user_ids[user_id]
-        self.env.cache.increase_unread_in_group_for(group_id, user_ids)
+        if event_type == EventTypes.MESSAGE:
+            self.env.client_publisher.message(message, user_ids)
+        elif event_type == EventTypes.EDIT:
+            self.env.client_publisher.edit(message, user_ids)
+
+        if should_increase_unread:
+            # don't increase unread for the sender
+            del user_ids[user_id]
+            self.env.cache.increase_unread_in_group_for(group_id, user_ids)
 
     def create_action_log(
         self,
