@@ -30,7 +30,7 @@ class MessageModel(Model):
         default=uuid.uuid4
     )
     status = TinyInt(
-        required=True
+        required=False
     )
     file_id = Text(
         required=False
