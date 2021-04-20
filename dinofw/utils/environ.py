@@ -49,7 +49,7 @@ def init_logging(gn_env: GNEnvironment) -> None:
 
     sentry_sdk.init(
         dsn=dsn,
-        environment=os.getenv(ENV_KEY_ENVIRONMENT),
+        environment=os.getenv("ENVIRONMENT"),  # TODO: fix DINO_ENVIRONMENT / ENVIRONMENT discrepancy
         server_name=socket.gethostname(),
         release=tag_name,
         integrations=[
