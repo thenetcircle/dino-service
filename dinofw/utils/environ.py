@@ -3,6 +3,7 @@ import os
 
 from gnenv import create_env
 from gnenv.environ import GNEnvironment
+from sentry_sdk.integrations.redis import RedisIntegration
 
 from dinofw.utils.config import ConfigKeys
 
@@ -23,6 +24,7 @@ def init_logging(gn_env: GNEnvironment) -> None:
         or logging_type in ["logger", "default", "mock"]
     ):
         return
+
     if logging_type != "sentry":
         raise RuntimeError(f"unknown logging type {logging_type}")
 
@@ -33,7 +35,6 @@ def init_logging(gn_env: GNEnvironment) -> None:
         )
         return
 
-    import raven
     import socket
     from git.cmd import Git
 
@@ -42,21 +43,29 @@ def init_logging(gn_env: GNEnvironment) -> None:
         home_dir = ".."
     tag_name = Git(home_dir).describe()
 
-    gn_env.sentry = raven.Client(
+    import sentry_sdk
+    from sentry_sdk import capture_exception as sentry_capture_exception
+    from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+
+    sentry_sdk.init(
         dsn=dsn,
-        environment=os.getenv(ENV_KEY_ENVIRONMENT),
-        name=socket.gethostname(),
+        environment=os.getenv("ENVIRONMENT"),  # TODO: fix DINO_ENVIRONMENT / ENVIRONMENT discrepancy
+        server_name=socket.gethostname(),
         release=tag_name,
+        integrations=[
+            SqlalchemyIntegration(),
+            RedisIntegration()
+        ],
     )
 
-    def capture_exception(e_info) -> None:
+    def capture_wrapper(e_info) -> None:
         try:
-            gn_env.sentry.captureException(e_info)
+            sentry_capture_exception(e_info)
         except Exception as e2:
             logger.exception(e_info)
             logger.error(f"could not capture exception with sentry: {str(e2)}")
 
-    gn_env.capture_exception = capture_exception
+    gn_env.capture_exception = capture_wrapper
 
 
 def init_database(gn_env: GNEnvironment):

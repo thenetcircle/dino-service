@@ -12,7 +12,7 @@ lz4==3.1.0
 psycopg2-binary==2.8.6
 redis==3.5.3
 PyYAML==5.3.1
-raven==6.10.0
+sentry-sdk==1.0.0
 requests==2.24.0
 sortedcontainers==2.2.2
 sqlalchemy==1.3.20
