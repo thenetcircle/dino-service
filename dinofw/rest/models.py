@@ -69,6 +69,7 @@ class Message(BaseModel):
     message_id: str
     message_type: int
     message_payload: Optional[str]
+    context: Optional[str]
 
     status: Optional[int]
     file_id: Optional[str]

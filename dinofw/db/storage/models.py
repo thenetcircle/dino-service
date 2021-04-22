@@ -38,6 +38,9 @@ class MessageModel(Model):
     message_payload = Text(
         required=False
     )
+    context = Text(
+        required=False
+    )
     message_type = Integer(
         required=True
     )
@@ -74,6 +77,9 @@ class AttachmentModel(Model):
         required=False
     )
     message_payload = Text(
+        required=False
+    )
+    context = Text(
         required=False
     )
     message_type = Integer(

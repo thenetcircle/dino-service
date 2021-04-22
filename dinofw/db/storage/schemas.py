@@ -13,4 +13,5 @@ class MessageBase(BaseModel):
     status: Optional[int]
     file_id: Optional[str]
     message_payload: Optional[str]
+    context: Optional[str]
     updated_at: Optional[datetime]
