@@ -47,10 +47,15 @@ class GroupResource(BaseResource):
             group_id=group_id, owner_id=group.owner_id, user_count=n_users, users=users,
         )
 
-    async def get_group(self, group_id: str, query: GroupInfoQuery, db: Session) -> Optional[Group]:
+    async def get_group(
+            self,
+            group_id: str,
+            query: GroupInfoQuery,
+            db: Session,
+            message_amount: int = -1
+    ) -> Optional[Group]:
         group, first_users, n_users = self.env.db.get_users_in_group(group_id, db)
 
-        message_amount = -1
         if query.count_messages:
             message_amount = self.env.storage.count_messages_in_group_since(group_id, group.created_at)
 

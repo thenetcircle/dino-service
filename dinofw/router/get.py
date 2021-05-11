@@ -5,7 +5,8 @@ from fastapi import APIRouter
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
-from dinofw.rest.models import UserGroupStats
+from dinofw.rest.models import UserGroupStats, UserGroup
+from dinofw.rest.queries import GroupInfoQuery
 from dinofw.utils import environ
 from dinofw.utils.api import get_db
 from dinofw.utils.api import log_error_and_raise_known
@@ -21,9 +22,9 @@ router = APIRouter()
 @router.get("/groups/{group_id}/user/{user_id}", response_model=UserGroupStats)
 async def get_user_statistics_in_group(
     group_id: str, user_id: int, db: Session = Depends(get_db)
-) -> UserGroupStats:
+) -> UserGroup:
     """
-    Get a user's statistic in a group (last read, hidden, etc.).
+    Get a user's statistic in a group (last read, hidden, etc.), including the group information.
 
     **Potential error codes in response:** 
     * `600`: if the user is not in the group,
@@ -32,9 +33,15 @@ async def get_user_statistics_in_group(
     """
     try:
         message_amount = await environ.env.rest.group.count_messages_in_group(group_id)
-        return await environ.env.rest.group.get_user_group_stats(
+        user_group_stats = environ.env.rest.group.get_user_group_stats(
             group_id, user_id, message_amount, db
         )
+
+        query = GroupInfoQuery(count_messages=False)
+        group_info = environ.env.rest.group.get_group(group_id, query, db, message_amount=message_amount)
+
+        return UserGroup(group=group_info, stats=user_group_stats)
+
     except NoSuchGroupException as e:
         log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
     except UserNotInGroupException as e:
