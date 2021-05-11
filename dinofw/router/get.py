@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("/groups/{group_id}/user/{user_id}", response_model=UserGroupStats)
+@router.get("/groups/{group_id}/user/{user_id}", response_model=UserGroup)
 async def get_user_statistics_in_group(
     group_id: str, user_id: int, db: Session = Depends(get_db)
 ) -> UserGroup:
@@ -33,12 +33,12 @@ async def get_user_statistics_in_group(
     """
     try:
         message_amount = await environ.env.rest.group.count_messages_in_group(group_id)
-        user_group_stats = environ.env.rest.group.get_user_group_stats(
+        user_group_stats = await environ.env.rest.group.get_user_group_stats(
             group_id, user_id, message_amount, db
         )
 
         query = GroupInfoQuery(count_messages=False)
-        group_info = environ.env.rest.group.get_group(group_id, query, db, message_amount=message_amount)
+        group_info = await environ.env.rest.group.get_group(group_id, query, db, message_amount=message_amount)
 
         return UserGroup(group=group_info, stats=user_group_stats)
 

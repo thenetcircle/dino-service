@@ -60,9 +60,9 @@ class TestServerRestApi(BaseServerRestApi):
         now_ts = self.update_user_stats_to_now(group_id, BaseTest.USER_ID)
         user_stats = self.get_user_stats(group_id, BaseTest.USER_ID)
 
-        self.assertEqual(group_id, user_stats["group_id"])
-        self.assertEqual(BaseTest.USER_ID, user_stats["user_id"])
-        self.assertEqual(now_ts, user_stats["last_read_time"])
+        self.assertEqual(group_id, user_stats["stats"]["group_id"])
+        self.assertEqual(BaseTest.USER_ID, user_stats["stats"]["user_id"])
+        self.assertEqual(now_ts, user_stats["stats"]["last_read_time"])
 
     def test_group_unhidden_on_new_message_for_all_users(self):
         # both users join a new group

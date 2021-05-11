@@ -482,7 +482,7 @@ class BaseServerRestApi(BaseDatabaseTest):
     ) -> None:
         raw_response = self.client.get(f"/v1/groups/{group_id}/user/{user_id}",)
         self.assertEqual(raw_response.status_code, 200)
-        self.assertEqual(hidden, raw_response.json()["hide"])
+        self.assertEqual(hidden, raw_response.json()["stats"]["hide"])
 
     def assert_groups_for_user(self, amount_of_groups, user_id: int = BaseTest.USER_ID, until: float = None) -> None:
         response = self.groups_for_user(user_id, until=until)
