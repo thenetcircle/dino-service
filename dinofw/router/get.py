@@ -64,7 +64,7 @@ async def get_message_count_for_user_in_group(
     * `250`: if an unknown error occurred.
     """
     try:
-        group_info: UserGroupStats = await environ.env.rest.group.get_user_group_stats(group_id, user_id, db)
+        group_info: UserGroupStats = await environ.env.db.get_user_stats_in_group(group_id, user_id, db)
         messages_since = environ.env.storage.count_messages_in_group_since(group_id, group_info.delete_before)
 
         return MessageCount(
