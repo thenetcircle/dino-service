@@ -276,6 +276,7 @@ class CacheRedis(ICache):
         messages_until = f"{n_messages}|{until}"
 
         self.redis.set(key, messages_until)
+        self.redis.expire(key, ONE_HOUR)  # can't cache forever, since users may delete historical messages
 
     def get_user_ids_and_join_time_in_groups(self, group_ids: List[str]):
         join_times = dict()

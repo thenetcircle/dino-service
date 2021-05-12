@@ -280,7 +280,7 @@ class BaseResource(ABC):
         return UserGroup(group=group, stats=stats,)
 
     @staticmethod
-    def user_group_stats_base_to_user_group_stats(user_stats: UserGroupStatsBase):
+    def user_group_stats_base_to_user_group_stats(user_stats: UserGroupStatsBase) -> UserGroupStats:
         stats_dict = user_stats.dict()
 
         stats_dict["last_read"] = AbstractQuery.to_ts(stats_dict["last_read"])

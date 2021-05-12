@@ -113,3 +113,10 @@ class UserGroup(BaseModel):
 class Histories(BaseModel):
     messages: List[Message]
     last_reads: List[GroupLastRead]
+
+
+class MessageCount(BaseModel):
+    group_id: str
+    user_id: int
+    delete_before: float
+    message_count: int
