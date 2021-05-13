@@ -647,6 +647,7 @@ class CassandraHandler:
             message_payload=message.message_payload,
             message_type=message.message_type,
             status=message.status,
+            context=message.context,
             updated_at=message.updated_at,
             file_id=message.file_id,
         )
