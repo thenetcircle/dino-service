@@ -8,6 +8,7 @@ from starlette.background import BackgroundTask
 from starlette.responses import Response
 from starlette.status import HTTP_201_CREATED
 
+from dinofw.rest.models import Message
 from dinofw.rest.queries import JoinGroupQuery, EditMessageQuery
 from dinofw.rest.queries import UpdateGroupQuery
 from dinofw.rest.queries import UpdateUserGroupStats
@@ -164,11 +165,11 @@ async def join_group(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.put("/users/{user_id}/message/{message_id}/edit")
+@router.put("/users/{user_id}/message/{message_id}/edit", response_model=Message)
 @timeit(logger, "PUT", "/users/{user_id}/message/{message_id}/edit")
 async def edit_message(
     user_id: int, message_id: str, query: EditMessageQuery, db: Session = Depends(get_db)
-) -> None:
+) -> Message:
     """
     Edit the payload and/or status of a message.
 

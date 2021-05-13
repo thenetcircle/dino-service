@@ -136,7 +136,7 @@ class MessageResource(BaseResource):
         self.create_action_log(query.action_log, db, group_id=group_id)
         self.env.server_publisher.delete_attachments(group_id, [attachment], user_ids, now)
 
-    async def edit(self, user_id: int, message_id: str, query: EditMessageQuery, db: Session):
+    async def edit(self, user_id: int, message_id: str, query: EditMessageQuery, db: Session) -> Message:
         if query.group_id is None and query.receiver_id is None:
             raise QueryValidationError("both group_id and receiver_id is empty")
         elif query.group_id is not None and query.receiver_id is not None:
@@ -151,6 +151,8 @@ class MessageResource(BaseResource):
 
         # we don't want to increase the unread count, but we want to notify users of the change
         self._user_sends_a_message(group_id, user_id, message, db, should_increase_unread=False)
+
+        return MessageResource.message_base_to_message(message)
 
     async def delete_messages(self, group_id: str, query: MessageQuery):
         self.env.storage.delete_messages_in_group(group_id, query)
