@@ -539,8 +539,7 @@ class CassandraHandler:
             raise NoSuchMessageException(message_id)
 
         message.update(
-            message_payload=query.message_payload,
-            status=query.status,
+            context=query.context or message.context,
             updated_at=now,
         )
 
@@ -559,8 +558,7 @@ class CassandraHandler:
         # might not be an attachment
         if attachment is not None:
             attachment.update(
-                message_payload=query.message_payload,
-                status=query.status,
+                context=query.context or message.context,
                 updated_at=now,
             )
 
