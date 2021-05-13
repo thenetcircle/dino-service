@@ -147,12 +147,12 @@ class MessageResource(BaseResource):
             group_id = users_to_group_id(user_id, query.receiver_id)
 
         message = self.env.storage.edit_message(group_id, user_id, message_id, query)
-        self.create_action_log(query.action_log, db, group_id=group_id)
+        action_log = self.create_action_log(query.action_log, db, group_id=group_id)
 
         # we don't want to increase the unread count, but we want to notify users of the change
         self._user_sends_a_message(group_id, user_id, message, db, should_increase_unread=False)
 
-        return MessageResource.message_base_to_message(message)
+        return action_log
 
     async def delete_messages(self, group_id: str, query: MessageQuery):
         self.env.storage.delete_messages_in_group(group_id, query)
