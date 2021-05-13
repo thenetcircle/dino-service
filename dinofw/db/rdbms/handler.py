@@ -380,7 +380,8 @@ class RelationalHandler:
         if wakeup_users:
             statement.update({
                 models.UserGroupStatsEntity.last_updated_time: sent_time,
-                models.UserGroupStatsEntity.delete_before: models.UserGroupStatsEntity.join_time,
+                # don't change the deletion time, we should just un-hide if hidden
+                # models.UserGroupStatsEntity.delete_before: models.UserGroupStatsEntity.join_time,
                 models.UserGroupStatsEntity.hide: False,
             })
         else:
