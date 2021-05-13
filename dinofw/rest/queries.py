@@ -153,6 +153,4 @@ class EditMessageQuery(OneToOneQuery):
     group_id: Optional[str]
 
     # fields that can be updated
-    message_payload: Optional[str]  # TODO: remove, we don't want this to be changeable
     context: Optional[str]
-    status: Optional[int]
