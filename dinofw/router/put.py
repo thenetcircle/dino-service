@@ -167,7 +167,7 @@ async def join_group(
 @router.put("/users/{user_id}/message/{message_id}/edit")
 @timeit(logger, "PUT", "/users/{user_id}/message/{message_id}/edit")
 async def edit_message(
-    user_id: int, message_id: str, query: EditMessageQuery
+    user_id: int, message_id: str, query: EditMessageQuery, db: Session = Depends(get_db)
 ) -> None:
     """
     Edit the payload and/or status of a message.
@@ -177,7 +177,7 @@ async def edit_message(
     * `250`: if an unknown error occurred.
     """
     try:
-        return await environ.env.rest.message.edit(user_id, message_id, query)
+        return await environ.env.rest.message.edit(user_id, message_id, query, db)
     except NoSuchMessageException as e:
         log_error_and_raise_known(ErrorCodes.NO_SUCH_MESSAGE, sys.exc_info(), e)
     except Exception as e:
