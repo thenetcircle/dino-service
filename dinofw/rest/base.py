@@ -118,7 +118,7 @@ class BaseResource(ABC):
 
         if query.group_id is not None and len(query.group_id.strip()):
             group_id = query.group_id
-        elif query.receiver_id is not None and len(query.receiver_id.strip()):
+        elif query.receiver_id is not None:
             group_id = self._get_or_create_group_for_1v1(user_id, query.receiver_id, db)
 
         log = self.env.storage.create_action_log(user_id, group_id, query)
