@@ -367,6 +367,7 @@ class RelationalHandler:
         group.last_message_id = message.message_id
         group.last_message_type = message.message_type
         group.last_message_user_id = message.user_id
+        group.updated_at = sent_time
 
         statement = (
             db.query(models.UserGroupStatsEntity)
