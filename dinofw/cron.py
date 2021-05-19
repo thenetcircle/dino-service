@@ -1,8 +1,16 @@
 import logging
+import sys
+
+logging.basicConfig(
+    filename='/var/log/dino/deleter.log',
+    filemode='a',
+    format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+    datefmt='%H:%M:%S',
+    level=logging.DEBUG
+)
+logger = logging.getLogger(__name__)
 
 from dinofw.utils import environ
-
-logger = logging.getLogger(__name__)
 
 
 class Deleter:
@@ -26,10 +34,14 @@ class Deleter:
         for group_id, delete_before in groups:
             logger.info(f"group {group_id}: delete all messages <= {delete_before}")
 
-            self.env.storage.delete_messages_in_group_before(group_id, delete_before)
-            self.env.storage.delete_attachments_in_group_before(group_id, delete_before)
-
-            self.env.db.update_first_message_time(group_id, delete_before, session)
+            try:
+                self.env.storage.delete_messages_in_group_before(group_id, delete_before)
+                self.env.storage.delete_attachments_in_group_before(group_id, delete_before)
+                self.env.db.update_first_message_time(group_id, delete_before, session)
+            except Exception as e:
+                logger.error(f"could not delete messages for group {group_id}: {str(e)}")
+                logger.exception(e)
+                environ.env.capture_exception(sys.exc_info())
 
 
 app = Deleter(environ.env)
