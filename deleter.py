@@ -1,6 +1,14 @@
 import logging
 import os
 
+logging.basicConfig(
+    filename='/var/log/dino/deleter.log',
+    filemode='a',
+    format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+    datefmt='%H:%M:%S',
+    level=logging.DEBUG
+)
+
 logging.getLogger("cassandra").setLevel(logging.INFO)
 logging.getLogger("gmqtt").setLevel(logging.WARNING)
 logging.getLogger("kafka").setLevel(logging.INFO)
