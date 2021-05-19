@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-if [ $# -lt 4 ]; then
+if [ $# -lt 3 ]; then
     echo "usage: $0 <conda environment> <dino environment> <dino home>"
     exit 1
 fi
