@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-set -x
-
 if [ $# -lt 4 ]; then
     echo "usage: $0 <conda environment> <dino environment> <dino home>"
     exit 1
@@ -31,5 +29,7 @@ if ! conda activate ${CONDA_ENV}; then
     echo "error: could not activate conda environment '$CONDA_ENV'"
     exit 1
 fi
+
+set -x
 
 cd ${DINO_HOME} && ENVIRONMENT=${DINO_ENV} python deleter.py
