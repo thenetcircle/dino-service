@@ -237,6 +237,9 @@ class CassandraHandler:
             .all()
         )
 
+        if not len(messages):
+            return 
+
         self.logger.info(f"deleting {len(messages)} messages in group {group_id}...")
         self._delete_messages(messages, "messages")
 
