@@ -32,4 +32,4 @@ fi
 
 set -x
 
-cd ${DINO_HOME} && ENVIRONMENT=${DINO_ENV} python deleter.py
+cd ${DINO_HOME} && DINO_HOME=${DINO_HOME} ENVIRONMENT=${DINO_ENV} python deleter.py
