@@ -1,6 +1,8 @@
 import logging
 import sys
 
+from fastapi import FastAPI
+
 from dinofw.utils import environ
 
 logger = logging.getLogger(__name__)
@@ -37,4 +39,10 @@ class Deleter:
                 environ.env.capture_exception(sys.exc_info())
 
 
-app = Deleter(environ.env)
+deleter = Deleter(environ.env)
+app = FastAPI()
+
+
+@app.delete("/v1/run")
+def run_deletions():
+    deleter.run_deletions()
