@@ -4,8 +4,6 @@ import os
 from dinofw.utils.config import ConfigKeys
 
 logging.basicConfig(
-    filename='/var/log/dino/deleter.log',
-    filemode='a',
     format=ConfigKeys.DEFAULT_LOG_FORMAT,
     datefmt=ConfigKeys.DEFAULT_DATE_FORMAT,
     level=logging.DEBUG
