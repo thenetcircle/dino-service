@@ -71,6 +71,6 @@ def run_deletions():
     ```
 
     Then we remove all Messages and Attachments with `created_at <= min(delete_before)`. Finally
-    we update `first_message_time on those groups to `min(delete_before)` for that group.
+    we update `first_message_time` on those groups to `min(delete_before)` for that group.
     """
     deleter.run_deletions()
