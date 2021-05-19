@@ -142,10 +142,10 @@ class TestServerRestApi(BaseServerRestApi):
         group = self.get_group(group_id)
         last_update_time = group["group"]["updated_at"]
 
-        # update time should not have changed form a new message
+        # update time should have changed from sending a new message
         self.send_message_to_group_from(group_id, user_id=BaseTest.USER_ID)
         group = self.get_group(group_id)
-        self.assertEqual(group["group"]["updated_at"], last_update_time)
+        self.assertNotEqual(group["group"]["updated_at"], last_update_time)
 
         # update time should now have changed
         self.user_joins_group(group_id, BaseTest.OTHER_USER_ID)
@@ -902,14 +902,14 @@ class TestServerRestApi(BaseServerRestApi):
         now = utcnow_ts()
         self.update_delete_before(message["group_id"], delete_before=now)
 
-        # should reset 'delete_before' to 'join_time'
+        # should not reset 'delete_before'
         self.send_1v1_message(user_id=BaseTest.OTHER_USER_ID, receiver_id=BaseTest.USER_ID)
 
         group_and_stats = self.groups_for_user()
         delete_before_auto_updated = group_and_stats[0]["stats"]["delete_before"]
 
-        # TODO: fix, is off by 50ms
-        self.assertEqual(join_time, delete_before_auto_updated)
+        self.assertNotEqual(join_time, delete_before_auto_updated)
+        self.assertEqual(now, delete_before_auto_updated)
 
     def test_create_action_log_updating_delete_before(self):
         message = self.send_1v1_message(user_id=BaseTest.USER_ID, receiver_id=BaseTest.OTHER_USER_ID)
