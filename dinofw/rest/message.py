@@ -143,7 +143,7 @@ class MessageResource(BaseResource):
             raise QueryValidationError("can't use both group_id AND receiver_id, choose one")
 
         group_id = query.group_id
-        if group_id is None:
+        if group_id is None or not len(group_id.strip()):
             group_id = users_to_group_id(user_id, query.receiver_id)
 
         message = self.env.storage.edit_message(group_id, user_id, message_id, query)

@@ -141,19 +141,6 @@ class CacheRedis(ICache):
 
         p.execute()
 
-    def set_user_message_status(self, user_id: int, status: int) -> None:
-        key = RedisKeys.user_message_status(user_id)
-        self.redis.set(key, status)
-
-    def get_user_message_status(self, user_id: int):
-        key = RedisKeys.user_message_status(user_id)
-        value = self.redis.get(key)
-
-        if value is None:
-            return None
-
-        return int(str(value, "utf-8"))
-
     def reset_unread_in_groups(self, user_id: int, group_ids: List[str]):
         p = self.redis.pipeline()
 

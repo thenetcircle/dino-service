@@ -29,18 +29,19 @@ class MessageModel(Model):
         required=True,
         default=uuid.uuid4
     )
-    status = TinyInt(
-        required=False
-    )
+
     file_id = Text(
         required=False
     )
     message_payload = Text(
         required=False
     )
+
+    # user for quotes, reactions, etc.
     context = Text(
         required=False
     )
+
     message_type = Integer(
         required=True
     )
@@ -72,9 +73,6 @@ class AttachmentModel(Model):
     )
     file_id = Text(
         required=True
-    )
-    status = TinyInt(
-        required=False
     )
     message_payload = Text(
         required=False
