@@ -20,9 +20,9 @@ fi
 
 # functions are not exported to subshells so need to re-evaluate them from install path
 source ~/.bashrc
-eval "$(${CONDA_CONDA_EXEC} shell.bash hook)"
+eval "$(${CONDA_EXEC} shell.bash hook)"
 
-if ! ${CONDA_CONDA_EXEC} activate ${CONDA_ENV}; then
+if ! ${CONDA_EXEC} activate ${CONDA_ENV}; then
     echo "error: could not activate conda environment '$CONDA_ENV'"
     exit 1
 fi
