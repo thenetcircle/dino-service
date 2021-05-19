@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 
-if [ $# -lt 3 ]; then
-    echo "usage: $0 <conda environment> <dino environment> <dino home>"
+if [ $# -lt 4 ]; then
+    echo "usage: $0 <conda executable> <conda environment> <dino environment> <dino home>"
     exit 1
 fi
 
 LOG_DIR=/var/log/dino
-CONDA_ENV=$1
-DINO_ENV=$2
-DINO_HOME=$3
+CONDA_EXEC=$1
+CONDA_ENV=$2
+DINO_ENV=$3
+DINO_HOME=$4
 
 if [[ ! -d ${LOG_DIR} ]]; then
     if ! mkdir -p ${LOG_DIR}; then
@@ -19,13 +20,9 @@ fi
 
 # functions are not exported to subshells so need to re-evaluate them from install path
 source ~/.bashrc
-eval "$(conda shell.bash hook)"
+eval "$(${CONDA_CONDA_EXEC} shell.bash hook)"
 
-if ! which conda >/dev/null; then
-    echo "error: conda executable not found"
-    exit 1
-fi
-if ! conda activate ${CONDA_ENV}; then
+if ! ${CONDA_CONDA_EXEC} activate ${CONDA_ENV}; then
     echo "error: could not activate conda environment '$CONDA_ENV'"
     exit 1
 fi
