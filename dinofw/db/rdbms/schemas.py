@@ -38,6 +38,7 @@ class UserGroupStatsBase(BaseModel):
 
     hide: bool
     pin: bool
+    deleted: bool
     bookmark: bool
     rating: Optional[int]
 
