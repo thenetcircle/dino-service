@@ -214,15 +214,26 @@ class RelationalHandler:
         @time_method(logger, "get_groups_updated_since(): query groups")
         def query_groups():
             since = GroupUpdatesQuery.to_dt(query.since)
+            until = None
+            if query.until is not None and query.until > 0:
+                until = GroupUpdatesQuery.to_dt(query.until)
 
-            return (
+            statement = (
                 db.query(models.GroupEntity, models.UserGroupStatsEntity)
                 .filter(
                     models.GroupEntity.group_id == models.UserGroupStatsEntity.group_id,
                     models.UserGroupStatsEntity.user_id == user_id,
                     models.UserGroupStatsEntity.last_updated_time >= since,
                 )
-                .order_by(
+            )
+
+            if until is not None:
+                statement = statement.filter(
+                    models.UserGroupStatsEntity.last_updated_time <= until
+                )
+
+            return (
+                statement.order_by(
                     models.UserGroupStatsEntity.pin.desc(),
                     func.greatest(
                         models.UserGroupStatsEntity.highlight_time,
