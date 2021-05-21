@@ -395,6 +395,7 @@ class RelationalHandler:
                 # don't change the deletion time, we should just un-hide if hidden
                 # models.UserGroupStatsEntity.delete_before: models.UserGroupStatsEntity.join_time,
                 models.UserGroupStatsEntity.hide: False,
+                models.UserGroupStatsEntity.deleted: False
             })
         else:
             statement.update({
@@ -893,6 +894,9 @@ class RelationalHandler:
 
             if delete_before is not None:
                 user_stats.delete_before = delete_before
+
+                # for syncing deletions to apps, returned in /updates api
+                user_stats.deleted = True
 
             # can't set highlight time if also setting last read time
             if highlight_time is not None and last_read is None:
