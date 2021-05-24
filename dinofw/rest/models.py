@@ -60,6 +60,7 @@ class UserGroupStats(BaseModel):
     receiver_highlight_time: Optional[float]
     receiver_delete_before: Optional[float]
     receiver_hide: Optional[bool]
+    receiver_deleted: Optional[bool]
 
 
 class Message(BaseModel):
