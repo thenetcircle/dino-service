@@ -146,6 +146,16 @@ async def get_groups_for_user(
     If `hidden` is set to True in the query, only hidden groups will be returned.
     Defaults value is False.
 
+    If `receiver_stats` is True, the result will include receiver stats. By default
+    this parameter is False, since not all queries needs this information, and if
+    True, requires an extra DB call. The following four return values will be set
+    if the parameter is True:
+
+    * `receiver_highlight_time`
+    * `receiver_delete_before`
+    * `receiver_hide`
+    * `receiver_deleted`
+
     **Potential error codes in response:**
     * `250`: if an unknown error occurred.
     """
@@ -163,6 +173,16 @@ async def get_groups_updated_since(
     """
     Get a list of groups for this user that has changed since a certain time, sorted
     by last message sent. Used to sync changes to mobile apps.
+
+    If `receiver_stats` is True, the result will include receiver stats. By default
+    this parameter is False, since not all queries needs this information, and if
+    True, requires an extra DB call. The following four return values will be set
+    if the parameter is True:
+
+    * `receiver_highlight_time`
+    * `receiver_delete_before`
+    * `receiver_hide`
+    * `receiver_deleted`
 
     **Potential error codes in response:**
     * `250`: if an unknown error occurred.

@@ -102,11 +102,15 @@ class GroupInfoQuery(AbstractQuery):
     count_messages: Optional[bool] = False
 
 
-class GroupQuery(PaginationQuery, UserStatsQuery):
+class ReceiverStatsQuery(AbstractQuery):
+    receiver_stats: Optional[bool] = False
+
+
+class GroupQuery(PaginationQuery, UserStatsQuery, ReceiverStatsQuery):
     pass
 
 
-class GroupUpdatesQuery(GroupQuery):
+class GroupUpdatesQuery(GroupQuery, ReceiverStatsQuery):
     since: Optional[float]
 
 
