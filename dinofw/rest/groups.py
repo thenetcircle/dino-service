@@ -142,7 +142,8 @@ class GroupResource(BaseResource):
         messages = get_messages()
         last_reads = get_last_reads()
 
-        if len(messages):
+        # history api can be called by the admin interface, in which case we don't want to change read status
+        if len(messages) and (query.admin_id is None or query.admin_id == 0):
             self._user_opens_conversation(group_id, user_id, user_stats, db)
 
         return Histories(

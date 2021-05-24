@@ -17,11 +17,6 @@ class MessageTypes:
     ACTION: Final = 100
 
 
-class MessageStatus:
-    # not a required field, so default value is null, and we don't filter queries on it
-    REVERTED: Final = 1
-
-
 class DefaultValues:
     PER_PAGE: Final = 100
 
@@ -38,7 +33,6 @@ class RedisKeys:
     RKEY_USER_STATS_IN_GROUP: Final = "group:stats:{}"  # group:stats:group_id
     RKEY_UNREAD_IN_GROUP: Final = "group:unread:{}"  # user:unread:group_id
     RKEY_HIDE_GROUP: Final = "group:hide:{}"  # group:hide:group_id
-    RKEY_USER_MESSAGE_STATUS: Final = "user:status:{}"  # user:status:user_id
     RKEY_MESSAGES_IN_GROUP: Final = "group:messages:{}"  # group:messages:group_id
     RKEY_GROUP_COUNT_INCL_HIDDEN: Final = "group:count:inclhidden:{}"  # group:count:inclhidden:user_id
     RKEY_GROUP_COUNT_NO_HIDDEN: Final = "group:count:visible:{}"  # group:count:visible:user_id
@@ -69,10 +63,6 @@ class RedisKeys:
     @staticmethod
     def messages_in_group(group_id: str) -> str:
         return RedisKeys.RKEY_MESSAGES_IN_GROUP.format(group_id)
-
-    @staticmethod
-    def user_message_status(user_id: int) -> str:
-        return RedisKeys.RKEY_USER_MESSAGE_STATUS.format(user_id)
 
     @staticmethod
     def hide_group(group_id: str) -> str:

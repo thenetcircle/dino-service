@@ -31,7 +31,7 @@ def init_logging(gn_env: GNEnvironment) -> None:
     dsn = gn_env.config.get(ConfigKeys.DSN, domain=ConfigKeys.LOGGING, default="")
     if dsn is None or len(dsn.strip()) == 0:
         logger.warning(
-            "sentry logging selected but no DSN supplied, not configuring senty"
+            "sentry logging selected but no DSN supplied, not configuring sentry"
         )
         return
 

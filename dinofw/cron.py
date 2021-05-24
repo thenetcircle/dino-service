@@ -1,4 +1,7 @@
 import logging
+import sys
+
+from fastapi import FastAPI
 
 from dinofw.utils import environ
 
@@ -26,10 +29,48 @@ class Deleter:
         for group_id, delete_before in groups:
             logger.info(f"group {group_id}: delete all messages <= {delete_before}")
 
-            self.env.storage.delete_messages_in_group_before(group_id, delete_before)
-            self.env.storage.delete_attachments_in_group_before(group_id, delete_before)
+            try:
+                self.env.storage.delete_messages_in_group_before(group_id, delete_before)
+                self.env.storage.delete_attachments_in_group_before(group_id, delete_before)
+                self.env.db.update_first_message_time(group_id, delete_before, session)
+            except Exception as e:
+                logger.error(f"could not delete messages for group {group_id}: {str(e)}")
+                logger.exception(e)
+                environ.env.capture_exception(sys.exc_info())
 
-            self.env.db.update_first_message_time(group_id, delete_before, session)
+
+deleter = Deleter(environ.env)
+app = FastAPI()
 
 
-app = Deleter(environ.env)
+@app.delete("/v1/run")
+def run_deletions():
+    """
+    Call periodically to delete old messages.
+
+    First we find potential groups that may have old messages:
+
+    ```sql
+            select
+                g.group_id,
+                min(u.delete_before)
+            from
+                groups g,
+                user_group_stats u
+            where
+                g.group_id = u.group_id
+            group by
+                g.group_id
+            having
+                coalesce(
+                    sum(
+                        case when u.delete_before <= g.first_message_time then 1
+                        else 0 end
+                    ),
+                0) = 0;
+    ```
+
+    Then we remove all Messages and Attachments with `created_at <= min(delete_before)`. Finally
+    we update `first_message_time` on those groups to `min(delete_before)` for that group.
+    """
+    deleter.run_deletions()

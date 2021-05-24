@@ -1,9 +1,11 @@
 import logging
+from pathlib import Path
 from typing import Final
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from dinofw.utils.custom_logging import CustomizeLogger
 from dinofw.router import delete
 from dinofw.router import get
 from dinofw.router import post
@@ -17,6 +19,10 @@ API_VERSION: Final = "v1"
 
 def create_app():
     api = FastAPI()
+
+    config_path = Path(__file__).with_name("logging_config.json")
+    custom_logger = CustomizeLogger.make_logger(config_path)
+    api.logger = custom_logger
 
     api.add_middleware(
         CORSMiddleware,

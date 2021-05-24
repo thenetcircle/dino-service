@@ -114,6 +114,9 @@ async def get_group_history_for_user(
 
     History can be filtered by `message_type` to e.g. only list images sent in the group.
 
+    If `admin_id` is set, and is greater than `0`, the read status will not be updated. Useful
+    for getting history in admin UI without updating `last_read_time` of the user.
+
     **Potential error codes in response:**
     * `600`: if the user is not in the group,
     * `601`: if the group does not exist,

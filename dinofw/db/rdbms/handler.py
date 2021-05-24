@@ -214,15 +214,26 @@ class RelationalHandler:
         @time_method(logger, "get_groups_updated_since(): query groups")
         def query_groups():
             since = GroupUpdatesQuery.to_dt(query.since)
+            until = None
+            if query.until is not None and query.until > 0:
+                until = GroupUpdatesQuery.to_dt(query.until)
 
-            return (
+            statement = (
                 db.query(models.GroupEntity, models.UserGroupStatsEntity)
                 .filter(
                     models.GroupEntity.group_id == models.UserGroupStatsEntity.group_id,
                     models.UserGroupStatsEntity.user_id == user_id,
                     models.UserGroupStatsEntity.last_updated_time >= since,
                 )
-                .order_by(
+            )
+
+            if until is not None:
+                statement = statement.filter(
+                    models.UserGroupStatsEntity.last_updated_time <= until
+                )
+
+            return (
+                statement.order_by(
                     models.UserGroupStatsEntity.pin.desc(),
                     func.greatest(
                         models.UserGroupStatsEntity.highlight_time,
@@ -384,6 +395,7 @@ class RelationalHandler:
                 # don't change the deletion time, we should just un-hide if hidden
                 # models.UserGroupStatsEntity.delete_before: models.UserGroupStatsEntity.join_time,
                 models.UserGroupStatsEntity.hide: False,
+                models.UserGroupStatsEntity.deleted: False
             })
         else:
             statement.update({
@@ -882,6 +894,9 @@ class RelationalHandler:
 
             if delete_before is not None:
                 user_stats.delete_before = delete_before
+
+                # for syncing deletions to apps, returned in /updates api
+                user_stats.deleted = True
 
             # can't set highlight time if also setting last read time
             if highlight_time is not None and last_read is None:
