@@ -260,6 +260,7 @@ class BaseResource(ABC):
             stats_dict["receiver_highlight_time"] = AbstractQuery.to_ts(receiver_stats_base.highlight_time)
             stats_dict["receiver_delete_before"] = AbstractQuery.to_ts(receiver_stats_base.delete_before)
             stats_dict["receiver_hide"] = receiver_stats_base.hide
+            stats_dict["receiver_deleted"] = receiver_stats_base.deleted
 
         stats_dict["last_read_time"] = AbstractQuery.to_ts(stats_base.last_read)
         stats_dict["last_sent_time"] = AbstractQuery.to_ts(stats_base.last_sent)

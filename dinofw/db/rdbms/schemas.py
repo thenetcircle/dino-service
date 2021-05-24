@@ -36,6 +36,7 @@ class UserGroupStatsBase(BaseModel):
     last_updated_time: datetime
     first_sent: Optional[datetime]
 
+    deleted: bool
     hide: bool
     pin: bool
     bookmark: bool
