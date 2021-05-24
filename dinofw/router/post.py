@@ -149,7 +149,7 @@ async def get_groups_for_user(
     If `receiver_stats` is True, the result will include receiver stats. By default
     this parameter is False, since not all queries needs this information, and if
     True, requires an extra DB call. The following four return values will be set
-    if the parameter is True:
+    if the parameter is True (otherwise they will be `null`):
 
     * `receiver_highlight_time`
     * `receiver_delete_before`
@@ -177,7 +177,7 @@ async def get_groups_updated_since(
     If `receiver_stats` is True, the result will include receiver stats. By default
     this parameter is False, since not all queries needs this information, and if
     True, requires an extra DB call. The following four return values will be set
-    if the parameter is True:
+    if the parameter is True (otherwise they will be `null`):
 
     * `receiver_highlight_time`
     * `receiver_delete_before`
