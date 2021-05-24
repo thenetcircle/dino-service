@@ -1,4 +1,3 @@
-import logging
 from typing import List
 
 from sqlalchemy.orm import Session
@@ -13,8 +12,6 @@ from dinofw.rest.queries import SendMessageQuery
 from dinofw.utils import utcnow_ts, users_to_group_id
 from dinofw.utils.exceptions import NoSuchUserException
 from dinofw.utils.exceptions import QueryValidationError
-
-logger = logging.getLogger(__name__)
 
 
 class MessageResource(BaseResource):

@@ -1,4 +1,3 @@
-import logging
 import socket
 import sys
 from datetime import datetime as dt
@@ -9,12 +8,11 @@ from typing import Optional
 from typing import Tuple
 
 import redis
+from loguru import logger
 
 from dinofw.cache import ICache
 from dinofw.utils.config import ConfigKeys
 from dinofw.utils.config import RedisKeys
-
-logger = logging.getLogger(__name__)
 
 FIVE_MINUTES = 60 * 5
 ONE_HOUR = 60 * 60

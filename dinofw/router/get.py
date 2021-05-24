@@ -1,8 +1,8 @@
-import logging
 import sys
 
 from fastapi import APIRouter
 from fastapi import Depends
+from loguru import logger
 from sqlalchemy.orm import Session
 
 from dinofw.rest.models import MessageCount
@@ -14,14 +14,15 @@ from dinofw.utils.api import get_db
 from dinofw.utils.api import log_error_and_raise_known
 from dinofw.utils.api import log_error_and_raise_unknown
 from dinofw.utils.config import ErrorCodes
+from dinofw.utils.decorators import timeit
 from dinofw.utils.exceptions import NoSuchGroupException
 from dinofw.utils.exceptions import UserNotInGroupException
 
-logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
 @router.get("/groups/{group_id}/user/{user_id}", response_model=UserGroup)
+@timeit(logger, "GET", "/groups/{group_id}/user/{user_id}")
 async def get_user_statistics_in_group(
     group_id: str, user_id: int, db: Session = Depends(get_db)
 ) -> UserGroup:
@@ -53,6 +54,7 @@ async def get_user_statistics_in_group(
 
 
 @router.get("/groups/{group_id}/user/{user_id}/count", response_model=MessageCount)
+@timeit(logger, "GET", "/groups/{group_id}/user/{user_id}/count")
 async def get_message_count_for_user_in_group(
     group_id: str, user_id: int, db: Session = Depends(get_db)
 ) -> MessageCount:

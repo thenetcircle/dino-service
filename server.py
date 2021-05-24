@@ -1,15 +1,6 @@
 import logging
 import os
 
-"""
-from uvicorn.config import LOGGING_CONFIG
-
-LOGGING_CONFIG["formatters"]["default"]["fmt"] = \
-    '%(asctime)s [%(name)s] %(levelprefix)s %(client_addr)s - "%(request_line)s" %(status_code)s'
-LOGGING_CONFIG["formatters"]["access"]["fmt"] = \
-    '%(asctime)s [%(name)s] %(levelprefix)s %(client_addr)s - "%(request_line)s" %(status_code)s'
-"""
-
 logging.getLogger("cassandra").setLevel(logging.INFO)
 logging.getLogger("gmqtt").setLevel(logging.WARNING)
 logging.getLogger("kafka").setLevel(logging.INFO)

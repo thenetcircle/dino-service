@@ -1,4 +1,3 @@
-import logging
 import os
 import socket
 import sys
@@ -9,6 +8,7 @@ import redis
 from gmqtt import Client as MQTTClient
 from gmqtt.mqtt.constants import MQTTv50
 
+from loguru import logger
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.storage.schemas import MessageBase
 from dinofw.endpoint import EventTypes
@@ -24,7 +24,6 @@ class MqttPublisher(IClientPublisher):
         self.mqtt_host = env.config.get(ConfigKeys.HOST, domain=ConfigKeys.MQTT)
         self.mqtt_port = env.config.get(ConfigKeys.PORT, domain=ConfigKeys.MQTT)
         self.mqtt_ttl = int(env.config.get(ConfigKeys.TTL, domain=ConfigKeys.MQTT))
-        self.logger = logging.getLogger()
 
         if "," in self.mqtt_host:
             self.mqtt_host = self.mqtt_host.split(",")[0]
@@ -130,22 +129,21 @@ class MqttPublisher(IClientPublisher):
                 message_expiry_interval=self.mqtt_ttl
             )
         except Exception as e:
-            self.logger.error(f"could not publish to mqtt: {str(e)}")
-            self.logger.exception(e)
+            logger.error(f"could not publish to mqtt: {str(e)}")
+            logger.exception(e)
 
 
 class MqttPublishHandler(IClientPublishHandler):
     def __init__(self, env):
         self.env = env
-        self.logger = logging.getLogger(__name__)
         self.publisher = MqttPublisher(env)
 
     async def setup(self):
         try:
             await self.publisher.setup()
         except Exception as e:
-            self.logger.error(f"could not connect to mqtt: {str(e)}")
-            self.logger.exception(e)
+            logger.error(f"could not connect to mqtt: {str(e)}")
+            logger.exception(e)
 
     def message(self, message: MessageBase, user_ids: List[int]) -> None:
         data = MqttPublishHandler.message_base_to_event(message, event_type=EventTypes.MESSAGE)
@@ -211,6 +209,6 @@ class MqttPublishHandler(IClientPublishHandler):
             try:
                 self.publisher.send(user_id, data, qos)
             except Exception as e:
-                self.logger.error(f"could not handle message: {str(e)}")
-                self.logger.exception(e)
+                logger.error(f"could not handle message: {str(e)}")
+                logger.exception(e)
                 self.env.capture_exception(sys.exc_info())

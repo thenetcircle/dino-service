@@ -1,4 +1,3 @@
-import logging
 from datetime import datetime as dt
 from typing import Dict
 from typing import List
@@ -34,8 +33,7 @@ from dinofw.utils.config import GroupTypes
 from dinofw.utils.decorators import time_method
 from dinofw.utils.exceptions import NoSuchGroupException
 from dinofw.utils.exceptions import UserNotInGroupException
-
-logger = logging.getLogger(__name__)
+from loguru import logger
 
 
 class RelationalHandler:

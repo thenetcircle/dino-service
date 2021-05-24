@@ -1,4 +1,3 @@
-import logging
 from datetime import datetime as dt
 from time import time
 from typing import Dict
@@ -6,6 +5,7 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from uuid import uuid4 as uuid
+from loguru import logger
 
 import arrow
 from cassandra.cluster import EXEC_PROFILE_DEFAULT
@@ -40,7 +40,6 @@ from dinofw.utils.exceptions import NoSuchMessageException
 class CassandraHandler:
     def __init__(self, env):
         self.env = env
-        self.logger = logging.getLogger(__name__)
 
         # used when no `hide_before` is specified in a query
         beginning_of_1995 = 789_000_000
@@ -222,7 +221,7 @@ class CassandraHandler:
         elapsed = time() - start
         if elapsed > 5:
             n = len(group_to_atts)
-            self.logger.info(
+            logger.info(
                 f"batch delete attachments in {n} groups for user {user_id} took {elapsed:.2f}s"
             )
 
@@ -240,7 +239,7 @@ class CassandraHandler:
         if not len(messages):
             return
 
-        self.logger.info(f"deleting {len(messages)} messages in group {group_id}...")
+        logger.info(f"deleting {len(messages)} messages in group {group_id}...")
         self._delete_messages(messages, "messages")
 
     def delete_attachments_in_group_before(self, group_id: str, before: dt):
@@ -252,7 +251,7 @@ class CassandraHandler:
             .all()
         )
 
-        self.logger.info(f"deleting {len(attachments)} attachments in group {group_id}...")
+        logger.info(f"deleting {len(attachments)} attachments in group {group_id}...")
         self._delete_messages(attachments, "attachments")
 
     def delete_attachments(
@@ -583,7 +582,7 @@ class CassandraHandler:
                 elapsed = time() - start
 
                 if elapsed > 5 or amount > 500:
-                    self.logger.info(
+                    logger.info(
                         f"finished batch updating {amount} messages in group {group_id} after {elapsed:.2f}s"
                     )
                 break
@@ -599,7 +598,7 @@ class CassandraHandler:
 
         elapsed = time() - start
         if elapsed > 1:
-            self.logger.info(f"batch deleted {len(message)} {types} in {elapsed:.2f}s")
+            logger.info(f"batch deleted {len(message)} {types} in {elapsed:.2f}s")
 
     # noinspection PyMethodMayBeStatic
     def _update_messages(

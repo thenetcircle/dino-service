@@ -1,13 +1,11 @@
-import logging
 import os
 
 from gnenv import create_env
 from gnenv.environ import GNEnvironment
+from loguru import logger
 from sentry_sdk.integrations.redis import RedisIntegration
 
 from dinofw.utils.config import ConfigKeys
-
-logger = logging.getLogger(__name__)
 
 
 def init_logging(gn_env: GNEnvironment) -> None:

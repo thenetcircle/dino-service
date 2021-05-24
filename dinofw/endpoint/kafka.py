@@ -11,6 +11,7 @@ from dinofw.endpoint import IServerPublisher
 from dinofw.utils import split_into_chunks
 from dinofw.utils.activity import ActivityBuilder
 from dinofw.utils.config import ConfigKeys
+from loguru import logger
 
 logging.getLogger("kafka").setLevel(logging.WARNING)
 logging.getLogger("kafka.conn").setLevel(logging.WARNING)
@@ -36,7 +37,6 @@ class KafkaWriterFactory(IKafkaWriterFactory):
 class KafkaPublisher(IServerPublisher):
     def __init__(self, env):
         self.env = env
-        self.logger = logging.getLogger(__name__)
 
         self.writer_factory = None
         self.dropped_event_log = None
@@ -63,8 +63,8 @@ class KafkaPublisher(IServerPublisher):
 
             self.try_to_publish(data, key=key)
         except Exception as e:
-            self.logger.error("could not publish response: {}".format(str(e)))
-            self.logger.exception(e)
+            logger.error("could not publish response: {}".format(str(e)))
+            logger.exception(e)
             self.env.capture_exception(sys.exc_info())
             self.drop_msg(data)
 
@@ -98,15 +98,14 @@ class KafkaPublisher(IServerPublisher):
         try:
             self.dropped_event_log.info(message)
         except Exception as e:
-            self.logger.error("could not log dropped message: {}".format(str(e)))
-            self.logger.exception(e)
+            logger.error("could not log dropped message: {}".format(str(e)))
+            logger.exception(e)
             self.env.capture_exception(sys.exc_info())
 
 
 class KafkaPublishHandler(IServerPublishHandler):
     def __init__(self, env):
         self.env = env
-        self.logger = logging.getLogger(__name__)
         self.publisher = KafkaPublisher(env)
 
     def setup(self):

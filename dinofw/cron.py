@@ -1,11 +1,9 @@
-import logging
 import sys
 
 from fastapi import FastAPI
+from loguru import logger
 
 from dinofw.utils import environ
-
-logger = logging.getLogger(__name__)
 
 
 class Deleter:

@@ -1,4 +1,3 @@
-import logging
 from pathlib import Path
 from typing import Final
 
@@ -11,8 +10,6 @@ from dinofw.router import get
 from dinofw.router import post
 from dinofw.router import put
 from dinofw.utils import environ
-
-logger = logging.getLogger(__name__)
 
 API_VERSION: Final = "v1"
 

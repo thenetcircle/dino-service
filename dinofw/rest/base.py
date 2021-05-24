@@ -1,9 +1,9 @@
-import logging
 from abc import ABC
 from datetime import datetime as dt
 from typing import Dict
 from typing import List
 
+from loguru import logger
 import arrow
 from sqlalchemy.orm import Session
 
@@ -25,8 +25,6 @@ from dinofw.utils import utcnow_ts
 from dinofw.utils.decorators import time_method
 from dinofw.utils.exceptions import NoSuchGroupException
 
-logger = logging.getLogger(__name__)
-
 
 class BaseResource(ABC):
     def __init__(self, env):
@@ -35,8 +33,6 @@ class BaseResource(ABC):
         # used when no `hide_before` is specified in a query
         beginning_of_1995 = 789_000_000
         self.long_ago = arrow.Arrow.utcfromtimestamp(beginning_of_1995).datetime
-
-        self.logger = logging.getLogger(__name__)
 
     @time_method(logger, "_user_opens_conversation()")
     def _user_opens_conversation(self, group_id: str, user_id: int, user_stats: UserGroupStatsBase, db):

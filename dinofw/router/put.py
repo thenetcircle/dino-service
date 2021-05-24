@@ -1,8 +1,8 @@
-import logging
 import sys
 
 from fastapi import APIRouter
 from fastapi import Depends
+from loguru import logger
 from sqlalchemy.orm import Session
 from starlette.background import BackgroundTask
 from starlette.responses import Response
@@ -21,7 +21,6 @@ from dinofw.utils.decorators import timeit
 from dinofw.utils.exceptions import NoSuchGroupException, NoSuchMessageException
 from dinofw.utils.exceptions import UserNotInGroupException
 
-logger = logging.getLogger(__name__)
 router = APIRouter()
 
 

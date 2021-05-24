@@ -1,7 +1,7 @@
-import logging
 from typing import List
 from typing import Optional
 
+from loguru import logger
 from sqlalchemy.orm import Session
 
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
@@ -25,8 +25,6 @@ from dinofw.utils import utcnow_dt
 from dinofw.utils import utcnow_ts
 from dinofw.utils.decorators import time_method
 from dinofw.utils.exceptions import NoSuchGroupException
-
-logger = logging.getLogger(__name__)
 
 
 class GroupResource(BaseResource):

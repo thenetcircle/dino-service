@@ -1,8 +1,8 @@
-import logging
 from datetime import datetime as dt
 from time import time
 from typing import List, Tuple
 
+from loguru import logger
 from sqlalchemy.orm import Session
 
 from dinofw.db.rdbms.schemas import UserGroupBase
@@ -17,8 +17,6 @@ from dinofw.rest.queries import GroupUpdatesQuery
 from dinofw.rest.queries import UserStatsQuery
 from dinofw.utils import utcnow_ts
 from dinofw.utils.config import GroupTypes
-
-logger = logging.getLogger(__name__)
 
 
 class UserResource(BaseResource):
@@ -53,12 +51,12 @@ class UserResource(BaseResource):
             try:
                 self.create_action_log(query, db, user_id=user_id, group_id=group_id)
             except Exception as e:
-                self.logger.error(f"could not create action log in group {group_id} for user {user_id}: {str(e)}")
-                self.logger.exception(e)
+                logger.error(f"could not create action log in group {group_id} for user {user_id}: {str(e)}")
+                logger.exception(e)
 
         if before is not None:
             elapsed = time() - before
-            self.logger.info(f"creating action log in {n_groups} groups for user {user_id} took {elapsed:.1f}s")
+            logger.info(f"creating action log in {n_groups} groups for user {user_id} took {elapsed:.1f}s")
 
     async def get_groups_updated_since(
         self, user_id: int, query: GroupUpdatesQuery, db: Session
