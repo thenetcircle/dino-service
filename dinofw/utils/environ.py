@@ -195,8 +195,6 @@ def init_producer(gn_env: GNEnvironment) -> None:
 
 
 def initialize_env(dino_env):
-    logging.basicConfig(level="DEBUG", format=ConfigKeys.DEFAULT_LOG_FORMAT)
-
     is_deleter_service = os.getenv("DINO_DELETER") is not None
 
     init_logging(dino_env)
