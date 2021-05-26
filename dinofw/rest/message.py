@@ -147,7 +147,13 @@ class MessageResource(BaseResource):
         action_log = self.create_action_log(query.action_log, db, group_id=group_id)
 
         # we don't want to increase the unread count, but we want to notify users of the change
-        self._user_sends_a_message(group_id, user_id, message, db, should_increase_unread=False)
+        self._user_sends_a_message(
+            group_id,
+            user_id,
+            message,
+            db,
+            should_increase_unread=query.action_log.update_unread_count
+        )
 
         return action_log
 

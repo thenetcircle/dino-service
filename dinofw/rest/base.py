@@ -118,12 +118,12 @@ class BaseResource(ABC):
             group_id = self._get_or_create_group_for_1v1(user_id, query.receiver_id, db)
 
         log = self.env.storage.create_action_log(user_id, group_id, query)
-        self._user_sends_action_log(group_id, log, db)
+        self._user_sends_action_log(group_id, log, db, query.update_unread_count)
 
         return BaseResource.message_base_to_message(log)
 
     def _user_sends_action_log(
-        self, group_id: str, message: MessageBase, db
+        self, group_id: str, message: MessageBase, db, update_unread_count: bool
     ):
         # cassandra DT is different from python DT
         now = utcnow_dt()
@@ -132,12 +132,11 @@ class BaseResource(ABC):
             message,
             now,
             db,
-            wakeup_users=False  # not for action logs
+            wakeup_users=False,  # not for action logs
+            update_unread_count=update_unread_count
         )
 
-        self.env.db.set_last_updated_at_for_all_in_group(group_id, db)
         user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
-
         self.env.client_publisher.message(message, user_ids)
 
     def _user_sends_an_attachment(self, group_id: str, attachment: MessageBase, db):

@@ -357,6 +357,7 @@ class RelationalHandler:
         sent_time: dt,
         db: Session,
         wakeup_users: bool = True,
+        update_unread_count: bool = True,
     ) -> None:
         group = (
             db.query(models.GroupEntity)
@@ -367,17 +368,20 @@ class RelationalHandler:
         if group is None:
             raise NoSuchGroupException(message.group_id)
 
-        # for knowing if we need to send read-receipts when user opens a conversation
-        self.env.cache.set_last_message_time_in_group(
-            message.group_id,
-            AbstractQuery.to_ts(sent_time)
-        )
+        # some action logs don't need to update these
+        if update_unread_count:
+            # for knowing if we need to send read-receipts when user opens a conversation
+            self.env.cache.set_last_message_time_in_group(
+                message.group_id,
+                AbstractQuery.to_ts(sent_time)
+            )
+            group.last_message_time = sent_time
+            group.last_message_overview = message.message_payload
+            group.last_message_id = message.message_id
+            group.last_message_type = message.message_type
+            group.last_message_user_id = message.user_id
 
-        group.last_message_time = sent_time
-        group.last_message_overview = message.message_payload
-        group.last_message_id = message.message_id
-        group.last_message_type = message.message_type
-        group.last_message_user_id = message.user_id
+        # always update this
         group.updated_at = sent_time
 
         statement = (
@@ -388,12 +392,9 @@ class RelationalHandler:
         )
 
         # when creating action logs, we want to sync changes to apps, but not necessarily un-hide a group
-        # TODO: maybe we actually want to wake them up, check with stakeholders
         if wakeup_users:
             statement.update({
                 models.UserGroupStatsEntity.last_updated_time: sent_time,
-                # don't change the deletion time, we should just un-hide if hidden
-                # models.UserGroupStatsEntity.delete_before: models.UserGroupStatsEntity.join_time,
                 models.UserGroupStatsEntity.hide: False,
                 models.UserGroupStatsEntity.deleted: False
             })
