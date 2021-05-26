@@ -112,7 +112,6 @@ class GroupQuery(PaginationQuery, UserStatsQuery, ReceiverStatsQuery):
 
 class GroupUpdatesQuery(GroupQuery, ReceiverStatsQuery):
     since: Optional[float]
-    include_deleted: Optional[bool] = False
 
 
 class JoinGroupQuery(CreateActionLogQuery):

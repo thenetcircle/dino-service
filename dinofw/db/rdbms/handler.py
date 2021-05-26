@@ -227,11 +227,6 @@ class RelationalHandler:
                 )
             )
 
-            if not query.include_deleted:
-                statement = statement.filter(
-                    models.UserGroupStatsEntity.deleted.is_(False),
-                )
-
             if until is not None:
                 statement = statement.filter(
                     models.UserGroupStatsEntity.last_updated_time <= until
