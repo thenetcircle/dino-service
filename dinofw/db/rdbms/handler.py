@@ -124,6 +124,7 @@ class RelationalHandler:
         where
             u.user_id = 5000441 and
             u.hide = false and
+            u.deleted = false and
             u.delete_before <= g.updated_at and
             g.last_message_time < now() and
             g.group_id = '9be68f8c-6610-454f-815c-de8a92fc75e2'
@@ -147,6 +148,7 @@ class RelationalHandler:
                 )
                 .filter(
                     models.GroupEntity.last_message_time < until,
+                    models.UserGroupStatsEntity.deleted.is_(False),
                     models.UserGroupStatsEntity.delete_before <= models.GroupEntity.updated_at,
                     # TODO: when joining a "group", the last message was before you joined; if we create
                     #  an action log when a user joins it will update `last_message_time` and we can use
@@ -224,6 +226,11 @@ class RelationalHandler:
                     models.UserGroupStatsEntity.last_updated_time >= since,
                 )
             )
+
+            if not query.include_deleted:
+                statement = statement.filter(
+                    models.UserGroupStatsEntity.deleted.is_(False),
+                )
 
             if until is not None:
                 statement = statement.filter(
