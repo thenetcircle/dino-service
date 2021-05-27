@@ -104,7 +104,7 @@ class MessageResource(BaseResource):
         attachment = self.env.storage.store_attachment(
             group_id, user_id, message_id, query
         )
-        self._user_sends_an_attachment(group_id, attachment, db)
+        self._user_sends_a_message(group_id, attachment, db)
 
         return MessageResource.message_base_to_message(attachment)
 

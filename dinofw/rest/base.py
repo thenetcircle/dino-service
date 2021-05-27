@@ -60,38 +60,6 @@ class BaseResource(ABC):
                 self.env.client_publisher.read(group_id, user_id, user_ids, now_ts)
                 self.env.cache.set_unread_in_group(group_id, user_id, 0)
 
-    def _user_sends_a_message(
-            self,
-            group_id: str,
-            user_id: int,
-            message: MessageBase,
-            db,
-            should_increase_unread: bool = True,
-            event_type: EventTypes = EventTypes.MESSAGE
-    ):
-        """
-        update database and cache with everything related to sending a message
-        """
-        # cassandra DT is different from python DT
-        now = utcnow_dt()
-
-        self.env.db.update_group_new_message(message, now, db)
-        self.env.db.update_last_read_and_sent_in_group_for_user(
-            group_id, user_id, now, db
-        )
-
-        user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
-
-        if event_type == EventTypes.MESSAGE:
-            self.env.client_publisher.message(message, user_ids)
-        elif event_type == EventTypes.EDIT:
-            self.env.client_publisher.edit(message, user_ids)
-
-        if should_increase_unread:
-            # don't increase unread for the sender
-            del user_ids[user_id]
-            self.env.cache.increase_unread_in_group_for(group_id, user_ids)
-
     def create_action_log(
         self,
             query: ActionLogQuery,
@@ -118,34 +86,54 @@ class BaseResource(ABC):
             group_id = self._get_or_create_group_for_1v1(user_id, query.receiver_id, db)
 
         log = self.env.storage.create_action_log(user_id, group_id, query)
-        self._user_sends_action_log(group_id, log, db, query.update_unread_count)
+        self._user_sends_a_message(
+            group_id,
+            user_id=user_id,
+            message=log,
+            db=db,
+            should_increase_unread=query.update_unread_count,
+            event_type=EventTypes.ACTION_LOG
+        )
 
         return BaseResource.message_base_to_message(log)
 
-    def _user_sends_action_log(
-        self, group_id: str, message: MessageBase, db, update_unread_count: bool
+    def _user_sends_a_message(
+            self,
+            group_id: str,
+            user_id: int,
+            message: MessageBase,
+            db,
+            should_increase_unread: bool = True,
+            event_type: EventTypes = EventTypes.MESSAGE
     ):
+        """
+        update database and cache with everything related to sending a message
+        """
         # cassandra DT is different from python DT
         now = utcnow_dt()
+        user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
 
         self.env.db.update_group_new_message(
             message,
             now,
             db,
-            wakeup_users=False,  # not for action logs
-            update_unread_count=update_unread_count
+            sender_user_id=user_id,
+            user_ids=user_ids.copy(),
+            update_unread_count=should_increase_unread
         )
 
-        user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
-        self.env.client_publisher.message(message, user_ids)
+        self.env.db.update_last_read_and_sent_in_group_for_user(
+            group_id, user_id, now, db
+        )
 
-    def _user_sends_an_attachment(self, group_id: str, attachment: MessageBase, db):
-        # cassandra DT is different from python DT
-        now = utcnow_dt()
+        if event_type in {EventTypes.MESSAGE, EventTypes.ACTION_LOG}:
+            self.env.client_publisher.message(message, user_ids)
 
-        self.env.db.update_group_new_message(attachment, now, db)
-        user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
-        self.env.client_publisher.attachment(attachment, user_ids)
+        elif event_type == EventTypes.EDIT:
+            self.env.client_publisher.edit(message, user_ids)
+
+        elif event_type == EventTypes.ATTACHMENT:
+            self.env.client_publisher.attachment(message, user_ids)
 
     def _get_or_create_group_for_1v1(
         self, user_id: int, receiver_id: int, db: Session

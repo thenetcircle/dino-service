@@ -25,6 +25,8 @@ class MqttPublisher(IClientPublisher):
         self.mqtt_port = env.config.get(ConfigKeys.PORT, domain=ConfigKeys.MQTT)
         self.mqtt_ttl = int(env.config.get(ConfigKeys.TTL, domain=ConfigKeys.MQTT))
 
+        return # temporary
+
         if "," in self.mqtt_host:
             self.mqtt_host = self.mqtt_host.split(",")[0]
 
@@ -106,6 +108,8 @@ class MqttPublisher(IClientPublisher):
         )
 
     async def setup(self):
+        return # temporary
+
         await self.mqtt.connect(
             self.mqtt_host,
             port=self.mqtt_port,
@@ -113,6 +117,8 @@ class MqttPublisher(IClientPublisher):
         )
 
     def send(self, user_id: int, fields: dict, qos: int = 1) -> None:
+        return # temporary
+
         if self.mqtt is None:
             return
 

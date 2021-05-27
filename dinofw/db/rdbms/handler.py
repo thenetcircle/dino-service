@@ -356,7 +356,8 @@ class RelationalHandler:
         message: MessageBase,
         sent_time: dt,
         db: Session,
-        wakeup_users: bool = True,
+        sender_user_id: int,
+        user_ids: List[int],
         update_unread_count: bool = True,
     ) -> None:
         group = (
@@ -375,6 +376,11 @@ class RelationalHandler:
                 message.group_id,
                 AbstractQuery.to_ts(sent_time)
             )
+
+            # don't increase unread for the sender
+            del user_ids[sender_user_id]
+            self.env.cache.increase_unread_in_group_for(message.group_id, user_ids)
+
             group.last_message_time = sent_time
             group.last_message_overview = message.message_payload
             group.last_message_id = message.message_id
@@ -392,7 +398,7 @@ class RelationalHandler:
         )
 
         # when creating action logs, we want to sync changes to apps, but not necessarily un-hide a group
-        if wakeup_users:
+        if update_unread_count:
             statement.update({
                 models.UserGroupStatsEntity.last_updated_time: sent_time,
                 models.UserGroupStatsEntity.hide: False,

@@ -3,6 +3,7 @@ from sqlalchemy import Column
 from sqlalchemy import DateTime
 from sqlalchemy import Integer
 from sqlalchemy import String
+from sqlalchemy import UniqueConstraint
 
 from dinofw.utils.environ import env
 
@@ -37,6 +38,8 @@ class GroupEntity(env.Base):
 
     meta = Column(Integer, nullable=True)
     description = Column(String(512), nullable=True)
+
+    UniqueConstraint('group_id')
 
 
 class UserGroupStatsEntity(env.Base):
@@ -73,3 +76,5 @@ class UserGroupStatsEntity(env.Base):
 
     # a user can rate conversations
     rating = Column(Integer, nullable=True)
+
+    UniqueConstraint('group_id', 'user_id')

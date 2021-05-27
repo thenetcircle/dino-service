@@ -13,7 +13,9 @@ class EventTypes:
     GROUP = "group"
     READ = "read"
     EDIT = "edit"
+    ATTACHMENT = "attachment"
     MESSAGE = "message"
+    ACTION_LOG = "action_log"
     DELETE_ATTACHMENT = "delete_attachment"
     DELETE_MESSAGE = "delete_message"
 
