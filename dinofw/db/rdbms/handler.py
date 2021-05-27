@@ -955,7 +955,6 @@ class RelationalHandler:
             .filter(models.UserGroupStatsEntity.group_id == group_id)
             .first()
         )
-
         if user_stats is None:
             raise UserNotInGroupException(f"user {user_id} is not in group {group_id}")
 
@@ -963,6 +962,8 @@ class RelationalHandler:
         user_stats.last_updated_time = the_time
         user_stats.highlight_time = self.long_ago
         user_stats.bookmark = False
+
+        self.env.cache.set_last_read_in_group_for_user(group_id, user_id, AbstractQuery.to_ts(the_time))
 
         db.add(user_stats)
         db.commit()
