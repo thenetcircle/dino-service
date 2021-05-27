@@ -222,6 +222,7 @@ class BaseServerRestApi(BaseDatabaseTest):
             "count_unread": count_unread,
             "only_unread": only_unread,
             "hidden": hidden,
+            "receiver_stats": True
         }
         if until is not None:
             json_data["until"] = until

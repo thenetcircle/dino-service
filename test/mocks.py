@@ -49,7 +49,7 @@ class FakeStorage:
                 continue
 
             if message.message_id == message_id:
-                if created_at - 1 < arrow.get(message.created_at).timestamp < created_at + 1:
+                if created_at - 1 < arrow.get(message.created_at).timestamp() < created_at + 1:
                     return message
 
         raise NoSuchMessageException(message_id)
@@ -545,6 +545,7 @@ class FakeDatabase:
             hide=False,
             pin=False,
             bookmark=False,
+            deleted=False,
         )
 
         if user_id in self.stats:

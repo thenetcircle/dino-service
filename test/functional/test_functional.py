@@ -892,7 +892,7 @@ class TestServerRestApi(BaseServerRestApi):
         yesterday = round(arrow.utcnow().shift(days=-1).float_timestamp, 3)
         self.update_delete_before(message["group_id"], delete_before=yesterday)
 
-        group_and_stats = self.groups_for_user()
+        group_and_stats = self.groups_updated_since(user_id=BaseTest.USER_ID, since=1560000000)
         delete_before_updated = group_and_stats[0]["stats"]["delete_before"]
 
         self.assertEqual(yesterday, delete_before_updated)

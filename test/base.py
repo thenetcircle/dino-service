@@ -43,5 +43,6 @@ class BaseTest(TestCase):
                 hide=False,
                 pin=False,
                 bookmark=False,
+                deleted=False,
             )
         ]
