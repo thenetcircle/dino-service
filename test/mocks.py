@@ -363,7 +363,15 @@ class FakeDatabase:
 
         return self.groups[group_id].last_message_time
 
-    def update_group_new_message(self, message: MessageBase, sent_time: dt, _, wakeup_users: bool = True) -> None:
+    def update_group_new_message(
+        self,
+        message: MessageBase,
+        sent_time: dt,
+        db,
+        sender_user_id: int,
+        user_ids: List[int],
+        update_unread_count: bool = True
+    ):
         if message.group_id not in self.groups:
             return
 
