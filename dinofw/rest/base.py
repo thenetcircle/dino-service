@@ -103,8 +103,8 @@ class BaseResource(ABC):
             user_id: int,
             message: MessageBase,
             db,
-            should_increase_unread: bool = True,
-            event_type: EventTypes = EventTypes.MESSAGE
+            should_increase_unread: bool,
+            event_type: EventTypes
     ):
         """
         update database and cache with everything related to sending a message
@@ -122,9 +122,15 @@ class BaseResource(ABC):
             update_unread_count=should_increase_unread
         )
 
-        self.env.db.update_last_read_and_sent_in_group_for_user(
-            group_id, user_id, now, db
-        )
+        if user_id not in user_ids:
+            # if the user deleted the group, this is an action log for the
+            # deletion, and we only have to un-hide it for the other user(s)
+            self.env.cache.set_hide_group(group_id, False)
+        else:
+            # otherwise we update as normal
+            self.env.db.update_last_read_and_sent_in_group_for_user(
+                group_id, user_id, now, db
+            )
 
         if event_type in {EventTypes.MESSAGE, EventTypes.ACTION_LOG}:
             self.env.client_publisher.message(message, user_ids)

@@ -2,6 +2,7 @@ from typing import List
 
 from sqlalchemy.orm import Session
 
+from dinofw.endpoint import EventTypes
 from dinofw.rest.base import BaseResource
 from dinofw.rest.models import Message
 from dinofw.rest.queries import AttachmentQuery, EditMessageQuery
@@ -19,7 +20,15 @@ class MessageResource(BaseResource):
         self, group_id: str, user_id: int, query: SendMessageQuery, db: Session
     ) -> Message:
         message = self.env.storage.store_message(group_id, user_id, query)
-        self._user_sends_a_message(group_id, user_id, message, db)
+
+        self._user_sends_a_message(
+            group_id,
+            user_id=user_id,
+            message=message,
+            db=db,
+            should_increase_unread=True,
+            event_type=EventTypes.MESSAGE
+        )
 
         return MessageResource.message_base_to_message(message)
 
@@ -104,7 +113,15 @@ class MessageResource(BaseResource):
         attachment = self.env.storage.store_attachment(
             group_id, user_id, message_id, query
         )
-        self._user_sends_a_message(group_id, attachment, db)
+
+        self._user_sends_a_message(
+            group_id,
+            user_id=user_id,
+            message=attachment,
+            db=db,
+            should_increase_unread=True,
+            event_type=EventTypes.ATTACHMENT
+        )
 
         return MessageResource.message_base_to_message(attachment)
 
@@ -149,10 +166,11 @@ class MessageResource(BaseResource):
         # we don't want to increase the unread count, but we want to notify users of the change
         self._user_sends_a_message(
             group_id,
-            user_id,
-            message,
-            db,
-            should_increase_unread=query.action_log.update_unread_count
+            user_id=user_id,
+            message=message,
+            db=db,
+            should_increase_unread=query.action_log.update_unread_count,
+            event_type=EventTypes.EDIT
         )
 
         return action_log
