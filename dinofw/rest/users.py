@@ -24,10 +24,7 @@ class UserResource(BaseResource):
         self, user_id: int, query: GroupQuery, db: Session
     ) -> List[UserGroup]:
         user_groups: List[UserGroupBase] = self.env.db.get_groups_for_user(
-            user_id,
-            query,
-            db,
-            receiver_stats=query.receiver_stats
+            user_id, query, db
         )
 
         return BaseResource.to_user_group(user_groups)
@@ -68,10 +65,7 @@ class UserResource(BaseResource):
         self, user_id: int, query: GroupUpdatesQuery, db: Session
     ) -> List[UserGroup]:
         user_groups: List[UserGroupBase] = self.env.db.get_groups_updated_since(
-            user_id,
-            query,
-            db,
-            receiver_stats=query.receiver_stats
+            user_id, query, db
         )
 
         return BaseResource.to_user_group(user_groups)

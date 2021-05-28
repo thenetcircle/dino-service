@@ -4,7 +4,7 @@ import arrow
 from test.functional.base_functional import BaseServerRestApi
 
 
-class TestServerRestApi(BaseServerRestApi):
+class TestHighlightTime(BaseServerRestApi):
     def test_receiver_highlight_time(self):
         self.assert_groups_for_user(0)
         message = self.send_1v1_message(

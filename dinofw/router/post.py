@@ -140,7 +140,8 @@ async def get_groups_for_user(
     Get a list of groups for this user, sorted by last message sent. For paying users,
     the `count_unread` field can be set to True (default is False).
 
-    If `count_unread` is False, the fields `unread` and `receiver_unread` will have
+    If `count_unread` is False, the field `unread` will have the value `-1`, and
+    similarly if `receiver_unread` is False, the field `receiver_unread` will have
     the value `-1`.
 
     If `hidden` is set to True in the query, only hidden groups will be returned.
@@ -149,8 +150,10 @@ async def get_groups_for_user(
     If `receiver_stats` is True, the result will include receiver stats. By default
     this parameter is False, since not all queries needs this information, and if
     True, requires an extra DB call. The following four return values will be set
-    if the parameter is True (otherwise they will be `null`):
+    if the parameter is True (otherwise they will be `null`, except for
+    `receiver_unread`, which will be -1):
 
+    * `receiver_unread`
     * `receiver_delete_before`
     * `receiver_hide`
     * `receiver_deleted`

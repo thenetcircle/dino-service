@@ -113,7 +113,7 @@ class GroupQuery(PaginationQuery, UserStatsQuery, ReceiverStatsQuery):
     pass
 
 
-class GroupUpdatesQuery(GroupQuery, ReceiverStatsQuery):
+class GroupUpdatesQuery(GroupQuery):
     since: Optional[float]
 
 
