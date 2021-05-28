@@ -35,6 +35,7 @@ class UserGroupStatsBase(BaseModel):
     highlight_time: Optional[datetime]
     last_updated_time: datetime
     first_sent: Optional[datetime]
+    receiver_highlight_time: Optional[datetime]
 
     deleted: bool
     hide: bool

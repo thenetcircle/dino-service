@@ -297,13 +297,15 @@ class BaseServerRestApi(BaseDatabaseTest):
         )
         self.assertEqual(raw_response.status_code, 200)
 
-    def highlight_group_for_user(self, group_id: str, user_id: int) -> None:
-        now_plus_2_days = arrow.utcnow().shift(days=2).datetime
-        now_plus_2_days = AbstractQuery.to_ts(now_plus_2_days)
+    def highlight_group_for_user(self, group_id: str, user_id: int, highlight_time: float = None) -> None:
+        if highlight_time is None:
+            now_plus_2_days = arrow.utcnow().shift(days=2).datetime
+            now_plus_2_days = AbstractQuery.to_ts(now_plus_2_days)
+            highlight_time = now_plus_2_days
 
         raw_response = self.client.put(
             f"/v1/groups/{group_id}/user/{user_id}/update",
-            json={"highlight_time": now_plus_2_days},
+            json={"highlight_time": highlight_time},
         )
         self.assertEqual(raw_response.status_code, 200)
 

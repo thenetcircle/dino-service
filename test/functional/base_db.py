@@ -21,9 +21,9 @@ class BaseDatabaseTest(BaseTest):
         from gnenv.environ import find_config
         from gnenv.environ import load_secrets_file
 
-        config_dict, config_path = find_config("..")
+        config_dict, config_path = find_config("../..")
         config_dict = load_secrets_file(
-            config_dict, secrets_path="../secrets", env_name="test"
+            config_dict, secrets_path="../../secrets", env_name="test"
         )
         config = ConfigDict(config_dict)
 
@@ -31,6 +31,7 @@ class BaseDatabaseTest(BaseTest):
         engine = create_engine(db_uri, connect_args={"options": "-c timezone=utc"})
 
         self.env = FakeEnv()
+        self.long_ago = 789000000.0  # default value for many timestamps
 
         # need to replace the global environ.env with our FakeEnv, functional model files import it directly
         from dinofw.utils import environ

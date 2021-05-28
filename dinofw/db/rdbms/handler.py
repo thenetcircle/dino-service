@@ -857,15 +857,46 @@ class RelationalHandler:
 
         return base
 
+    def get_both_user_stats_in_group(
+            self,
+            group_id: str,
+            user_id: int,
+            query: UpdateUserGroupStats,
+            db: Session
+    ) -> Tuple[models.UserGroupStatsEntity, Optional[models.UserGroupStatsEntity]]:
+        need_second_user_stats = query.highlight_time is not None or query.last_read_time is not None
+
+        statement = (
+            db.query(models.UserGroupStatsEntity)
+            .filter(models.UserGroupStatsEntity.group_id == group_id)
+        )
+
+        user_stats = None
+        that_user_stats = None
+
+        if need_second_user_stats:
+            group = (
+                db.query(models.GroupEntity)
+                .filter(models.GroupEntity.group_id == group_id)
+                .first()
+            )
+
+            if group.group_type == GroupTypes.ONE_TO_ONE:
+                user_stats_dict = {user.user_id: user for user in statement.all()}
+                that_user_id = [uid for uid in group_id_to_users(group.group_id) if uid != user_id][0]
+
+                user_stats = user_stats_dict[user_id]
+                that_user_stats = user_stats_dict[that_user_id]
+        else:
+            that_user_stats = None
+            user_stats = statement.filter(models.UserGroupStatsEntity.user_id == user_id).first()
+
+        return user_stats, that_user_stats
+
     def update_user_group_stats(
         self, group_id: str, user_id: int, query: UpdateUserGroupStats, db: Session
     ) -> None:
-        user_stats = (
-            db.query(models.UserGroupStatsEntity)
-            .filter(models.UserGroupStatsEntity.user_id == user_id)
-            .filter(models.UserGroupStatsEntity.group_id == group_id)
-            .first()
-        )
+        user_stats, that_user_stats = self.get_both_user_stats_in_group(group_id, user_id, query, db)
 
         last_read = AbstractQuery.to_dt(query.last_read_time, allow_none=True)
         delete_before = AbstractQuery.to_dt(query.delete_before, allow_none=True)
@@ -879,46 +910,51 @@ class RelationalHandler:
                 f"tried to update group stats for user {user_id} not in group {group_id}"
             )
 
-        # only update if query has new values
-        else:
-            # used by apps to sync changes
-            user_stats.last_updated_time = now
+        # used by apps to sync changes
+        user_stats.last_updated_time = now
 
-            if query.bookmark is not None:
-                user_stats.bookmark = query.bookmark
+        if query.bookmark is not None:
+            user_stats.bookmark = query.bookmark
 
-            if query.pin is not None:
-                user_stats.pin = query.pin
+        if query.pin is not None:
+            user_stats.pin = query.pin
 
-            if query.rating is not None:
-                user_stats.rating = query.rating
+        if query.rating is not None:
+            user_stats.rating = query.rating
 
-            if last_read is not None:
-                user_stats.last_read = last_read
+        if last_read is not None:
+            user_stats.last_read = last_read
 
-                # highlight time is removed if a user reads a conversation
-                user_stats.highlight_time = self.long_ago
+            # highlight time is removed if a user reads a conversation
+            user_stats.highlight_time = self.long_ago
+            if that_user_stats is not None:
+                that_user_stats.receiver_highlight_time = self.long_ago
 
-            if delete_before is not None:
-                user_stats.delete_before = delete_before
+        if delete_before is not None:
+            user_stats.delete_before = delete_before
 
-                # for syncing deletions to apps, returned in /updates api
-                user_stats.deleted = True
+            # for syncing deletions to apps, returned in /updates api
+            user_stats.deleted = True
 
-            # can't set highlight time if also setting last read time
-            if highlight_time is not None and last_read is None:
-                user_stats.highlight_time = highlight_time
+        # can't set highlight time if also setting last read time
+        if highlight_time is not None and last_read is None:
+            user_stats.highlight_time = highlight_time
 
-                # always becomes unhidden if highlighted
-                user_stats.hide = False
-                self.env.cache.set_hide_group(group_id, False, [user_id])
+            # save the highlight time on the other user, to not have to
+            # do a second query to fetch it when listing groups
+            if that_user_stats is not None:
+                that_user_stats.receiver_highlight_time = highlight_time
 
-            elif query.hide is not None:
-                user_stats.hide = query.hide
-                self.env.cache.set_hide_group(group_id, query.hide, [user_id])
+            # always becomes unhidden if highlighted
+            user_stats.hide = False
+            self.env.cache.set_hide_group(group_id, False, [user_id])
 
-            if query.hide is not None or query.delete_before is not None:
-                self.env.cache.reset_count_group_types_for_user(user_id)
+        elif query.hide is not None:
+            user_stats.hide = query.hide
+            self.env.cache.set_hide_group(group_id, query.hide, [user_id])
+
+        if query.hide is not None or query.delete_before is not None:
+            self.env.cache.reset_count_group_types_for_user(user_id)
 
         db.add(user_stats)
         db.commit()
@@ -1140,4 +1176,5 @@ class RelationalHandler:
             hide=False,
             pin=False,
             highlight_time=self.long_ago,
+            receiver_highlight_time=self.long_ago
         )

@@ -244,9 +244,9 @@ class BaseResource(ABC):
         stats_dict = stats_base.__dict__
         stats_dict["unread"] = unread
         stats_dict["receiver_unread"] = receiver_unread
+        stats_dict["receiver_highlight_time"] = AbstractQuery.to_ts(stats_base.receiver_highlight_time)
 
         if receiver_stats_base is not None:
-            stats_dict["receiver_highlight_time"] = AbstractQuery.to_ts(receiver_stats_base.highlight_time)
             stats_dict["receiver_delete_before"] = AbstractQuery.to_ts(receiver_stats_base.delete_before)
             stats_dict["receiver_hide"] = receiver_stats_base.hide
             stats_dict["receiver_deleted"] = receiver_stats_base.deleted

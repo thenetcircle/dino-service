@@ -62,6 +62,9 @@ class UserGroupStatsEntity(env.Base):
     # a user can highlight a 1-to-1 group for ANOTHER user
     highlight_time = Column(DateTime(timezone=True), nullable=False)
 
+    # for 1-to-1, copy the highlight_time from the receiver
+    receiver_highlight_time = Column(DateTime(timezone=True), nullable=False)
+
     # a user can pin groups he/she wants to keep on top, and will be sorted higher than last_message_time
     pin = Column(Boolean, default=False, nullable=False, index=True)
 
