@@ -105,6 +105,9 @@ async def update_user_statistics_in_group(
     * `pin`: whether to pin a conversation or not,
     * `rating`: a user can rate a conversation (1v1 usually).
 
+    When setting `bookmark` to false, it will set the unread count to 0,
+    and `last_read_time` will be `last_message_time`.
+
     **Potential error codes in response:**
     * `600`: if the user is not in the group,
     * `601`: if the group does not exist,

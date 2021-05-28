@@ -858,8 +858,14 @@ class RelationalHandler:
             user_id: int,
             query: UpdateUserGroupStats,
             db: Session
-    ) -> Tuple[models.UserGroupStatsEntity, Optional[models.UserGroupStatsEntity]]:
-        need_second_user_stats = query.highlight_time is not None or query.last_read_time is not None
+    ) -> Tuple[models.UserGroupStatsEntity, Optional[models.UserGroupStatsEntity], Optional[models.GroupEntity]]:
+        # when removing a bookmark, the highlight time will be reset
+        # and unread count will become 0
+        need_second_user_stats = (
+            query.highlight_time is not None or
+            query.last_read_time is not None or
+            query.bookmark is False
+        )
 
         statement = (
             db.query(models.UserGroupStatsEntity)
@@ -868,6 +874,7 @@ class RelationalHandler:
 
         user_stats = None
         that_user_stats = None
+        group = None
 
         if need_second_user_stats:
             group = (
@@ -886,12 +893,12 @@ class RelationalHandler:
             that_user_stats = None
             user_stats = statement.filter(models.UserGroupStatsEntity.user_id == user_id).first()
 
-        return user_stats, that_user_stats
+        return user_stats, that_user_stats, group
 
     def update_user_group_stats(
         self, group_id: str, user_id: int, query: UpdateUserGroupStats, db: Session
     ) -> None:
-        user_stats, that_user_stats = self.get_both_user_stats_in_group(group_id, user_id, query, db)
+        user_stats, that_user_stats, group = self.get_both_user_stats_in_group(group_id, user_id, query, db)
 
         last_read = AbstractQuery.to_dt(query.last_read_time, allow_none=True)
         delete_before = AbstractQuery.to_dt(query.delete_before, allow_none=True)
@@ -911,6 +918,10 @@ class RelationalHandler:
         if query.bookmark is not None:
             user_stats.bookmark = query.bookmark
 
+            # we reset the unread count when removing a bookmark
+            if query.bookmark is False:
+                last_read = group.last_message_time
+
         if query.pin is not None:
             user_stats.pin = query.pin
 
@@ -919,6 +930,7 @@ class RelationalHandler:
 
         if last_read is not None:
             user_stats.last_read = last_read
+            self.env.cache.reset_unread_in_groups(user_id, [group.group_id])
 
             # highlight time is removed if a user reads a conversation
             user_stats.highlight_time = self.long_ago
