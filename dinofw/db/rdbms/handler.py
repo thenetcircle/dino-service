@@ -820,13 +820,31 @@ class RelationalHandler:
             _ = (
                 db.query(models.UserGroupStatsEntity)
                 .filter(
-                    models.UserGroupStatsEntity.group_id.in_(group_id_chunk)
+                    models.UserGroupStatsEntity.group_id.in_(group_id_chunk),
+                    models.UserGroupStatsEntity.user_id == user_id
                 )
                 .update(
                     {
                         models.UserGroupStatsEntity.last_updated_time: now,
                         models.UserGroupStatsEntity.last_read: now,
                         models.UserGroupStatsEntity.bookmark: False,
+                        models.UserGroupStatsEntity.highlight_time: self.long_ago
+                    },
+                    synchronize_session="fetch",
+                )
+            )
+
+            # need to reset the highlight time on the other user's stats too
+            _ = (
+                db.query(models.UserGroupStatsEntity)
+                .filter(
+                    models.UserGroupStatsEntity.group_id.in_(group_id_chunk),
+                    models.UserGroupStatsEntity.user_id != user_id,
+                    models.UserGroupStatsEntity.receiver_highlight_time > self.long_ago
+                )
+                .update(
+                    {
+                        models.UserGroupStatsEntity.receiver_highlight_time: self.long_ago
                     },
                     synchronize_session="fetch",
                 )
