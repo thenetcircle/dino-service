@@ -147,16 +147,16 @@ async def get_groups_for_user(
     If `hidden` is set to True in the query, only hidden groups will be returned.
     Defaults value is False.
 
-    If `receiver_stats` is True, the result will include receiver stats. By default
-    this parameter is False, since not all queries needs this information, and if
-    True, requires an extra DB call. The following four return values will be set
-    if the parameter is True (otherwise they will be `null`, except for
-    `receiver_unread`, which will be -1):
+    If `receiver_stats` is True, the following fields will be set:
 
     * `receiver_unread`
     * `receiver_delete_before`
     * `receiver_hide`
     * `receiver_deleted`
+
+    The `receiver_stats` field is False by default, since not all queries needs this
+    information. If it's False, the above fields will be `null`, except for
+    `receiver_unread`, which will be -1.
 
     One receiver stat that is always returned (even if `receiver_stats` is False),
     is `receiver_highlight_time`. Default value is 789000000.0, (means "long ago",
@@ -184,16 +184,16 @@ async def get_groups_updated_since(
     similarly if `receiver_unread` is False, the field `receiver_unread` will have
     the value `-1`.
 
-    If `receiver_stats` is True, the result will include receiver stats. By default
-    this parameter is False, since not all queries needs this information, and if
-    True, requires an extra DB call. The following four return values will be set
-    if the parameter is True (otherwise they will be `null`, except for
-    `receiver_unread`, which will be -1):
+    If `receiver_stats` is True, the following fields will be set:
 
     * `receiver_unread`
     * `receiver_delete_before`
     * `receiver_hide`
     * `receiver_deleted`
+
+    The `receiver_stats` field is False by default, since not all queries needs this
+    information. If it's False, the above fields will be `null`, except for
+    `receiver_unread`, which will be -1.
 
     One receiver stat that is always returned (even if `receiver_stats` is False),
     is `receiver_highlight_time`. Default value is 789000000.0, (means "long ago",
