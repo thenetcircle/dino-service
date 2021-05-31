@@ -133,9 +133,8 @@ class TestGroupResource(BaseTest):
         group = await self.group.create_new_group(
             BaseTest.USER_ID, create_query, None
         )
-        count = await self.group.count_messages_in_group(group.group_id)
         stats = await self.group.get_user_group_stats(
-            group.group_id, BaseTest.USER_ID, count, None
+            group.group_id, BaseTest.USER_ID, None
         )
         self.assertEqual(0, stats.unread)
 
@@ -144,9 +143,8 @@ class TestGroupResource(BaseTest):
             group.group_id, BaseTest.USER_ID, send_query, None
         )
         time.sleep(0.01)
-        count = await self.group.count_messages_in_group(group.group_id)
         stats = await self.group.get_user_group_stats(
-            group.group_id, BaseTest.USER_ID, count, None
+            group.group_id, BaseTest.USER_ID, None
         )
         self.assertEqual(0, stats.unread)
 
@@ -155,9 +153,8 @@ class TestGroupResource(BaseTest):
             group.group_id, BaseTest.OTHER_USER_ID, send_query, None
         )
         time.sleep(0.01)
-        count = await self.group.count_messages_in_group(group.group_id)
         stats = await self.group.get_user_group_stats(
-            group.group_id, BaseTest.USER_ID, count, None
+            group.group_id, BaseTest.USER_ID, None
         )
         self.assertEqual(1, stats.unread)
 
