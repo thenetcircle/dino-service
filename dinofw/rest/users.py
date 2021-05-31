@@ -87,7 +87,7 @@ class UserResource(BaseResource):
         )
 
         user_groups: List[UserGroupBase] = self.env.db.get_groups_for_user(
-            user_id, sub_query, db, count_receiver_unread=False,
+            user_id, sub_query, db
         )
 
         if query.count_unread:
