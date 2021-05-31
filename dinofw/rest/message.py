@@ -174,6 +174,3 @@ class MessageResource(BaseResource):
         )
 
         return action_log
-
-    async def delete_messages(self, group_id: str, query: MessageQuery):
-        self.env.storage.delete_messages_in_group(group_id, query)

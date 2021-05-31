@@ -75,8 +75,6 @@ class Message(BaseModel):
 
     file_id: Optional[str]
     updated_at: Optional[float]
-    removed_at: Optional[float]
-    removed_by_user: Optional[int]
 
 
 class Group(BaseModel):

@@ -325,6 +325,10 @@ class CassandraHandler:
         # convert uuid to str
         message_id = str(attachment.message_id)
 
+        logger.info("deleting message and attachment: group_id={}, message_id={}, user_id={}".format(
+            group_id, message_id, attachment.user_id
+        ))
+
         self.delete_message(
             group_id,
             attachment.user_id,
@@ -357,13 +361,7 @@ class CassandraHandler:
         if message is None:
             raise NoSuchMessageException(message_id)
 
-        removed_at = utcnow_dt()
-
-        message.update(
-            message_payload="",
-            removed_at=removed_at,
-            updated_at=removed_at,
-        )
+        message.delete()
 
     def get_message_with_id(self, group_id: str, user_id: int, message_id: str, created_at: float):
         approx_after = arrow.get(created_at).shift(minutes=-1).datetime
@@ -456,15 +454,6 @@ class CassandraHandler:
 
         return CassandraHandler.message_base_from_entity(message)
 
-    def delete_messages_in_group(self, group_id: str, query: MessageQuery) -> None:
-        def callback(message: MessageModel):
-            message.removed_at = removed_at
-            message.removed_by_user = query.admin_id
-
-        removed_at = utcnow_dt()
-
-        self._update_all_messages_in_group(group_id=group_id, callback=callback)
-
     # noinspection PyMethodMayBeStatic
     def create_action_log(
             self,
@@ -484,21 +473,6 @@ class CassandraHandler:
         )
 
         return CassandraHandler.message_base_from_entity(log)
-
-    def delete_messages_in_group_for_user(
-        self, group_id: str, user_id: int, query: MessageQuery
-    ) -> None:
-        # TODO: copy messages to another table `messages_deleted` and then remove the rows for `messages`
-
-        def callback(message: MessageModel):
-            message.removed_at = removed_at
-            message.removed_by_user = query.admin_id
-
-        removed_at = utcnow_dt()
-
-        self._update_all_messages_in_group(
-            group_id=group_id, callback=callback, user_id=user_id,
-        )
 
     # noinspection PyMethodMayBeStatic
     def store_message(self, group_id: str, user_id: int, query: SendMessageQuery) -> MessageBase:
