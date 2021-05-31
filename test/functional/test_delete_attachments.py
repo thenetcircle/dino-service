@@ -5,7 +5,7 @@ from test.base import BaseTest
 from test.functional.base_functional import BaseServerRestApi
 
 
-class TestReceiverStats(BaseServerRestApi):
+class TestDeleteAttachments(BaseServerRestApi):
     def test_payload_status_updated(self):
         message = self.send_1v1_message(
             message_type=MessageTypes.IMAGE,

@@ -213,6 +213,7 @@ class GroupResource(BaseResource):
             rating=user_stats.rating,
             hide=user_stats.hide,
             pin=user_stats.pin,
+            deleted=user_stats.deleted,
             bookmark=user_stats.bookmark,
             last_updated_time=last_updated_time,
         )

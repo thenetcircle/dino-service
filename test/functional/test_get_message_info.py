@@ -3,7 +3,7 @@ from test.base import BaseTest
 from test.functional.base_functional import BaseServerRestApi
 
 
-class TestServerRestApi(BaseServerRestApi):
+class TestGetMessageInfo(BaseServerRestApi):
     def test_get_message_info_1v1(self):
         self.assert_groups_for_user(0)
         message = self.send_1v1_message()
