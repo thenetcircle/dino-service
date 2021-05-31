@@ -1,3 +1,4 @@
+import json
 from datetime import datetime as dt
 from typing import Dict
 from typing import List
@@ -23,7 +24,7 @@ from dinofw.rest.queries import MessageQuery
 from dinofw.rest.queries import SendMessageQuery
 from dinofw.utils import trim_micros
 from dinofw.utils import utcnow_dt
-from dinofw.utils.config import MessageTypes
+from dinofw.utils.config import MessageTypes, PayloadStatus
 from dinofw.utils.exceptions import NoSuchAttachmentException
 from dinofw.utils.exceptions import NoSuchGroupException
 from dinofw.utils.exceptions import NoSuchMessageException
@@ -89,6 +90,14 @@ class FakeStorage:
             if att.file_id == file_id:
                 del self.attachments_by_message[message]
                 break
+
+        for group, messages in self.messages_by_group.items():
+            for message in messages:
+                if message.file_id == file_id:
+                    payload = json.loads(message.message_payload)
+                    payload["status"] = PayloadStatus.DELETED
+                    message.message_payload = json.dumps(payload)
+                    break
 
         if att_copy is None:
             raise NoSuchAttachmentException(query.file_id)
@@ -157,6 +166,8 @@ class FakeStorage:
         for message in self.messages_by_group[group_id]:
             if message.message_id == message_id:
                 message_type = message.message_type
+                message.message_payload = query.message_payload
+                message.file_id = query.file_id
                 break
 
         if message_type is None:

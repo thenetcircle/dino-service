@@ -364,11 +364,12 @@ class BaseServerRestApi(BaseDatabaseTest):
         user_id: int = BaseTest.USER_ID,
         receiver_id: int = BaseTest.OTHER_USER_ID,
         delay: int = 10,
+        payload: str = "some payload"
     ) -> dict:
         json_data = {
             "receiver_id": receiver_id,
             "message_type": message_type,
-            "message_payload": "some payload"
+            "message_payload": payload
         }
 
         raw_response = self.client.post(
@@ -406,7 +407,6 @@ class BaseServerRestApi(BaseDatabaseTest):
             f"/v1/users/{user_id}/message/{message_id}/attachment",
             json={
                 "file_id": file_id,
-                "status": BaseTest.FILE_STATUS,
                 "message_payload": payload,
                 "created_at": created_at,
                 "receiver_id": receiver_id,

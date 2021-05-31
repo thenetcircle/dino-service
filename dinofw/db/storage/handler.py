@@ -1,11 +1,11 @@
+import json
 from datetime import datetime as dt
 from time import time
-from typing import Dict
+from typing import Dict, Union
 from typing import List
 from typing import Optional
 from typing import Tuple
 from uuid import uuid4 as uuid
-from loguru import logger
 
 import arrow
 from cassandra.cluster import EXEC_PROFILE_DEFAULT
@@ -19,6 +19,7 @@ from cassandra.cqlengine.query import BatchQuery
 from cassandra.policies import DCAwareRoundRobinPolicy
 from cassandra.policies import RetryPolicy
 from cassandra.policies import TokenAwarePolicy
+from loguru import logger
 
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.models import AttachmentModel
@@ -30,7 +31,7 @@ from dinofw.rest.queries import CreateAttachmentQuery
 from dinofw.rest.queries import MessageQuery
 from dinofw.rest.queries import SendMessageQuery
 from dinofw.utils import utcnow_dt
-from dinofw.utils.config import ConfigKeys
+from dinofw.utils.config import ConfigKeys, PayloadStatus
 from dinofw.utils.config import DefaultValues
 from dinofw.utils.config import MessageTypes
 from dinofw.utils.exceptions import NoSuchAttachmentException
@@ -294,7 +295,7 @@ class CassandraHandler:
             if message.message_id in attachment_msg_ids
         ]
 
-        self._delete_messages(messages, "messages")
+        self._update_payload_status_to(messages, PayloadStatus.DELETED)
         self._delete_messages(attachments, "attachments")
 
         return attachment_bases
@@ -314,6 +315,15 @@ class CassandraHandler:
             .allow_filtering()
             .first()
         )
+        message = (
+            MessageModel.objects(
+                MessageModel.group_id == group_id,
+                MessageModel.created_at > group_created_at,
+                MessageModel.message_id == attachment.message_id,
+            )
+            .allow_filtering()
+            .first()
+        )
 
         if attachment is None:
             raise NoSuchAttachmentException(query.file_id)
@@ -321,21 +331,11 @@ class CassandraHandler:
         # to be returned
         attachment_base = CassandraHandler.message_base_from_entity(attachment)
 
-        # convert uuid to str
-        message_id = str(attachment.message_id)
-
-        logger.info("deleting message and attachment: group_id={}, message_id={}, user_id={}".format(
-            group_id, message_id, attachment.user_id
+        logger.info("deleting attachment: group_id={}, message_id={}, user_id={}".format(
+            group_id, str(attachment.message_id), attachment.user_id
         ))
 
-        self.delete_message(
-            group_id,
-            attachment.user_id,
-            message_id,
-            attachment.created_at
-        )
-
-        # delete attachment after message; delete_message() throws NoSuchMessage if not found
+        self._update_payload_status_to([message], PayloadStatus.DELETED)
         attachment.delete()
 
         return attachment_base
@@ -562,6 +562,29 @@ class CassandraHandler:
 
             amount += len(messages)
             until = self._update_messages(messages, callback)
+
+    def _update_payload_status_to(self, messages: List[MessageModel], status: PayloadStatus):
+        start = time()
+        with BatchQuery() as b:
+            for message in messages:
+                try:
+                    payload = json.loads(message.message_payload)
+                    payload["status"] = status
+                    message.message_payload = json.dumps(payload)
+                except Exception as e:
+                    logger.error("failed to update status for group {} message {}: '{}', payload was: {}".format(
+                        message.group_id,
+                        message.message_id,
+                        str(e),
+                        message.message_payload
+                    ))
+                    continue
+
+                message.batch(b).save()
+
+        elapsed = time() - start
+        if elapsed > 1:
+            logger.info(f"updated payload status of {len(message)} messages in {elapsed:.2f}s")
 
     def _delete_messages(self, messages, types: str) -> None:
         start = time()

@@ -17,6 +17,13 @@ class MessageTypes:
     ACTION: Final = 100
 
 
+class PayloadStatus:
+    DELETED: Final = -2
+    ERROR: Final = -1
+    PENDING: Final = 0
+    RESIZED: Final = 1
+
+
 class DefaultValues:
     PER_PAGE: Final = 100
 

@@ -1,6 +1,4 @@
-from dinofw.rest.queries import AbstractQuery
 from test.base import BaseTest
-import arrow
 from test.functional.base_functional import BaseServerRestApi
 
 
