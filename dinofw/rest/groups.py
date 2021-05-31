@@ -211,6 +211,7 @@ class GroupResource(BaseResource):
             delete_before=delete_before,
             first_sent=first_sent,
             rating=user_stats.rating,
+            highlight_time=user_stats.highlight_time,
             hide=user_stats.hide,
             pin=user_stats.pin,
             deleted=user_stats.deleted,
