@@ -890,9 +890,11 @@ class RelationalHandler:
             .filter(models.UserGroupStatsEntity.group_id == group_id)
         )
 
-        user_stats = None
         that_user_stats = None
         group = None
+
+        def filter_for_one():
+            return statement.filter(models.UserGroupStatsEntity.user_id == user_id).first()
 
         if need_second_user_stats:
             group = (
@@ -907,9 +909,10 @@ class RelationalHandler:
 
                 user_stats = user_stats_dict[user_id]
                 that_user_stats = user_stats_dict[that_user_id]
+            else:
+                user_stats = filter_for_one()
         else:
-            that_user_stats = None
-            user_stats = statement.filter(models.UserGroupStatsEntity.user_id == user_id).first()
+            user_stats = filter_for_one()
 
         return user_stats, that_user_stats, group
 

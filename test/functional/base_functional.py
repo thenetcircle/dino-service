@@ -400,13 +400,14 @@ class BaseServerRestApi(BaseDatabaseTest):
         user_id: int = BaseTest.USER_ID,
         receiver_id: int = BaseTest.OTHER_USER_ID,
         file_id: str = BaseTest.FILE_ID,
+        payload: str = BaseTest.FILE_CONTEXT
     ):
         raw_response = self.client.post(
             f"/v1/users/{user_id}/message/{message_id}/attachment",
             json={
                 "file_id": file_id,
                 "status": BaseTest.FILE_STATUS,
-                "message_payload": BaseTest.FILE_CONTEXT,
+                "message_payload": payload,
                 "created_at": created_at,
                 "receiver_id": receiver_id,
             },

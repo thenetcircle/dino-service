@@ -1,3 +1,4 @@
+import json
 import time
 
 import arrow
@@ -418,7 +419,7 @@ class TestServerRestApi(BaseServerRestApi):
         self.send_1v1_message(
             user_id=BaseTest.USER_ID, receiver_id=BaseTest.OTHER_USER_ID
         )
-        groups = self.groups_for_user(user_id=BaseTest.USER_ID, count_unread=False)
+        groups = self.groups_for_user(user_id=BaseTest.USER_ID, count_unread=False, receiver_stats=False)
 
         self.assertEqual(groups[0]["stats"]["unread"], -1)
         self.assertEqual(groups[0]["stats"]["receiver_unread"], -1)
@@ -972,12 +973,15 @@ class TestServerRestApi(BaseServerRestApi):
         created_at = message["created_at"]
         group_id = message["group_id"]
 
-        self.update_attachment(message_id, created_at)
+        self.update_attachment(message_id, created_at, payload=json.dumps({
+            "file_id": BaseTest.FILE_ID,
+            "context": BaseTest.FILE_CONTEXT
+        }))
 
         attachment = self.attachment_for_file_id(group_id, BaseTest.FILE_ID)
 
         self.assertIsNotNone(attachment)
-        self.assertEqual(attachment["file_id"], BaseTest.FILE_ID)
+        self.assertIn(BaseTest.FILE_ID, attachment["message_payload"])
         self.assertEqual(attachment["message_type"], MessageTypes.IMAGE)
 
     def test_read_receipt_published_when_opening_conversation(self):
