@@ -270,14 +270,13 @@ class CassandraHandler:
             .all()
         )
 
-        file_ids = {attachment.file_id for attachment in attachments}
         attachment_msg_ids = {attachment.message_id for attachment in attachments}
         attachment_bases = [
             CassandraHandler.message_base_from_entity(attachment) for attachment in attachments
         ]
 
         # no un-deleted attachments in this group
-        if not len(file_ids):
+        if not len(attachment_msg_ids):
             return list()
 
         messages_all = (

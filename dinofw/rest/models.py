@@ -73,8 +73,10 @@ class Message(BaseModel):
     message_payload: Optional[str]
     context: Optional[str]
 
-    file_id: Optional[str]
     updated_at: Optional[float]
+
+    # don't need to include it in the response, only used for querying
+    # file_id: Optional[str]
 
 
 class Group(BaseModel):
