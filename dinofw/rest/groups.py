@@ -93,7 +93,7 @@ class GroupResource(BaseResource):
 
         user_stats = [
             await self.get_user_group_stats(
-                group_id, user_id, message_amount, db
+                group_id, user_id, db
             ) for user_id in users
         ]
 
@@ -114,6 +114,7 @@ class GroupResource(BaseResource):
                 group=group,
                 users=users_and_join_time,
                 user_count=len(users_and_join_time),
+                message_amount=message_amount
             ),
         )
 
@@ -179,7 +180,7 @@ class GroupResource(BaseResource):
         return total_messages
 
     async def get_user_group_stats(
-        self, group_id: str, user_id: int, message_amount: int, db: Session
+        self, group_id: str, user_id: int, db: Session
     ) -> Optional[UserGroupStats]:
         user_stats: UserGroupStatsBase = self.env.db.get_user_stats_in_group(
             group_id, user_id, db
@@ -203,7 +204,6 @@ class GroupResource(BaseResource):
         return UserGroupStats(
             user_id=user_id,
             group_id=group_id,
-            message_amount=message_amount,
             unread=unread_amount,
             join_time=join_time,
             receiver_unread=-1,  # TODO: should be count for other user here as well?
