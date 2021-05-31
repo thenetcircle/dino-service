@@ -1,3 +1,4 @@
+import itertools
 from typing import List
 from typing import Optional
 
@@ -95,6 +96,17 @@ class GroupResource(BaseResource):
                 group_id, user_id, message_amount, db
             ) for user_id in users
         ]
+
+        user_a: Optional[UserGroupStats] = user_stats[0]
+        user_b: Optional[UserGroupStats] = user_stats[1]
+
+        if user_a is not None and user_b is not None:
+            for this_user, that_user in itertools.permutations([user_a, user_b]):
+                this_user.receiver_unread = that_user.unread
+                this_user.receiver_hide = that_user.hide
+                this_user.receiver_deleted = that_user.deleted
+                this_user.receiver_highlight_time = that_user.highlight_time
+                this_user.receiver_delete_before = that_user.delete_before
 
         return OneToOneStats(
             stats=user_stats,
