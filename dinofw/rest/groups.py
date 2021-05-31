@@ -194,6 +194,7 @@ class GroupResource(BaseResource):
         last_read = AbstractQuery.to_ts(user_stats.last_read, allow_none=True)
         first_sent = AbstractQuery.to_ts(user_stats.first_sent, allow_none=True)
         join_time = AbstractQuery.to_ts(user_stats.join_time, allow_none=True)
+        highlight_time = AbstractQuery.to_ts(user_stats.highlight_time, allow_none=True)
 
         unread_amount = self.env.storage.count_messages_in_group_since(
             group_id, user_stats.last_read
@@ -211,7 +212,7 @@ class GroupResource(BaseResource):
             delete_before=delete_before,
             first_sent=first_sent,
             rating=user_stats.rating,
-            highlight_time=user_stats.highlight_time,
+            highlight_time=highlight_time,
             hide=user_stats.hide,
             pin=user_stats.pin,
             deleted=user_stats.deleted,
