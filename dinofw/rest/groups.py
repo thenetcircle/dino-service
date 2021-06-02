@@ -147,9 +147,6 @@ class GroupResource(BaseResource):
             ]
 
         user_stats = get_user_stats()
-        if user_stats.hide:
-            return Histories(messages=list(), action_logs=list(), last_reads=list())
-
         messages = get_messages()
 
         # history api can be called by the admin interface, in which case we don't want to change read status
