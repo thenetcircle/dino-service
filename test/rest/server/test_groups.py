@@ -95,10 +95,8 @@ class TestGroupResource(BaseTest):
         create_query = CreateGroupQuery(group_name="some group name", group_type=0, users=[BaseTest.USER_ID])
         log_query = CreateActionLogQuery(action_type=0, user_ids=[BaseTest.USER_ID])
 
-        histories = await self.group.histories(BaseTest.GROUP_ID, BaseTest.USER_ID, message_query, db=None)  # noqa
-
-        self.assertIsNotNone(histories)
-        self.assertEqual(0, len(histories.messages))
+        with self.assertRaises(NoSuchGroupException):
+            await self.group.histories(BaseTest.GROUP_ID, BaseTest.USER_ID, message_query, db=None)  # noqa
 
         # create a new group
         group = await self.group.create_new_group(BaseTest.USER_ID, create_query, None)  # noqa

@@ -1060,7 +1060,7 @@ class TestServerRestApi(BaseServerRestApi):
         stats = self.get_global_user_stats(hidden=True)
         self.assertEqual(2, stats["one_to_one_amount"])
 
-    def test_both_visible_and_hidden_groups_is_counted_if_not_specified(self):
+    def test_hidden_groups_is_not_counted_if_not_specified(self):
         message0 = self.send_1v1_message(receiver_id=4444)
         message1 = self.send_1v1_message(receiver_id=5555)
         self.send_1v1_message(receiver_id=6666)
@@ -1078,7 +1078,7 @@ class TestServerRestApi(BaseServerRestApi):
         stats = self.get_global_user_stats(hidden=True)
         self.assertEqual(1, stats["one_to_one_amount"])
         stats = self.get_global_user_stats(hidden=None)
-        self.assertEqual(3, stats["one_to_one_amount"])
+        self.assertEqual(2, stats["one_to_one_amount"])
 
         self.update_hide_group_for(group_id1, hide=True)
         stats = self.get_global_user_stats(hidden=False)
@@ -1086,7 +1086,7 @@ class TestServerRestApi(BaseServerRestApi):
         stats = self.get_global_user_stats(hidden=True)
         self.assertEqual(2, stats["one_to_one_amount"])
         stats = self.get_global_user_stats(hidden=None)
-        self.assertEqual(3, stats["one_to_one_amount"])
+        self.assertEqual(1, stats["one_to_one_amount"])
 
     def test_until_param_excluded_matching_group_in_list(self):
         self.send_1v1_message(receiver_id=22)
