@@ -961,6 +961,9 @@ class RelationalHandler:
         if delete_before is not None:
             user_stats.delete_before = delete_before
 
+            # otherwise a deleted group could have unread messages
+            user_stats.last_read = delete_before
+
             # for syncing deletions to apps, returned in /updates api
             user_stats.deleted = True
 
