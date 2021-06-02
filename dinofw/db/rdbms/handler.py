@@ -1029,6 +1029,7 @@ class RelationalHandler:
         user_stats.last_updated_time = the_time
         user_stats.highlight_time = self.long_ago
         user_stats.bookmark = False
+        user_stats.hide = False
 
         self.env.cache.set_last_read_in_group_for_user(group_id, user_id, AbstractQuery.to_ts(the_time))
 
