@@ -125,7 +125,7 @@ class RelationalHandler:
             u.deleted = false and
             u.delete_before <= g.updated_at and
             g.last_message_time < now() and
-            g.group_id = '9be68f8c-6610-454f-815c-de8a92fc75e2'
+            ((u.last_read < g.last_message_time) or u.bookmark = true)
         order by
             u.pin desc,
             greatest(u.highlight_time, g.last_message_time) desc
