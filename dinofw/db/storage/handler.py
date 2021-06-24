@@ -141,13 +141,21 @@ class CassandraHandler:
         since = MessageQuery.to_dt(query.since, allow_none=True)
 
         statement = AttachmentModel.objects.filter(
-            AttachmentModel.group_id == group_id,
-            AttachmentModel.created_at > user_stats.delete_before,
+            AttachmentModel.group_id == group_id
         )
 
         if until is not None:
-            statement = statement.filter(AttachmentModel.created_at < until)
+            statement = statement.filter(
+                AttachmentModel.created_at < until
+            )
+            statement = statement.filter(
+                AttachmentModel.created_at > user_stats.delete_before
+            )
+
         elif since is not None:
+            if since < user_stats.delete_before:
+                since = user_stats.delete_before
+
             statement = statement.filter(AttachmentModel.created_at >= since)
             statement = statement.order_by('-created_at')
 
