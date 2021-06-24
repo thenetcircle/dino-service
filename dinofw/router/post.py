@@ -113,8 +113,8 @@ async def get_group_history_for_user(
 
     History can be filtered by `message_type` to e.g. only list images sent in the group.
 
-    Both `since` and `until` can be used together, or separately. At least one needs to be
-    specified, and if both are specified, `until` needs to be greater than `since`.
+    Only one of `since` and `until` can be used at the same time. At least one needs to be
+    specified.
 
     If `admin_id` is set, and is greater than `0`, the read status will not be updated. Useful
     for getting history in admin UI without updating `last_read_time` of the user.
@@ -391,6 +391,9 @@ async def get_attachments_in_group_for_user(
 ) -> List[Message]:
     """
     Get all attachments in this group for this user.
+
+    Only one of `since` and `until` can be used at the same time. At least one needs to be
+    specified.
 
     **Potential error codes in response:**
     * `600`: if the user is not in the group,

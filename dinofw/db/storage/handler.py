@@ -147,7 +147,7 @@ class CassandraHandler:
 
         if until is not None:
             statement = statement.filter(AttachmentModel.created_at < until)
-        if since is not None:
+        elif since is not None:
             statement = statement.filter(AttachmentModel.created_at >= since)
             statement = statement.order_by('-created_at')
 
@@ -171,7 +171,7 @@ class CassandraHandler:
 
         if until is not None:
             statement = statement.filter(MessageModel.created_at < until)
-        if since is not None:
+        elif since is not None:
             statement = statement.filter(MessageModel.created_at >= since)
             statement = statement.order_by('-created_at')
 

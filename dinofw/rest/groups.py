@@ -25,7 +25,7 @@ from dinofw.rest.queries import UpdateUserGroupStats
 from dinofw.utils import utcnow_dt
 from dinofw.utils import utcnow_ts
 from dinofw.utils.decorators import time_method
-from dinofw.utils.exceptions import NoSuchGroupException
+from dinofw.utils.exceptions import NoSuchGroupException, InvalidRangeException
 
 
 class GroupResource(BaseResource):
@@ -65,6 +65,11 @@ class GroupResource(BaseResource):
     async def get_attachments_in_group_for_user(
         self, group_id: str, user_id: int, query: MessageQuery, db: Session
     ) -> List[Message]:
+        if query.since is None and query.until is None:
+            raise InvalidRangeException("both 'since' and 'until' was empty, need one")
+        if query.since is not None and query.until is not None:
+            raise InvalidRangeException("only one of parameters 'since' and 'until' can be used at the same time")
+
         user_stats = self.env.db.get_user_stats_in_group(group_id, user_id, db)
         attachments = self.env.storage.get_attachments_in_group_for_user(group_id, user_stats, query)
 
@@ -147,10 +152,9 @@ class GroupResource(BaseResource):
             ]
 
         if query.since is None and query.until is None:
-            raise ValueError("both 'since' and 'until' was empty, need at least one")
+            raise InvalidRangeException("both 'since' and 'until' was empty, need one")
         if query.since is not None and query.until is not None:
-            if query.since > query.until:
-                raise ValueError("parameter 'since' needs to be less than or equal to 'until'")
+            raise InvalidRangeException("only one of parameters 'since' and 'until' can be used at the same time")
 
         user_stats = get_user_stats()
         messages = get_messages()
