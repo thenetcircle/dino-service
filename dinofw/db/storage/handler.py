@@ -165,13 +165,21 @@ class CassandraHandler:
         since = MessageQuery.to_dt(query.since, allow_none=True)
 
         statement = MessageModel.objects.filter(
-            MessageModel.group_id == group_id,
-            MessageModel.created_at > user_stats.delete_before,
+            MessageModel.group_id == group_id
         )
 
         if until is not None:
-            statement = statement.filter(MessageModel.created_at < until)
+            statement = statement.filter(
+                MessageModel.created_at < until
+            )
+            statement = statement.filter(
+                MessageModel.created_at > user_stats.delete_before
+            )
+
         elif since is not None:
+            if since < user_stats.delete_before:
+                since = user_stats.delete_before
+
             statement = statement.filter(MessageModel.created_at >= since)
             statement = statement.order_by('-created_at')
 
