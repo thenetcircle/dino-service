@@ -33,7 +33,7 @@ from dinofw.utils.api import log_error_and_raise_known
 from dinofw.utils.api import log_error_and_raise_unknown
 from dinofw.utils.config import ErrorCodes
 from dinofw.utils.decorators import timeit
-from dinofw.utils.exceptions import NoSuchAttachmentException, QueryValidationError
+from dinofw.utils.exceptions import NoSuchAttachmentException, QueryValidationError, InvalidRangeException
 from dinofw.utils.exceptions import NoSuchGroupException
 from dinofw.utils.exceptions import NoSuchMessageException
 from dinofw.utils.exceptions import NoSuchUserException
@@ -113,12 +113,16 @@ async def get_group_history_for_user(
 
     History can be filtered by `message_type` to e.g. only list images sent in the group.
 
+    Both `since` and `until` can be used together, or separately. At least one needs to be
+    specified, and if both are specified, `until` needs to be greater than `since`.
+
     If `admin_id` is set, and is greater than `0`, the read status will not be updated. Useful
     for getting history in admin UI without updating `last_read_time` of the user.
 
     **Potential error codes in response:**
     * `600`: if the user is not in the group,
     * `601`: if the group does not exist,
+    * `605`: if the since/until parameters are not valid,
     * `250`: if an unknown error occurred.
     """
     try:
@@ -127,6 +131,8 @@ async def get_group_history_for_user(
         log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
     except UserNotInGroupException as e:
         log_error_and_raise_known(ErrorCodes.USER_NOT_IN_GROUP, sys.exc_info(), e)
+    except InvalidRangeException as e:
+        log_error_and_raise_known(ErrorCodes.WRONG_PARAMETERS, sys.exc_info(), e)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 

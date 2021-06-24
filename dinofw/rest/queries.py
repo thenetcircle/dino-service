@@ -59,6 +59,7 @@ class CreateActionLogQuery(AbstractQuery):
 
 class PaginationQuery(AbstractQuery):
     until: Optional[float]
+    since: Optional[float]
     per_page: int
 
 
@@ -114,7 +115,7 @@ class GroupQuery(PaginationQuery, UserStatsQuery, ReceiverStatsQuery):
 
 
 class GroupUpdatesQuery(GroupQuery):
-    since: Optional[float]
+    pass
 
 
 class JoinGroupQuery(CreateActionLogQuery):

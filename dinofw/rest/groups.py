@@ -146,6 +146,12 @@ class GroupResource(BaseResource):
                 ).items()
             ]
 
+        if query.since is None and query.until is None:
+            raise ValueError("both 'since' and 'until' was empty, need at least one")
+        if query.since is not None and query.until is not None:
+            if query.since > query.until:
+                raise ValueError("parameter 'since' needs to be less than or equal to 'until'")
+
         user_stats = get_user_stats()
         messages = get_messages()
 

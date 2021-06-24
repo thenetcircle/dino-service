@@ -137,24 +137,21 @@ class CassandraHandler:
             user_stats: UserGroupStatsBase,
             query: MessageQuery
     ) -> List[MessageBase]:
-        until = MessageQuery.to_dt(query.until)
+        until = MessageQuery.to_dt(query.until, allow_none=True)
+        since = MessageQuery.to_dt(query.since, allow_none=True)
 
-        raw_attachments = (
-            AttachmentModel.objects(
-                AttachmentModel.group_id == group_id,
-                AttachmentModel.created_at <= until,
-                AttachmentModel.created_at > user_stats.delete_before,
-            )
-            .limit(query.per_page or DefaultValues.PER_PAGE)
-            .all()
+        statement = AttachmentModel.objects.filter(
+            AttachmentModel.group_id == group_id,
+            AttachmentModel.created_at > user_stats.delete_before,
         )
 
-        attachments = list()
+        if until is not None:
+            statement = statement.filter(AttachmentModel.created_at < until)
+        if since is not None:
+            statement = statement.filter(AttachmentModel.created_at >= since)
 
-        for attachment in raw_attachments:
-            attachments.append(CassandraHandler.message_base_from_entity(attachment))
-
-        return attachments
+        messages = statement.limit(query.per_page or DefaultValues.PER_PAGE).all()
+        return [CassandraHandler.message_base_from_entity(message) for message in messages]
 
     # noinspection PyMethodMayBeStatic
     def get_messages_in_group_for_user(
@@ -163,24 +160,21 @@ class CassandraHandler:
             user_stats: UserGroupStatsBase,
             query: MessageQuery
     ) -> List[MessageBase]:
-        until = MessageQuery.to_dt(query.until)
+        until = MessageQuery.to_dt(query.until, allow_none=True)
+        since = MessageQuery.to_dt(query.since, allow_none=True)
 
-        raw_messages = (
-            MessageModel.objects(
-                MessageModel.group_id == group_id,
-                MessageModel.created_at < until,
-                MessageModel.created_at > user_stats.delete_before,
-            )
-            .limit(query.per_page or DefaultValues.PER_PAGE)
-            .all()
+        statement = MessageModel.objects.filter(
+            MessageModel.group_id == group_id,
+            MessageModel.created_at > user_stats.delete_before,
         )
 
-        messages = list()
+        if until is not None:
+            statement = statement.filter(MessageModel.created_at < until)
+        if since is not None:
+            statement = statement.filter(MessageModel.created_at >= since)
 
-        for message in raw_messages:
-            messages.append(CassandraHandler.message_base_from_entity(message))
-
-        return messages
+        messages = statement.limit(query.per_page or DefaultValues.PER_PAGE).all()
+        return [CassandraHandler.message_base_from_entity(message) for message in messages]
 
     # noinspection PyMethodMayBeStatic
     def count_messages_in_group_since(self, group_id: str, since: dt) -> int:

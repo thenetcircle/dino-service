@@ -3,6 +3,11 @@ class UserNotInGroupException(Exception):
         self.message = f"user is not in group: {message}"
 
 
+class InvalidRangeException(Exception):
+    def __init__(self, message):
+        self.message = message
+
+
 class NoSuchGroupException(Exception):
     def __init__(self, message):
         self.message = f"no such group: {message}"
