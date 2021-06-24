@@ -160,7 +160,13 @@ class CassandraHandler:
             statement = statement.order_by('-created_at')
 
         messages = statement.limit(query.per_page or DefaultValues.PER_PAGE).all()
-        return [CassandraHandler.message_base_from_entity(message) for message in messages]
+        messages = [CassandraHandler.message_base_from_entity(message) for message in messages]
+
+        if since is None:
+            return messages
+
+        # since we need descending order on cassandra query if we use 'since', reverse the results here
+        return list(reversed(messages))
 
     # noinspection PyMethodMayBeStatic
     def get_messages_in_group_for_user(
@@ -192,7 +198,13 @@ class CassandraHandler:
             statement = statement.order_by('-created_at')
 
         messages = statement.limit(query.per_page or DefaultValues.PER_PAGE).all()
-        return [CassandraHandler.message_base_from_entity(message) for message in messages]
+        messages = [CassandraHandler.message_base_from_entity(message) for message in messages]
+
+        if since is None:
+            return messages
+
+        # since we need descending order on cassandra query if we use 'since', reverse the results here
+        return list(reversed(messages))
 
     # noinspection PyMethodMayBeStatic
     def count_messages_in_group_since(self, group_id: str, since: dt) -> int:
