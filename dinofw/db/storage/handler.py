@@ -157,7 +157,9 @@ class CassandraHandler:
                 since = user_stats.delete_before
 
             statement = statement.filter(AttachmentModel.created_at >= since)
-            statement = statement.order_by('-created_at')
+
+            # default ordering is descending, so change to ascending when using 'since'
+            statement = statement.order_by('created_at')
 
         messages = statement.limit(query.per_page or DefaultValues.PER_PAGE).all()
         messages = [CassandraHandler.message_base_from_entity(message) for message in messages]
@@ -165,7 +167,7 @@ class CassandraHandler:
         if since is None:
             return messages
 
-        # since we need descending order on cassandra query if we use 'since', reverse the results here
+        # since we need ascending order on cassandra query if we use 'since', reverse the results here
         return list(reversed(messages))
 
     # noinspection PyMethodMayBeStatic
@@ -195,7 +197,9 @@ class CassandraHandler:
                 since = user_stats.delete_before
 
             statement = statement.filter(MessageModel.created_at >= since)
-            statement = statement.order_by('-created_at')
+
+            # default ordering is descending, so change to ascending when using 'since'
+            statement = statement.order_by('created_at')
 
         messages = statement.limit(query.per_page or DefaultValues.PER_PAGE).all()
         messages = [CassandraHandler.message_base_from_entity(message) for message in messages]
@@ -203,7 +207,7 @@ class CassandraHandler:
         if since is None:
             return messages
 
-        # since we need descending order on cassandra query if we use 'since', reverse the results here
+        # since we need ascending order on cassandra query if we use 'since', reverse the results here
         return list(reversed(messages))
 
     # noinspection PyMethodMayBeStatic
