@@ -146,7 +146,7 @@ class CassandraHandler:
 
         if until is not None:
             statement = statement.filter(
-                AttachmentModel.created_at < until
+                AttachmentModel.created_at <= until
             )
             statement = statement.filter(
                 AttachmentModel.created_at > user_stats.delete_before
@@ -178,7 +178,7 @@ class CassandraHandler:
 
         if until is not None:
             statement = statement.filter(
-                MessageModel.created_at < until
+                MessageModel.created_at <= until
             )
             statement = statement.filter(
                 MessageModel.created_at > user_stats.delete_before
