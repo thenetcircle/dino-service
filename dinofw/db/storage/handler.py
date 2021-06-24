@@ -149,6 +149,7 @@ class CassandraHandler:
             statement = statement.filter(AttachmentModel.created_at < until)
         if since is not None:
             statement = statement.filter(AttachmentModel.created_at >= since)
+            statement = statement.order_by('-created_at')
 
         messages = statement.limit(query.per_page or DefaultValues.PER_PAGE).all()
         return [CassandraHandler.message_base_from_entity(message) for message in messages]
@@ -172,6 +173,7 @@ class CassandraHandler:
             statement = statement.filter(MessageModel.created_at < until)
         if since is not None:
             statement = statement.filter(MessageModel.created_at >= since)
+            statement = statement.order_by('-created_at')
 
         messages = statement.limit(query.per_page or DefaultValues.PER_PAGE).all()
         return [CassandraHandler.message_base_from_entity(message) for message in messages]
