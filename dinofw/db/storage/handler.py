@@ -146,7 +146,7 @@ class CassandraHandler:
 
         if until is not None:
             statement = statement.filter(
-                AttachmentModel.created_at <= until
+                AttachmentModel.created_at < until
             )
             statement = statement.filter(
                 AttachmentModel.created_at > user_stats.delete_before
@@ -156,7 +156,7 @@ class CassandraHandler:
             if since < user_stats.delete_before:
                 since = user_stats.delete_before
 
-            statement = statement.filter(AttachmentModel.created_at >= since)
+            statement = statement.filter(AttachmentModel.created_at > since)
 
             # default ordering is descending, so change to ascending when using 'since'
             statement = statement.order_by('created_at')
@@ -186,7 +186,7 @@ class CassandraHandler:
 
         if until is not None:
             statement = statement.filter(
-                MessageModel.created_at <= until
+                MessageModel.created_at < until
             )
             statement = statement.filter(
                 MessageModel.created_at > user_stats.delete_before
@@ -196,7 +196,7 @@ class CassandraHandler:
             if since < user_stats.delete_before:
                 since = user_stats.delete_before
 
-            statement = statement.filter(MessageModel.created_at >= since)
+            statement = statement.filter(MessageModel.created_at > since)
 
             # default ordering is descending, so change to ascending when using 'since'
             statement = statement.order_by('created_at')
