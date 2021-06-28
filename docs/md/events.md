@@ -4,14 +4,16 @@ Dino is using VerneMQ to broadcast events to clients using MQTT version 5. Below
 events a client can receive, and when they are received.
 
 For events, it doesn't matter if they're for a 1-to-1 conversation in a multi-user group, they 
-look the same, but `group_type` will be different (if specified). Possible values for `group_type`:
+look the same, but `group_type` will be different (if specified). 
+
+Possible values for `group_type`:
 
 * `0`: multi-user group,
 * `1`: 1-to-1.
 
 ## A group you're part of has been created or updated:
 
-<span style="color:red"><b>Event schema not yet finalized.</b></span>.
+<span style="color:red"><b>Event schema not yet finalized.</b></span>
 
 ```json
 {
@@ -27,9 +29,9 @@ look the same, but `group_type` will be different (if specified). Possible value
 }
 ```
 
-# New message in a group you're part of
+## New message in a group you're part of
 
-<span style="color:red"><b>Event schema not yet finalized.</b></span>.
+<span style="color:red"><b>Event schema not yet finalized.</b></span>
 
 ```json
 {
@@ -44,9 +46,9 @@ look the same, but `group_type` will be different (if specified). Possible value
 }
 ```
 
-# New attachment in a group you're part of
+## New attachment in a group you're part of
 
-<span style="color:red"><b>Event schema not yet finalized.</b></span>.
+<span style="color:red"><b>Event schema not yet finalized.</b></span>
 
 ```json
 {
@@ -61,9 +63,9 @@ look the same, but `group_type` will be different (if specified). Possible value
 }
 ```
 
-# A message was edited:
+## A message was edited:
 
-<span style="color:red"><b>Event schema not yet finalized.</b></span>.
+<span style="color:red"><b>Event schema not yet finalized.</b></span>
 
 ```json
 {
@@ -78,11 +80,11 @@ look the same, but `group_type` will be different (if specified). Possible value
 }
 ```
 
-# An action log was created:
+## An action log was created:
 
 Action logs can be joins, leaves, etc.
 
-<span style="color:red"><b>Event schema not yet finalized.</b></span>.
+<span style="color:red"><b>Event schema not yet finalized.</b></span>
 
 ```json
 {
@@ -97,11 +99,11 @@ Action logs can be joins, leaves, etc.
 }
 ```
 
-# A user read a message/conversation
+## A user read a message/conversation
 
 Read receipts are only broadcasted in 1-to-1 conversations, not in multi-user groups.
 
-<span style="color:red"><b>Event schema not yet finalized.</b></span>.
+<span style="color:red"><b>Event schema not yet finalized.</b></span>
 
 ```json
 {
