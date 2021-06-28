@@ -3,7 +3,7 @@ bcrypt==3.2.0
 black==19.10b0
 cassandra-driver==3.24.0
 fakeredis==1.4.4
-fastapi==0.65.1
+fastapi==0.65.2
 gitdb==4.0.5
 gmqtt==0.6.9
 gnenv==0.1.4
@@ -18,8 +18,8 @@ requests==2.25.1
 sortedcontainers==2.2.2
 sqlalchemy==1.4.15
 strict-rfc3339==0.7
-urllib3==1.26.4
+urllib3==1.26.5
 uvicorn==0.13.4
 uvloop==0.14.0
-websockets==9.0.2
+websockets==9.1
 activitystreams==0.2.1
