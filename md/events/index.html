@@ -59,6 +59,16 @@
     <ul class="current">
     <li class="toctree-l2"><a class="reference internal" href="#a-group-youre-part-of-has-been-created-or-updated">A group you're part of has been created or updated:</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#new-message-in-a-group-youre-part-of">New message in a group you're part of</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#new-attachment-in-a-group-youre-part-of">New attachment in a group you're part of</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#a-message-was-edited">A message was edited:</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#an-action-log-was-created">An action log was created:</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#a-user-read-a-messageconversation">A user read a message/conversation</a>
+    </li>
     </ul>
                     </li>
                 </ul>
@@ -99,13 +109,14 @@
 <p>Dino is using VerneMQ to broadcast events to clients using MQTT version 5. Below are the possible 
 events a client can receive, and when they are received.</p>
 <p>For events, it doesn't matter if they're for a 1-to-1 conversation in a multi-user group, they 
-look the same, but <code>group_type</code> will be different (if specified). Possible values for <code>group_type</code>:</p>
+look the same, but <code>group_type</code> will be different (if specified). </p>
+<p>Possible values for <code>group_type</code>:</p>
 <ul>
 <li><code>0</code>: multi-user group,</li>
 <li><code>1</code>: 1-to-1.</li>
 </ul>
 <h2 id="a-group-youre-part-of-has-been-created-or-updated">A group you're part of has been created or updated:</h2>
-<p><span style="color:red"><b>Event schema not yet finalized.</b></span>.</p>
+<p><span style="color:red"><b>Event schema not yet finalized.</b></span></p>
 <pre><code class="language-json">{
     &quot;event_type&quot;: &quot;group&quot;,
     &quot;group_id&quot;: &quot;9d78163c-1144-485a-92c6-6015afc6cd40&quot;,
@@ -118,8 +129,8 @@ look the same, but <code>group_type</code> will be different (if specified). Pos
     &quot;user_ids&quot;: [1234]
 }
 </code></pre>
-<h1 id="new-message-in-a-group-youre-part-of">New message in a group you're part of</h1>
-<p><span style="color:red"><b>Event schema not yet finalized.</b></span>.</p>
+<h2 id="new-message-in-a-group-youre-part-of">New message in a group you're part of</h2>
+<p><span style="color:red"><b>Event schema not yet finalized.</b></span></p>
 <pre><code class="language-json">{
     &quot;event_type&quot;: &quot;message&quot;,
     &quot;group_id&quot;: &quot;6cbb3265-2a7f-494d-92ad-f4503d55d49f&quot;,
@@ -131,8 +142,8 @@ look the same, but <code>group_type</code> will be different (if specified). Pos
     &quot;created_at&quot;: 1597877384.794828
 }
 </code></pre>
-<h1 id="new-attachment-in-a-group-youre-part-of">New attachment in a group you're part of</h1>
-<p><span style="color:red"><b>Event schema not yet finalized.</b></span>.</p>
+<h2 id="new-attachment-in-a-group-youre-part-of">New attachment in a group you're part of</h2>
+<p><span style="color:red"><b>Event schema not yet finalized.</b></span></p>
 <pre><code class="language-json">{
     &quot;event_type&quot;: &quot;attachment&quot;,
     &quot;group_id&quot;: &quot;6cbb3265-2a7f-494d-92ad-f4503d55d49f&quot;,
@@ -144,8 +155,8 @@ look the same, but <code>group_type</code> will be different (if specified). Pos
     &quot;created_at&quot;: 1597877384.794828
 }
 </code></pre>
-<h1 id="a-message-was-edited">A message was edited:</h1>
-<p><span style="color:red"><b>Event schema not yet finalized.</b></span>.</p>
+<h2 id="a-message-was-edited">A message was edited:</h2>
+<p><span style="color:red"><b>Event schema not yet finalized.</b></span></p>
 <pre><code class="language-json">{
     &quot;event_type&quot;: &quot;edit&quot;,
     &quot;group_id&quot;: &quot;6cbb3265-2a7f-494d-92ad-f4503d55d49f&quot;,
@@ -157,9 +168,9 @@ look the same, but <code>group_type</code> will be different (if specified). Pos
     &quot;created_at&quot;: 1597877384.794828
 }
 </code></pre>
-<h1 id="an-action-log-was-created">An action log was created:</h1>
+<h2 id="an-action-log-was-created">An action log was created:</h2>
 <p>Action logs can be joins, leaves, etc.</p>
-<p><span style="color:red"><b>Event schema not yet finalized.</b></span>.</p>
+<p><span style="color:red"><b>Event schema not yet finalized.</b></span></p>
 <pre><code class="language-json">{
     &quot;event_type&quot;: &quot;action_log&quot;,
     &quot;group_id&quot;: &quot;6cbb3265-2a7f-494d-92ad-f4503d55d49f&quot;,
@@ -171,9 +182,9 @@ look the same, but <code>group_type</code> will be different (if specified). Pos
     &quot;created_at&quot;: 1597877384.794828
 }
 </code></pre>
-<h1 id="a-user-read-a-messageconversation">A user read a message/conversation</h1>
+<h2 id="a-user-read-a-messageconversation">A user read a message/conversation</h2>
 <p>Read receipts are only broadcasted in 1-to-1 conversations, not in multi-user groups.</p>
-<p><span style="color:red"><b>Event schema not yet finalized.</b></span>.</p>
+<p><span style="color:red"><b>Event schema not yet finalized.</b></span></p>
 <pre><code class="language-json">{
     &quot;event_type&quot;: &quot;read&quot;,
     &quot;group_id&quot;: &quot;6cbb3265-2a7f-494d-92ad-f4503d55d49f&quot;,
