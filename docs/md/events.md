@@ -11,7 +11,7 @@ Possible values for `group_type`:
 * `0`: multi-user group,
 * `1`: 1-to-1.
 
-## A group you're part of has been created or updated:
+## A group you're part of has been created or updated
 
 <span style="color:red"><b>Event schema not yet finalized.</b></span>
 
@@ -63,7 +63,7 @@ Possible values for `group_type`:
 }
 ```
 
-## A message was edited:
+## A message was edited
 
 <span style="color:red"><b>Event schema not yet finalized.</b></span>
 
@@ -80,7 +80,7 @@ Possible values for `group_type`:
 }
 ```
 
-## An action log was created:
+## An action log was created
 
 Action logs can be joins, leaves, etc.
 
