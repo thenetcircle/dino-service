@@ -1,0 +1,5 @@
+site_name: Dino
+pages:
+    - Home: index.md
+    - Usage: md/usage.md
+theme: readthedocs
