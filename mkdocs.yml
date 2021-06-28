@@ -3,4 +3,5 @@ site_url: https://thenetcircle.github.io/dino-service/
 nav:
     - Home: index.md
     - Usage: md/usage.md
+    - Events: md/events.md
 theme: readthedocs
