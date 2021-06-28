@@ -90,14 +90,17 @@
             <div class="section">
               
                 <h1 id="client-usage">Client usage</h1>
-<p>First connect to MQTT and subscribe to your User ID topic:</p>
-<pre><code class="language-javascript">let settings = {
+<p>First connect to MQTT and subscribe to your User ID topic. ACLs on the MQTT server side is set to 
+<code>read-only</code> on the user's own "user ID topic" only; trying to subscribe on another user ID topic
+than the "username" a client successfully authenticated with will result in an error:</p>
+<pre><code class="language-javascript">const settings = {
     clientId: '1234',
     username: '1234',
+    password: '&lt;when hashed, must match stored value in redis that the mqtt server will check against&gt;',
     clean: false,
     qos: 1
 }
-let client  = mqtt.connect('mqtt://host:port/mqtt', settings);
+const client  = mqtt.connect('mqtt://host:port/mqtt', settings);
 
 client.on('connect', function () {
     client.subscribe('1234', {qos: 1}, function (err) {
@@ -110,30 +113,6 @@ client.on('connect', function () {
 client.on('message', function (topic, message) {
     console.log(message.toString());
 });
-</code></pre>
-<p>Event when a group you're part of has been created or updated:</p>
-<pre><code class="language-json">{
-    &quot;event_type&quot;: &quot;group&quot;,
-    &quot;group_id&quot;: &quot;9d78163c-1144-485a-92c6-6015afc6cd40&quot;,
-    &quot;name&quot;: &quot;a name&quot;,
-    &quot;created_at&quot;: 1597877421.453804,
-    &quot;updated_at&quot;: 1597877421.453804,
-    &quot;last_message_time&quot;: 1597877421.453804,
-    &quot;group_type&quot;: 0,
-    &quot;owner_id&quot;: 1234,
-    &quot;user_ids&quot;: [1234]
-}
-</code></pre>
-<p>Event when a new message is sent to a group you're part of:</p>
-<pre><code class="language-json">{
-    &quot;event_type&quot;: &quot;message&quot;,
-    &quot;group_id&quot;: &quot;6cbb3265-2a7f-494d-92ad-f4503d55d49f&quot;,
-    &quot;sender_id&quot;: 1234,
-    &quot;message_id&quot;: &quot;c87efd18-8879-4c24-8b26-ccb7f40a0fe5&quot;,
-    &quot;message_payload&quot;: &quot;test message from rest api&quot;,
-    &quot;message_type&quot;: &quot;text&quot;,
-    &quot;created_at&quot;: 1597877384.794828
-}
 </code></pre>
               
             </div>

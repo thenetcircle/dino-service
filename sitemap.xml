@@ -6,6 +6,11 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://thenetcircle.github.io/dino-service/md/events/</loc>
+         <lastmod>2021-06-28</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://thenetcircle.github.io/dino-service/md/usage/</loc>
          <lastmod>2021-06-28</lastmod>
          <changefreq>daily</changefreq>
