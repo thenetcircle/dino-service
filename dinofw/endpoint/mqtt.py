@@ -108,7 +108,7 @@ class MqttPublisher(IClientPublisher):
         )
 
     async def setup(self):
-        return # temporary
+        return  # temporary
 
         await self.mqtt.connect(
             self.mqtt_host,
@@ -117,7 +117,7 @@ class MqttPublisher(IClientPublisher):
         )
 
     def send(self, user_id: int, fields: dict, qos: int = 1) -> None:
-        return # temporary
+        return  # temporary
 
         if self.mqtt is None:
             return
@@ -155,8 +155,12 @@ class MqttPublishHandler(IClientPublishHandler):
         data = MqttPublishHandler.message_base_to_event(message, event_type=EventTypes.MESSAGE)
         self.send(user_ids, data)
 
+    def action_log(self, message: MessageBase, user_ids: List[int]) -> None:
+        data = MqttPublishHandler.message_base_to_event(message, event_type=EventTypes.ACTION_LOG)
+        self.send(user_ids, data)
+
     def attachment(self, attachment: MessageBase, user_ids: List[int]) -> None:
-        data = MqttPublishHandler.message_base_to_event(attachment, event_type=EventTypes.MESSAGE)
+        data = MqttPublishHandler.message_base_to_event(attachment, event_type=EventTypes.ATTACHMENT)
         self.send(user_ids, data)
 
     def edit(self, message: MessageBase, user_ids: List[int]) -> None:

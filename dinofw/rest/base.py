@@ -132,8 +132,11 @@ class BaseResource(ABC):
                 group_id, user_id, now, db
             )
 
-        if event_type in {EventTypes.MESSAGE, EventTypes.ACTION_LOG}:
+        if event_type == EventTypes.MESSAGE:
             self.env.client_publisher.message(message, user_ids)
+
+        elif event_type == EventTypes.ACTION_LOG:
+            self.env.client_publisher.action_log(message, user_ids)
 
         elif event_type == EventTypes.EDIT:
             self.env.client_publisher.edit(message, user_ids)
