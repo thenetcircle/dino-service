@@ -1,5 +1,5 @@
 import sys
-from typing import List, Union
+from typing import List, Union, Optional
 
 from fastapi import APIRouter
 from fastapi import Depends
@@ -44,7 +44,7 @@ from dinofw.utils.exceptions import UserNotInGroupException
 router = APIRouter()
 
 
-@router.post("/users/{user_id}/send", response_model=Union[JSONResponse, Message])
+@router.post("/users/{user_id}/send", response_model=Optional[Message])
 @timeit(logger, "POST", "/users/{user_id}/send")
 @wrap_exception()
 async def send_message_to_user(
@@ -79,7 +79,7 @@ async def send_message_to_user(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.post("/users/{user_id}/message/{message_id}/info", response_model=Union[JSONResponse, Message])
+@router.post("/users/{user_id}/message/{message_id}/info", response_model=Optional[Message])
 @timeit(logger, "POST", "/users/{user_id}/message/{message_id}/info")
 @wrap_exception()
 async def get_message_info(
@@ -102,7 +102,7 @@ async def get_message_info(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.post("/groups/{group_id}/user/{user_id}/histories", response_model=Union[JSONResponse, Histories])
+@router.post("/groups/{group_id}/user/{user_id}/histories", response_model=Optional[Histories])
 @timeit(logger, "POST", "/groups/{group_id}/user/{user_id}/histories")
 @wrap_exception()
 async def get_group_history_for_user(
@@ -142,7 +142,7 @@ async def get_group_history_for_user(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.post("/users/{user_id}/groups", response_model=Union[JSONResponse, List[UserGroup]])
+@router.post("/users/{user_id}/groups", response_model=Optional[List[UserGroup]])
 @timeit(logger, "POST", "/users/{user_id}/groups")
 @wrap_exception()
 async def get_groups_for_user(
@@ -183,7 +183,7 @@ async def get_groups_for_user(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.post("/users/{user_id}/groups/updates", response_model=Union[JSONResponse, List[UserGroup]])
+@router.post("/users/{user_id}/groups/updates", response_model=Optional[List[UserGroup]])
 @timeit(logger, "POST", "/users/{user_id}/groups/updates")
 @wrap_exception()
 async def get_groups_updated_since(
@@ -221,7 +221,7 @@ async def get_groups_updated_since(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.post("/userstats/{user_id}", response_model=Union[JSONResponse, UserStats])
+@router.post("/userstats/{user_id}", response_model=Optional[UserStats])
 @timeit(logger, "POST", "/userstats/{user_id}")
 @wrap_exception()
 async def get_user_statistics(
@@ -256,7 +256,7 @@ async def get_user_statistics(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.post("/groups/{group_id}", response_model=Union[JSONResponse, Group])
+@router.post("/groups/{group_id}", response_model=Optional[Group])
 @timeit(logger, "POST", "/groups/{group_id}")
 @wrap_exception()
 async def get_group_information(
@@ -281,7 +281,7 @@ async def get_group_information(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.post("/groups/{group_id}/user/{user_id}/send", response_model=Union[JSONResponse, Message])
+@router.post("/groups/{group_id}/user/{user_id}/send", response_model=Optional[Message])
 @timeit(logger, "POST", "/groups/{group_id}/user/{user_id}/send")
 @wrap_exception()
 async def send_message_to_group(
@@ -309,7 +309,7 @@ async def send_message_to_group(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.post("/users/{user_id}/group", response_model=Union[JSONResponse, OneToOneStats])
+@router.post("/users/{user_id}/group", response_model=Optional[OneToOneStats])
 @timeit(logger, "POST", "/users/{user_id}/group")
 @wrap_exception()
 async def get_one_to_one_information(
@@ -330,7 +330,7 @@ async def get_one_to_one_information(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.post("/users/{user_id}/message/{message_id}/attachment", response_model=Union[JSONResponse, Message])
+@router.post("/users/{user_id}/message/{message_id}/attachment", response_model=Optional[Message])
 @timeit(logger, "POST", "/users/{user_id}/message/{message_id}/attachment")
 @wrap_exception()
 async def create_an_attachment(
@@ -371,7 +371,7 @@ async def create_an_attachment(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.post("/groups/{group_id}/attachment", response_model=Union[JSONResponse, Message])
+@router.post("/groups/{group_id}/attachment", response_model=Optional[Message])
 @timeit(logger, "POST", "/groups/{group_id}/attachment")
 @wrap_exception()
 async def get_attachment_info_from_file_id(
@@ -396,7 +396,7 @@ async def get_attachment_info_from_file_id(
 
 
 @router.post(
-    "/groups/{group_id}/user/{user_id}/attachments", response_model=Union[JSONResponse, List[Message]]
+    "/groups/{group_id}/user/{user_id}/attachments", response_model=Optional[List[Message]]
 )
 @timeit(logger, "POST", "/groups/{group_id}/user/{user_id}/attachments")
 @wrap_exception()
@@ -426,7 +426,7 @@ async def get_attachments_in_group_for_user(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.post("/users/{user_id}/actions", response_model=Union[JSONResponse, Message])
+@router.post("/users/{user_id}/actions", response_model=Optional[Message])
 @timeit(logger, "POST", "/users/{user_id}/actions")
 @wrap_exception()
 async def create_action_log(
@@ -453,7 +453,7 @@ async def create_action_log(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.post("/users/{user_id}/groups/actions", response_model=Union[JSONResponse, Message])
+@router.post("/users/{user_id}/groups/actions", response_model=Optional[Message])
 @timeit(logger, "POST", "/users/{user_id}/groups/actions")
 @wrap_exception()
 async def create_action_log_in_all_groups_for_user(
@@ -484,7 +484,7 @@ async def create_action_log_in_all_groups_for_user(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.post("/users/{user_id}/groups/create", response_model=Union[JSONResponse, Group])
+@router.post("/users/{user_id}/groups/create", response_model=Optional[Group])
 @timeit(logger, "POST", "/users/{user_id}/groups/create")
 @wrap_exception()
 async def create_a_new_group(
