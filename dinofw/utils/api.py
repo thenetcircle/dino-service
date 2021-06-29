@@ -25,7 +25,7 @@ def log_error_and_raise_unknown(exc_info, e):
     environ.env.capture_exception(exc_info)
     raise HTTPException(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        detail=f"{str(e)}",
+        detail=f"{ErrorCodes.UNKNOWN_ERROR}: {str(e)}",
     )
 
 
@@ -34,5 +34,6 @@ def log_error_and_raise_known(error_code, exc_info, e):
     logger.error(details)
     environ.env.capture_exception(exc_info)
     raise HTTPException(
-        status_code=error_code, detail=f"{e.message}",
+        status_code=error_code,
+        detail=details,
     )
