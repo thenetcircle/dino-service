@@ -67,7 +67,13 @@ def wrap_exception():
             try:
                 return view_func(*args, **kwargs)
             except HTTPException as e:
-                return JSONResponse(status_code=e.status_code, content={
+                # uvicorn forbids non-standard http response codes, so only use 400/500 for errors
+                http_code = 400
+                if e.status_code == 500:
+                    http_code = 500
+
+                return JSONResponse(status_code=http_code, content={
+                    "code": e.status_code,
                     "detail": e.detail
                 })
         return decorator
