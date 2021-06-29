@@ -34,5 +34,5 @@ def log_error_and_raise_known(error_code, exc_info, e):
     logger.error(details)
     environ.env.capture_exception(exc_info)
     raise HTTPException(
-        status_code=status.HTTP_400_BAD_REQUEST, detail=f"{error_code}: {e.message}",
+        status_code=error_code, detail=f"{error_code}: {e.message}",
     )

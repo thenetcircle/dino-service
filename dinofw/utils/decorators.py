@@ -3,6 +3,9 @@ import time
 import traceback
 from functools import wraps
 
+from fastapi import HTTPException
+from fastapi.responses import JSONResponse
+
 from dinofw.utils import environ
 
 
@@ -53,5 +56,19 @@ def timeit(_logger, method: str, tag: str):
                     if environ.env.stats is not None:
                         _logger.debug(f"calling statsd with tag '{stats_tag}' and time {the_time:.2f}ms")
                         environ.env.stats.timing('api.' + stats_tag, the_time)
+        return decorator
+    return factory
+
+
+def wrap_exception():
+    def factory(view_func):
+        @wraps(view_func)
+        def decorator(*args, **kwargs):
+            try:
+                return view_func(*args, **kwargs)
+            except HTTPException as e:
+                return JSONResponse(status_code=e.status_code, content={
+                    "detail": e.detail
+                })
         return decorator
     return factory

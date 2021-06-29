@@ -1,9 +1,10 @@
 import sys
-from typing import List
+from typing import List, Union
 
 from fastapi import APIRouter
 from fastapi import Depends
 from loguru import logger
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from starlette.background import BackgroundTask
 from starlette.responses import Response
@@ -33,6 +34,7 @@ from dinofw.utils.api import log_error_and_raise_known
 from dinofw.utils.api import log_error_and_raise_unknown
 from dinofw.utils.config import ErrorCodes
 from dinofw.utils.decorators import timeit
+from dinofw.utils.decorators import wrap_exception
 from dinofw.utils.exceptions import NoSuchAttachmentException, QueryValidationError, InvalidRangeException
 from dinofw.utils.exceptions import NoSuchGroupException
 from dinofw.utils.exceptions import NoSuchMessageException
@@ -42,8 +44,9 @@ from dinofw.utils.exceptions import UserNotInGroupException
 router = APIRouter()
 
 
-@router.post("/users/{user_id}/send", response_model=Message)
+@router.post("/users/{user_id}/send", response_model=Union[JSONResponse, Message])
 @timeit(logger, "POST", "/users/{user_id}/send")
+@wrap_exception()
 async def send_message_to_user(
     user_id: int, query: SendMessageQuery, db: Session = Depends(get_db)
 ) -> List[Message]:
@@ -76,8 +79,9 @@ async def send_message_to_user(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.post("/users/{user_id}/message/{message_id}/info", response_model=Message)
+@router.post("/users/{user_id}/message/{message_id}/info", response_model=Union[JSONResponse, Message])
 @timeit(logger, "POST", "/users/{user_id}/message/{message_id}/info")
+@wrap_exception()
 async def get_message_info(
         user_id: int, message_id: str, query: MessageInfoQuery
 ) -> Message:
@@ -98,8 +102,9 @@ async def get_message_info(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.post("/groups/{group_id}/user/{user_id}/histories", response_model=Histories)
+@router.post("/groups/{group_id}/user/{user_id}/histories", response_model=Union[JSONResponse, Histories])
 @timeit(logger, "POST", "/groups/{group_id}/user/{user_id}/histories")
+@wrap_exception()
 async def get_group_history_for_user(
     group_id: str, user_id: int, query: MessageQuery, db: Session = Depends(get_db)
 ) -> Histories:
@@ -137,8 +142,9 @@ async def get_group_history_for_user(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.post("/users/{user_id}/groups", response_model=List[UserGroup])
+@router.post("/users/{user_id}/groups", response_model=Union[JSONResponse, List[UserGroup]])
 @timeit(logger, "POST", "/users/{user_id}/groups")
+@wrap_exception()
 async def get_groups_for_user(
     user_id: int, query: GroupQuery, db: Session = Depends(get_db)
 ) -> List[UserGroup]:
@@ -177,8 +183,9 @@ async def get_groups_for_user(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.post("/users/{user_id}/groups/updates", response_model=List[UserGroup])
+@router.post("/users/{user_id}/groups/updates", response_model=Union[JSONResponse, List[UserGroup]])
 @timeit(logger, "POST", "/users/{user_id}/groups/updates")
+@wrap_exception()
 async def get_groups_updated_since(
     user_id: int, query: GroupUpdatesQuery, db: Session = Depends(get_db)
 ) -> List[UserGroup]:
@@ -214,8 +221,9 @@ async def get_groups_updated_since(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.post("/userstats/{user_id}", response_model=UserStats)
+@router.post("/userstats/{user_id}", response_model=Union[JSONResponse, UserStats])
 @timeit(logger, "POST", "/userstats/{user_id}")
+@wrap_exception()
 async def get_user_statistics(
     user_id: int, query: UserStatsQuery, db: Session = Depends(get_db)
 ) -> UserStats:
@@ -248,8 +256,9 @@ async def get_user_statistics(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.post("/groups/{group_id}", response_model=Group)
+@router.post("/groups/{group_id}", response_model=Union[JSONResponse, Group])
 @timeit(logger, "POST", "/groups/{group_id}")
+@wrap_exception()
 async def get_group_information(
     group_id: str, query: GroupInfoQuery, db: Session = Depends(get_db)
 ) -> Group:
@@ -272,8 +281,9 @@ async def get_group_information(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.post("/groups/{group_id}/user/{user_id}/send", response_model=Message)
+@router.post("/groups/{group_id}/user/{user_id}/send", response_model=Union[JSONResponse, Message])
 @timeit(logger, "POST", "/groups/{group_id}/user/{user_id}/send")
+@wrap_exception()
 async def send_message_to_group(
     group_id: str, user_id: int, query: SendMessageQuery, db: Session = Depends(get_db)
 ) -> List[Message]:
@@ -299,8 +309,9 @@ async def send_message_to_group(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.post("/users/{user_id}/group", response_model=OneToOneStats)
+@router.post("/users/{user_id}/group", response_model=Union[JSONResponse, OneToOneStats])
 @timeit(logger, "POST", "/users/{user_id}/group")
+@wrap_exception()
 async def get_one_to_one_information(
     user_id: int, query: OneToOneQuery, db: Session = Depends(get_db)
 ) -> OneToOneStats:
@@ -319,8 +330,9 @@ async def get_one_to_one_information(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.post("/users/{user_id}/message/{message_id}/attachment")
+@router.post("/users/{user_id}/message/{message_id}/attachment", response_model=Union[JSONResponse, Message])
 @timeit(logger, "POST", "/users/{user_id}/message/{message_id}/attachment")
+@wrap_exception()
 async def create_an_attachment(
     user_id: int,
     message_id: str,
@@ -359,8 +371,9 @@ async def create_an_attachment(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.post("/groups/{group_id}/attachment", response_model=Message)
+@router.post("/groups/{group_id}/attachment", response_model=Union[JSONResponse, Message])
 @timeit(logger, "POST", "/groups/{group_id}/attachment")
+@wrap_exception()
 async def get_attachment_info_from_file_id(
     group_id: str, query: AttachmentQuery, db: Session = Depends(get_db)
 ) -> Message:
@@ -383,9 +396,10 @@ async def get_attachment_info_from_file_id(
 
 
 @router.post(
-    "/groups/{group_id}/user/{user_id}/attachments", response_model=List[Message]
+    "/groups/{group_id}/user/{user_id}/attachments", response_model=Union[JSONResponse, List[Message]]
 )
 @timeit(logger, "POST", "/groups/{group_id}/user/{user_id}/attachments")
+@wrap_exception()
 async def get_attachments_in_group_for_user(
     group_id: str, user_id: int, query: MessageQuery, db: Session = Depends(get_db)
 ) -> List[Message]:
@@ -412,8 +426,9 @@ async def get_attachments_in_group_for_user(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.post("/users/{user_id}/actions", response_model=Message)
+@router.post("/users/{user_id}/actions", response_model=Union[JSONResponse, Message])
 @timeit(logger, "POST", "/users/{user_id}/actions")
+@wrap_exception()
 async def create_action_log(
     user_id: int, query: ActionLogQuery, db: Session = Depends(get_db)
 ) -> None:
@@ -438,8 +453,9 @@ async def create_action_log(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.post("/users/{user_id}/groups/actions", response_model=Message)
+@router.post("/users/{user_id}/groups/actions", response_model=Union[JSONResponse, Message])
 @timeit(logger, "POST", "/users/{user_id}/groups/actions")
+@wrap_exception()
 async def create_action_log_in_all_groups_for_user(
     user_id: int, query: ActionLogQuery, db: Session = Depends(get_db)
 ) -> Response:
@@ -468,8 +484,9 @@ async def create_action_log_in_all_groups_for_user(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.post("/users/{user_id}/groups/create", response_model=Group)
+@router.post("/users/{user_id}/groups/create", response_model=Union[JSONResponse, Group])
 @timeit(logger, "POST", "/users/{user_id}/groups/create")
+@wrap_exception()
 async def create_a_new_group(
     user_id: int, query: CreateGroupQuery, db: Session = Depends(get_db)
 ) -> Group:
