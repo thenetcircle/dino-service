@@ -72,7 +72,7 @@ def wrap_exception():
                 if e.status_code == 500:
                     http_code = 500
 
-                return JSONResponse(status_code=http_code, content={
+                return JSONResponse(status_code=200, content={
                     "code": e.status_code,
                     "detail": e.detail
                 })
