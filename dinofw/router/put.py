@@ -1,4 +1,5 @@
 import sys
+from typing import Optional
 
 from fastapi import APIRouter
 from fastapi import Depends
@@ -17,7 +18,7 @@ from dinofw.utils.api import get_db
 from dinofw.utils.api import log_error_and_raise_known
 from dinofw.utils.api import log_error_and_raise_unknown
 from dinofw.utils.config import ErrorCodes
-from dinofw.utils.decorators import timeit
+from dinofw.utils.decorators import timeit, wrap_exception
 from dinofw.utils.exceptions import NoSuchGroupException, NoSuchMessageException
 from dinofw.utils.exceptions import UserNotInGroupException
 
@@ -26,6 +27,7 @@ router = APIRouter()
 
 @router.put("/userstats/{user_id}", status_code=HTTP_201_CREATED)
 @timeit(logger, "PUT", "/userstats/{user_id}")
+@wrap_exception()
 async def update_user_stats(user_id: int, db: Session = Depends(get_db)) -> Response:
     """
     Update user status, e.g. because the user got blocked, is a bot, was
@@ -54,6 +56,7 @@ async def update_user_stats(user_id: int, db: Session = Depends(get_db)) -> Resp
 
 @router.put("/user/{user_id}/read", status_code=HTTP_201_CREATED)
 @timeit(logger, "PUT", "/user/{user_id}/read")
+@wrap_exception()
 async def mark_all_groups_as_read(
     user_id: int, db: Session = Depends(get_db)
 ) -> Response:
@@ -80,6 +83,7 @@ async def mark_all_groups_as_read(
 
 @router.put("/groups/{group_id}/user/{user_id}/update")
 @timeit(logger, "PUT", "/groups/{group_id}/user/{user_id}/update")
+@wrap_exception()
 async def update_user_statistics_in_group(
     group_id: str,
     user_id: int,
@@ -127,6 +131,7 @@ async def update_user_statistics_in_group(
 
 @router.put("/groups/{group_id}")
 @timeit(logger, "PUT", "/groups/{group_id}")
+@wrap_exception()
 async def edit_group_information(
     group_id, query: UpdateGroupQuery, db: Session = Depends(get_db)
 ) -> None:
@@ -149,6 +154,7 @@ async def edit_group_information(
 
 @router.put("/groups/{group_id}/join")
 @timeit(logger, "PUT", "/groups/{group_id}/join")
+@wrap_exception()
 async def join_group(
     group_id: str, query: JoinGroupQuery, db: Session = Depends(get_db)
 ) -> None:
@@ -167,8 +173,9 @@ async def join_group(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.put("/users/{user_id}/message/{message_id}/edit", response_model=Message)
+@router.put("/users/{user_id}/message/{message_id}/edit", response_model=Optional[Message])
 @timeit(logger, "PUT", "/users/{user_id}/message/{message_id}/edit")
+@wrap_exception()
 async def edit_message(
     user_id: int, message_id: str, query: EditMessageQuery, db: Session = Depends(get_db)
 ) -> Message:

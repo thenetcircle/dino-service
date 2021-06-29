@@ -16,7 +16,7 @@ from dinofw.utils.api import get_db
 from dinofw.utils.api import log_error_and_raise_known
 from dinofw.utils.api import log_error_and_raise_unknown
 from dinofw.utils.config import ErrorCodes
-from dinofw.utils.decorators import timeit
+from dinofw.utils.decorators import timeit, wrap_exception
 from dinofw.utils.exceptions import NoSuchGroupException
 
 router = APIRouter()
@@ -24,6 +24,7 @@ router = APIRouter()
 
 @router.delete("/groups/{group_id}/user/{user_id}/join")
 @timeit(logger, "DELETE", "/groups/{group_id}/user/{user_id}/join")
+@wrap_exception()
 async def leave_group(
     user_id: int, group_id: str, query: CreateActionLogQuery, db: Session = Depends(get_db)
 ) -> None:
@@ -43,6 +44,7 @@ async def leave_group(
 
 
 @router.delete("/users/{user_id}/groups", status_code=HTTP_201_CREATED)
+@wrap_exception()
 async def delete_all_groups_for_user(
     user_id: int, query: CreateActionLogQuery, db: Session = Depends(get_db)
 ) -> Response:
@@ -69,6 +71,7 @@ async def delete_all_groups_for_user(
 
 
 @router.delete("/groups/{group_id}/attachment", status_code=HTTP_201_CREATED)
+@wrap_exception()
 async def delete_attachment_with_file_id(
     group_id: str, query: AttachmentQuery, db: Session = Depends(get_db)
 ) -> Response:
@@ -97,6 +100,7 @@ async def delete_attachment_with_file_id(
 @router.delete(
     "/groups/{group_id}/user/{user_id}/attachments", status_code=HTTP_201_CREATED
 )
+@wrap_exception()
 async def delete_attachments_in_group_for_user(
     group_id: str, user_id: int, query: Optional[CreateActionLogQuery], db: Session = Depends(get_db)
 ) -> Response:
@@ -129,6 +133,7 @@ async def delete_attachments_in_group_for_user(
 
 
 @router.delete("/user/{user_id}/attachments", status_code=HTTP_201_CREATED)
+@wrap_exception()
 async def delete_attachments_in_all_groups_from_user(
     user_id: int, query: CreateActionLogQuery, db: Session = Depends(get_db)
 ) -> Response:
