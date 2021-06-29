@@ -63,7 +63,7 @@ def timeit(_logger, method: str, tag: str):
 def wrap_exception():
     def factory(view_func):
         @wraps(view_func)
-        def decorator(*args, **kwargs):
+        async def decorator(*args, **kwargs):
             try:
                 return await view_func(*args, **kwargs)
             except HTTPException as e:
