@@ -24,7 +24,7 @@ from dinofw.rest.queries import UpdateGroupQuery
 from dinofw.rest.queries import UpdateUserGroupStats
 from dinofw.utils import utcnow_dt
 from dinofw.utils import utcnow_ts
-from dinofw.utils.decorators import time_method
+from dinofw.utils.decorators import timeit
 from dinofw.utils.exceptions import NoSuchGroupException, InvalidRangeException
 
 
@@ -129,11 +129,11 @@ class GroupResource(BaseResource):
     async def histories(
         self, group_id: str, user_id: int, query: MessageQuery, db: Session
     ) -> Histories:
-        @time_method(logger, "histories().user_stats()")
+        @timeit(logger, "histories().user_stats()", only_log=True)
         def get_user_stats():
             return self.env.db.get_user_stats_in_group(group_id, user_id, db)
 
-        @time_method(logger, "histories().get_messages()")
+        @timeit(logger, "histories().get_messages()", only_log=True)
         def get_messages():
             return [
                 GroupResource.message_base_to_message(message)
@@ -142,7 +142,7 @@ class GroupResource(BaseResource):
                 )
             ]
 
-        @time_method(logger, "histories().get_last_reads()")
+        @timeit(logger, "histories().get_last_reads()", only_log=True)
         def get_last_reads():
             return [
                 GroupResource.to_last_read(this_user_id, last_read)

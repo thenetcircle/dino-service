@@ -1,10 +1,9 @@
 import sys
-from typing import List, Union, Optional
+from typing import List, Optional
 
 from fastapi import APIRouter
 from fastapi import Depends
 from loguru import logger
-from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from starlette.background import BackgroundTask
 from starlette.responses import Response

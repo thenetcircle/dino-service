@@ -3,8 +3,8 @@ from datetime import datetime as dt
 from typing import Dict
 from typing import List
 
-from loguru import logger
 import arrow
+from loguru import logger
 from sqlalchemy.orm import Session
 
 from dinofw.db.rdbms.schemas import GroupBase
@@ -22,7 +22,7 @@ from dinofw.rest.queries import AbstractQuery
 from dinofw.rest.queries import ActionLogQuery
 from dinofw.utils import utcnow_dt
 from dinofw.utils import utcnow_ts
-from dinofw.utils.decorators import time_method
+from dinofw.utils.decorators import timeit
 from dinofw.utils.exceptions import NoSuchGroupException
 
 
@@ -34,7 +34,7 @@ class BaseResource(ABC):
         beginning_of_1995 = 789_000_000
         self.long_ago = arrow.Arrow.utcfromtimestamp(beginning_of_1995).datetime
 
-    @time_method(logger, "_user_opens_conversation()")
+    @timeit(logger, "_user_opens_conversation()", only_log=True)
     def _user_opens_conversation(self, group_id: str, user_id: int, user_stats: UserGroupStatsBase, db):
         """
         update database and cache with everything related to opening a conversation (if needed)
@@ -169,7 +169,7 @@ class BaseResource(ABC):
         return last_message_time > user_stats.last_read
 
     @staticmethod
-    @time_method(logger, "to_user_group()")
+    @timeit(logger, "to_user_group()", only_log=True)
     def to_user_group(user_groups: List[UserGroupBase]):
         groups: List[UserGroup] = list()
 

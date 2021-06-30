@@ -6,6 +6,7 @@ from typing import Tuple
 from uuid import uuid4 as uuid
 
 import arrow
+from loguru import logger
 from sqlalchemy import case
 from sqlalchemy import func
 from sqlalchemy import literal
@@ -30,10 +31,9 @@ from dinofw.utils import users_to_group_id
 from dinofw.utils import utcnow_dt
 from dinofw.utils import utcnow_ts
 from dinofw.utils.config import GroupTypes
-from dinofw.utils.decorators import time_method
+from dinofw.utils.decorators import timeit
 from dinofw.utils.exceptions import NoSuchGroupException
 from dinofw.utils.exceptions import UserNotInGroupException
-from loguru import logger
 
 
 class RelationalHandler:
@@ -131,7 +131,7 @@ class RelationalHandler:
             greatest(u.highlight_time, g.last_message_time) desc
         limit 10;
         """
-        @time_method(logger, "get_groups_for_user(): query groups")
+        @timeit(logger, "get_groups_for_user(): query groups", only_log=True)
         def query_groups():
             until = GroupQuery.to_dt(query.until)
 
@@ -206,7 +206,7 @@ class RelationalHandler:
         filtering by "since" instead of "until", because for syncing we're paginating
         "forwards" instead of "backwards"
         """
-        @time_method(logger, "get_groups_updated_since(): query groups")
+        @timeit(logger, "get_groups_updated_since(): query groups", only_log=True)
         def query_groups():
             since = GroupUpdatesQuery.to_dt(query.since)
             until = None
@@ -250,7 +250,7 @@ class RelationalHandler:
             query=query
         )
 
-    @time_method(logger, "get_receiver_stats()")
+    @timeit(logger, "get_receiver_stats()", only_log=True)
     def get_receiver_stats(self, results, user_id, receiver_stats: bool, db: Session):
         if not receiver_stats:
             return list()
@@ -276,7 +276,7 @@ class RelationalHandler:
             .all()
         )
 
-    @time_method(logger, "format_group_stats_and_count_unread()")
+    @timeit(logger, "format_group_stats_and_count_unread()", only_log=True)
     def format_group_stats_and_count_unread(
         self,
         db: Session,
@@ -413,7 +413,7 @@ class RelationalHandler:
         user_ids = list(users.keys())
         return self.get_last_read_in_group_for_users(group_id, user_ids, db)
 
-    @time_method(logger, "get_last_read_in_group_for_users()")
+    @timeit(logger, "get_last_read_in_group_for_users()", only_log=True)
     def get_last_read_in_group_for_users(
         self, group_id: str, user_ids: List[int], db: Session
     ) -> Dict[int, float]:
@@ -1128,7 +1128,7 @@ class RelationalHandler:
 
         db.commit()
 
-    @time_method(logger, "get_groups_with_undeleted_messages()")
+    @timeit(logger, "get_groups_with_undeleted_messages()", only_log=True)
     def get_groups_with_undeleted_messages(self, db: Session):
         """
         Used for removing old messages from the system. It queries for the time
