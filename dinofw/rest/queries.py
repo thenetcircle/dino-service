@@ -148,6 +148,7 @@ class UpdateUserGroupStats(CreateActionLogQuery):
     last_read_time: Optional[float]
     delete_before: Optional[float]
     highlight_time: Optional[float]
+    highlight_limit: Optional[int]
     hide: Optional[bool]
     bookmark: Optional[bool]
     pin: Optional[bool]

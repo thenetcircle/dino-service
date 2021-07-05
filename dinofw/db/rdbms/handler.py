@@ -919,6 +919,66 @@ class RelationalHandler:
     def update_user_group_stats(
         self, group_id: str, user_id: int, query: UpdateUserGroupStats, db: Session
     ) -> None:
+        def set_highlight_time():
+            user_stats.highlight_time = highlight_time
+
+            # save the highlight time on the other user, to not have to
+            # do a second query to fetch it when listing groups
+            if that_user_stats is not None:
+                that_user_stats.receiver_highlight_time = highlight_time
+
+            clear_oldest_highlight_if_limit_reached()
+
+            # always becomes unhidden if highlighted
+            user_stats.hide = False
+            self.env.cache.set_hide_group(group_id, False, [user_id])
+
+        def clear_oldest_highlight_if_limit_reached():
+            """
+            Need to make up to two queries; one to get the group_ids of all
+            highlighted groups, then another query to get both this user's
+            stat and the receiving user's stat, so we can reset the highlight
+            time of any and all groups outside the limit. The limit is an
+            api parameter, and can change, so it's not always only gonna be
+            1 group that exceeds the limit (e.g. paying user can have 10
+            highlighted groups, then the user stops paying and they can now
+            only have 5 highlighted groups, then 5 groups needs to have their
+            highlight time reset).
+            """
+            limit = query.highlight_limit
+            if limit is None:
+                return
+
+            highlighted_groups = (
+                db.query(models.UserGroupStatsEntity)
+                .filter(models.UserGroupStatsEntity.user_id == user_id)
+                .filter(models.UserGroupStatsEntity.highlight_time > self.long_ago)
+                .order_by(models.UserGroupStatsEntity.highlight_time)
+                .all()
+            )
+
+            if len(highlighted_groups) < query.highlight_limit:
+                return
+
+            # ordered by highlight time; only leave limit-1 groups (-1 since we'll be adding a new one later)
+            start_idx = len(highlighted_groups) - limit + 1
+            oldest_groups = highlighted_groups[start_idx:]
+
+            # need to get the receiver's stat entry as well
+            stats_in_groups = (
+                db.query(models.UserGroupStatsEntity)
+                .filter(models.UserGroupStatsEntity.group_id.in_(
+                    [stat.group_id for stat in oldest_groups]
+                ))
+                .all()
+            )
+
+            # reset the highlight time in the oldest groups
+            for stat in stats_in_groups:
+                stat.highlight_time = self.long_ago
+                stat.receiver_highlight_time = self.long_ago
+                db.add(stat)
+
         user_stats, that_user_stats, group = self.get_both_user_stats_in_group(group_id, user_id, query, db)
 
         last_read = AbstractQuery.to_dt(query.last_read_time, allow_none=True)
@@ -969,16 +1029,7 @@ class RelationalHandler:
 
         # can't set highlight time if also setting last read time
         if highlight_time is not None and last_read is None:
-            user_stats.highlight_time = highlight_time
-
-            # save the highlight time on the other user, to not have to
-            # do a second query to fetch it when listing groups
-            if that_user_stats is not None:
-                that_user_stats.receiver_highlight_time = highlight_time
-
-            # always becomes unhidden if highlighted
-            user_stats.hide = False
-            self.env.cache.set_hide_group(group_id, False, [user_id])
+            set_highlight_time()
 
         elif query.hide is not None:
             user_stats.hide = query.hide

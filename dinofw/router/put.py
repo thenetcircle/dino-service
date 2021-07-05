@@ -104,6 +104,7 @@ async def update_user_statistics_in_group(
     * `last_read_time`: should be creating time of last received message,
     * `delete_before`: when a user deletes a conversation, set to the creation time of the last received message,
     * `highlight_time`: until when should this conversation be highlighted for this user,
+    * `highlight_limit`: max number of highlights to allow (will cancel the oldest highlight time if this call causes the highlights to exceed the limit)
     * `hide`: whether to hide/show a conversation,
     * `bookmark`: whether to bookmark a conversation or not,
     * `pin`: whether to pin a conversation or not,
