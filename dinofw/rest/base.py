@@ -34,7 +34,7 @@ class BaseResource(ABC):
         beginning_of_1995 = 789_000_000
         self.long_ago = arrow.Arrow.utcfromtimestamp(beginning_of_1995).datetime
 
-    @timeit(logger, "_user_opens_conversation()", only_log=True)
+    @timeit(logger, "_user_opens_conversation()", only_log=True, is_async=False)
     def _user_opens_conversation(self, group_id: str, user_id: int, user_stats: UserGroupStatsBase, db):
         """
         update database and cache with everything related to opening a conversation (if needed)
@@ -169,7 +169,7 @@ class BaseResource(ABC):
         return last_message_time > user_stats.last_read
 
     @staticmethod
-    @timeit(logger, "to_user_group()", only_log=True)
+    @timeit(logger, "to_user_group()", only_log=True, is_async=False)
     def to_user_group(user_groups: List[UserGroupBase]):
         groups: List[UserGroup] = list()
 

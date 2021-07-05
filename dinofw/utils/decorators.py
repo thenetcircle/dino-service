@@ -9,14 +9,16 @@ from fastapi.responses import JSONResponse
 from dinofw.utils import environ
 
 
-def timeit(_logger, method: str, tag: str = None, threshold_ms: int = 10, only_log: bool = False):
+def timeit(_logger, method: str, tag: str = None, threshold_ms: int = 10, only_log: bool = False, is_async=True):
     def factory(view_func):
         @wraps(view_func)
         async def decorator(*args, **kwargs):
             failed = False
             before = time.time()
             try:
-                return await view_func(*args, **kwargs)
+                if is_async:
+                    return await view_func(*args, **kwargs)
+                return view_func(*args, **kwargs)
             except Exception as e:
                 failed = True
                 _logger.exception(traceback.format_exc())

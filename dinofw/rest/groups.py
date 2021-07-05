@@ -129,11 +129,11 @@ class GroupResource(BaseResource):
     async def histories(
         self, group_id: str, user_id: int, query: MessageQuery, db: Session
     ) -> Histories:
-        @timeit(logger, "histories().user_stats()", only_log=True)
+        @timeit(logger, "histories().user_stats()", only_log=True, is_async=False)
         def get_user_stats():
             return self.env.db.get_user_stats_in_group(group_id, user_id, db)
 
-        @timeit(logger, "histories().get_messages()", only_log=True)
+        @timeit(logger, "histories().get_messages()", only_log=True, is_async=False)
         def get_messages():
             return [
                 GroupResource.message_base_to_message(message)
@@ -142,7 +142,7 @@ class GroupResource(BaseResource):
                 )
             ]
 
-        @timeit(logger, "histories().get_last_reads()", only_log=True)
+        @timeit(logger, "histories().get_last_reads()", only_log=True, is_async=False)
         def get_last_reads():
             return [
                 GroupResource.to_last_read(this_user_id, last_read)
