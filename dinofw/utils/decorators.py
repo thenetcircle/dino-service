@@ -18,7 +18,8 @@ def timeit(_logger, method: str, tag: str = None, threshold_ms: int = 10, only_l
             try:
                 if is_async:
                     return await view_func(*args, **kwargs)
-                return view_func(*args, **kwargs)
+                else:
+                    return view_func(*args, **kwargs)
             except Exception as e:
                 failed = True
                 _logger.exception(traceback.format_exc())
