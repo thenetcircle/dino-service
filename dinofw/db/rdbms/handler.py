@@ -952,6 +952,10 @@ class RelationalHandler:
             highlighted_groups = (
                 db.query(models.UserGroupStatsEntity)
                 .filter(models.UserGroupStatsEntity.user_id == user_id)
+
+                # in case we set it on an already highlighted group; otherwise it will count +1 towards the limit
+                .filter(models.UserGroupStatsEntity.group_id != group_id)
+
                 .filter(models.UserGroupStatsEntity.highlight_time > self.long_ago)
                 .order_by(models.UserGroupStatsEntity.highlight_time)
                 .all()
