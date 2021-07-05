@@ -962,7 +962,7 @@ class RelationalHandler:
 
             # ordered by highlight time; only leave limit-1 groups (-1 since we'll be adding a new one later)
             start_idx = len(highlighted_groups) - limit + 1
-            oldest_groups = highlighted_groups[start_idx:]
+            oldest_groups = highlighted_groups[:start_idx]
 
             # need to get the receiver's stat entry as well
             stats_in_groups = (
