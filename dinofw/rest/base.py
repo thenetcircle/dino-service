@@ -34,7 +34,7 @@ class BaseResource(ABC):
         beginning_of_1995 = 789_000_000
         self.long_ago = arrow.Arrow.utcfromtimestamp(beginning_of_1995).datetime
 
-    @timeit(logger, "_user_opens_conversation()", only_log=True, is_async=False)
+    # @timeit(logger, "_user_opens_conversation()", only_log=True, is_async=False)
     def _user_opens_conversation(self, group_id: str, user_id: int, user_stats: UserGroupStatsBase, db):
         """
         update database and cache with everything related to opening a conversation (if needed)
@@ -47,9 +47,13 @@ class BaseResource(ABC):
             now_dt = utcnow_dt(now_ts)
 
             # something changed, so update and set last_updated_time to sync to apps
-            self.env.db.update_last_read_and_highlight_in_group_for_user(
-                group_id, user_id, now_dt, db
-            )
+            try:
+                self.env.db.update_last_read_and_highlight_in_group_for_user(
+                    group_id, user_id, now_dt, db
+                )
+            except Exception as e:
+                logger.error(f"could not update highlight time: {str(e)}")
+                logger.exception(e)
 
             # no point updating if already newer than last message (also skips
             # broadcasting unnecessary read-receipts)
