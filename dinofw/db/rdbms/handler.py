@@ -903,6 +903,9 @@ class RelationalHandler:
                 .first()
             )
 
+            if group is None:
+                raise NoSuchGroupException(group_id)
+
             if group.group_type == GroupTypes.ONE_TO_ONE:
                 user_stats_dict = {user.user_id: user for user in statement.all()}
                 that_user_id = [uid for uid in group_id_to_users(group.group_id) if uid != user_id][0]
