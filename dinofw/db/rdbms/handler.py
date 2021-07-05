@@ -1079,8 +1079,22 @@ class RelationalHandler:
         user_stats.last_read = the_time
         user_stats.last_updated_time = the_time
         user_stats.highlight_time = self.long_ago
+        user_stats.receiver_highlight_time = self.long_ago
         user_stats.bookmark = False
         user_stats.hide = False
+
+        # have to reset the highlight time (if any) of the other users int he group as well
+        if user_stats.highlight_time > self.long_ago:
+            other_user_stats = (
+                db.query(models.UserGroupStatsEntity)
+                .filter(models.UserGroupStatsEntity.user_id != user_id)
+                .filter(models.UserGroupStatsEntity.group_id == group_id)
+                .filter(models.UserGroupStatsEntity.highlight_time > self.long_ago)
+                .all()
+            )
+            for other_stat in other_user_stats:
+                other_stat.highlight_time = self.long_ago
+                other_stat.receiver_highlight_time = self.long_ago
 
         self.env.cache.set_last_read_in_group_for_user(group_id, user_id, AbstractQuery.to_ts(the_time))
 
