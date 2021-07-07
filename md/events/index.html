@@ -57,6 +57,16 @@
                 <ul class="current">
                     <li class="toctree-l1 current"><a class="reference internal current" href="./">Events</a>
     <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#possible-values-for-fields">Possible values for fields</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#group_type">group_type</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#message_type">message_type</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#event_type">event_type</a>
+    </li>
+        </ul>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#a-group-youre-part-of-has-been-created-or-updated">A group you're part of has been created or updated</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#new-message-in-a-group-youre-part-of">New message in a group you're part of</a>
@@ -68,6 +78,8 @@
     <li class="toctree-l2"><a class="reference internal" href="#an-action-log-was-created">An action log was created</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#a-user-read-a-messageconversation">A user read a message/conversation</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#attachments-deleted">Attachment(s) deleted</a>
     </li>
     </ul>
                     </li>
@@ -114,10 +126,34 @@
 events a client can receive, and when they are received.</p>
 <p>For events, it doesn't matter if they're for a 1-to-1 conversation in a multi-user group, they 
 look the same, but <code>group_type</code> will be different (if specified). </p>
-<p>Possible values for <code>group_type</code>:</p>
+<h2 id="possible-values-for-fields">Possible values for fields</h2>
+<h3 id="group_type"><code>group_type</code></h3>
 <ul>
 <li><code>0</code>: multi-user group,</li>
 <li><code>1</code>: 1-to-1.</li>
+</ul>
+<h3 id="message_type"><code>message_type</code></h3>
+<ul>
+<li><code>0</code>: message,</li>
+<li><code>1</code>: no thanks,</li>
+<li><code>2</code>: no thanks (hide),</li>
+<li><code>3</code>: image,</li>
+<li><code>4</code>: greeter meeter auto,</li>
+<li><code>5</code>: greeter meeter manual,</li>
+<li><code>100</code>: action.</li>
+</ul>
+<h3 id="event_type"><code>event_type</code></h3>
+<ul>
+<li><code>join</code></li>
+<li><code>leave</code></li>
+<li><code>group</code></li>
+<li><code>read</code></li>
+<li><code>edit</code></li>
+<li><code>attachment</code></li>
+<li><code>message</code></li>
+<li><code>action_log</code></li>
+<li><code>delete_attachment</code></li>
+<li><code>delete_message</code></li>
 </ul>
 <h2 id="a-group-youre-part-of-has-been-created-or-updated">A group you're part of has been created or updated</h2>
 <p><span style="color:red"><b>Event schema not yet finalized.</b></span></p>
@@ -142,7 +178,7 @@ look the same, but <code>group_type</code> will be different (if specified). </p
     &quot;file_id&quot;: null,
     &quot;message_id&quot;: &quot;c87efd18-8879-4c24-8b26-ccb7f40a0fe5&quot;,
     &quot;message_payload&quot;: &quot;&lt;some content&gt;&quot;,
-    &quot;message_type&quot;: &quot;text&quot;,
+    &quot;message_type&quot;: 0,
     &quot;created_at&quot;: 1597877384.794828
 }
 </code></pre>
@@ -155,7 +191,7 @@ look the same, but <code>group_type</code> will be different (if specified). </p
     &quot;file_id&quot;: &quot;f4503d55d49ff4503d55d49f&quot;,
     &quot;message_id&quot;: &quot;c87efd18-8879-4c24-8b26-ccb7f40a0fe5&quot;,
     &quot;message_payload&quot;: &quot;&lt;some content&gt;&quot;,
-    &quot;message_type&quot;: &quot;image&quot;,
+    &quot;message_type&quot;: 3,
     &quot;created_at&quot;: 1597877384.794828
 }
 </code></pre>
@@ -168,7 +204,7 @@ look the same, but <code>group_type</code> will be different (if specified). </p
     &quot;file_id&quot;: &quot;f4503d55d49ff4503d55d49f&quot;,
     &quot;message_id&quot;: &quot;c87efd18-8879-4c24-8b26-ccb7f40a0fe5&quot;,
     &quot;message_payload&quot;: &quot;&lt;some content&gt;&quot;,
-    &quot;message_type&quot;: &quot;text&quot;,
+    &quot;message_type&quot;: 0,
     &quot;created_at&quot;: 1597877384.794828
 }
 </code></pre>
@@ -182,7 +218,7 @@ look the same, but <code>group_type</code> will be different (if specified). </p
     &quot;file_id&quot;: &quot;f4503d55d49ff4503d55d49f&quot;,
     &quot;message_id&quot;: &quot;c87efd18-8879-4c24-8b26-ccb7f40a0fe5&quot;,
     &quot;message_payload&quot;: &quot;&lt;some content&gt;&quot;,
-    &quot;message_type&quot;: &quot;text&quot;,
+    &quot;message_type&quot;: 100,
     &quot;created_at&quot;: 1597877384.794828
 }
 </code></pre>
@@ -194,6 +230,22 @@ look the same, but <code>group_type</code> will be different (if specified). </p
     &quot;group_id&quot;: &quot;6cbb3265-2a7f-494d-92ad-f4503d55d49f&quot;,
     &quot;user_id&quot;: 1234,
     &quot;read_at&quot;: 1597877384.794828,
+}
+</code></pre>
+<h2 id="attachments-deleted">Attachment(s) deleted</h2>
+<p>There may be multiple attachments connected to a single message, so <code>message_ids</code> and <code>file_ids</code> are lists.</p>
+<pre><code class="language-json">{
+    &quot;event_type&quot;: &quot;delete_attachment&quot;,
+    &quot;created_at&quot;: 1597877384.794828,
+    &quot;group_id&quot;: &quot;6cbb3265-2a7f-494d-92ad-f4503d55d49f&quot;,
+    &quot;message_ids&quot;: [
+      &quot;eeb0b18f-5485-4a24-8bd4-159301e4b554&quot;,
+      &quot;44b393c1-8ae2-4832-9770-07a043543423&quot;
+    ],
+    &quot;file_ids&quot;: [
+      &quot;238FD179EC794EFFBC033F491C335838&quot;,
+      &quot;95B1A97EDC6F4F5596D0158C55D17B1E&quot;
+    ]
 }
 </code></pre>
               
