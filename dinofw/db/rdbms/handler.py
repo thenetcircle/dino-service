@@ -1083,6 +1083,8 @@ class RelationalHandler:
         if user_stats is None:
             raise UserNotInGroupException(f"user {user_id} is not in group {group_id}")
 
+        current_highlight_time = user_stats.highlight_time
+
         user_stats.last_read = the_time
         user_stats.last_updated_time = the_time
         user_stats.highlight_time = self.long_ago
@@ -1091,7 +1093,7 @@ class RelationalHandler:
         user_stats.hide = False
 
         # have to reset the highlight time (if any) of the other users int he group as well
-        if user_stats.highlight_time > self.long_ago:
+        if current_highlight_time > self.long_ago:
             other_user_stats = (
                 db.query(models.UserGroupStatsEntity)
                 .filter(models.UserGroupStatsEntity.user_id != user_id)
