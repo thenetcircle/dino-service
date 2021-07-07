@@ -138,3 +138,23 @@ Read receipts are only broadcasted in 1-to-1 conversations, not in multi-user gr
     "read_at": 1597877384.794828,
 }
 ```
+
+## Attachment(s) deleted
+
+There may be multiple attachments connected to a single message, so `message_ids` and `file_ids` are lists.
+
+```json
+{
+    "event_type": "delete_attachment",
+    "created_at": 1597877384.794828,
+    "group_id": "6cbb3265-2a7f-494d-92ad-f4503d55d49f",
+    "message_ids": [
+      "eeb0b18f-5485-4a24-8bd4-159301e4b554",
+      "44b393c1-8ae2-4832-9770-07a043543423"
+    ],
+    "file_ids": [
+      "238FD179EC794EFFBC033F491C335838",
+      "95B1A97EDC6F4F5596D0158C55D17B1E"
+    ]
+}
+```
