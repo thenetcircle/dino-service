@@ -1102,10 +1102,14 @@ class RelationalHandler:
                 .filter(models.UserGroupStatsEntity.highlight_time > self.long_ago)
                 .all()
             )
+            logger.info(f"found {len(other_user_stats)} other stats in group {group_id}")
             for other_stat in other_user_stats:
                 other_stat.highlight_time = self.long_ago
                 other_stat.receiver_highlight_time = self.long_ago
+                logger.info(f"setting receiver and highlight time to {self.long_ago}")
                 db.add(other_stat)
+        else:
+            logger.info("current highlight time is not more than long ago")
 
         self.env.cache.set_last_read_in_group_for_user(group_id, user_id, AbstractQuery.to_ts(the_time))
 
