@@ -2,9 +2,7 @@
 
 Service for distributed notifications using MQTT over websockets or TCP streams.
 
-TODO: update arch image to current setup
-
-![Sending a message](images/send-to-group.jpg)
+![Sending a message](images/send-to-group.png)
 
 1. User sends a message in a one-to-one/group chat,
 2. Backend checks business logic and rules, then calls Dino Server REST API to save and broadcast a new message,

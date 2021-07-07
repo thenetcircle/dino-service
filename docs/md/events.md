@@ -82,7 +82,7 @@ Possible values for `group_type`:
 
 ## An action log was created
 
-Action logs can be joins, leaves, etc.
+Action logs can be joins, leaves, highlight updated, group pinned etc.
 
 <span style="color:red"><b>Event schema not yet finalized.</b></span>
 

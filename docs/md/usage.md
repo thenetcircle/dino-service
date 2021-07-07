@@ -1,5 +1,7 @@
 # Client usage
 
+Dino is using MQTT version 5.
+
 First connect to MQTT and subscribe to your User ID topic. ACLs on the MQTT server side is set to 
 `read-only` on the user's own "user ID topic" only; trying to subscribe on another user ID topic
 than the "username" a client successfully authenticated with will result in an error:
