@@ -1099,7 +1099,7 @@ class RelationalHandler:
                 db.query(models.UserGroupStatsEntity)
                 .filter(models.UserGroupStatsEntity.user_id != user_id)
                 .filter(models.UserGroupStatsEntity.group_id == group_id)
-                .filter(models.UserGroupStatsEntity.highlight_time > self.long_ago)
+                .filter(models.UserGroupStatsEntity.receiver_highlight_time > self.long_ago)
                 .all()
             )
             logger.info(f"found {len(other_user_stats)} other stats in group {group_id}")
