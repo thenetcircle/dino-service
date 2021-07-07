@@ -6,10 +6,35 @@ events a client can receive, and when they are received.
 For events, it doesn't matter if they're for a 1-to-1 conversation in a multi-user group, they 
 look the same, but `group_type` will be different (if specified). 
 
-Possible values for `group_type`:
+## Possible values for fields
+
+### `group_type`
 
 * `0`: multi-user group,
 * `1`: 1-to-1.
+
+### `message_type`
+
+* `0`: message,
+* `1`: no thanks,
+* `2`: no thanks (hide),
+* `3`: image,
+* `4`: greeter meeter auto,
+* `5`: greeter meeter manual,
+* `100`: action.
+
+### `event_type` 
+
+* `join`
+* `leave`
+* `group`
+* `read`
+* `edit`
+* `attachment`
+* `message`
+* `action_log`
+* `delete_attachment`
+* `delete_message`
 
 ## A group you're part of has been created or updated
 
@@ -41,7 +66,7 @@ Possible values for `group_type`:
     "file_id": null,
     "message_id": "c87efd18-8879-4c24-8b26-ccb7f40a0fe5",
     "message_payload": "<some content>",
-    "message_type": "text",
+    "message_type": 0,
     "created_at": 1597877384.794828
 }
 ```
@@ -58,7 +83,7 @@ Possible values for `group_type`:
     "file_id": "f4503d55d49ff4503d55d49f",
     "message_id": "c87efd18-8879-4c24-8b26-ccb7f40a0fe5",
     "message_payload": "<some content>",
-    "message_type": "image",
+    "message_type": 3,
     "created_at": 1597877384.794828
 }
 ```
@@ -75,7 +100,7 @@ Possible values for `group_type`:
     "file_id": "f4503d55d49ff4503d55d49f",
     "message_id": "c87efd18-8879-4c24-8b26-ccb7f40a0fe5",
     "message_payload": "<some content>",
-    "message_type": "text",
+    "message_type": 0,
     "created_at": 1597877384.794828
 }
 ```
@@ -94,7 +119,7 @@ Action logs can be joins, leaves, highlight updated, group pinned etc.
     "file_id": "f4503d55d49ff4503d55d49f",
     "message_id": "c87efd18-8879-4c24-8b26-ccb7f40a0fe5",
     "message_payload": "<some content>",
-    "message_type": "text",
+    "message_type": 100,
     "created_at": 1597877384.794828
 }
 ```
