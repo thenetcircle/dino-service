@@ -50,7 +50,7 @@ look the same, but `group_type` will be different (if specified).
     "last_message_time": 1597877421.453804,
     "group_type": 0,
     "owner_id": 1234,
-    "user_ids": [1234]
+    "user_ids": [1234, 4321]
 }
 ```
 
