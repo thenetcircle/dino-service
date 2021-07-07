@@ -1085,7 +1085,6 @@ class RelationalHandler:
 
         current_highlight_time = AbstractQuery.to_ts(user_stats.highlight_time)
         long_ago_ts = AbstractQuery.to_ts(self.long_ago)
-        logger.info(f"user_stats.highlight_time: {current_highlight_time}, long_ago: {long_ago_ts}")
 
         user_stats.last_read = the_time
         user_stats.last_updated_time = the_time
@@ -1106,6 +1105,7 @@ class RelationalHandler:
             for other_stat in other_user_stats:
                 other_stat.highlight_time = self.long_ago
                 other_stat.receiver_highlight_time = self.long_ago
+                db.add(other_stat)
 
         self.env.cache.set_last_read_in_group_for_user(group_id, user_id, AbstractQuery.to_ts(the_time))
 
