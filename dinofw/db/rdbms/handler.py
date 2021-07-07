@@ -151,8 +151,7 @@ class RelationalHandler:
                     # TODO: when joining a "group", the last message was before you joined; if we create
                     #  an action log when a user joins it will update `last_message_time` and we can use
                     #  that instead of `updated_at`, which would make more sense
-                    # models.UserGroupStatsEntity.delete_before < models.GroupEntity.last_message_time,
-                    models.UserGroupStatsEntity.user_id == user_id,
+                    # models.UserGroupStatsEntity.delete_before < models.GroupEntity.last_message_time
                 )
             )
 
@@ -167,6 +166,24 @@ class RelationalHandler:
                         models.UserGroupStatsEntity.last_read < models.GroupEntity.last_message_time,
                         models.UserGroupStatsEntity.bookmark.is_(True),
                     )
+                )
+
+            # generate the 1-to-1 group ids based on the receiver ids in the query,
+            # instead of filtering for this user id only
+            if query.receiver_ids:
+                group_ids = [
+                    users_to_group_id(user_id, receiver_id)
+                    for receiver_id in query.receiver_ids
+                ]
+                statement = statement.filter(
+                    models.GroupEntity.group_type == GroupTypes.ONE_TO_ONE,
+                    models.UserGroupStatsEntity.group_id.in_(group_ids)
+                )
+
+            # otherwise, get all groups this user is in
+            else:
+                statement = statement.filter(
+                    models.UserGroupStatsEntity.user_id == user_id
                 )
 
             statement = (

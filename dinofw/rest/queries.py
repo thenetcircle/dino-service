@@ -111,7 +111,7 @@ class ReceiverStatsQuery(AbstractQuery):
 
 
 class GroupQuery(PaginationQuery, UserStatsQuery, ReceiverStatsQuery):
-    pass
+    receiver_ids: Optional[List[int]]
 
 
 class GroupUpdatesQuery(GroupQuery):
