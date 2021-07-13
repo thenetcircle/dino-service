@@ -85,6 +85,7 @@ class SearchQuery(PaginationQuery):
 class SendMessageQuery(OneToOneQuery):
     message_payload: Optional[str]
     message_type: int
+    context: Optional[str]
 
 
 class CreateGroupQuery(AbstractQuery):

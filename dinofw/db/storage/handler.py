@@ -513,6 +513,7 @@ class CassandraHandler:
             message_id=message_id,
             message_payload=query.message_payload,
             message_type=query.message_type,
+            context=query.context,
         )
 
         return CassandraHandler.message_base_from_entity(message)
