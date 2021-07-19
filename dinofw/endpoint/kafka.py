@@ -3,18 +3,26 @@ import logging
 import sys
 from abc import ABC
 from abc import abstractmethod
+from datetime import datetime as dt
 from typing import List
+
+from loguru import logger
+from strict_rfc3339 import timestamp_to_rfc3339_utcoffset
 
 from dinofw.db.storage.schemas import MessageBase
 from dinofw.endpoint import IServerPublishHandler
 from dinofw.endpoint import IServerPublisher
+from dinofw.rest.queries import AbstractQuery
 from dinofw.utils import split_into_chunks
 from dinofw.utils.activity import ActivityBuilder
 from dinofw.utils.config import ConfigKeys
-from loguru import logger
 
 logging.getLogger("kafka").setLevel(logging.WARNING)
 logging.getLogger("kafka.conn").setLevel(logging.WARNING)
+
+
+def to_rfc3339(date: dt):
+    return timestamp_to_rfc3339_utcoffset(AbstractQuery.to_ts(date))
 
 
 class IKafkaWriterFactory(ABC):
@@ -121,6 +129,8 @@ class KafkaPublishHandler(IServerPublishHandler):
         # batch it in case there's a ton of images, don't want the events to become too large
         for attachments_chunk in split_into_chunks(attachments, 100):
             event = self.generate_event(group_id, attachments_chunk)
+            logger.info("sending event to kafka:")
+            logger.info(event)
             self.publisher.send(event)
 
     def generate_event(self, group_id: str, attachments: List[MessageBase]) -> dict:
@@ -137,7 +147,9 @@ class KafkaPublishHandler(IServerPublishHandler):
                 "objectType": "files",
                 "attachments": [{
                     "objectType": str(attachment.message_type),
-                    "content": attachment.message_payload
+                    "content": attachment.message_payload,
+                    "id": attachment.message_id,
+                    "published": to_rfc3339(attachment.created_at)
                 } for attachment in attachments]
             },
             "target": {

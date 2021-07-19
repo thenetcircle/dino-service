@@ -313,7 +313,7 @@ class CassandraHandler:
                 MessageModel.group_id == group_id,
                 MessageModel.created_at > group_created_at,
                 MessageModel.user_id == user_id,
-                MessageModel.message_type == MessageTypes.IMAGE,  # TODO: need to have type in query? image/video/etc.
+                MessageModel.message_type == MessageTypes.IMAGE,
             )
             .allow_filtering()
             .all()
