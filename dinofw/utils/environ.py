@@ -38,7 +38,7 @@ def init_logging(gn_env: GNEnvironment) -> None:
 
     home_dir = os.environ.get("DINO_HOME", default=None)
     if home_dir is None:
-        home_dir = ".."
+        home_dir = "."
     tag_name = Git(home_dir).describe()
 
     import sentry_sdk
