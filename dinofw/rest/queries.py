@@ -44,6 +44,9 @@ class ActionLogQuery(BaseModel):
     # not all action log creations should update last_message_time and unread count
     update_unread_count: Optional[bool] = False
 
+    # in some cases the 'last message preview' on the group should not be updated
+    update_last_message: Optional[bool] = True
+
     # in some cases the api route doesn't include the user id, e.g.
     # join/kick/etc., but should be recorded on the action log
     user_id: Optional[int]

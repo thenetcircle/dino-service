@@ -366,6 +366,7 @@ class RelationalHandler:
         sender_user_id: int,
         user_ids: List[int],
         update_unread_count: bool = True,
+        update_last_message: bool = True
     ) -> None:
         group = (
             db.query(models.GroupEntity)
@@ -388,6 +389,8 @@ class RelationalHandler:
             del user_ids[sender_user_id]
             self.env.cache.increase_unread_in_group_for(message.group_id, user_ids)
 
+        # some action logs don't need to update last message
+        if update_last_message:
             group.last_message_time = sent_time
             group.last_message_overview = message.message_payload
             group.last_message_id = message.message_id
