@@ -106,7 +106,7 @@ class BaseResource(ABC):
             db,
             should_increase_unread: bool,
             event_type: EventTypes,
-            update_last_message: bool = False
+            update_last_message: bool = True
     ):
         """
         update database and cache with everything related to sending a message
