@@ -392,10 +392,10 @@ class RelationalHandler:
         # some action logs don't need to update last message
         if update_last_message:
             group.last_message_time = sent_time
-            group.last_message_overview = message.message_payload
             group.last_message_id = message.message_id
             group.last_message_type = message.message_type
             group.last_message_user_id = message.user_id
+            group.last_message_overview = message.message_payload
 
         # always update this
         group.updated_at = sent_time

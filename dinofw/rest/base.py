@@ -1,6 +1,6 @@
 from abc import ABC
 from datetime import datetime as dt
-from typing import Dict
+from typing import Dict, Union
 from typing import List
 
 import arrow
@@ -102,7 +102,7 @@ class BaseResource(ABC):
             self,
             group_id: str,
             user_id: int,
-            message: MessageBase,
+            message: Union[MessageBase, Message],  # can either be a message or an action log
             db,
             should_increase_unread: bool,
             event_type: EventTypes,
