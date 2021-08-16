@@ -1,9 +1,10 @@
 from abc import ABC
 from abc import abstractmethod
-from typing import List
+from typing import List, Union
 
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.storage.schemas import MessageBase
+from dinofw.rest.models import Message
 from dinofw.rest.queries import AbstractQuery
 
 
@@ -111,18 +112,23 @@ class IClientPublishHandler(IPublishHandler, ABC):
         }
 
     @staticmethod
-    def message_base_to_event(message: MessageBase, event_type: EventTypes = EventTypes.MESSAGE):
-        return {
+    def message_base_to_event(message: Union[MessageBase, Message], event_type: EventTypes = EventTypes.MESSAGE):
+        event = {
             "event_type": event_type,
             "group_id": message.group_id,
             "sender_id": message.user_id,
-            "file_id": message.file_id,
             "message_id": message.message_id,
             "message_payload": message.message_payload,
             "message_type": message.message_type,
             "updated_at": AbstractQuery.to_ts(message.updated_at, allow_none=True) or "",
             "created_at": AbstractQuery.to_ts(message.created_at),
         }
+
+        # if the 'message' variable is Message instead of MessageBase, there's no file_id available; (e.g. for /edit)
+        if hasattr(message, "file_id"):
+            event["file_id"] = message.file_id
+
+        return event
 
     @staticmethod
     def group_base_to_event(group: GroupBase, user_ids: List[int]) -> dict:
