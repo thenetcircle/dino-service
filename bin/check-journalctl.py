@@ -50,7 +50,6 @@ regex = re.compile(pattern)
 for log in logs:
     if regex.search(log) is not None:
         print("found log line matching pattern '{}': {}".format(pattern, log))
-        break
         sys.exit(1)
 
 sys.exit(0)
