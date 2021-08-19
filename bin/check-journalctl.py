@@ -25,8 +25,7 @@ process = subprocess.Popen([
 ], stdout=subprocess.PIPE)
 
 out, _ = process.communicate()
-out = str(out, "utf-8")
-logs = out.strip().split("\n")
+logs = out.splitlines()
 
 most_recent_timestamp_line = None
 
@@ -39,9 +38,11 @@ for log in logs[::-1]:
 if most_recent_timestamp_line is None:
     this_check_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 else:
-    this_check_timestamp = most_recent_timestamp_line.split(" ", maxsplit=1)[0]
+    this_check_timestamp = most_recent_timestamp_line.split()
+    this_check_timestamp[1] = this_check_timestamp[1][0:8]
+    this_check_timestamp = " ".join(this_check_timestamp[0:2])
 
-with open(last_check_file, "w") as f:
+with open(os.path.expanduser(last_check_file), "w") as f:
     f.write(this_check_timestamp)
 
 regex = re.compile(pattern)
@@ -49,6 +50,7 @@ regex = re.compile(pattern)
 for log in logs:
     if regex.search(log) is not None:
         print("found log line matching pattern '{}': {}".format(pattern, log))
+        break
         sys.exit(1)
 
 sys.exit(0)
