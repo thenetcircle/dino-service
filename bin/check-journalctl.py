@@ -48,7 +48,7 @@ regex = re.compile(pattern)
 
 for log in logs:
     if regex.search(log) is not None:
-        print(f"found log line matching pattern '{pattern}': {log}")
+        print("found log line matching pattern '{}': {}".format(pattern, log))
         sys.exit(1)
 
 sys.exit(0)
