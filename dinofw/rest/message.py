@@ -168,22 +168,19 @@ class MessageResource(BaseResource):
         self.env.storage.edit_message(group_id, user_id, message_id, query)
         action_log = self.create_action_log(query.action_log, db, group_id=group_id)
 
-        # we don't want to increase the unread count, but we want to notify users of the change
-        update_unread_count = False
-        update_last_message = True
-
         if query.action_log is not None:
+            # we don't want to increase the unread count, but we want to notify users of the change
             update_unread_count = query.action_log.update_unread_count
             update_last_message = query.action_log.update_last_message
 
-        self._user_sends_a_message(
-            group_id,
-            user_id=user_id,
-            message=action_log,  # we want to update last_message_overview to be the payload of the action log
-            db=db,
-            should_increase_unread=update_unread_count,
-            event_type=EventTypes.EDIT,
-            update_last_message=update_last_message
-        )
+            self._user_sends_a_message(
+                group_id,
+                user_id=user_id,
+                message=action_log,  # we want to update last_message_overview to be the payload of the action log
+                db=db,
+                should_increase_unread=update_unread_count,
+                event_type=EventTypes.EDIT,
+                update_last_message=update_last_message
+            )
 
         return action_log
