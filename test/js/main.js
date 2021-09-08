@@ -3,7 +3,7 @@ let groups = {};
 let reads = {};
 let other_user_last_read = -1;
 let other_user_last_read_idx = 0;
-const user_id = '33066';
+const user_id = '1234';
 const other_user_id = '66033';
 const rest_endpoint = 'http://maggie-kafka-1.thenetcircle.lab:9800';
 const mqtt_endpoint = 'mqtt://maggie-kafka-1.thenetcircle.lab:1880/mqtt';
@@ -26,13 +26,14 @@ function initialize() {
 }
 
 function setup_mqtt() {
-    let settings = {
+    const settings = {
         clientId: user_id,
         username: user_id,
+        password: '$2a$12$KiOj1agCsjbdpHLzwtd1B.JZtr/rmCpnPT.y5kUdGnkh8jk1cTxL.',
         clean: false,
         qos: 1
     }
-    let client  = mqtt.connect(mqtt_endpoint, settings);
+    const client  = mqtt.connect(mqtt_endpoint, settings);
 
     function subscribe(uid) {
         client.subscribe(uid, {qos: 1}, function (err) {
@@ -43,8 +44,8 @@ function setup_mqtt() {
     }
 
     client.on('connect', function () {
-        subscribe(user_id);
-        subscribe(other_user_id);
+        subscribe(`dms/testpopp-${user_id}`);
+        subscribe(`dms/testpopp-${other_user_id}`);
     });
 
     // handle events from mqtt
@@ -53,6 +54,7 @@ function setup_mqtt() {
 
 function on_mqtt_event(topic, message) {
     let json_data = JSON.parse(message.toString())
+    console.log(topic, json_data)
 
     // add a pretty-printed version to the event log
     $(`#events-${topic}`).prepend(JSON.stringify(json_data, null, 2) + "\n");
@@ -216,7 +218,8 @@ function load_all_current_groups() {
     call({
         url: `users/${user_id}/groups`,
         data: JSON.stringify({
-            per_page: 100
+            per_page: 100,
+            only_unread: false
         }),
         success: function(resp) {
             for (let i = 0; i < resp.length; i++) {
