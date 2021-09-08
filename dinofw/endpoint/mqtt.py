@@ -124,7 +124,7 @@ class MqttPublisher(IClientPublisher):
         }
         try:
             self.mqtt.publish(
-                message_or_topic=f"dms-{self.environment}-{user_id}",
+                message_or_topic=f"dms/{self.environment}-{user_id}",
                 payload=data,
                 qos=qos,
                 message_expiry_interval=self.mqtt_ttl
