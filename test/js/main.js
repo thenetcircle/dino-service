@@ -44,8 +44,8 @@ function setup_mqtt() {
     }
 
     client.on('connect', function () {
-        subscribe(`dms/testpopp-${user_id}`);
-        subscribe(`dms/testpopp-${other_user_id}`);
+        subscribe(`dms-testpopp-${user_id}`);
+        //subscribe(`dms-testpopp-${other_user_id}`);
     });
 
     // handle events from mqtt
