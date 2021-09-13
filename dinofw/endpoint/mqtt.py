@@ -124,6 +124,7 @@ class MqttPublisher(IClientPublisher):
             "insert into vmq_auth_acl(mountpoint,client_id,username,password,publish_acl,subscribe_acl) values(%s,%s,%s,%s,%s,%s)",
             ("", client_id, username, hashlib.sha256(password.encode()).hexdigest(), '[{"pattern":"#"}]', '[{"pattern":"#"}]')
         )
+        db.commit()
         db.close()
 
         self.mqtt.set_auth_credentials(
