@@ -1,5 +1,5 @@
 let socket;
-let client_dino;
+let client;
 let client_1234;
 let groups = {};
 let reads = {};
@@ -29,7 +29,7 @@ function initialize() {
 }
 
 function setup_mqtt() {
-    const settings_1234 = {
+    const settings = {
         clientId: user_id,
         username: user_id,
         password: user_id,
@@ -38,44 +38,51 @@ function setup_mqtt() {
         protocolVersion: 5,
         qos: 1
     }
-    const settings_dino = {
-        clientId: "dino-web",
-        username: "dino",
-        password: "ea2bea06-1855-43d6-94a3-bad40ce2d9d7",
-        clean: false,
-        rejectUnauthorized: false,
-        protocolVersion: 5,
-        qos: 1
-    }
 
-    client_1234 = mqtt.connect(mqtt_endpoint, settings_1234);
-    client_dino = mqtt.connect(mqtt_endpoint, settings_dino);
-
-    client_1234.on('connect', function () {
-        client_1234.subscribe(`dms/testpopp-${user_id}`, {qos: 1}, function (err) {
+    client = mqtt.connect(mqtt_endpoint, settings);
+    client.on('connect', function () {
+        console.log("connected 1234")
+        // `dms/testpopp-${user_id}`
+        client.subscribe(`dms/testpopp/${user_id}`, {qos: 1}, function (err) {
             if (err) {
                 console.log(err);
             }
         });
     });
-    client_dino.on('connect', function () {
-        console.log("dino connected");
-    });
 
-    // handle events from mqtt
-    client_1234.on('message', on_mqtt_event);
-
-    client_1234.on("error", function(){
+    client.on('message', on_mqtt_event);
+    client.on("error", function(){
         console.log("error client_1234", arguments);
     });
 }
 
-function on_mqtt_event(topic, message) {
-    console.log('message:', message)
-    let json_data = JSON.parse(message.toString())
-    console.log(topic, json_data)
+function send_mqtt() {
+    const receiver = parseInt($("input#mqtt_receiver").val());
+    const message_payload = $("textarea#mqtt_payload").val();
 
-    const html_tag = topic.replace('/', '-')
+    // `dms/testpopp-${receiver}`,
+    client.publish(
+        `dms/testpopp/${receiver}`,
+        message_payload,
+        undefined,
+        function (err) {
+            console.log('error:', err)
+        }
+    )
+}
+
+function on_mqtt_event(topic, message) {
+    let json_data = ''
+
+    try {
+        json_data = JSON.parse(message.toString())
+    }
+    catch (e) {
+        json_data = message.toString()
+    }
+    console.log('received event:', topic, json_data)
+
+    const html_tag = topic.replaceAll('/', '-')
 
     // add a pretty-printed version to the event log
     $(`#events-${html_tag}`).prepend(JSON.stringify(json_data, null, 2) + "\n");
@@ -90,7 +97,7 @@ function on_mqtt_event(topic, message) {
             break;
 
         default:
-            console.log(`unknown mqtt event: ${json_data}`)
+            break;
     }
 }
 
@@ -222,20 +229,6 @@ function send_message() {
             reset_file_id();
         }
     });
-}
-
-function send_mqtt() {
-    const receiver = parseInt($("input#mqtt_receiver").val());
-    const message_payload = $("textarea#mqtt_payload").val();
-
-    client_dino.publish(
-        `dms/testpopp-${receiver}`,
-        message_payload,
-        undefined,
-        function (err) {
-            console.log('error:', err)
-        }
-    )
 }
 
 function get_group_name(group_id) {

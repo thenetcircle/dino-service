@@ -74,6 +74,7 @@ class MqttPublisher(IClientPublisher):
         mqtt_redis_host = env.config.get(ConfigKeys.HOST, domain=ConfigKeys.MQTT_AUTH)
         mqtt_redis_db = int(env.config.get(ConfigKeys.DB, domain=ConfigKeys.MQTT_AUTH, default=0))
         mqtt_redis_port = 6379
+        dino_env = env.conf.get(ConfigKeys.ENVIRONMENT)
 
         if ":" in mqtt_redis_host:
             mqtt_redis_host, mqtt_redis_port = mqtt_redis_host.split(":", 1)
@@ -103,7 +104,7 @@ class MqttPublisher(IClientPublisher):
         #
         # reference: https://stackoverflow.com/questions/15733196/where-2x-prefix-are-used-in-bcrypt
         hashed_pwd = f"$2a${hashed_pwd[4:]}"
-        publish_acl = '[{"pattern":"dms/+"}]'
+        publish_acl = '[{"pattern":"dms/' + dino_env + '/+"}]'
 
         # this is the format that vernemq expects to be in redis; also
         # we don't set a publisher/subscriber acl pattern here, since

@@ -13,6 +13,7 @@ var inherits = require('inherits')
 var reInterval = require('reinterval')
 var validations = require('./validations')
 var xtend = require('xtend')
+var debug = require('debug')('mqtt-*')
 var nextTick = process ? process.nextTick : function (callback) { setTimeout(callback, 0) }
 var setImmediate = global.setImmediate || function (callback) {
   // works in node v0.8
@@ -89,25 +90,25 @@ function defaultId () {
 }
 
 function sendPacket (client, packet, cb) {
-  console.log('sendPacket :: packet: %O', packet)
-  console.log('sendPacket :: emitting `packetsend`')
+  debug('sendPacket :: packet: %O', packet)
+  debug('sendPacket :: emitting `packetsend`')
   client.emit('packetsend', packet)
 
-  console.log('sendPacket :: writing to stream')
+  debug('sendPacket :: writing to stream')
   var result = mqttPacket.writeToStream(packet, client.stream, client.options)
-  console.log('sendPacket :: writeToStream result %s', result)
+  debug('sendPacket :: writeToStream result %s', result)
   if (!result && cb) {
-    console.log('sendPacket :: handle events on `drain` once through callback.')
+    debug('sendPacket :: handle events on `drain` once through callback.')
     client.stream.once('drain', cb)
   } else if (cb) {
-    console.log('sendPacket :: invoking cb')
+    debug('sendPacket :: invoking cb')
     cb()
   }
 }
 
 function flush (queue) {
   if (queue) {
-    console.log('flush: queue exists? %b', !!(queue))
+    debug('flush: queue exists? %b', !!(queue))
     Object.keys(queue).forEach(function (messageId) {
       if (typeof queue[messageId].cb === 'function') {
         queue[messageId].cb(new Error('Connection closed'))
@@ -119,7 +120,7 @@ function flush (queue) {
 
 function flushVolatile (queue) {
   if (queue) {
-    console.log('flushVolatile :: deleting volatile messages from the queue and setting their callbacks as error function')
+    debug('flushVolatile :: deleting volatile messages from the queue and setting their callbacks as error function')
     Object.keys(queue).forEach(function (messageId) {
       if (queue[messageId].volatile && typeof queue[messageId].cb === 'function') {
         queue[messageId].cb(new Error('Connection closed'))
@@ -130,7 +131,7 @@ function flushVolatile (queue) {
 }
 
 function storeAndSend (client, packet, cb, cbStorePut) {
-  console.log('storeAndSend :: store packet with cmd %s to outgoingStore', packet.cmd)
+  debug('storeAndSend :: store packet with cmd %s to outgoingStore', packet.cmd)
   client.outgoingStore.put(packet, function storedPacket (err) {
     if (err) {
       return cb && cb(err)
@@ -141,7 +142,7 @@ function storeAndSend (client, packet, cb, cbStorePut) {
 }
 
 function nop (error) {
-  console.log('nop ::', error)
+  debug('nop ::', error)
 }
 
 /**
@@ -170,16 +171,16 @@ function MqttClient (streamBuilder, options) {
     }
   }
 
-  console.log('MqttClient :: options.protocol', options.protocol)
-  console.log('MqttClient :: options.protocolVersion', options.protocolVersion)
-  console.log('MqttClient :: options.username', options.username)
-  console.log('MqttClient :: options.keepalive', options.keepalive)
-  console.log('MqttClient :: options.reconnectPeriod', options.reconnectPeriod)
-  console.log('MqttClient :: options.rejectUnauthorized', options.rejectUnauthorized)
+  debug('MqttClient :: options.protocol', options.protocol)
+  debug('MqttClient :: options.protocolVersion', options.protocolVersion)
+  debug('MqttClient :: options.username', options.username)
+  debug('MqttClient :: options.keepalive', options.keepalive)
+  debug('MqttClient :: options.reconnectPeriod', options.reconnectPeriod)
+  debug('MqttClient :: options.rejectUnauthorized', options.rejectUnauthorized)
 
   this.options.clientId = (typeof options.clientId === 'string') ? options.clientId : defaultId()
 
-  console.log('MqttClient :: clientId', this.options.clientId)
+  debug('MqttClient :: clientId', this.options.clientId)
 
   this.options.customHandleAcks = (options.protocolVersion === 5 && options.customHandleAcks) ? options.customHandleAcks : function () { arguments[3](0) }
 
@@ -232,7 +233,7 @@ function MqttClient (streamBuilder, options) {
 
     function deliver () {
       var entry = queue.shift()
-      console.log('deliver :: entry %o', entry)
+      debug('deliver :: entry %o', entry)
       var packet = null
 
       if (!entry) {
@@ -240,7 +241,7 @@ function MqttClient (streamBuilder, options) {
       }
 
       packet = entry.packet
-      console.log('deliver :: call _sendPacket for %o', packet)
+      debug('deliver :: call _sendPacket for %o', packet)
       that._sendPacket(
         packet,
         function (err) {
@@ -252,29 +253,29 @@ function MqttClient (streamBuilder, options) {
       )
     }
 
-    console.log('connect :: sending queued packets')
+    debug('connect :: sending queued packets')
     deliver()
   })
 
   this.on('close', function () {
-    console.log('close :: connected set to `false`')
+    debug('close :: connected set to `false`')
     this.connected = false
 
-    console.log('close :: clearing connackTimer')
+    debug('close :: clearing connackTimer')
     clearTimeout(this.connackTimer)
 
-    console.log('close :: clearing ping timer')
+    debug('close :: clearing ping timer')
     if (that.pingTimer !== null) {
       that.pingTimer.clear()
       that.pingTimer = null
     }
 
-    console.log('close :: calling _setupReconnect')
+    debug('close :: calling _setupReconnect')
     this._setupReconnect()
   })
   EventEmitter.call(this)
 
-  console.log('MqttClient :: setting up stream')
+  debug('MqttClient :: setting up stream')
   this._setupStream()
 }
 inherits(MqttClient, EventEmitter)
@@ -292,14 +293,14 @@ MqttClient.prototype._setupStream = function () {
   var completeParse = null
   var packets = []
 
-  console.log('_setupStream :: calling method to clear reconnect')
+  debug('_setupStream :: calling method to clear reconnect')
   this._clearReconnect()
 
-  console.log('_setupStream :: using streamBuilder provided to client to create stream')
+  debug('_setupStream :: using streamBuilder provided to client to create stream')
   this.stream = this.streamBuilder(this)
 
   parser.on('packet', function (packet) {
-    console.log('parser :: on packet push to packets array.')
+    debug('parser :: on packet push to packets array.')
     packets.push(packet)
   })
 
@@ -314,40 +315,40 @@ MqttClient.prototype._setupStream = function () {
   }
 
   function work () {
-    console.log('work :: getting next packet in queue')
+    debug('work :: getting next packet in queue')
     var packet = packets.shift()
 
     if (packet) {
-      console.log('work :: packet pulled from queue')
+      debug('work :: packet pulled from queue')
       that._handlePacket(packet, nextTickWork)
     } else {
-      console.log('work :: no packets in queue')
+      debug('work :: no packets in queue')
       var done = completeParse
       completeParse = null
-      console.log('work :: done flag is %s', !!(done))
+      debug('work :: done flag is %s', !!(done))
       if (done) done()
     }
   }
 
   writable._write = function (buf, enc, done) {
     completeParse = done
-    console.log('writable stream :: parsing buffer')
+    debug('writable stream :: parsing buffer')
     parser.parse(buf)
     work()
   }
 
   function streamErrorHandler (error) {
-    console.log('streamErrorHandler :: error', error.message)
+    debug('streamErrorHandler :: error', error.message)
     if (socketErrors.includes(error.code)) {
       // handle error
-      console.log('streamErrorHandler :: emitting error')
+      debug('streamErrorHandler :: emitting error')
       that.emit('error', error)
     } else {
       nop(error)
     }
   }
 
-  console.log('_setupStream :: pipe stream to writable stream')
+  debug('_setupStream :: pipe stream to writable stream')
   this.stream.pipe(writable)
 
   // Suppress connection errors
@@ -355,14 +356,14 @@ MqttClient.prototype._setupStream = function () {
 
   // Echo stream close
   this.stream.on('close', function () {
-    console.log('(%s)stream :: on close', that.options.clientId)
+    debug('(%s)stream :: on close', that.options.clientId)
     flushVolatile(that.outgoing)
-    console.log('stream: emit close to MqttClient')
+    debug('stream: emit close to MqttClient')
     that.emit('close')
   })
 
   // Send a connect packet
-  console.log('_setupStream: sending packet `connect`')
+  debug('_setupStream: sending packet `connect`')
   connectPacket = Object.create(this.options)
   connectPacket.cmd = 'connect'
   // avoid message queue
@@ -390,7 +391,7 @@ MqttClient.prototype._setupStream = function () {
 
   clearTimeout(this.connackTimer)
   this.connackTimer = setTimeout(function () {
-    console.log('!!connectTimeout hit!! Calling _cleanUp with force `true`')
+    debug('!!connectTimeout hit!! Calling _cleanUp with force `true`')
     that._cleanUp(true)
   }, this.options.connectTimeout)
 }
@@ -403,7 +404,7 @@ MqttClient.prototype._handlePacket = function (packet, done) {
     this.end({reasonCode: 149, properties: { reasonString: 'Maximum packet size was exceeded' }})
     return this
   }
-  console.log('_handlePacket :: emitting packetreceive')
+  debug('_handlePacket :: emitting packetreceive')
   this.emit('packetreceive', packet)
 
   switch (packet.cmd) {
@@ -473,7 +474,7 @@ MqttClient.prototype._checkDisconnecting = function (callback) {
  * @example client.publish('topic', 'message', console.log);
  */
 MqttClient.prototype.publish = function (topic, message, opts, callback) {
-  console.log('publish :: message `%s` to topic `%s`', message, topic)
+  debug('publish :: message `%s` to topic `%s`', message, topic)
   var packet
   var options = this.options
 
@@ -516,7 +517,7 @@ MqttClient.prototype.publish = function (topic, message, opts, callback) {
     }
   }
 
-  console.log('publish :: qos', opts.qos)
+  debug('publish :: qos', opts.qos)
   switch (opts.qos) {
     case 1:
     case 2:
@@ -526,20 +527,20 @@ MqttClient.prototype.publish = function (topic, message, opts, callback) {
         cb: callback || nop
       }
       if (this._storeProcessing) {
-        console.log('_storeProcessing enabled')
+        debug('_storeProcessing enabled')
         this._packetIdsDuringStoreProcessing[packet.messageId] = false
         this._storePacket(packet, undefined, opts.cbStorePut)
       } else {
-        console.log('MqttClient:publish: packet cmd: %s', packet.cmd)
+        debug('MqttClient:publish: packet cmd: %s', packet.cmd)
         this._sendPacket(packet, undefined, opts.cbStorePut)
       }
       break
     default:
       if (this._storeProcessing) {
-        console.log('_storeProcessing enabled')
+        debug('_storeProcessing enabled')
         this._storePacket(packet, callback, opts.cbStorePut)
       } else {
-        console.log('MqttClient:publish: packet cmd: %s', packet.cmd)
+        debug('MqttClient:publish: packet cmd: %s', packet.cmd)
         this._sendPacket(packet, callback, opts.cbStorePut)
       }
       break
@@ -597,7 +598,7 @@ MqttClient.prototype.subscribe = function () {
   }
 
   if (this._checkDisconnecting(callback)) {
-    console.log('subscribe: discconecting true')
+    debug('subscribe: discconecting true')
     return this
   }
 
@@ -613,7 +614,7 @@ MqttClient.prototype.subscribe = function () {
 
   if (Array.isArray(obj)) {
     obj.forEach(function (topic) {
-      console.log('subscribe: array topic %s', topic)
+      debug('subscribe: array topic %s', topic)
       if (!that._resubscribeTopics.hasOwnProperty(topic) ||
         that._resubscribeTopics[topic].qos < opts.qos ||
           resubscribe) {
@@ -627,7 +628,7 @@ MqttClient.prototype.subscribe = function () {
           currentOpts.rh = opts.rh
           currentOpts.properties = opts.properties
         }
-        console.log('subscribe: pushing topic `%s` and qos `%s` to subs list', currentOpts.topic, currentOpts.qos)
+        debug('subscribe: pushing topic `%s` and qos `%s` to subs list', currentOpts.topic, currentOpts.qos)
         subs.push(currentOpts)
       }
     })
@@ -635,7 +636,7 @@ MqttClient.prototype.subscribe = function () {
     Object
       .keys(obj)
       .forEach(function (k) {
-        console.log('subscribe: object topic %s', k)
+        debug('subscribe: object topic %s', k)
         if (!that._resubscribeTopics.hasOwnProperty(k) ||
           that._resubscribeTopics[k].qos < obj[k].qos ||
             resubscribe) {
@@ -649,7 +650,7 @@ MqttClient.prototype.subscribe = function () {
             currentOpts.rh = obj[k].rh
             currentOpts.properties = opts.properties
           }
-          console.log('subscribe: pushing `%s` to subs list', currentOpts)
+          debug('subscribe: pushing `%s` to subs list', currentOpts)
           subs.push(currentOpts)
         }
       })
@@ -675,7 +676,7 @@ MqttClient.prototype.subscribe = function () {
 
   // subscriptions to resubscribe to in case of disconnect
   if (this.options.resubscribe) {
-    console.log('subscribe :: resubscribe true')
+    debug('subscribe :: resubscribe true')
     var topics = []
     subs.forEach(function (sub) {
       if (that.options.reconnectPeriod > 0) {
@@ -706,7 +707,7 @@ MqttClient.prototype.subscribe = function () {
       callback(err, subs)
     }
   }
-  console.log('subscribe :: call _sendPacket')
+  debug('subscribe :: call _sendPacket')
   this._sendPacket(packet)
 
   return this
@@ -773,7 +774,7 @@ MqttClient.prototype.unsubscribe = function () {
     cb: callback
   }
 
-  console.log('unsubscribe: call _sendPacket')
+  debug('unsubscribe: call _sendPacket')
   this._sendPacket(packet)
 
   return this
@@ -792,7 +793,7 @@ MqttClient.prototype.unsubscribe = function () {
 MqttClient.prototype.end = function (force, opts, cb) {
   var that = this
 
-  console.log('end :: (%s)', this.options.clientId)
+  debug('end :: (%s)', this.options.clientId)
 
   if (force == null || typeof force !== 'boolean') {
     cb = opts || nop
@@ -812,19 +813,19 @@ MqttClient.prototype.end = function (force, opts, cb) {
     opts = null
   }
 
-  console.log('end :: cb? %s', !!cb)
+  debug('end :: cb? %s', !!cb)
   cb = cb || nop
 
   function closeStores () {
-    console.log('end :: closeStores: closing incoming and outgoing stores')
+    debug('end :: closeStores: closing incoming and outgoing stores')
     that.disconnected = true
     that.incomingStore.close(function (e1) {
       that.outgoingStore.close(function (e2) {
-        console.log('end :: closeStores: emitting end')
+        debug('end :: closeStores: emitting end')
         that.emit('end')
         if (cb) {
           let err = e1 || e2
-          console.log('end :: closeStores: invoking callback with args')
+          debug('end :: closeStores: invoking callback with args')
           cb(err)
         }
       })
@@ -838,9 +839,9 @@ MqttClient.prototype.end = function (force, opts, cb) {
     // defer closesStores of an I/O cycle,
     // just to make sure things are
     // ok for websockets
-    console.log('end :: (%s) :: finish :: calling _cleanUp with force %s', that.options.clientId, force)
+    debug('end :: (%s) :: finish :: calling _cleanUp with force %s', that.options.clientId, force)
     that._cleanUp(force, () => {
-      console.log('end :: finish :: calling process.nextTick on closeStores')
+      debug('end :: finish :: calling process.nextTick on closeStores')
       // var boundProcess = nextTick.bind(null, closeStores)
       nextTick(closeStores.bind(that))
     }, opts)
@@ -857,10 +858,10 @@ MqttClient.prototype.end = function (force, opts, cb) {
 
   if (!force && Object.keys(this.outgoing).length > 0) {
     // wait 10ms, just to be sure we received all of it
-    console.log('end :: (%s) :: calling finish in 10ms once outgoing is empty', that.options.clientId)
+    debug('end :: (%s) :: calling finish in 10ms once outgoing is empty', that.options.clientId)
     this.once('outgoingEmpty', setTimeout.bind(null, finish, 10))
   } else {
-    console.log('end :: (%s) :: immediately calling finish', that.options.clientId)
+    debug('end :: (%s) :: immediately calling finish', that.options.clientId)
     finish()
   }
 
@@ -898,7 +899,7 @@ MqttClient.prototype.removeOutgoingMessage = function (messageId) {
  * @api public
  */
 MqttClient.prototype.reconnect = function (opts) {
-  console.log('client reconnect')
+  debug('client reconnect')
   var that = this
   var f = function () {
     if (opts) {
@@ -929,13 +930,13 @@ MqttClient.prototype.reconnect = function (opts) {
  * @api privateish
  */
 MqttClient.prototype._reconnect = function () {
-  console.log('_reconnect: emitting reconnect to client')
+  debug('_reconnect: emitting reconnect to client')
   this.emit('reconnect')
   if (this.connected) {
     this.end(() => { this._setupStream() })
-    console.log('client already connected. disconnecting first.')
+    debug('client already connected. disconnecting first.')
   } else {
-    console.log('_reconnect: calling _setupStream')
+    debug('_reconnect: calling _setupStream')
     this._setupStream()
   }
 }
@@ -948,18 +949,18 @@ MqttClient.prototype._setupReconnect = function () {
 
   if (!that.disconnecting && !that.reconnectTimer && (that.options.reconnectPeriod > 0)) {
     if (!this.reconnecting) {
-      console.log('_setupReconnect :: emit `offline` state')
+      debug('_setupReconnect :: emit `offline` state')
       this.emit('offline')
-      console.log('_setupReconnect :: set `reconnecting` to `true`')
+      debug('_setupReconnect :: set `reconnecting` to `true`')
       this.reconnecting = true
     }
-    console.log('_setupReconnect :: setting reconnectTimer for %d ms', that.options.reconnectPeriod)
+    debug('_setupReconnect :: setting reconnectTimer for %d ms', that.options.reconnectPeriod)
     that.reconnectTimer = setInterval(function () {
-      console.log('reconnectTimer :: reconnect triggered!')
+      debug('reconnectTimer :: reconnect triggered!')
       that._reconnect()
     }, that.options.reconnectPeriod)
   } else {
-    console.log('_setupReconnect :: doing nothing...')
+    debug('_setupReconnect :: doing nothing...')
   }
 }
 
@@ -967,7 +968,7 @@ MqttClient.prototype._setupReconnect = function () {
  * _clearReconnect - clear the reconnect timer
  */
 MqttClient.prototype._clearReconnect = function () {
-  console.log('_clearReconnect : clearing reconnect timer')
+  debug('_clearReconnect : clearing reconnect timer')
   if (this.reconnectTimer) {
     clearInterval(this.reconnectTimer)
     this.reconnectTimer = null
@@ -981,20 +982,20 @@ MqttClient.prototype._clearReconnect = function () {
 MqttClient.prototype._cleanUp = function (forced, done) {
   var opts = arguments[2]
   if (done) {
-    console.log('_cleanUp :: done callback provided for on stream close')
+    debug('_cleanUp :: done callback provided for on stream close')
     this.stream.on('close', done)
   }
 
-  console.log('_cleanUp :: forced? %s', forced)
+  debug('_cleanUp :: forced? %s', forced)
   if (forced) {
     if ((this.options.reconnectPeriod === 0) && this.options.clean) {
       flush(this.outgoing)
     }
-    console.log('_cleanUp :: (%s) :: destroying stream', this.options.clientId)
+    debug('_cleanUp :: (%s) :: destroying stream', this.options.clientId)
     this.stream.destroy()
   } else {
     var packet = xtend({ cmd: 'disconnect' }, opts)
-    console.log('_cleanUp :: (%s) :: call _sendPacket with disconnect packet', this.options.clientId)
+    debug('_cleanUp :: (%s) :: call _sendPacket with disconnect packet', this.options.clientId)
     this._sendPacket(
       packet,
       setImmediate.bind(
@@ -1005,19 +1006,19 @@ MqttClient.prototype._cleanUp = function (forced, done) {
   }
 
   if (!this.disconnecting) {
-    console.log('_cleanUp :: client not disconnecting. Clearing and resetting reconnect.')
+    debug('_cleanUp :: client not disconnecting. Clearing and resetting reconnect.')
     this._clearReconnect()
     this._setupReconnect()
   }
 
   if (this.pingTimer !== null) {
-    console.log('_cleanUp :: clearing pingTimer')
+    debug('_cleanUp :: clearing pingTimer')
     this.pingTimer.clear()
     this.pingTimer = null
   }
 
   if (done && !this.connected) {
-    console.log('_cleanUp :: (%s) :: removing stream `done` callback `close` listener', this.options.clientId)
+    debug('_cleanUp :: (%s) :: removing stream `done` callback `close` listener', this.options.clientId)
     this.stream.removeListener('close', done)
     done()
   }
@@ -1031,11 +1032,11 @@ MqttClient.prototype._cleanUp = function (forced, done) {
  * @api private
  */
 MqttClient.prototype._sendPacket = function (packet, cb, cbStorePut) {
-  console.log('_sendPacket :: (%s) ::  start', this.options.clientId)
+  debug('_sendPacket :: (%s) ::  start', this.options.clientId)
   cbStorePut = cbStorePut || nop
 
   if (!this.connected) {
-    console.log('_sendPacket :: client not connected. Storing packet offline.')
+    debug('_sendPacket :: client not connected. Storing packet offline.')
     this._storePacket(packet, cb, cbStorePut)
     return
   }
@@ -1070,7 +1071,7 @@ MqttClient.prototype._sendPacket = function (packet, cb, cbStorePut) {
       sendPacket(this, packet, cb)
       break
   }
-  console.log('_sendPacket :: (%s) ::  end', this.options.clientId)
+  debug('_sendPacket :: (%s) ::  end', this.options.clientId)
 }
 
 /**
@@ -1081,8 +1082,8 @@ MqttClient.prototype._sendPacket = function (packet, cb, cbStorePut) {
  * @api private
  */
 MqttClient.prototype._storePacket = function (packet, cb, cbStorePut) {
-  console.log('_storePacket :: packet: %o', packet)
-  console.log('_storePacket :: cb? %s', !!cb)
+  debug('_storePacket :: packet: %o', packet)
+  debug('_storePacket :: cb? %s', !!cb)
   cbStorePut = cbStorePut || nop
 
   // check that the packet is not a qos of 0, or that the command is not a publish
@@ -1107,7 +1108,7 @@ MqttClient.prototype._storePacket = function (packet, cb, cbStorePut) {
  * @api private
  */
 MqttClient.prototype._setupPingTimer = function () {
-  console.log('_setupPingTimer :: keepalive %d (seconds)', this.options.keepalive)
+  debug('_setupPingTimer :: keepalive %d (seconds)', this.options.keepalive)
   var that = this
 
   if (!this.pingTimer && this.options.keepalive) {
@@ -1134,14 +1135,14 @@ MqttClient.prototype._shiftPingInterval = function () {
  * @api private
  */
 MqttClient.prototype._checkPing = function () {
-  console.log('_checkPing :: checking ping...')
+  debug('_checkPing :: checking ping...')
   if (this.pingResp) {
-    console.log('_checkPing :: ping response received. Clearing flag and sending `pingreq`')
+    debug('_checkPing :: ping response received. Clearing flag and sending `pingreq`')
     this.pingResp = false
     this._sendPacket({ cmd: 'pingreq' })
   } else {
     // do a forced cleanup since socket will be in bad shape
-    console.log('_checkPing :: calling _cleanUp with force true')
+    debug('_checkPing :: calling _cleanUp with force true')
     this._cleanUp(true)
   }
 }
@@ -1162,7 +1163,7 @@ MqttClient.prototype._handlePingresp = function () {
  * @api private
  */
 MqttClient.prototype._handleConnack = function (packet) {
-  console.log('_handleConnack')
+  debug('_handleConnack')
   var options = this.options
   var version = options.protocolVersion
   var rc = version === 5 ? packet.reasonCode : packet.returnCode
@@ -1225,7 +1226,7 @@ default:
 for now i just suppressed the warnings
 */
 MqttClient.prototype._handlePublish = function (packet, done) {
-  console.log('_handlePublish: packet %o', packet)
+  debug('_handlePublish: packet %o', packet)
   done = typeof done !== 'undefined' ? done : nop
   var topic = packet.topic.toString()
   var message = packet.payload
@@ -1234,7 +1235,7 @@ MqttClient.prototype._handlePublish = function (packet, done) {
   var that = this
   var options = this.options
   var validReasonCodes = [0, 16, 128, 131, 135, 144, 145, 151, 153]
-  console.log('_handlePublish: qos %d', qos)
+  debug('_handlePublish: qos %d', qos)
   switch (qos) {
     case 2: {
       options.customHandleAcks(topic, message, packet, function (error, code) {
@@ -1280,7 +1281,7 @@ MqttClient.prototype._handlePublish = function (packet, done) {
       break
     default:
       // do nothing
-      console.log('_handlePublish: unknown QoS. Doing nothing.')
+      debug('_handlePublish: unknown QoS. Doing nothing.')
       // log or throw an error about unknown qos
       break
   }
@@ -1315,13 +1316,13 @@ MqttClient.prototype._handleAck = function (packet) {
   var err
 
   if (!cb) {
-    console.log('_handleAck :: Server sent an ack in error. Ignoring.')
+    debug('_handleAck :: Server sent an ack in error. Ignoring.')
     // Server sent an ack in error, ignore it.
     return
   }
 
   // Process
-  console.log('_handleAck :: packet type', type)
+  debug('_handleAck :: packet type', type)
   switch (type) {
     case 'pubcomp':
       // same thing as puback for QoS 2
@@ -1388,7 +1389,7 @@ MqttClient.prototype._handleAck = function (packet) {
  * @api private
  */
 MqttClient.prototype._handlePubrel = function (packet, callback) {
-  console.log('handling pubrel packet')
+  debug('handling pubrel packet')
   callback = typeof callback !== 'undefined' ? callback : nop
   var messageId = packet.messageId
   var that = this
@@ -1448,14 +1449,14 @@ MqttClient.prototype.getLastMessageId = function () {
  * @api private
  */
 MqttClient.prototype._resubscribe = function (connack) {
-  console.log('_resubscribe')
+  debug('_resubscribe')
   var _resubscribeTopicsKeys = Object.keys(this._resubscribeTopics)
   if (!this._firstConnection &&
       (this.options.clean || (this.options.protocolVersion === 5 && !connack.sessionPresent)) &&
       _resubscribeTopicsKeys.length > 0) {
     if (this.options.resubscribe) {
       if (this.options.protocolVersion === 5) {
-        console.log('_resubscribe: protocolVersion 5')
+        debug('_resubscribe: protocolVersion 5')
         for (var topicI = 0; topicI < _resubscribeTopicsKeys.length; topicI++) {
           var resubscribeTopic = {}
           resubscribeTopic[_resubscribeTopicsKeys[topicI]] = this._resubscribeTopics[_resubscribeTopicsKeys[topicI]]
@@ -1731,7 +1732,7 @@ function streamBuilder (client, opts) {
   port = opts.port
   host = opts.hostname
 
-  console.log('port %d and host %s', port, host)
+  debug('port %d and host %s', port, host)
   return net.createConnection(port, host)
 }
 
@@ -1752,7 +1753,7 @@ function buildBuilder (mqttClient, opts) {
 
   delete opts.path
 
-  console.log('port %d host %s rejectUnauthorized %b', opts.port, opts.host, opts.rejectUnauthorized)
+  debug('port %d host %s rejectUnauthorized %b', opts.port, opts.host, opts.rejectUnauthorized)
 
   connection = tls.connect(opts)
   /* eslint no-use-before-define: [2, "nofunc"] */
@@ -1873,14 +1874,14 @@ function setDefaultBrowserOpts (opts) {
 }
 
 function createWebSocket (client, url, opts) {
-  console.log('createWebSocket')
-  console.log('protocol: ' + opts.protocolId + ' ' + opts.protocolVersion)
+  debug('createWebSocket')
+  debug('protocol: ' + opts.protocolId + ' ' + opts.protocolVersion)
   const websocketSubProtocol =
     (opts.protocolId === 'MQIsdp') && (opts.protocolVersion === 3)
       ? 'mqttv3.1'
       : 'mqtt'
 
-  console.log('creating new Websocket for url: ' + url + ' and protocol: ' + websocketSubProtocol)
+  debug('creating new Websocket for url: ' + url + ' and protocol: ' + websocketSubProtocol)
   let socket = new WS(url, [websocketSubProtocol], opts.wsOptions)
   return socket
 }
@@ -1899,7 +1900,7 @@ function createBrowserWebSocket (client, opts) {
 }
 
 function streamBuilder (client, opts) {
-  console.log('streamBuilder')
+  debug('streamBuilder')
   let options = setDefaultOpts(opts)
   const url = buildUrl(options, client)
   let socket = createWebSocket(client, url, options)
@@ -1910,7 +1911,7 @@ function streamBuilder (client, opts) {
 }
 
 function browserStreamBuilder (client, opts) {
-  console.log('browserStreamBuilder')
+  debug('browserStreamBuilder')
   let stream
   let options = setDefaultBrowserOpts(opts)
   // sets the maximum socket buffer size before throttling
@@ -2421,7 +2422,7 @@ function parseAuthOptions (opts) {
  * @param {Object} opts - see MqttClient#constructor
  */
 function connect (brokerUrl, opts) {
-  console.log('connecting to an MQTT broker...')
+  debug('connecting to an MQTT broker...')
   if ((typeof brokerUrl === 'object') && !opts) {
     opts = brokerUrl
     brokerUrl = null
@@ -2520,7 +2521,7 @@ function connect (brokerUrl, opts) {
       client._reconnectCount++
     }
 
-    console.log('calling streambuilder for', opts.protocol)
+    debug('calling streambuilder for', opts.protocol)
     return protocols[opts.protocol](client, opts)
   }
   var client = new MqttClient(wrapper, opts)
@@ -6829,7 +6830,7 @@ class Parser extends EventEmitter {
   }
 
   _resetState () {
-    console.log('_resetState: resetting packet, error, _list, and _stateCounter')
+    debug('_resetState: resetting packet, error, _list, and _stateCounter')
     this.packet = new Packet()
     this.error = null
     this._list = bl()
@@ -6840,16 +6841,16 @@ class Parser extends EventEmitter {
     if (this.error) this._resetState()
 
     this._list.append(buf)
-    console.log('parse: current state: %s', this._states[this._stateCounter])
+    debug('parse: current state: %s', this._states[this._stateCounter])
     while ((this.packet.length !== -1 || this._list.length > 0) &&
       this[this._states[this._stateCounter]]() &&
       !this.error) {
       this._stateCounter++
-      console.log('parse: state complete. _stateCounter is now: %d', this._stateCounter)
-      console.log('parse: packet.length: %d, buffer list length: %d', this.packet.length, this._list.length)
+      debug('parse: state complete. _stateCounter is now: %d', this._stateCounter)
+      debug('parse: packet.length: %d, buffer list length: %d', this.packet.length, this._list.length)
       if (this._stateCounter >= this._states.length) this._stateCounter = 0
     }
-    console.log('parse: exited while loop. packet: %d, buffer list length: %d', this.packet.length, this._list.length)
+    debug('parse: exited while loop. packet: %d, buffer list length: %d', this.packet.length, this._list.length)
     return this._list.length
   }
 
@@ -6860,7 +6861,7 @@ class Parser extends EventEmitter {
     this.packet.retain = (zero & constants.RETAIN_MASK) !== 0
     this.packet.qos = (zero >> constants.QOS_SHIFT) & constants.QOS_MASK
     this.packet.dup = (zero & constants.DUP_MASK) !== 0
-    console.log('_parseHeader: packet: %o', this.packet)
+    debug('_parseHeader: packet: %o', this.packet)
 
     this._list.consume(1)
 
@@ -6875,12 +6876,12 @@ class Parser extends EventEmitter {
       this.packet.length = result.value
       this._list.consume(result.bytes)
     }
-    console.log('_parseLength %d', result.value)
+    debug('_parseLength %d', result.value)
     return !!result
   }
 
   _parsePayload () {
-    console.log('_parsePayload: payload %O', this._list)
+    debug('_parsePayload: payload %O', this._list)
     let result = false
 
     // Do we have a payload? Do we have enough data to complete the payload?
@@ -6932,12 +6933,12 @@ class Parser extends EventEmitter {
 
       result = true
     }
-    console.log('_parsePayload complete result: %s', result)
+    debug('_parsePayload complete result: %s', result)
     return result
   }
 
   _parseConnect () {
-    console.log('_parseConnect')
+    debug('_parseConnect')
     let topic // Will topic
     let payload // Will payload
     let password // Password
@@ -7005,7 +7006,7 @@ class Parser extends EventEmitter {
     const clientId = this._parseString()
     if (clientId === null) return this._emitError(new Error('Packet too short'))
     packet.clientId = clientId
-    console.log('_parseConnect: packet.clientId: %s', packet.clientId)
+    debug('_parseConnect: packet.clientId: %s', packet.clientId)
 
     if (flags.will) {
       if (packet.protocolVersion === 5) {
@@ -7018,13 +7019,13 @@ class Parser extends EventEmitter {
       topic = this._parseString()
       if (topic === null) return this._emitError(new Error('Cannot parse will topic'))
       packet.will.topic = topic
-      console.log('_parseConnect: packet.will.topic: %s', packet.will.topic)
+      debug('_parseConnect: packet.will.topic: %s', packet.will.topic)
 
       // Parse will payload
       payload = this._parseBuffer()
       if (payload === null) return this._emitError(new Error('Cannot parse will payload'))
       packet.will.payload = payload
-      console.log('_parseConnect: packet.will.paylaod: %s', packet.will.payload)
+      debug('_parseConnect: packet.will.paylaod: %s', packet.will.payload)
     }
 
     // Parse username
@@ -7032,7 +7033,7 @@ class Parser extends EventEmitter {
       username = this._parseString()
       if (username === null) return this._emitError(new Error('Cannot parse username'))
       packet.username = username
-      console.log('_parseConnect: packet.username: %s', packet.username)
+      debug('_parseConnect: packet.username: %s', packet.username)
     }
 
     // Parse password
@@ -7043,12 +7044,12 @@ class Parser extends EventEmitter {
     }
     // need for right parse auth packet and self set up
     this.settings = packet
-    console.log('_parseConnect: complete')
+    debug('_parseConnect: complete')
     return packet
   }
 
   _parseConnack () {
-    console.log('_parseConnack')
+    debug('_parseConnack')
     const packet = this.packet
 
     if (this._list.length < 1) return null
@@ -7073,11 +7074,11 @@ class Parser extends EventEmitter {
         packet.properties = properties
       }
     }
-    console.log('_parseConnack: complete')
+    debug('_parseConnack: complete')
   }
 
   _parsePublish () {
-    console.log('_parsePublish')
+    debug('_parsePublish')
     const packet = this.packet
     packet.topic = this._parseString()
 
@@ -7095,11 +7096,11 @@ class Parser extends EventEmitter {
     }
 
     packet.payload = this._list.slice(this._pos, packet.length)
-    console.log('_parsePublish: payload from buffer list: %o', packet.payload)
+    debug('_parsePublish: payload from buffer list: %o', packet.payload)
   }
 
   _parseSubscribe () {
-    console.log('_parseSubscribe')
+    debug('_parseSubscribe')
     const packet = this.packet
     let topic
     let options
@@ -7151,13 +7152,13 @@ class Parser extends EventEmitter {
       }
 
       // Push pair to subscriptions
-      console.log('_parseSubscribe: push subscription `%s` to subscription', subscription)
+      debug('_parseSubscribe: push subscription `%s` to subscription', subscription)
       packet.subscriptions.push(subscription)
     }
   }
 
   _parseSuback () {
-    console.log('_parseSuback')
+    debug('_parseSuback')
     const packet = this.packet
     this.packet.granted = []
 
@@ -7178,7 +7179,7 @@ class Parser extends EventEmitter {
   }
 
   _parseUnsubscribe () {
-    console.log('_parseUnsubscribe')
+    debug('_parseUnsubscribe')
     const packet = this.packet
 
     packet.unsubscriptions = []
@@ -7200,13 +7201,13 @@ class Parser extends EventEmitter {
       if (topic === null) return this._emitError(new Error('Cannot parse topic'))
 
       // Push topic to unsubscriptions
-      console.log('_parseUnsubscribe: push topic `%s` to unsubscriptions', topic)
+      debug('_parseUnsubscribe: push topic `%s` to unsubscriptions', topic)
       packet.unsubscriptions.push(topic)
     }
   }
 
   _parseUnsuback () {
-    console.log('_parseUnsuback')
+    debug('_parseUnsuback')
     const packet = this.packet
     if (!this._parseMessageId()) return this._emitError(new Error('Cannot parse messageId'))
     // Properties mqtt 5
@@ -7225,7 +7226,7 @@ class Parser extends EventEmitter {
 
   // parse packets like puback, pubrec, pubrel, pubcomp
   _parseConfirmation () {
-    console.log('_parseConfirmation: packet.cmd: `%s`', this.packet.cmd)
+    debug('_parseConfirmation: packet.cmd: `%s`', this.packet.cmd)
     const packet = this.packet
 
     this._parseMessageId()
@@ -7234,7 +7235,7 @@ class Parser extends EventEmitter {
       if (packet.length > 2) {
         // response code
         packet.reasonCode = this._parseByte()
-        console.log('_parseConfirmation: packet.reasonCode `%d`', packet.reasonCode)
+        debug('_parseConfirmation: packet.reasonCode `%d`', packet.reasonCode)
       } else {
         packet.reasonCode = 0
       }
@@ -7254,7 +7255,7 @@ class Parser extends EventEmitter {
   // parse disconnect packet
   _parseDisconnect () {
     const packet = this.packet
-    console.log('_parseDisconnect')
+    debug('_parseDisconnect')
 
     if (this.settings.protocolVersion === 5) {
       // response code
@@ -7270,13 +7271,13 @@ class Parser extends EventEmitter {
       }
     }
 
-    console.log('_parseDisconnect result: true')
+    debug('_parseDisconnect result: true')
     return true
   }
 
   // parse auth packet
   _parseAuth () {
-    console.log('_parseAuth')
+    debug('_parseAuth')
     const packet = this.packet
 
     if (this.settings.protocolVersion !== 5) {
@@ -7291,7 +7292,7 @@ class Parser extends EventEmitter {
       packet.properties = properties
     }
 
-    console.log('_parseAuth: result: true')
+    debug('_parseAuth: result: true')
     return true
   }
 
@@ -7305,7 +7306,7 @@ class Parser extends EventEmitter {
       return false
     }
 
-    console.log('_parseMessageId: packet.messageId %d', packet.messageId)
+    debug('_parseMessageId: packet.messageId %d', packet.messageId)
     return true
   }
 
@@ -7317,12 +7318,12 @@ class Parser extends EventEmitter {
 
     const result = this._list.toString('utf8', this._pos, end)
     this._pos += length
-    console.log('_parseString: result: %s', result)
+    debug('_parseString: result: %s', result)
     return result
   }
 
   _parseStringPair () {
-    console.log('_parseStringPair')
+    debug('_parseStringPair')
     return {
       name: this._parseString(),
       value: this._parseString()
@@ -7338,7 +7339,7 @@ class Parser extends EventEmitter {
     const result = this._list.slice(this._pos, end)
 
     this._pos += length
-    console.log('_parseBuffer: result: %o', result)
+    debug('_parseBuffer: result: %o', result)
     return result
   }
 
@@ -7347,7 +7348,7 @@ class Parser extends EventEmitter {
 
     const result = this._list.readUInt16BE(this._pos)
     this._pos += 2
-    console.log('_parseNum: result: %s', result)
+    debug('_parseNum: result: %s', result)
     return result
   }
 
@@ -7356,12 +7357,12 @@ class Parser extends EventEmitter {
 
     const result = this._list.readUInt32BE(this._pos)
     this._pos += 4
-    console.log('_parse4ByteNum: result: %s', result)
+    debug('_parse4ByteNum: result: %s', result)
     return result
   }
 
   _parseVarByteNum (fullInfoFlag) {
-    console.log('_parseVarByteNum')
+    debug('_parseVarByteNum')
     const maxBytes = 4
     let bytes = 0
     let mul = 1
@@ -7399,7 +7400,7 @@ class Parser extends EventEmitter {
       } : value
       : false
 
-    console.log('_parseVarByteNum: result: %o', result)
+    debug('_parseVarByteNum: result: %o', result)
     return result
   }
 
@@ -7409,12 +7410,12 @@ class Parser extends EventEmitter {
       result = this._list.readUInt8(this._pos)
       this._pos++
     }
-    console.log('_parseByte: result: %o', result)
+    debug('_parseByte: result: %o', result)
     return result
   }
 
   _parseByType (type) {
-    console.log('_parseByType: type: %s', type)
+    debug('_parseByType: type: %s', type)
     switch (type) {
       case 'byte': {
         return this._parseByte() !== 0
@@ -7444,7 +7445,7 @@ class Parser extends EventEmitter {
   }
 
   _parseProperties () {
-    console.log('_parseProperties')
+    debug('_parseProperties')
     const length = this._parseVarByteNum()
     const start = this._pos
     const end = start + length
@@ -7494,13 +7495,13 @@ class Parser extends EventEmitter {
   }
 
   _newPacket () {
-    console.log('_newPacket')
+    debug('_newPacket')
     if (this.packet) {
       this._list.consume(this.packet.length)
-      console.log('_newPacket: parser emit packet: packet.cmd: %s, packet.payload: %s, packet.length: %d', this.packet.cmd, this.packet.payload, this.packet.length)
+      debug('_newPacket: parser emit packet: packet.cmd: %s, packet.payload: %s, packet.length: %d', this.packet.cmd, this.packet.payload, this.packet.length)
       this.emit('packet', this.packet)
     }
-    console.log('_newPacket: new packet')
+    debug('_newPacket: new packet')
     this.packet = new Packet()
 
     this._pos = 0
@@ -7509,7 +7510,7 @@ class Parser extends EventEmitter {
   }
 
   _emitError (err) {
-    console.log('_emitError')
+    debug('_emitError')
     this.error = err
     this.emit('error', err)
   }
@@ -7535,7 +7536,7 @@ let writeNumber = writeNumberCached
 let toGenerate = true
 
 function generate (packet, stream, opts) {
-  console.log('generate called')
+  debug('generate called')
   if (stream.cork) {
     stream.cork()
     nextTick(uncork, stream)
@@ -7545,7 +7546,7 @@ function generate (packet, stream, opts) {
     toGenerate = false
     generateCache()
   }
-  console.log('generate: packet.cmd: %s', packet.cmd)
+  debug('generate: packet.cmd: %s', packet.cmd)
   switch (packet.cmd) {
     case 'connect':
       return connect(packet, stream, opts)
@@ -7831,7 +7832,7 @@ function connack (packet, stream, opts) {
 }
 
 function publish (packet, stream, opts) {
-  console.log('publish: packet: %o', packet)
+  debug('publish: packet: %o', packet)
   const version = opts ? opts.protocolVersion : 4
   const settings = packet || {}
   const qos = settings.qos || 0
@@ -7888,7 +7889,7 @@ function publish (packet, stream, opts) {
   }
 
   // Payload
-  console.log('publish: payload: %o', payload)
+  debug('publish: payload: %o', payload)
   return stream.write(payload)
 }
 
@@ -7945,7 +7946,7 @@ function confirmation (packet, stream, opts) {
 }
 
 function subscribe (packet, stream, opts) {
-  console.log('subscribe: packet: ')
+  debug('subscribe: packet: ')
   const version = opts ? opts.protocolVersion : 4
   const settings = packet || {}
   const dup = settings.dup ? protocol.DUP_MASK : 0
@@ -8010,7 +8011,7 @@ function subscribe (packet, stream, opts) {
   }
 
   // Generate header
-  console.log('subscribe: writing to stream: %o', protocol.SUBSCRIBE_HEADER)
+  debug('subscribe: writing to stream: %o', protocol.SUBSCRIBE_HEADER)
   stream.write(protocol.SUBSCRIBE_HEADER[1][dup ? 1 : 0][0])
 
   // Generate length
@@ -8321,7 +8322,7 @@ function writeVarByteInt (stream, num) {
     buffer = genBufVariableByteInt(num)
     if (num < 16384) varByteIntCache[num] = buffer
   }
-  console.log('writeVarByteInt: writing to stream: %o', buffer)
+  debug('writeVarByteInt: writing to stream: %o', buffer)
   return stream.write(buffer)
 }
 
@@ -8340,7 +8341,7 @@ function writeString (stream, string) {
   const strlen = Buffer.byteLength(string)
   writeNumber(stream, strlen)
 
-  console.log('writeString: %s', string)
+  debug('writeString: %s', string)
   return stream.write(string, 'utf8')
 }
 
@@ -8370,18 +8371,18 @@ function writeStringPair (stream, name, value) {
  * @api private
  */
 function writeNumberCached (stream, number) {
-  console.log('writeNumberCached: number: %d', number)
-  console.log('writeNumberCached: %o', numCache[number])
+  debug('writeNumberCached: number: %d', number)
+  debug('writeNumberCached: %o', numCache[number])
   return stream.write(numCache[number])
 }
 function writeNumberGenerated (stream, number) {
   const generatedNumber = generateNumber(number)
-  console.log('writeNumberGenerated: %o', generatedNumber)
+  debug('writeNumberGenerated: %o', generatedNumber)
   return stream.write(generatedNumber)
 }
 function write4ByteNumber (stream, number) {
   const generated4ByteBuffer = generate4ByteBuffer(number)
-  console.log('write4ByteNumber: %o', generated4ByteBuffer)
+  debug('write4ByteNumber: %o', generated4ByteBuffer)
   return stream.write(generated4ByteBuffer)
 }
 /**
@@ -10359,7 +10360,7 @@ Readable.prototype.unshift = function (chunk) {
 };
 
 function readableAddChunk(stream, chunk, encoding, addToFront, skipChunkCheck) {
-  console.log('readableAddChunk', chunk);
+  debug('readableAddChunk', chunk);
   var state = stream._readableState;
 
   if (chunk === null) {
@@ -10502,7 +10503,7 @@ function howMuchToRead(n, state) {
 
 
 Readable.prototype.read = function (n) {
-  console.log('read', n);
+  debug('read', n);
   n = parseInt(n, 10);
   var state = this._readableState;
   var nOrig = n;
@@ -10511,7 +10512,7 @@ Readable.prototype.read = function (n) {
   // the 'readable' event and move on.
 
   if (n === 0 && state.needReadable && ((state.highWaterMark !== 0 ? state.length >= state.highWaterMark : state.length > 0) || state.ended)) {
-    console.log('read: emitReadable', state.length, state.ended);
+    debug('read: emitReadable', state.length, state.ended);
     if (state.length === 0 && state.ended) endReadable(this);else emitReadable(this);
     return null;
   }
@@ -10546,20 +10547,20 @@ Readable.prototype.read = function (n) {
 
 
   var doRead = state.needReadable;
-  console.log('need readable', doRead); // if we currently have less than the highWaterMark, then also read some
+  debug('need readable', doRead); // if we currently have less than the highWaterMark, then also read some
 
   if (state.length === 0 || state.length - n < state.highWaterMark) {
     doRead = true;
-    console.log('length less than watermark', doRead);
+    debug('length less than watermark', doRead);
   } // however, if we've ended, then there's no point, and if we're already
   // reading, then it's unnecessary.
 
 
   if (state.ended || state.reading) {
     doRead = false;
-    console.log('reading or ended', doRead);
+    debug('reading or ended', doRead);
   } else if (doRead) {
-    console.log('do read');
+    debug('do read');
     state.reading = true;
     state.sync = true; // if the length is currently zero, then we *need* a readable event.
 
@@ -10597,7 +10598,7 @@ Readable.prototype.read = function (n) {
 };
 
 function onEofChunk(stream, state) {
-  console.log('onEofChunk');
+  debug('onEofChunk');
   if (state.ended) return;
 
   if (state.decoder) {
@@ -10632,11 +10633,11 @@ function onEofChunk(stream, state) {
 
 function emitReadable(stream) {
   var state = stream._readableState;
-  console.log('emitReadable', state.needReadable, state.emittedReadable);
+  debug('emitReadable', state.needReadable, state.emittedReadable);
   state.needReadable = false;
 
   if (!state.emittedReadable) {
-    console.log('emitReadable', state.flowing);
+    debug('emitReadable', state.flowing);
     state.emittedReadable = true;
     process.nextTick(emitReadable_, stream);
   }
@@ -10644,7 +10645,7 @@ function emitReadable(stream) {
 
 function emitReadable_(stream) {
   var state = stream._readableState;
-  console.log('emitReadable_', state.destroyed, state.length, state.ended);
+  debug('emitReadable_', state.destroyed, state.length, state.ended);
 
   if (!state.destroyed && (state.length || state.ended)) {
     stream.emit('readable');
@@ -10700,7 +10701,7 @@ function maybeReadMore_(stream, state) {
   //   up calling push() with more data.
   while (!state.reading && !state.ended && (state.length < state.highWaterMark || state.flowing && state.length === 0)) {
     var len = state.length;
-    console.log('maybeReadMore read 0');
+    debug('maybeReadMore read 0');
     stream.read(0);
     if (len === state.length) // didn't get any data, stop spinning.
       break;
@@ -10736,14 +10737,14 @@ Readable.prototype.pipe = function (dest, pipeOpts) {
   }
 
   state.pipesCount += 1;
-  console.log('pipe count=%d opts=%j', state.pipesCount, pipeOpts);
+  debug('pipe count=%d opts=%j', state.pipesCount, pipeOpts);
   var doEnd = (!pipeOpts || pipeOpts.end !== false) && dest !== process.stdout && dest !== process.stderr;
   var endFn = doEnd ? onend : unpipe;
   if (state.endEmitted) process.nextTick(endFn);else src.once('end', endFn);
   dest.on('unpipe', onunpipe);
 
   function onunpipe(readable, unpipeInfo) {
-    console.log('onunpipe');
+    debug('onunpipe');
 
     if (readable === src) {
       if (unpipeInfo && unpipeInfo.hasUnpiped === false) {
@@ -10754,7 +10755,7 @@ Readable.prototype.pipe = function (dest, pipeOpts) {
   }
 
   function onend() {
-    console.log('onend');
+    debug('onend');
     dest.end();
   } // when the dest drains, it reduces the awaitDrain counter
   // on the source.  This would be more elegant with a .once()
@@ -10767,7 +10768,7 @@ Readable.prototype.pipe = function (dest, pipeOpts) {
   var cleanedUp = false;
 
   function cleanup() {
-    console.log('cleanup'); // cleanup event handlers once the pipe is broken
+    debug('cleanup'); // cleanup event handlers once the pipe is broken
 
     dest.removeListener('close', onclose);
     dest.removeListener('finish', onfinish);
@@ -10789,9 +10790,9 @@ Readable.prototype.pipe = function (dest, pipeOpts) {
   src.on('data', ondata);
 
   function ondata(chunk) {
-    console.log('ondata');
+    debug('ondata');
     var ret = dest.write(chunk);
-    console.log('dest.write', ret);
+    debug('dest.write', ret);
 
     if (ret === false) {
       // If the user unpiped during `dest.write()`, it is possible
@@ -10799,7 +10800,7 @@ Readable.prototype.pipe = function (dest, pipeOpts) {
       // also returned false.
       // => Check whether `dest` is still a piping destination.
       if ((state.pipesCount === 1 && state.pipes === dest || state.pipesCount > 1 && indexOf(state.pipes, dest) !== -1) && !cleanedUp) {
-        console.log('false write response, pause', state.awaitDrain);
+        debug('false write response, pause', state.awaitDrain);
         state.awaitDrain++;
       }
 
@@ -10810,7 +10811,7 @@ Readable.prototype.pipe = function (dest, pipeOpts) {
 
 
   function onerror(er) {
-    console.log('onerror', er);
+    debug('onerror', er);
     unpipe();
     dest.removeListener('error', onerror);
     if (EElistenerCount(dest, 'error') === 0) errorOrDestroy(dest, er);
@@ -10827,7 +10828,7 @@ Readable.prototype.pipe = function (dest, pipeOpts) {
   dest.once('close', onclose);
 
   function onfinish() {
-    console.log('onfinish');
+    debug('onfinish');
     dest.removeListener('close', onclose);
     unpipe();
   }
@@ -10835,7 +10836,7 @@ Readable.prototype.pipe = function (dest, pipeOpts) {
   dest.once('finish', onfinish);
 
   function unpipe() {
-    console.log('unpipe');
+    debug('unpipe');
     src.unpipe(dest);
   } // tell the dest that it's being piped to
 
@@ -10843,7 +10844,7 @@ Readable.prototype.pipe = function (dest, pipeOpts) {
   dest.emit('pipe', src); // start the flow if it hasn't been started already.
 
   if (!state.flowing) {
-    console.log('pipe resume');
+    debug('pipe resume');
     src.resume();
   }
 
@@ -10853,7 +10854,7 @@ Readable.prototype.pipe = function (dest, pipeOpts) {
 function pipeOnDrain(src) {
   return function pipeOnDrainFunctionResult() {
     var state = src._readableState;
-    console.log('pipeOnDrain', state.awaitDrain);
+    debug('pipeOnDrain', state.awaitDrain);
     if (state.awaitDrain) state.awaitDrain--;
 
     if (state.awaitDrain === 0 && EElistenerCount(src, 'data')) {
@@ -10928,7 +10929,7 @@ Readable.prototype.on = function (ev, fn) {
       state.readableListening = state.needReadable = true;
       state.flowing = false;
       state.emittedReadable = false;
-      console.log('on readable', state.length, state.reading);
+      debug('on readable', state.length, state.reading);
 
       if (state.length) {
         emitReadable(this);
@@ -10989,7 +10990,7 @@ function updateReadableListening(self) {
 }
 
 function nReadingNextTick(self) {
-  console.log('readable nexttick read 0');
+  debug('readable nexttick read 0');
   self.read(0);
 } // pause() and resume() are remnants of the legacy readable stream API
 // If the user uses them, then switch into old mode.
@@ -10999,7 +11000,7 @@ Readable.prototype.resume = function () {
   var state = this._readableState;
 
   if (!state.flowing) {
-    console.log('resume'); // we flow only if there is no one listening
+    debug('resume'); // we flow only if there is no one listening
     // for readable, but we still have to call
     // resume()
 
@@ -11019,7 +11020,7 @@ function resume(stream, state) {
 }
 
 function resume_(stream, state) {
-  console.log('resume', state.reading);
+  debug('resume', state.reading);
 
   if (!state.reading) {
     stream.read(0);
@@ -11032,10 +11033,10 @@ function resume_(stream, state) {
 }
 
 Readable.prototype.pause = function () {
-  console.log('call pause flowing=%j', this._readableState.flowing);
+  debug('call pause flowing=%j', this._readableState.flowing);
 
   if (this._readableState.flowing !== false) {
-    console.log('pause');
+    debug('pause');
     this._readableState.flowing = false;
     this.emit('pause');
   }
@@ -11046,7 +11047,7 @@ Readable.prototype.pause = function () {
 
 function flow(stream) {
   var state = stream._readableState;
-  console.log('flow', state.flowing);
+  debug('flow', state.flowing);
 
   while (state.flowing && stream.read() !== null) {
     ;
@@ -11062,7 +11063,7 @@ Readable.prototype.wrap = function (stream) {
   var state = this._readableState;
   var paused = false;
   stream.on('end', function () {
-    console.log('wrapped end');
+    debug('wrapped end');
 
     if (state.decoder && !state.ended) {
       var chunk = state.decoder.end();
@@ -11072,7 +11073,7 @@ Readable.prototype.wrap = function (stream) {
     _this.push(null);
   });
   stream.on('data', function (chunk) {
-    console.log('wrapped data');
+    debug('wrapped data');
     if (state.decoder) chunk = state.decoder.write(chunk); // don't skip over falsy values in objectMode
 
     if (state.objectMode && (chunk === null || chunk === undefined)) return;else if (!state.objectMode && (!chunk || !chunk.length)) return;
@@ -11104,7 +11105,7 @@ Readable.prototype.wrap = function (stream) {
 
 
   this._read = function (n) {
-    console.log('wrapped _read', n);
+    debug('wrapped _read', n);
 
     if (paused) {
       paused = false;
@@ -11189,7 +11190,7 @@ function fromList(n, state) {
 
 function endReadable(stream) {
   var state = stream._readableState;
-  console.log('endReadable', state.endEmitted);
+  debug('endReadable', state.endEmitted);
 
   if (!state.endEmitted) {
     state.ended = true;
@@ -11198,7 +11199,7 @@ function endReadable(stream) {
 }
 
 function endReadableNT(state, stream) {
-  console.log('endReadableNT', state.endEmitted, state.length); // Check that we didn't get one last unshift.
+  debug('endReadableNT', state.endEmitted, state.length); // Check that we didn't get one last unshift.
 
   if (!state.endEmitted && state.length === 0) {
     state.endEmitted = true;
