@@ -42,7 +42,7 @@ function setup_mqtt() {
     client_1234 = mqtt.connect(mqtt_endpoint, settings_1234);
 
     client_1234.on('connect', function () {
-        client_1234.subscribe(user_id, {qos: 1}, function (err) {
+        client_1234.subscribe(`dms/testpopp-${user_id}`, {qos: 1}, function (err) {
             if (err) {
                 console.log(err);
             }
@@ -62,8 +62,10 @@ function on_mqtt_event(topic, message) {
     let json_data = JSON.parse(message.toString())
     console.log(topic, json_data)
 
+    const html_tag = topic.replace('/', '-')
+
     // add a pretty-printed version to the event log
-    $(`#events-${topic}`).prepend(JSON.stringify(json_data, null, 2) + "\n");
+    $(`#events-${html_tag}`).prepend(JSON.stringify(json_data, null, 2) + "\n");
 
     switch (json_data["event_type"]) {
         case "message":
