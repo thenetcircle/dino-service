@@ -1,12 +1,14 @@
 let socket;
+let client_dino;
+let client_1234;
 let groups = {};
 let reads = {};
 let other_user_last_read = -1;
 let other_user_last_read_idx = 0;
-const user_id = '1234';
-const other_user_id = '66033';
+const user_id = 'dino';
+const other_user_id = '1234';
 const rest_endpoint = 'http://maggie-kafka-1.thenetcircle.lab:9800';
-const mqtt_endpoint = 'mqtt://maggie-kafka-1.thenetcircle.lab:1880/mqtt';
+const mqtt_endpoint = 'ws://maggie-kafka-1.thenetcircle.lab:1880/mqtt';
 const version = 'v1';
 
 
@@ -18,6 +20,7 @@ function initialize() {
 
     $("a#next").click(load_more_messages);
     $("input#send-msg").click(send_message);
+    $("input#send-mqtt").click(send_mqtt);
     $("input#update-attachment").click(update_attachment);
     $("input#get-attachment").click(get_attachment);
 
@@ -26,33 +29,50 @@ function initialize() {
 }
 
 function setup_mqtt() {
-    const settings = {
+    const settings_dino = {
         clientId: user_id,
         username: user_id,
-        password: '$2a$12$KiOj1agCsjbdpHLzwtd1B.JZtr/rmCpnPT.y5kUdGnkh8jk1cTxL.',
+        password: 'ea2bea06-1855-43d6-94a3-bad40ce2d9d7',
         clean: false,
+        protocolVersion: 5,
         qos: 1
     }
-    const client  = mqtt.connect(mqtt_endpoint, settings);
+    const settings_1234 = {
+        clientId: other_user_id,
+        username: other_user_id,
+        password: '1234',
+        clean: false,
+        protocolVersion: 5,
+        qos: 1
+    }
+
+    client_dino = mqtt.connect(mqtt_endpoint, settings_dino);
+    client_1234 = mqtt.connect(mqtt_endpoint, settings_1234);
 
     function subscribe(uid) {
-        client.subscribe(uid, {qos: 1}, function (err) {
+        client_dino.subscribe(uid, {qos: 1}, function (err) {
             if (err) {
                 console.log(err);
             }
         });
     }
 
-    client.on('connect', function () {
-        subscribe(`dms/testpopp-${user_id}`);
+    client_dino.on('connect', function () {
+        //subscribe(`dms/testpopp-${user_id}`);
+        //subscribe(`dms-testpopp-${other_user_id}`);
+    });
+
+    client_1234.on('connect', function () {
+        subscribe(`dms/testpopp-${other_user_id}`);
         //subscribe(`dms-testpopp-${other_user_id}`);
     });
 
     // handle events from mqtt
-    client.on('message', on_mqtt_event);
+    client_1234.on('message', on_mqtt_event);
 }
 
 function on_mqtt_event(topic, message) {
+    console.log('message:', message)
     let json_data = JSON.parse(message.toString())
     console.log(topic, json_data)
 
@@ -201,6 +221,20 @@ function send_message() {
             reset_file_id();
         }
     });
+}
+
+function send_mqtt() {
+    const receiver = parseInt($("input#mqtt_receiver").val());
+    const message_payload = $("textarea#mqtt_payload").val();
+
+    client_dino.publish(
+        `dms/testpopp-${receiver}`,
+        message_payload,
+        undefined,
+        function (err) {
+            console.log('error:', err)
+        }
+    )
 }
 
 function get_group_name(group_id) {

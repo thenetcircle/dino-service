@@ -89,13 +89,13 @@ class MqttPublisher(IClientPublisher):
         #
         # reference: https://stackoverflow.com/questions/15733196/where-2x-prefix-are-used-in-bcrypt
         hashed_pwd = f"$2a${hashed_pwd[4:]}"
-        subscribe_acl = "[{\"pattern\":\"write dms/+\"}]"
+        publish_acl = "[{\"pattern\":\"dms/+\"}]"
 
         # this is the format that vernemq expects to be in redis; also
         # we don't set a publisher/subscriber acl pattern here, since
         # this user needs to be able to publish to everyone
         mqtt_key = f"[\"\",\"{client_id}\",\"{username}\"]"
-        mqtt_value = "{\"passhash\":\"" + hashed_pwd + "\",\"subscribe_acl\":" + subscribe_acl + "\"}"
+        mqtt_value = "{\"passhash\":\"" + hashed_pwd + "\",\"publish_acl\":" + publish_acl + "\"}"
         # mqtt_value = "{\"passhash\":\"" + hashed_pwd + "\"}"
 
         # need to set it every time, since it has to be unique and
