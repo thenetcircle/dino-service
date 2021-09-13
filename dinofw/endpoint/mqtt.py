@@ -96,7 +96,7 @@ class MqttPublisher(IClientPublisher):
         # this user needs to be able to publish to everyone
         mqtt_key = f"[\"\",\"{client_id}\",\"{username}\"]"
         # mqtt_value = "{\"passhash\":\"" + hashed_pwd + "\",\"subscribe_acl\":" + subscribe_acl + "}"
-        mqtt_value = "{\"passhash\":\"" + hashed_pwd + "}"
+        mqtt_value = "{\"passhash\":\"" + hashed_pwd + "\"}"
 
         # need to set it every time, since it has to be unique and
         # pid will change for each worker on startup
