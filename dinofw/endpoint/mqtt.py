@@ -52,12 +52,25 @@ class MqttPublisher(IClientPublisher):
     def set_auth_credentials(self, env, client_id: str) -> None:
         username = env.config.get(ConfigKeys.USER, domain=ConfigKeys.MQTT, default="")
         password = env.config.get(ConfigKeys.PASSWORD, domain=ConfigKeys.MQTT, default="")
+        auth_type = env.config.get(ConfigKeys.TYPE, domain=ConfigKeys.MQTT_AUTH, default="redis")
 
-        # not using any auth in lab environment
-        if username == "":
+        # auth disabled
+        if username == "" or auth_type == "disabled":
             return
 
-        """
+        if auth_type == "redis":
+            self.set_auth_redis(env, client_id, username, password)
+        elif auth_type == "mysql":
+            self.set_auth_mysql(env, client_id, username, password)
+        else:
+            raise ValueError(f"unknown MQTT auth type: {auth_type}")
+
+        self.mqtt.set_auth_credentials(
+            username=username,
+            password=password,
+        )
+
+    def set_auth_redis(self, env, client_id, username, password):
         mqtt_redis_host = env.config.get(ConfigKeys.HOST, domain=ConfigKeys.MQTT_AUTH)
         mqtt_redis_db = int(env.config.get(ConfigKeys.DB, domain=ConfigKeys.MQTT_AUTH, default=0))
         mqtt_redis_port = 6379
@@ -97,13 +110,12 @@ class MqttPublisher(IClientPublisher):
         # this user needs to be able to publish to everyone
         mqtt_key = f"[\"\",\"{client_id}\",\"{username}\"]"
         mqtt_value = "{\"passhash\":\"" + hashed_pwd + "\",\"publish_acl\":" + publish_acl + "}"
-        # mqtt_value = "{\"passhash\":\"" + hashed_pwd + "\"}"
 
         # need to set it every time, since it has to be unique and
         # pid will change for each worker on startup
         r_client.set(mqtt_key, mqtt_value)
-        """
 
+    def set_auth_mysql(self, env, client_id, username, password):
         import MySQLdb
         import hashlib
 
@@ -126,11 +138,6 @@ class MqttPublisher(IClientPublisher):
         )
         db.commit()
         db.close()
-
-        self.mqtt.set_auth_credentials(
-            username=username,
-            password=password,
-        )
 
     async def setup(self):
         await self.mqtt.connect(
