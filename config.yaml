@@ -38,10 +38,11 @@ mqtt:
     password: "$DINO_MQTT_PASS"
 
 mqtt_auth:
-    host: "$DINO_MQTT_MYSQL_HOST"
-    db: "$DINO_MQTT_MYSQL_DB"
-    user: "$DINO_MYSQL_USER"
-    password: "$DINO_MYSQL_PASS"
+    type: "$DINO_MQTT_AUTH_TYPE"
+    host: "$DINO_MQTT_AUTH_HOST"
+    db: "$DINO_MQTT_AUTH_DB"
+    user: "$DINO_MQTT_AUTH_USER"
+    password: "$DINO_MQTT_AUTH_PASS"
 
 publisher:
     host: "$DINO_PUB_HOST"
