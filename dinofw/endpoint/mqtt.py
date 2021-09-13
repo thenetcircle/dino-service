@@ -133,7 +133,7 @@ class MqttPublisher(IClientPublisher):
         await self.mqtt.connect(
             self.mqtt_host,
             port=self.mqtt_port,
-            version=MQTTv311
+            version=MQTTv50
         )
 
     def send(self, user_id: int, fields: dict, qos: int = 1) -> None:
