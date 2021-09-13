@@ -35,7 +35,7 @@ function setup_mqtt() {
         password: 'dinoweb',
         clean: false,
         rejectUnauthorized: false,
-        protocolVersion: 4,
+        protocolVersion: 5,
         qos: 1
     }
     const settings_1234 = {
@@ -44,7 +44,7 @@ function setup_mqtt() {
         password: '1234',
         clean: false,
         rejectUnauthorized: false,
-        protocolVersion: 4,
+        protocolVersion: 5,
         qos: 1
     }
 

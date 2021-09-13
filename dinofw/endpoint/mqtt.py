@@ -120,7 +120,7 @@ class MqttPublisher(IClientPublisher):
 
         cur = db.cursor()
         cur.execute(
-            "insert into vmq_auth_acl(mountpoint,client_id,username,password,publish_acl,subscribe_acl) values('','" + client_id + "','" + username + "','" + password + "','[{\"pattern\":\"#\"}]','[{\"pattern\":\"#\"}]')"
+            "insert into vmq_auth_acl(mountpoint,client_id,username,password,publish_acl,subscribe_acl) values('','" + client_id + "','" + username + "',sha2('" + password + "', 256),'[{\"pattern\":\"#\"}]','[{\"pattern\":\"#\"}]')"
         )
         db.close()
 
