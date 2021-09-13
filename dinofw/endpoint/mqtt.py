@@ -107,9 +107,9 @@ class MqttPublisher(IClientPublisher):
         import MySQLdb
 
         mqtt_mysql_host = env.config.get(ConfigKeys.HOST, domain=ConfigKeys.MQTT_AUTH)
-        mqtt_mysql_db = int(env.config.get(ConfigKeys.DB, domain=ConfigKeys.MQTT_AUTH))
+        mqtt_mysql_db = env.config.get(ConfigKeys.DB, domain=ConfigKeys.MQTT_AUTH)
         mqtt_mysql_user = env.config.get(ConfigKeys.USER, domain=ConfigKeys.MQTT_AUTH)
-        mqtt_mysql_pass = int(env.config.get(ConfigKeys.PASSWORD, domain=ConfigKeys.MQTT_AUTH))
+        mqtt_mysql_pass = env.config.get(ConfigKeys.PASSWORD, domain=ConfigKeys.MQTT_AUTH)
 
         db = MySQLdb.connect(
             host=mqtt_mysql_host,
