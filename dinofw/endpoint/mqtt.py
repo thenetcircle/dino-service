@@ -108,8 +108,8 @@ class MqttPublisher(IClientPublisher):
         # this is the format that vernemq expects to be in redis; also
         # we don't set a publisher/subscriber acl pattern here, since
         # this user needs to be able to publish to everyone
-        mqtt_key = f"[\"\",\"{client_id}\",\"{username}\"]"
-        mqtt_value = "{\"passhash\":\"" + hashed_pwd + "\",\"publish_acl\":" + publish_acl + "}"
+        mqtt_key = f'["","{client_id}","{username}"]'
+        mqtt_value = '{"passhash":"' + hashed_pwd + '","publish_acl":' + publish_acl + '}'
 
         # need to set it every time, since it has to be unique and
         # pid will change for each worker on startup
