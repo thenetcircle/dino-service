@@ -5,8 +5,8 @@ let groups = {};
 let reads = {};
 let other_user_last_read = -1;
 let other_user_last_read_idx = 0;
-const user_id = 'dinoweb';
-const other_user_id = '1234';
+const user_id = '1234';
+const other_user_id = '4321';
 const rest_endpoint = 'http://maggie-kafka-1.thenetcircle.lab:9800';
 const mqtt_endpoint = 'ws://maggie-kafka-1.thenetcircle.lab:1880/mqtt';
 const version = 'v1';
@@ -29,52 +29,29 @@ function initialize() {
 }
 
 function setup_mqtt() {
-    const settings_dino = {
+    const settings_1234 = {
         clientId: user_id,
         username: user_id,
-        password: 'dinoweb',
-        clean: false,
-        rejectUnauthorized: false,
-        protocolVersion: 5,
-        qos: 1
-    }
-    const settings_1234 = {
-        clientId: other_user_id,
-        username: other_user_id,
-        password: '1234',
+        password: user_id,
         clean: false,
         rejectUnauthorized: false,
         protocolVersion: 5,
         qos: 1
     }
 
-    client_dino = mqtt.connect(mqtt_endpoint, settings_dino);
     client_1234 = mqtt.connect(mqtt_endpoint, settings_1234);
 
-    function subscribe(uid) {
-        client_dino.subscribe(uid, {qos: 1}, function (err) {
+    client_1234.on('connect', function () {
+        client_1234.subscribe(user_id, {qos: 1}, function (err) {
             if (err) {
                 console.log(err);
             }
         });
-    }
-
-    client_dino.on('connect', function () {
-        //subscribe(`dms/testpopp-${user_id}`);
-        //subscribe(`dms-testpopp-${other_user_id}`);
-    });
-
-    client_1234.on('connect', function () {
-        subscribe(`dms/testpopp-${other_user_id}`);
-        //subscribe(`dms-testpopp-${other_user_id}`);
     });
 
     // handle events from mqtt
     client_1234.on('message', on_mqtt_event);
 
-    client_dino.on("error", function(){
-        console.log("error client_dino", arguments);
-    });
     client_1234.on("error", function(){
         console.log("error client_1234", arguments);
     });

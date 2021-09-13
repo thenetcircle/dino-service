@@ -6,7 +6,7 @@ from typing import List
 import bcrypt
 import redis
 from gmqtt import Client as MQTTClient
-from gmqtt.mqtt.constants import MQTTv50, MQTTv311
+from gmqtt.mqtt.constants import MQTTv50
 
 from loguru import logger
 from dinofw.db.rdbms.schemas import GroupBase
@@ -105,6 +105,7 @@ class MqttPublisher(IClientPublisher):
         """
 
         import MySQLdb
+        import hashlib
 
         mqtt_mysql_host = env.config.get(ConfigKeys.HOST, domain=ConfigKeys.MQTT_AUTH)
         mqtt_mysql_db = env.config.get(ConfigKeys.DB, domain=ConfigKeys.MQTT_AUTH)
@@ -120,7 +121,8 @@ class MqttPublisher(IClientPublisher):
 
         cur = db.cursor()
         cur.execute(
-            "insert into vmq_auth_acl(mountpoint,client_id,username,password,publish_acl,subscribe_acl) values('','" + client_id + "','" + username + "',sha2('" + password + "', 256),'[{\"pattern\":\"#\"}]','[{\"pattern\":\"#\"}]')"
+            "insert into vmq_auth_acl(mountpoint,client_id,username,password,publish_acl,subscribe_acl) values(%s,%s,%s,%s,%s,%s)",
+            client_id, username, hashlib.sha256(password.encode()).hexdigest(), '[{"pattern":"#"}]', '[{"pattern":"#"}]'
         )
         db.close()
 
