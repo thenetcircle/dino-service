@@ -5,7 +5,7 @@ let groups = {};
 let reads = {};
 let other_user_last_read = -1;
 let other_user_last_read_idx = 0;
-const user_id = 'dino';
+const user_id = 'dinoweb';
 const other_user_id = '1234';
 const rest_endpoint = 'http://maggie-kafka-1.thenetcircle.lab:9800';
 const mqtt_endpoint = 'ws://maggie-kafka-1.thenetcircle.lab:1880/mqtt';
@@ -32,9 +32,10 @@ function setup_mqtt() {
     const settings_dino = {
         clientId: user_id,
         username: user_id,
-        password: 'ea2bea06-1855-43d6-94a3-bad40ce2d9d7',
+        password: 'dinoweb',
         clean: false,
-        protocolVersion: 5,
+        rejectUnauthorized: false,
+        protocolVersion: 4,
         qos: 1
     }
     const settings_1234 = {
@@ -42,7 +43,8 @@ function setup_mqtt() {
         username: other_user_id,
         password: '1234',
         clean: false,
-        protocolVersion: 5,
+        rejectUnauthorized: false,
+        protocolVersion: 4,
         qos: 1
     }
 
@@ -69,6 +71,13 @@ function setup_mqtt() {
 
     // handle events from mqtt
     client_1234.on('message', on_mqtt_event);
+
+    client_dino.on("error", function(){
+        console.log("error client_dino", arguments);
+    });
+    client_1234.on("error", function(){
+        console.log("error client_1234", arguments);
+    });
 }
 
 function on_mqtt_event(topic, message) {

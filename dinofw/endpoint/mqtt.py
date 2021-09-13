@@ -6,7 +6,7 @@ from typing import List
 import bcrypt
 import redis
 from gmqtt import Client as MQTTClient
-from gmqtt.mqtt.constants import MQTTv50
+from gmqtt.mqtt.constants import MQTTv50, MQTTv311
 
 from loguru import logger
 from dinofw.db.rdbms.schemas import GroupBase
@@ -57,6 +57,7 @@ class MqttPublisher(IClientPublisher):
         if username == "":
             return
 
+        """
         mqtt_redis_host = env.config.get(ConfigKeys.HOST, domain=ConfigKeys.MQTT_AUTH)
         mqtt_redis_db = int(env.config.get(ConfigKeys.DB, domain=ConfigKeys.MQTT_AUTH, default=0))
         mqtt_redis_port = 6379
@@ -101,6 +102,27 @@ class MqttPublisher(IClientPublisher):
         # need to set it every time, since it has to be unique and
         # pid will change for each worker on startup
         r_client.set(mqtt_key, mqtt_value)
+        """
+
+        import MySQLdb
+
+        mqtt_mysql_host = env.config.get(ConfigKeys.HOST, domain=ConfigKeys.MQTT_AUTH)
+        mqtt_mysql_db = int(env.config.get(ConfigKeys.DB, domain=ConfigKeys.MQTT_AUTH))
+        mqtt_mysql_user = env.config.get(ConfigKeys.USER, domain=ConfigKeys.MQTT_AUTH)
+        mqtt_mysql_pass = int(env.config.get(ConfigKeys.PASSWORD, domain=ConfigKeys.MQTT_AUTH))
+
+        db = MySQLdb.connect(
+            host=mqtt_mysql_host,
+            user=mqtt_mysql_user,
+            passwd=mqtt_mysql_pass,
+            db=mqtt_mysql_db
+        )
+
+        cur = db.cursor()
+        cur.execute(
+            "insert into vmq_auth_acl(mountpoint,client_id,username,password,publish_acl,subscribe_acl) values('','" + client_id + "','" + username + "','" + password + "','[{\"pattern\":\"#\"}]','[{\"pattern\":\"#\"}]')"
+        )
+        db.close()
 
         self.mqtt.set_auth_credentials(
             username=username,
@@ -111,7 +133,7 @@ class MqttPublisher(IClientPublisher):
         await self.mqtt.connect(
             self.mqtt_host,
             port=self.mqtt_port,
-            version=MQTTv50
+            version=MQTTv311
         )
 
     def send(self, user_id: int, fields: dict, qos: int = 1) -> None:
