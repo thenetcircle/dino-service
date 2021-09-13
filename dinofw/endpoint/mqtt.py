@@ -50,8 +50,8 @@ class MqttPublisher(IClientPublisher):
         self.set_auth_credentials(env, client_id)
 
     def set_auth_credentials(self, env, client_id: str) -> None:
-        username = env.config.get(ConfigKeys.USER, domain=ConfigKeys.MQTT, default="")
-        password = env.config.get(ConfigKeys.PASSWORD, domain=ConfigKeys.MQTT, default="")
+        username = env.config.get(ConfigKeys.USER, domain=ConfigKeys.MQTT, default="").strip()
+        password = env.config.get(ConfigKeys.PASSWORD, domain=ConfigKeys.MQTT, default="").strip()
         auth_type = env.config.get(ConfigKeys.TYPE, domain=ConfigKeys.MQTT_AUTH, default="redis")
 
         # auth disabled
@@ -103,7 +103,7 @@ class MqttPublisher(IClientPublisher):
         #
         # reference: https://stackoverflow.com/questions/15733196/where-2x-prefix-are-used-in-bcrypt
         hashed_pwd = f"$2a${hashed_pwd[4:]}"
-        publish_acl = "[{\"pattern\":\"dms/+\"}]"
+        publish_acl = '[{"pattern":"dms/+"}]'
 
         # this is the format that vernemq expects to be in redis; also
         # we don't set a publisher/subscriber acl pattern here, since
