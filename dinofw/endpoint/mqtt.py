@@ -74,7 +74,7 @@ class MqttPublisher(IClientPublisher):
         mqtt_redis_host = env.config.get(ConfigKeys.HOST, domain=ConfigKeys.MQTT_AUTH)
         mqtt_redis_db = int(env.config.get(ConfigKeys.DB, domain=ConfigKeys.MQTT_AUTH, default=0))
         mqtt_redis_port = 6379
-        dino_env = env.conf.get(ConfigKeys.ENVIRONMENT)
+        dino_env = env.config.get(ConfigKeys.ENVIRONMENT)
 
         if ":" in mqtt_redis_host:
             mqtt_redis_host, mqtt_redis_port = mqtt_redis_host.split(":", 1)
