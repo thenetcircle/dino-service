@@ -5,10 +5,11 @@ let groups = {};
 let reads = {};
 let other_user_last_read = -1;
 let other_user_last_read_idx = 0;
-const user_id = '1234';
+const user_id = '5000848';
 const other_user_id = '4321';
 const rest_endpoint = 'http://maggie-kafka-1.thenetcircle.lab:9800';
 const mqtt_endpoint = 'ws://maggie-kafka-1.thenetcircle.lab:1880/mqtt';
+//const mqtt_endpoint = 'mqtt://maggie-kafka-1.thenetcircle.lab:1883/mqtt';
 const version = 'v1';
 
 
@@ -32,7 +33,7 @@ function setup_mqtt() {
     const settings = {
         clientId: user_id,
         username: user_id,
-        password: user_id,
+        password: 'e0b805bb-b00c-43e6-91d2-30b8b16bf0c7',
         clean: false,
         rejectUnauthorized: false,
         protocolVersion: 5,
@@ -41,8 +42,7 @@ function setup_mqtt() {
 
     client = mqtt.connect(mqtt_endpoint, settings);
     client.on('connect', function () {
-        console.log("connected 1234")
-        // `dms/testpopp-${user_id}`
+        console.log(`connected ${user_id}`)
         client.subscribe(`dms/testpopp/${user_id}`, {qos: 1}, function (err) {
             if (err) {
                 console.log(err);

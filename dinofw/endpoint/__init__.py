@@ -8,6 +8,10 @@ from dinofw.rest.models import Message
 from dinofw.rest.queries import AbstractQuery
 
 
+def to_int(time_float):
+    return int(time_float * 1000)
+
+
 class EventTypes:
     JOIN = "join"
     LEAVE = "leave"
@@ -73,7 +77,7 @@ class IClientPublishHandler(IPublishHandler, ABC):
         data = IClientPublishHandler.create_simple_event(
             event_type=EventTypes.DELETE_ATTACHMENT,
             group_id=group_id,
-            now=now,
+            now=to_int(now),
         )
 
         data["message_ids"] = [att.message_id for att in attachments]
@@ -91,14 +95,14 @@ class IClientPublishHandler(IPublishHandler, ABC):
     ) -> dict:
         data = {
             "event_type": event_type,
-            "created_at": now,
+            "created_at": to_int(now),
             "group_id": group_id
         }
 
         if user_id is not None:
-            data["user_id"] = user_id
+            data["user_id"] = str(user_id)
         if user_ids is not None:
-            data["user_ids"] = user_ids
+            data["user_ids"] = [str(uid) for uid in user_ids]
 
         return data
 
@@ -107,8 +111,8 @@ class IClientPublishHandler(IPublishHandler, ABC):
         return {
             "event_type": EventTypes.READ,
             "group_id": group_id,
-            "user_id": user_id,
-            "read_at": now,
+            "user_id": str(user_id),
+            "read_at": to_int(now),
         }
 
     @staticmethod
@@ -116,12 +120,12 @@ class IClientPublishHandler(IPublishHandler, ABC):
         event = {
             "event_type": event_type,
             "group_id": message.group_id,
-            "sender_id": message.user_id,
+            "sender_id": str(message.user_id),
             "message_id": message.message_id,
             "message_payload": message.message_payload,
             "message_type": message.message_type,
-            "updated_at": AbstractQuery.to_ts(message.updated_at, allow_none=True) or "",
-            "created_at": AbstractQuery.to_ts(message.created_at),
+            "updated_at": to_int(AbstractQuery.to_ts(message.updated_at, allow_none=True)) or 0,
+            "created_at": to_int(AbstractQuery.to_ts(message.created_at)),
         }
 
         # if the 'message' variable is Message instead of MessageBase, there's no file_id available; (e.g. for /edit)
@@ -137,17 +141,17 @@ class IClientPublishHandler(IPublishHandler, ABC):
             "group_id": group.group_id,
             "name": group.name,
             "description": group.description,
-            "created_at": AbstractQuery.to_ts(group.created_at),
-            "updated_at": AbstractQuery.to_ts(group.updated_at, allow_none=True) or None,
-            "last_message_time": AbstractQuery.to_ts(group.last_message_time, allow_none=True) or None,
+            "updated_at": to_int(AbstractQuery.to_ts(group.updated_at, allow_none=True)) or 0,
+            "created_at": to_int(AbstractQuery.to_ts(group.created_at)),
+            "last_message_time": to_int(AbstractQuery.to_ts(group.last_message_time, allow_none=True)) or 0,
             "last_message_overview": group.last_message_overview,
             "last_message_type": group.last_message_type,
-            "last_message_user_id": group.last_message_user_id,
+            "last_message_user_id": str(group.last_message_user_id),
             "status": group.status,
             "group_type": group.group_type,
-            "owner_id": group.owner_id,
+            "owner_id": str(group.owner_id),
             "meta": group.meta,
-            "user_ids": user_ids,
+            "user_ids": [str(uid) for uid in user_ids],
         }
 
 
