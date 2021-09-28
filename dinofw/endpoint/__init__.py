@@ -9,6 +9,8 @@ from dinofw.rest.queries import AbstractQuery
 
 
 def to_int(time_float):
+    if not time_float:
+        return None
     return int(time_float * 1000)
 
 
