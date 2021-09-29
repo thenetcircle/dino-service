@@ -26,7 +26,7 @@ class MessageResource(BaseResource):
             user_id=user_id,
             message=message,
             db=db,
-            author=query.author,
+            notification=query.notification,
             should_increase_unread=True,
             event_type=EventTypes.MESSAGE
         )

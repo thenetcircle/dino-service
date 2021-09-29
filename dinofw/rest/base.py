@@ -106,7 +106,7 @@ class BaseResource(ABC):
             db,
             should_increase_unread: bool,
             event_type: EventTypes,
-            author: dict = None,
+            notification: dict = None,
             update_last_message: bool = True
     ):
         """
@@ -137,7 +137,7 @@ class BaseResource(ABC):
             )
 
         if event_type == EventTypes.MESSAGE:
-            self.env.client_publisher.message(message, author, user_ids)
+            self.env.client_publisher.message(message, notification, user_ids)
 
         elif event_type == EventTypes.ACTION_LOG:
             self.env.client_publisher.action_log(message, user_ids)
@@ -146,7 +146,7 @@ class BaseResource(ABC):
             self.env.client_publisher.edit(message, user_ids)
 
         elif event_type == EventTypes.ATTACHMENT:
-            self.env.client_publisher.attachment(message, author, user_ids)
+            self.env.client_publisher.attachment(message, notification, user_ids)
 
     def _get_or_create_group_for_1v1(
         self, user_id: int, receiver_id: int, db: Session

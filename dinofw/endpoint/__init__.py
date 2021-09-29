@@ -47,7 +47,7 @@ class IServerPublishHandler(IPublishHandler, ABC):
 
 class IClientPublishHandler(IPublishHandler, ABC):
     @abstractmethod
-    def message(self, message: MessageBase, author: dict, user_ids: List[int]) -> None:
+    def message(self, message: MessageBase, notification: dict, user_ids: List[int]) -> None:
         """pass"""
 
     @abstractmethod
@@ -55,7 +55,7 @@ class IClientPublishHandler(IPublishHandler, ABC):
         """pass"""
 
     @abstractmethod
-    def attachment(self, attachment: MessageBase, author: dict, user_ids: List[int]) -> None:
+    def attachment(self, attachment: MessageBase, notification: dict, user_ids: List[int]) -> None:
         """pass"""
 
     @abstractmethod
@@ -118,12 +118,12 @@ class IClientPublishHandler(IPublishHandler, ABC):
         }
 
     @staticmethod
-    def message_base_to_event(message: Union[MessageBase, Message], author: dict = None, event_type: EventTypes = EventTypes.MESSAGE):
+    def message_base_to_event(message: Union[MessageBase, Message], notification: dict = None, event_type: EventTypes = EventTypes.MESSAGE):
         event = {
             "event_type": event_type,
             "group_id": message.group_id,
             "sender_id": str(message.user_id),
-            "author": author,
+            "notification": notification,
             "message_id": message.message_id,
             "message_payload": message.message_payload,
             "message_type": message.message_type,
