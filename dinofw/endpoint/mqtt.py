@@ -1,3 +1,4 @@
+import json
 import os
 import socket
 import sys
@@ -7,8 +8,8 @@ import bcrypt
 import redis
 from gmqtt import Client as MQTTClient
 from gmqtt.mqtt.constants import MQTTv50
-
 from loguru import logger
+
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.storage.schemas import MessageBase
 from dinofw.endpoint import EventTypes
@@ -156,7 +157,7 @@ class MqttPublisher(IClientPublisher):
             if value is not None
         }
 
-        logger.debug(f"sending mqtt event to user {user_id}: {data}")
+        logger.debug(f"sending mqtt event to user {user_id}: {json.dumps(data)}")
         try:
             self.mqtt.publish(
                 message_or_topic=f"dms/{self.environment}/{user_id}",
