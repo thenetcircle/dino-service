@@ -4,7 +4,6 @@ from typing import List, Union
 
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.storage.schemas import MessageBase
-from dinofw.rest.base import BaseResource
 from dinofw.rest.models import Message
 from dinofw.rest.queries import AbstractQuery
 
