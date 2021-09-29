@@ -128,13 +128,15 @@ class IClientPublishHandler(IPublishHandler, ABC):
             "event_type": event_type,
             "group_id": message.group_id,
             "sender_id": str(message.user_id),
-            "notification": notification,
             "message_id": message.message_id,
             "message_payload": message.message_payload,
             "message_type": message.message_type,
             "updated_at": to_int(AbstractQuery.to_ts(message.updated_at, allow_none=True)),
             "created_at": to_int(AbstractQuery.to_ts(message.created_at)),
         }
+
+        if notification is not None:
+            event["notification"] = notification
 
         # if the 'message' variable is Message instead of MessageBase, there's no file_id available; (e.g. for /edit)
         if hasattr(message, "file_id"):
