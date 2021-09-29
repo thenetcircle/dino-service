@@ -173,26 +173,69 @@ look the same, but <code>group_type</code> will be different (if specified). </p
 <p><span style="color:red"><b>Event schema not yet finalized.</b></span></p>
 <pre><code class="language-json">{
     &quot;event_type&quot;: &quot;message&quot;,
-    &quot;group_id&quot;: &quot;6cbb3265-2a7f-494d-92ad-f4503d55d49f&quot;,
-    &quot;sender_id&quot;: 1234,
-    &quot;file_id&quot;: null,
-    &quot;message_id&quot;: &quot;c87efd18-8879-4c24-8b26-ccb7f40a0fe5&quot;,
+    &quot;group_id&quot;: &quot;00000000-00bc-4ff2-0000-0000034fb18c&quot;,
+    &quot;sender_id&quot;: &quot;12341234&quot;,
+    &quot;notification&quot;: {
+        &quot;author&quot;: {
+            &quot;username&quot;: &quot;user1&quot;,
+            &quot;avatar_url&quot;: &quot;http://example.com/image.jpg&quot;
+        }
+    },
+    &quot;message_id&quot;: &quot;c95027c7-ced0-4097-a6b3-7dd5ac9365cc&quot;,
     &quot;message_payload&quot;: &quot;&lt;some content&gt;&quot;,
     &quot;message_type&quot;: 0,
-    &quot;created_at&quot;: 1597877384.794828
+    &quot;updated_at&quot;: 0,
+    &quot;created_at&quot;: 1632896937286,
+    &quot;group&quot;: {
+        &quot;group_id&quot;: &quot;00000000-00bc-4ff2-0000-0000034fb18c&quot;,
+        &quot;name&quot;: &quot;12341234,55554444&quot;,
+        &quot;description&quot;: null,
+        &quot;updated_at&quot;: 1632896937908,
+        &quot;created_at&quot;: 1625630480355,
+        &quot;last_message_time&quot;: 1632896937908,
+        &quot;last_message_overview&quot;: &quot;&lt;some content&gt;&quot;,
+        &quot;last_message_type&quot;: 0,
+        &quot;last_message_user_id&quot;: &quot;12341234&quot;,
+        &quot;status&quot;: null,
+        &quot;group_type&quot;: 1,
+        &quot;owner_id&quot;: &quot;12341234&quot;,
+        &quot;meta&quot;: null
+    }
 }
 </code></pre>
 <h2 id="new-attachment-in-a-group-youre-part-of">New attachment in a group you're part of</h2>
 <p><span style="color:red"><b>Event schema not yet finalized.</b></span></p>
 <pre><code class="language-json">{
-    &quot;event_type&quot;: &quot;attachment&quot;,
-    &quot;group_id&quot;: &quot;6cbb3265-2a7f-494d-92ad-f4503d55d49f&quot;,
-    &quot;sender_id&quot;: 1234,
+    &quot;event_type&quot;: &quot;message&quot;,
+    &quot;group_id&quot;: &quot;00000000-00bc-4ff2-0000-0000034fb18c&quot;,
+    &quot;sender_id&quot;: &quot;12341234&quot;,
     &quot;file_id&quot;: &quot;f4503d55d49ff4503d55d49f&quot;,
-    &quot;message_id&quot;: &quot;c87efd18-8879-4c24-8b26-ccb7f40a0fe5&quot;,
+    &quot;notification&quot;: {
+        &quot;author&quot;: {
+            &quot;username&quot;: &quot;user1&quot;,
+            &quot;avatar_url&quot;: &quot;http://example.com/image.jpg&quot;
+        }
+    },
+    &quot;message_id&quot;: &quot;c95027c7-ced0-4097-a6b3-7dd5ac9365cc&quot;,
     &quot;message_payload&quot;: &quot;&lt;some content&gt;&quot;,
     &quot;message_type&quot;: 3,
-    &quot;created_at&quot;: 1597877384.794828
+    &quot;updated_at&quot;: 0,
+    &quot;created_at&quot;: 1632896937286,
+    &quot;group&quot;: {
+        &quot;group_id&quot;: &quot;00000000-00bc-4ff2-0000-0000034fb18c&quot;,
+        &quot;name&quot;: &quot;12341234,55554444&quot;,
+        &quot;description&quot;: null,
+        &quot;updated_at&quot;: 1632896937908,
+        &quot;created_at&quot;: 1625630480355,
+        &quot;last_message_time&quot;: 1632896937908,
+        &quot;last_message_overview&quot;: &quot;&lt;some content&gt;&quot;,
+        &quot;last_message_type&quot;: 0,
+        &quot;last_message_user_id&quot;: &quot;12341234&quot;,
+        &quot;status&quot;: null,
+        &quot;group_type&quot;: 1,
+        &quot;owner_id&quot;: &quot;12341234&quot;,
+        &quot;meta&quot;: null
+    }
 }
 </code></pre>
 <h2 id="a-message-was-edited">A message was edited</h2>
@@ -205,7 +248,7 @@ look the same, but <code>group_type</code> will be different (if specified). </p
     &quot;message_id&quot;: &quot;c87efd18-8879-4c24-8b26-ccb7f40a0fe5&quot;,
     &quot;message_payload&quot;: &quot;&lt;some content&gt;&quot;,
     &quot;message_type&quot;: 0,
-    &quot;created_at&quot;: 1597877384.794828
+    &quot;created_at&quot;: 1597877384794
 }
 </code></pre>
 <h2 id="an-action-log-was-created">An action log was created</h2>
@@ -219,7 +262,7 @@ look the same, but <code>group_type</code> will be different (if specified). </p
     &quot;message_id&quot;: &quot;c87efd18-8879-4c24-8b26-ccb7f40a0fe5&quot;,
     &quot;message_payload&quot;: &quot;&lt;some content&gt;&quot;,
     &quot;message_type&quot;: 100,
-    &quot;created_at&quot;: 1597877384.794828
+    &quot;created_at&quot;: 1597877384794
 }
 </code></pre>
 <h2 id="a-user-read-a-messageconversation">A user read a message/conversation</h2>
@@ -229,14 +272,14 @@ look the same, but <code>group_type</code> will be different (if specified). </p
     &quot;event_type&quot;: &quot;read&quot;,
     &quot;group_id&quot;: &quot;6cbb3265-2a7f-494d-92ad-f4503d55d49f&quot;,
     &quot;user_id&quot;: 1234,
-    &quot;read_at&quot;: 1597877384.794828,
+    &quot;read_at&quot;: 1597877384794
 }
 </code></pre>
 <h2 id="attachments-deleted">Attachment(s) deleted</h2>
 <p>There may be multiple attachments connected to a single message, so <code>message_ids</code> and <code>file_ids</code> are lists.</p>
 <pre><code class="language-json">{
     &quot;event_type&quot;: &quot;delete_attachment&quot;,
-    &quot;created_at&quot;: 1597877384.794828,
+    &quot;created_at&quot;: 1597877384794,
     &quot;group_id&quot;: &quot;6cbb3265-2a7f-494d-92ad-f4503d55d49f&quot;,
     &quot;message_ids&quot;: [
       &quot;eeb0b18f-5485-4a24-8bd4-159301e4b554&quot;,
