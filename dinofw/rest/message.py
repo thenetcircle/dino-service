@@ -124,7 +124,7 @@ class MessageResource(BaseResource):
             user_id=user_id,
             message=attachment,
             db=db,
-            author=query.author,
+            notification=query.notification,
             should_increase_unread=True,
             event_type=EventTypes.ATTACHMENT,
             update_last_message=update_last_message
