@@ -72,6 +72,7 @@ class AdminQuery(AbstractQuery):
 
 class OneToOneQuery(AbstractQuery):
     receiver_id: Optional[int]
+    author: Optional[dict]
 
 
 class MessageQuery(PaginationQuery, AdminQuery):
@@ -89,6 +90,7 @@ class SendMessageQuery(OneToOneQuery):
     message_payload: Optional[str]
     message_type: int
     context: Optional[str]
+    author: Optional[dict]
 
 
 class CreateGroupQuery(AbstractQuery):

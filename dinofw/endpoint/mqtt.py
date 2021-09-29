@@ -155,6 +155,8 @@ class MqttPublisher(IClientPublisher):
             for key, value in fields.items()
             if value is not None
         }
+
+        logger.debug(f"sending mqtt event to user {user_id}: {data}")
         try:
             self.mqtt.publish(
                 message_or_topic=f"dms/{self.environment}/{user_id}",
@@ -179,16 +181,16 @@ class MqttPublishHandler(IClientPublishHandler):
             logger.error(f"could not connect to mqtt: {str(e)}")
             logger.exception(e)
 
-    def message(self, message: MessageBase, user_ids: List[int]) -> None:
-        data = MqttPublishHandler.message_base_to_event(message, event_type=EventTypes.MESSAGE)
+    def message(self, message: MessageBase, author: dict, user_ids: List[int]) -> None:
+        data = MqttPublishHandler.message_base_to_event(message, author=author, event_type=EventTypes.MESSAGE)
         self.send(user_ids, data)
 
     def action_log(self, message: MessageBase, user_ids: List[int]) -> None:
         data = MqttPublishHandler.message_base_to_event(message, event_type=EventTypes.ACTION_LOG)
         self.send(user_ids, data)
 
-    def attachment(self, attachment: MessageBase, user_ids: List[int]) -> None:
-        data = MqttPublishHandler.message_base_to_event(attachment, event_type=EventTypes.ATTACHMENT)
+    def attachment(self, attachment: MessageBase, author: dict, user_ids: List[int]) -> None:
+        data = MqttPublishHandler.message_base_to_event(attachment, author=author, event_type=EventTypes.ATTACHMENT)
         self.send(user_ids, data)
 
     def edit(self, message: MessageBase, user_ids: List[int]) -> None:

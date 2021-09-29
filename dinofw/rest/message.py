@@ -26,6 +26,7 @@ class MessageResource(BaseResource):
             user_id=user_id,
             message=message,
             db=db,
+            author=query.author,
             should_increase_unread=True,
             event_type=EventTypes.MESSAGE
         )
@@ -123,6 +124,7 @@ class MessageResource(BaseResource):
             user_id=user_id,
             message=attachment,
             db=db,
+            author=query.author,
             should_increase_unread=True,
             event_type=EventTypes.ATTACHMENT,
             update_last_message=update_last_message
