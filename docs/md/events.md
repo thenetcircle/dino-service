@@ -60,14 +60,35 @@ look the same, but `group_type` will be different (if specified).
 
 ```json
 {
-    "event_type": "message",
-    "group_id": "6cbb3265-2a7f-494d-92ad-f4503d55d49f",
-    "sender_id": 1234,
-    "file_id": null,
-    "message_id": "c87efd18-8879-4c24-8b26-ccb7f40a0fe5",
-    "message_payload": "<some content>",
-    "message_type": 0,
-    "created_at": 1597877384.794828
+	"event_type": "message",
+	"group_id": "00000000-00bc-4ff2-0000-0000034fb18c",
+	"sender_id": "12341234",
+	"notification": {
+		"author": {
+			"username": "user1",
+			"avatar_url": "http://example.com/image.jpg"
+		}
+	},
+	"message_id": "c95027c7-ced0-4097-a6b3-7dd5ac9365cc",
+	"message_payload": "<some content>",
+	"message_type": 0,
+	"updated_at": 0,
+	"created_at": 1632896937286,
+	"group": {
+		"group_id": "00000000-00bc-4ff2-0000-0000034fb18c",
+		"name": "12341234,55554444",
+		"description": null,
+		"updated_at": 1632896937908,
+		"created_at": 1625630480355,
+		"last_message_time": 1632896937908,
+		"last_message_overview": "<some content>",
+		"last_message_type": 0,
+		"last_message_user_id": "12341234",
+		"status": null,
+		"group_type": 1,
+		"owner_id": "12341234",
+		"meta": null
+	}
 }
 ```
 
@@ -77,14 +98,36 @@ look the same, but `group_type` will be different (if specified).
 
 ```json
 {
-    "event_type": "attachment",
-    "group_id": "6cbb3265-2a7f-494d-92ad-f4503d55d49f",
-    "sender_id": 1234,
+	"event_type": "message",
+	"group_id": "00000000-00bc-4ff2-0000-0000034fb18c",
+	"sender_id": "12341234",
     "file_id": "f4503d55d49ff4503d55d49f",
-    "message_id": "c87efd18-8879-4c24-8b26-ccb7f40a0fe5",
-    "message_payload": "<some content>",
+	"notification": {
+		"author": {
+			"username": "user1",
+			"avatar_url": "http://example.com/image.jpg"
+		}
+	},
+	"message_id": "c95027c7-ced0-4097-a6b3-7dd5ac9365cc",
+	"message_payload": "<some content>",
     "message_type": 3,
-    "created_at": 1597877384.794828
+	"updated_at": 0,
+	"created_at": 1632896937286,
+	"group": {
+		"group_id": "00000000-00bc-4ff2-0000-0000034fb18c",
+		"name": "12341234,55554444",
+		"description": null,
+		"updated_at": 1632896937908,
+		"created_at": 1625630480355,
+		"last_message_time": 1632896937908,
+		"last_message_overview": "<some content>",
+		"last_message_type": 0,
+		"last_message_user_id": "12341234",
+		"status": null,
+		"group_type": 1,
+		"owner_id": "12341234",
+		"meta": null
+	}
 }
 ```
 
@@ -101,7 +144,7 @@ look the same, but `group_type` will be different (if specified).
     "message_id": "c87efd18-8879-4c24-8b26-ccb7f40a0fe5",
     "message_payload": "<some content>",
     "message_type": 0,
-    "created_at": 1597877384.794828
+    "created_at": 1597877384794
 }
 ```
 
@@ -120,7 +163,7 @@ Action logs can be joins, leaves, highlight updated, group pinned etc.
     "message_id": "c87efd18-8879-4c24-8b26-ccb7f40a0fe5",
     "message_payload": "<some content>",
     "message_type": 100,
-    "created_at": 1597877384.794828
+    "created_at": 1597877384794
 }
 ```
 
@@ -135,7 +178,7 @@ Read receipts are only broadcasted in 1-to-1 conversations, not in multi-user gr
     "event_type": "read",
     "group_id": "6cbb3265-2a7f-494d-92ad-f4503d55d49f",
     "user_id": 1234,
-    "read_at": 1597877384.794828,
+    "read_at": 1597877384794
 }
 ```
 
@@ -146,7 +189,7 @@ There may be multiple attachments connected to a single message, so `message_ids
 ```json
 {
     "event_type": "delete_attachment",
-    "created_at": 1597877384.794828,
+    "created_at": 1597877384794,
     "group_id": "6cbb3265-2a7f-494d-92ad-f4503d55d49f",
     "message_ids": [
       "eeb0b18f-5485-4a24-8bd4-159301e4b554",
