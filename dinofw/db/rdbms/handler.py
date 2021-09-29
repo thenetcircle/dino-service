@@ -367,7 +367,7 @@ class RelationalHandler:
         user_ids: List[int],
         update_unread_count: bool = True,
         update_last_message: bool = True
-    ) -> None:
+    ) -> GroupBase:
         group = (
             db.query(models.GroupEntity)
             .filter(models.GroupEntity.group_id == message.group_id)
@@ -421,6 +421,8 @@ class RelationalHandler:
 
         db.add(group)
         db.commit()
+
+        return GroupBase(**group.__dict__)
 
     def get_last_reads_in_group(self, group_id: str, db: Session) -> Dict[int, float]:
         # TODO: rethink this; some cached some not? maybe we don't have to do this twice

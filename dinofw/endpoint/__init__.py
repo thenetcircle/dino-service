@@ -4,6 +4,7 @@ from typing import List, Union
 
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.storage.schemas import MessageBase
+from dinofw.rest.base import BaseResource
 from dinofw.rest.models import Message
 from dinofw.rest.queries import AbstractQuery
 
@@ -47,7 +48,7 @@ class IServerPublishHandler(IPublishHandler, ABC):
 
 class IClientPublishHandler(IPublishHandler, ABC):
     @abstractmethod
-    def message(self, message: MessageBase, notification: dict, user_ids: List[int]) -> None:
+    def message(self, message: MessageBase, notification: dict, user_ids: List[int], group: GroupBase) -> None:
         """pass"""
 
     @abstractmethod
@@ -55,7 +56,7 @@ class IClientPublishHandler(IPublishHandler, ABC):
         """pass"""
 
     @abstractmethod
-    def attachment(self, attachment: MessageBase, notification: dict, user_ids: List[int]) -> None:
+    def attachment(self, attachment: MessageBase, notification: dict, user_ids: List[int], group: GroupBase) -> None:
         """pass"""
 
     @abstractmethod
@@ -118,7 +119,12 @@ class IClientPublishHandler(IPublishHandler, ABC):
         }
 
     @staticmethod
-    def message_base_to_event(message: Union[MessageBase, Message], notification: dict = None, event_type: EventTypes = EventTypes.MESSAGE):
+    def message_base_to_event(
+            message: Union[MessageBase, Message],
+            notification: dict = None,
+            event_type: EventTypes = EventTypes.MESSAGE,
+            group: GroupBase = None
+    ):
         event = {
             "event_type": event_type,
             "group_id": message.group_id,
@@ -135,11 +141,17 @@ class IClientPublishHandler(IPublishHandler, ABC):
         if hasattr(message, "file_id"):
             event["file_id"] = message.file_id
 
+        if group is not None:
+            group_dict = IClientPublishHandler.group_base_to_event(group)
+            del group_dict["event_type"]
+
+            event["group"] = group_dict
+
         return event
 
     @staticmethod
-    def group_base_to_event(group: GroupBase, user_ids: List[int]) -> dict:
-        return {
+    def group_base_to_event(group: GroupBase, user_ids: List[int] = None) -> dict:
+        group_dict = {
             "event_type": EventTypes.GROUP,
             "group_id": group.group_id,
             "name": group.name,
@@ -153,9 +165,13 @@ class IClientPublishHandler(IPublishHandler, ABC):
             "status": group.status,
             "group_type": group.group_type,
             "owner_id": str(group.owner_id),
-            "meta": group.meta,
-            "user_ids": [str(uid) for uid in user_ids],
+            "meta": group.meta
         }
+
+        if user_ids is not None:
+            group_dict["user_ids"] = [str(uid) for uid in user_ids]
+
+        return group_dict
 
 
 class IClientPublisher(ABC):

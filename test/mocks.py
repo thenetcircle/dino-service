@@ -381,7 +381,8 @@ class FakeDatabase:
         db,
         sender_user_id: int,
         user_ids: List[int],
-        update_unread_count: bool = True
+        update_unread_count: bool = True,
+        update_last_message: bool = True
     ):
         if message.group_id not in self.groups:
             return
@@ -666,7 +667,7 @@ class FakePublisherHandler(IClientPublishHandler):
 
         self.sent_deletions[group_id].append(data)
 
-    def message(self, message: MessageBase, notification: dict = None, user_ids: List[int]) -> None:
+    def message(self, message: MessageBase, notification: dict = None, user_ids: List[int] = None, group: GroupBase = None) -> None:
         if message.group_id not in self.sent_messages:
             self.sent_messages[message.group_id] = list()
 
@@ -675,11 +676,11 @@ class FakePublisherHandler(IClientPublishHandler):
 
         self.sent_messages[message.group_id].append(message)
 
-    def attachment(self, attachment: MessageBase, notification: dict = None, user_ids: List[int]) -> None:
+    def attachment(self, attachment: MessageBase, notification: dict = None, user_ids: List[int] = None, group: GroupBase = None) -> None:
         pass
 
     def edit(self, message: MessageBase, user_ids: List[int]) -> None:
-        self.message(message, user_ids)
+        self.message(message, user_ids=user_ids)
 
     def read(self, group_id: str, user_id: int, user_ids: List[int], now) -> None:
         for receiver in user_ids:

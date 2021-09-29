@@ -116,7 +116,7 @@ class BaseResource(ABC):
         now = utcnow_dt()
         user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
 
-        self.env.db.update_group_new_message(
+        group_base = self.env.db.update_group_new_message(
             message,
             now,
             db,
@@ -137,7 +137,7 @@ class BaseResource(ABC):
             )
 
         if event_type == EventTypes.MESSAGE:
-            self.env.client_publisher.message(message, notification, user_ids)
+            self.env.client_publisher.message(message, notification, user_ids, group=group_base)
 
         elif event_type == EventTypes.ACTION_LOG:
             self.env.client_publisher.action_log(message, user_ids)
@@ -146,7 +146,7 @@ class BaseResource(ABC):
             self.env.client_publisher.edit(message, user_ids)
 
         elif event_type == EventTypes.ATTACHMENT:
-            self.env.client_publisher.attachment(message, notification, user_ids)
+            self.env.client_publisher.attachment(message, notification, user_ids, group=group_base)
 
     def _get_or_create_group_for_1v1(
         self, user_id: int, receiver_id: int, db: Session
