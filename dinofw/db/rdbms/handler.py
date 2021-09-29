@@ -419,10 +419,12 @@ class RelationalHandler:
                 models.UserGroupStatsEntity.last_updated_time: sent_time,
             })
 
+        group_base = GroupBase(**group.__dict__)
+
         db.add(group)
         db.commit()
 
-        return GroupBase(**group.__dict__)
+        return group_base
 
     def get_last_reads_in_group(self, group_id: str, db: Session) -> Dict[int, float]:
         # TODO: rethink this; some cached some not? maybe we don't have to do this twice
