@@ -10,7 +10,7 @@ from dinofw.rest.queries import AbstractQuery
 
 def to_int(time_float):
     if not time_float:
-        return None
+        return 0
     return int(time_float * 1000)
 
 
@@ -126,7 +126,7 @@ class IClientPublishHandler(IPublishHandler, ABC):
             "message_id": message.message_id,
             "message_payload": message.message_payload,
             "message_type": message.message_type,
-            "updated_at": to_int(AbstractQuery.to_ts(message.updated_at, allow_none=True)) or 0,
+            "updated_at": to_int(AbstractQuery.to_ts(message.updated_at, allow_none=True)),
             "created_at": to_int(AbstractQuery.to_ts(message.created_at)),
         }
 
@@ -143,9 +143,9 @@ class IClientPublishHandler(IPublishHandler, ABC):
             "group_id": group.group_id,
             "name": group.name,
             "description": group.description,
-            "updated_at": to_int(AbstractQuery.to_ts(group.updated_at, allow_none=True)) or 0,
+            "updated_at": to_int(AbstractQuery.to_ts(group.updated_at, allow_none=True)),
             "created_at": to_int(AbstractQuery.to_ts(group.created_at)),
-            "last_message_time": to_int(AbstractQuery.to_ts(group.last_message_time, allow_none=True)) or 0,
+            "last_message_time": to_int(AbstractQuery.to_ts(group.last_message_time, allow_none=True)),
             "last_message_overview": group.last_message_overview,
             "last_message_type": group.last_message_type,
             "last_message_user_id": str(group.last_message_user_id),
