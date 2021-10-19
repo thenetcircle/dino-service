@@ -38,6 +38,13 @@ class AbstractQuery(BaseModel):
         return round(arrow.get(ds).float_timestamp, 3)
 
 
+# TODO: need anything else? or caller can send anything
+class BroadcastQuery(BaseModel):
+    event_type: str
+    user_ids: List[int]
+    context: dict
+
+
 class ActionLogQuery(BaseModel):
     payload: str
 

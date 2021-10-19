@@ -20,6 +20,7 @@ from dinofw.rest.queries import AttachmentQuery
 from dinofw.rest.queries import CreateAttachmentQuery
 from dinofw.rest.queries import CreateGroupQuery
 from dinofw.rest.queries import GroupInfoQuery
+from dinofw.rest.queries import BroadcastQuery
 from dinofw.rest.queries import GroupQuery
 from dinofw.rest.queries import GroupUpdatesQuery
 from dinofw.rest.queries import MessageInfoQuery
@@ -41,6 +42,18 @@ from dinofw.utils.exceptions import NoSuchUserException
 from dinofw.utils.exceptions import UserNotInGroupException
 
 router = APIRouter()
+
+
+@router.post("/broadcast", response_model=None)
+@timeit(logger, "POST", "/broadcast")
+@wrap_exception()
+async def broadcast(
+    query: BroadcastQuery, db: Session = Depends(get_db)
+) -> None:
+    try:
+        return await environ.env.rest.broadcast.broadcast_event(query, db)
+    except Exception as e:
+        log_error_and_raise_unknown(sys.exc_info(), e)
 
 
 # TODO: response_model should be a broadcast_event type instead
