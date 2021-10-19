@@ -43,6 +43,7 @@ from dinofw.utils.exceptions import UserNotInGroupException
 router = APIRouter()
 
 
+# TODO: response_model should be a broadcast_event type instead
 @router.post("/users/{user_id}/send", response_model=Optional[Message])
 @timeit(logger, "POST", "/users/{user_id}/send")
 @wrap_exception()

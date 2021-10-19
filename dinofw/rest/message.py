@@ -21,6 +21,7 @@ class MessageResource(BaseResource):
     ) -> Message:
         message = self.env.storage.store_message(group_id, user_id, query)
 
+        # TODO: broadcast_event = self._user_sends...
         self._user_sends_a_message(
             group_id,
             user_id=user_id,
@@ -31,6 +32,7 @@ class MessageResource(BaseResource):
             event_type=EventTypes.MESSAGE
         )
 
+        # TODO: return broadcast_event; need to include message as well?
         return MessageResource.message_base_to_message(message)
 
     async def send_message_to_user(

@@ -136,6 +136,8 @@ class BaseResource(ABC):
                 group_id, user_id, now, db
             )
 
+        # TODO: return mqtt events instead of sending directly, caller needs to augment it
+
         if event_type == EventTypes.MESSAGE:
             self.env.client_publisher.message(message, notification, user_ids, group=group_base)
 
