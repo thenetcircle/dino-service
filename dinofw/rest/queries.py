@@ -40,7 +40,6 @@ class AbstractQuery(BaseModel):
 
 # TODO: need anything else? or caller can send anything
 class BroadcastQuery(BaseModel):
-    event_type: str
     user_ids: List[int]
     context: dict
 

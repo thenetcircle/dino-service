@@ -47,11 +47,9 @@ router = APIRouter()
 @router.post("/broadcast", response_model=None)
 @timeit(logger, "POST", "/broadcast")
 @wrap_exception()
-async def broadcast(
-    query: BroadcastQuery, db: Session = Depends(get_db)
-) -> None:
+async def broadcast(query: BroadcastQuery) -> None:
     try:
-        return await environ.env.rest.broadcast.broadcast_event(query, db)
+        return await environ.env.rest.broadcast.broadcast_event(query)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 
