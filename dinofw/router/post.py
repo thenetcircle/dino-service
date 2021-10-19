@@ -1,5 +1,5 @@
 import sys
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from fastapi import APIRouter
 from fastapi import Depends
@@ -54,13 +54,13 @@ async def broadcast(query: BroadcastQuery) -> None:
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-# TODO: response_model should be a broadcast_event type instead
-@router.post("/users/{user_id}/send", response_model=Optional[Message])
+# TODO: test if response model can be union
+@router.post("/users/{user_id}/send", response_model=Union[Message, dict])
 @timeit(logger, "POST", "/users/{user_id}/send")
 @wrap_exception()
 async def send_message_to_user(
     user_id: int, query: SendMessageQuery, db: Session = Depends(get_db)
-) -> List[Message]:
+) -> Union[Message, dict]:
     """
     User sends a message in a **1-to-1** conversation. It is not always known on client side if a
     **1-to-1** group exists between two users, so this API can then be used; Dino will do a group
@@ -292,12 +292,13 @@ async def get_group_information(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.post("/groups/{group_id}/user/{user_id}/send", response_model=Optional[Message])
+# TODO: test if response model can be union
+@router.post("/groups/{group_id}/user/{user_id}/send", response_model=Union[Message, dict])
 @timeit(logger, "POST", "/groups/{group_id}/user/{user_id}/send")
 @wrap_exception()
 async def send_message_to_group(
     group_id: str, user_id: int, query: SendMessageQuery, db: Session = Depends(get_db)
-) -> List[Message]:
+) -> Union[Message, dict]:
     """
     User sends a message in a group. This API should also be used for **1-to-1** conversations
     if the client knows the `group_id` for the **1-to-1** conversations. Otherwise the

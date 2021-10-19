@@ -2,7 +2,7 @@ import json
 import os
 import socket
 import sys
-from typing import List
+from typing import List, Optional
 
 import bcrypt
 import redis
@@ -182,14 +182,28 @@ class MqttPublishHandler(IClientPublishHandler):
             logger.error(f"could not connect to mqtt: {str(e)}")
             logger.exception(e)
 
-    def message(self, message: MessageBase, notification: dict, user_ids: List[int], group: GroupBase) -> None:
+    def message(
+            self,
+            message: MessageBase,
+            notification: dict,  # TODO: this can maybe be removed now that we return the event instead of broadcast it
+            user_ids: List[int],
+            group: GroupBase,
+            broadcast: bool = True,
+    ) -> Optional[dict]:
         data = MqttPublishHandler.message_base_to_event(
             message,
             notification=notification,
             event_type=EventTypes.MESSAGE,
             group=group
         )
-        self.send(user_ids, data)
+
+        if broadcast:
+            self.send(user_ids, data)
+        else:
+            return {
+                "event": data,
+                "user_ids": user_ids
+            }
 
     def action_log(self, message: MessageBase, user_ids: List[int]) -> None:
         data = MqttPublishHandler.message_base_to_event(message, event_type=EventTypes.ACTION_LOG)

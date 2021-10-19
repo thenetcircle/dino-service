@@ -79,6 +79,7 @@ class AdminQuery(AbstractQuery):
 class OneToOneQuery(AbstractQuery):
     receiver_id: Optional[int]
     notification: Optional[dict]
+    broadcast: Optional[bool] = False
 
 
 class MessageQuery(PaginationQuery, AdminQuery):

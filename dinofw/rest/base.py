@@ -107,7 +107,8 @@ class BaseResource(ABC):
             should_increase_unread: bool,
             event_type: EventTypes,
             notification: dict = None,
-            update_last_message: bool = True
+            update_last_message: bool = True,
+            broadcast: bool = False
     ):
         """
         update database and cache with everything related to sending a message
@@ -136,10 +137,14 @@ class BaseResource(ABC):
                 group_id, user_id, now, db
             )
 
-        # TODO: return mqtt events instead of sending directly, caller needs to augment it
-
         if event_type == EventTypes.MESSAGE:
-            self.env.client_publisher.message(message, notification, user_ids, group=group_base)
+            return self.env.client_publisher.message(
+                message,
+                notification,
+                user_ids,
+                group=group_base,
+                broadcast=broadcast
+            )
 
         elif event_type == EventTypes.ACTION_LOG:
             self.env.client_publisher.action_log(message, user_ids)

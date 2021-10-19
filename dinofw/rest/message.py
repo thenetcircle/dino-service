@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 
 from sqlalchemy.orm import Session
 
@@ -18,26 +18,28 @@ from dinofw.utils.exceptions import QueryValidationError
 class MessageResource(BaseResource):
     async def send_message_to_group(
         self, group_id: str, user_id: int, query: SendMessageQuery, db: Session
-    ) -> Message:
+    ) -> Union[Message, dict]:
         message = self.env.storage.store_message(group_id, user_id, query)
 
-        # TODO: broadcast_event = self._user_sends...
-        self._user_sends_a_message(
+        broadcast_event = self._user_sends_a_message(
             group_id,
             user_id=user_id,
             message=message,
             db=db,
             notification=query.notification,
             should_increase_unread=True,
-            event_type=EventTypes.MESSAGE
+            event_type=EventTypes.MESSAGE,
+            broadcast=query.broadcast
         )
 
-        # TODO: return broadcast_event; need to include message as well?
+        # caller can choose to broadcast it or have the event returned
+        if broadcast_event:
+            return broadcast_event
         return MessageResource.message_base_to_message(message)
 
     async def send_message_to_user(
         self, user_id: int, query: SendMessageQuery, db: Session
-    ) -> Message:
+    ) -> Union[Message, dict]:
         if query.receiver_id < 1:
             raise NoSuchUserException(query.receiver_id)
 
