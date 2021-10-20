@@ -20,7 +20,7 @@ from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UserGroupStats
 from dinofw.rest.queries import AbstractQuery
 from dinofw.rest.queries import ActionLogQuery
-from dinofw.utils import utcnow_dt
+from dinofw.utils import utcnow_dt, users_to_group_id
 from dinofw.utils import utcnow_ts
 from dinofw.utils.decorators import time_method
 from dinofw.utils.exceptions import NoSuchGroupException
@@ -83,8 +83,7 @@ class BaseResource(ABC):
         if query.group_id is not None and len(query.group_id.strip()):
             group_id = query.group_id
         elif query.receiver_id is not None and query.receiver_id > 0:
-            group = self._get_or_create_group_for_1v1(user_id, query.receiver_id, db)
-            group_id = group.group_id
+            group_id = self._get_or_create_group_for_1v1(user_id, query.receiver_id, db)
 
         log = self.env.storage.create_action_log(user_id, group_id, query)
         self._user_sends_a_message(
@@ -108,9 +107,8 @@ class BaseResource(ABC):
             should_increase_unread: bool,
             event_type: EventTypes,
             notification: dict = None,
-            update_last_message: bool = True,
-            broadcast: bool = False
-    ):
+            update_last_message: bool = True
+    ) -> GroupBase:
         """
         update database and cache with everything related to sending a message
         """
@@ -150,18 +148,28 @@ class BaseResource(ABC):
         elif event_type == EventTypes.ATTACHMENT:
             self.env.client_publisher.attachment(message, notification, user_ids, group=group_base)
 
+        return group_base
+
     def _get_or_create_group_for_1v1(
         self, user_id: int, receiver_id: int, db: Session
-    ) -> GroupBase:
+    ) -> str:
         if user_id is None or receiver_id is None:
             raise ValueError(
                 f"either receiver_id ({receiver_id}) or user_id ({user_id}) is None for get/create 1v1 group"
             )
 
+        group_id = users_to_group_id(user_id, receiver_id)
+        if self.env.cache.get_group_exists(group_id):
+            return group_id
+
         try:
-            return self.env.db.get_group_for_1to1(user_id, receiver_id, db)
+            group_id = self.env.db.get_group_for_1to1(user_id, receiver_id, db)
         except NoSuchGroupException:
-            return self.env.db.create_group_for_1to1(user_id, receiver_id, db)
+            group = self.env.db.create_group_for_1to1(user_id, receiver_id, db)
+            group_id = group.group_id
+
+        self.env.cache.set_group_exists(group_id, True)
+        return group_id
 
     @staticmethod
     def need_to_update_stats_in_group(user_stats: UserGroupStatsBase, last_message_time: dt):

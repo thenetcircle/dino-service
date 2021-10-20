@@ -78,6 +78,15 @@ class CacheRedis(ICache):
 
         self.listen_host = socket.gethostname().split(".")[0]
 
+    def get_group_exists(self, group_id: str) -> Optional[bool]:
+        value = self.redis.get(RedisKeys.group_exists(group_id))
+        if value is None:
+            return None
+        return str(value, 'utf-8') == '1'
+
+    def set_group_exists(self, group_id: str, exists: bool) -> None:
+        self.redis.set(RedisKeys.group_exists(group_id), '1' if exists else '0')
+
     def get_last_read_in_group_for_users(
         self, group_id: str, user_ids: List[int]
     ) -> Tuple[dict, list]:

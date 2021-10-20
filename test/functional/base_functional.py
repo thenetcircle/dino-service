@@ -85,7 +85,7 @@ class BaseServerRestApi(BaseDatabaseTest):
                 },
             )
             self.assertEqual(raw_response.status_code, 200)
-            messages.append(raw_response.json())
+            messages.append(raw_response.json()["message"])
 
             if delay > 0:
                 time.sleep(delay / 1000)

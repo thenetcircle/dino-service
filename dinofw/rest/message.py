@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from dinofw.endpoint import EventTypes
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import Message
+from dinofw.rest.models import Message, Group
 from dinofw.rest.models import GroupMessage
 from dinofw.rest.queries import AttachmentQuery, EditMessageQuery
 from dinofw.rest.queries import CreateAttachmentQuery
@@ -19,21 +19,27 @@ from dinofw.utils.exceptions import QueryValidationError
 class MessageResource(BaseResource):
     async def send_message_to_group(
         self, group_id: str, user_id: int, query: SendMessageQuery, db: Session
-    ) -> Message:
+    ) -> (Message, Group):
         message = self.env.storage.store_message(group_id, user_id, query)
 
-        self._user_sends_a_message(
+        group_base = self._user_sends_a_message(
             group_id,
             user_id=user_id,
             message=message,
             db=db,
             notification=query.notification,
             should_increase_unread=True,
-            event_type=EventTypes.MESSAGE,
-            broadcast=query.broadcast
+            event_type=EventTypes.MESSAGE
         )
 
-        return MessageResource.message_base_to_message(message)
+        message_amount = self.env.storage.count_messages_in_group_since(group_id, group_base.created_at)
+        _, join_times, n_users = self.env.db.get_users_in_group(group_id, db, include_group=False)
+
+        group = MessageResource.group_base_to_group(
+            group_base, users=join_times, user_count=n_users, message_amount=message_amount,
+        )
+
+        return MessageResource.message_base_to_message(message), group
 
     async def send_message_to_user(
         self, user_id: int, query: SendMessageQuery, db: Session
@@ -41,18 +47,11 @@ class MessageResource(BaseResource):
         if query.receiver_id < 1:
             raise NoSuchUserException(query.receiver_id)
 
-        group_base = self._get_or_create_group_for_1v1(user_id, query.receiver_id, db)
-        group_id = group_base.group_id
-
-        message = await self.send_message_to_group(group_id, user_id, query, db)
-        message_amount = self.env.storage.count_messages_in_group_since(group_id, group_base.created_at)
-
-        _, join_times, n_users = self.env.db.get_users_in_group(group_id, db, include_group=False)
+        group_id = self._get_or_create_group_for_1v1(user_id, query.receiver_id, db)
+        message, updated_group = await self.send_message_to_group(group_id, user_id, query, db)
 
         return GroupMessage(
-            group=MessageResource.group_base_to_group(
-                group_base, users=join_times, user_count=n_users, message_amount=message_amount,
-            ),
+            group=updated_group,
             message=message
         )
 
@@ -119,10 +118,9 @@ class MessageResource(BaseResource):
         group_id = query.group_id
 
         if group_id is None:
-            group = self._get_or_create_group_for_1v1(
+            group_id = self._get_or_create_group_for_1v1(
                 user_id, query.receiver_id, db
             )
-            group_id = group.group_id
 
         attachment = self.env.storage.store_attachment(
             group_id, user_id, message_id, query

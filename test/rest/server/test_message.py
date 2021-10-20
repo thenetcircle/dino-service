@@ -22,7 +22,7 @@ class TestMessageResource(BaseTest):
 
         self.assertNotIn(BaseTest.GROUP_ID, self.resource.env.client_publisher.sent_messages)
 
-        message = await self.resource.send_message_to_group(
+        message, group = await self.resource.send_message_to_group(
             group_id=BaseTest.GROUP_ID,
             user_id=BaseTest.USER_ID,
             query=query,

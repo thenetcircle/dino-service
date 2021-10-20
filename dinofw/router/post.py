@@ -297,7 +297,7 @@ async def get_group_information(
 @wrap_exception()
 async def send_message_to_group(
     group_id: str, user_id: int, query: SendMessageQuery, db: Session = Depends(get_db)
-) -> Union[Message, dict]:
+) -> GroupMessage:
     """
     User sends a message in a group. This API should also be used for **1-to-1** conversations
     if the client knows the `group_id` for the **1-to-1** conversations. Otherwise the
@@ -309,9 +309,10 @@ async def send_message_to_group(
     * `250`: if an unknown error occurred.
     """
     try:
-        return await environ.env.rest.message.send_message_to_group(
+        message, group = await environ.env.rest.message.send_message_to_group(
             group_id, user_id, query, db
         )
+        return GroupMessage(group=group, message=message)
     except NoSuchGroupException as e:
         log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
     except UserNotInGroupException as e:
