@@ -381,6 +381,9 @@ class RelationalHandler:
             .first()
         )
 
+        # TODO: does this work? something about cassandra and python dt
+        sent_time = message.created_at
+
         if group is None:
             raise NoSuchGroupException(message.group_id)
 
