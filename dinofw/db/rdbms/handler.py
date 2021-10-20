@@ -368,7 +368,7 @@ class RelationalHandler:
     def update_group_new_message(
         self,
         message: MessageBase,
-        sent_time: dt,
+        sent_time: dt,  # TODO: remove if not needed
         db: Session,
         sender_user_id: int,
         user_ids: List[int],
@@ -382,6 +382,8 @@ class RelationalHandler:
         )
 
         # TODO: does this work? something about cassandra and python dt
+        #  before, the 'sent_time' argument was used, but that's a new utc_now(), which
+        #  will be a bit off the message creation time
         sent_time = message.created_at
 
         if group is None:
