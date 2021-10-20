@@ -163,11 +163,11 @@ class BaseResource(ABC):
             return group_id
 
         try:
-            group_id = self.env.db.get_group_for_1to1(user_id, receiver_id, db)
+            group = self.env.db.get_group_for_1to1(user_id, receiver_id, db)
         except NoSuchGroupException:
             group = self.env.db.create_group_for_1to1(user_id, receiver_id, db)
-            group_id = group.group_id
 
+        group_id = group.group_id
         self.env.cache.set_group_exists(group_id, True)
         return group_id
 
