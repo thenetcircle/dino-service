@@ -7,11 +7,11 @@ from test.functional.base_functional import BaseServerRestApi
 class TestBookmark(BaseServerRestApi):
     def test_removing_bookmark_resets_unread_count(self):
         self.assert_groups_for_user(0)
-        message = self.send_1v1_message(
+        group_message = self.send_1v1_message(
             user_id=BaseTest.USER_ID,
             receiver_id=BaseTest.OTHER_USER_ID
         )
-        group_id = message["group_id"]
+        group_id = group_message["group"]["group_id"]
 
         stats = self.groups_for_user(BaseTest.OTHER_USER_ID, count_unread=True)[0]["stats"]
         self.assertEqual(1, stats["unread"])
@@ -29,11 +29,11 @@ class TestBookmark(BaseServerRestApi):
 
     def test_removing_bookmark_resets_highlight(self):
         self.assert_groups_for_user(0)
-        message = self.send_1v1_message(
+        group_message = self.send_1v1_message(
             user_id=BaseTest.USER_ID,
             receiver_id=BaseTest.OTHER_USER_ID
         )
-        group_id = message["group_id"]
+        group_id = group_message["group"]["group_id"]
 
         stats = self.groups_for_user(BaseTest.OTHER_USER_ID, count_unread=True)[0]["stats"]
         self.assertEqual(1, stats["unread"])
@@ -77,11 +77,11 @@ class TestBookmark(BaseServerRestApi):
 
     def test_removing_bookmark_resets_last_read(self):
         self.assert_groups_for_user(0)
-        message = self.send_1v1_message(
+        group_message = self.send_1v1_message(
             user_id=BaseTest.USER_ID,
             receiver_id=BaseTest.OTHER_USER_ID
         )
-        group_id = message["group_id"]
+        group_id = group_message["group"]["group_id"]
 
         stats = self.groups_for_user(BaseTest.OTHER_USER_ID, count_unread=True)[0]["stats"]
         self.assertEqual(1, stats["unread"])

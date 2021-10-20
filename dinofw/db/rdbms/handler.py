@@ -45,18 +45,25 @@ class RelationalHandler:
         self.long_ago = dt.utcfromtimestamp(beginning_of_1995)
 
     def get_users_in_group(
-        self, group_id: str, db: Session
+            self,
+            group_id: str,
+            db: Session,
+            include_group: bool = True
     ) -> (Optional[GroupBase], Optional[Dict[int, float]], Optional[int]):
-        group_entity = (
-            db.query(models.GroupEntity)
-            .filter(models.GroupEntity.group_id == group_id)
-            .first()
-        )
+        group = None
 
-        if group_entity is None:
-            raise NoSuchGroupException(group_id)
+        # not always needed
+        if include_group:
+            group_entity = (
+                db.query(models.GroupEntity)
+                .filter(models.GroupEntity.group_id == group_id)
+                .first()
+            )
 
-        group = GroupBase(**group_entity.__dict__)
+            if group_entity is None:
+                raise NoSuchGroupException(group_id)
+            group = GroupBase(**group_entity.__dict__)
+
         users_and_join_time = self.get_user_ids_and_join_time_in_group(group_id, db)
         user_count = len(users_and_join_time)
 
@@ -488,12 +495,6 @@ class RelationalHandler:
 
         return [group_id[0] for group_id in group_ids]
 
-    def get_group_id_for_1to1(
-        self, user_a: int, user_b: int, db: Session
-    ) -> Optional[str]:
-        group = self.get_group_for_1to1(user_a, user_b, db)
-        return group.group_id
-
     # noinspection PyMethodMayBeStatic
     def get_group_from_id(self, group_id: str, db: Session) -> GroupBase:
         group = (
@@ -511,7 +512,7 @@ class RelationalHandler:
 
     # noinspection PyMethodMayBeStatic
     def get_group_for_1to1(
-        self, user_a: int, user_b: int, db: Session, parse_result: bool = True
+        self, user_a: int, user_b: int, db: Session
     ):
         group_id = users_to_group_id(user_a, user_b)
 
@@ -527,10 +528,7 @@ class RelationalHandler:
         if group is None:
             raise NoSuchGroupException(f"{user_a},{user_b}")
 
-        if parse_result:
-            return GroupBase(**group.__dict__)
-
-        return group_id
+        return GroupBase(**group.__dict__)
 
     def create_group_for_1to1(self, user_a: int, user_b: int, db: Session) -> GroupBase:
         users = sorted([user_a, user_b])

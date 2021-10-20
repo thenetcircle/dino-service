@@ -7,7 +7,7 @@ from test.functional.base_functional import BaseServerRestApi
 class TestHighlightTime(BaseServerRestApi):
     def test_receiver_highlight_time(self):
         self.assert_groups_for_user(0)
-        message = self.send_1v1_message(
+        group_message = self.send_1v1_message(
             user_id=BaseTest.USER_ID,
             receiver_id=BaseTest.OTHER_USER_ID
         )
@@ -18,7 +18,7 @@ class TestHighlightTime(BaseServerRestApi):
         now_plus_2_days = arrow.utcnow().shift(days=2).datetime
         now_plus_2_days = AbstractQuery.to_ts(now_plus_2_days)
         self.highlight_group_for_user(
-            message["group_id"],
+            group_message["group"]["group_id"],
             user_id=BaseTest.OTHER_USER_ID,
             highlight_time=now_plus_2_days
         )

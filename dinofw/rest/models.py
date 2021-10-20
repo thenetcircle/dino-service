@@ -101,6 +101,11 @@ class Group(BaseModel):
     message_amount: Optional[int] = -1
 
 
+class GroupMessage(BaseModel):
+    group: Group
+    message: Message
+
+
 class OneToOneStats(BaseModel):
     group: Group
     stats: List[UserGroupStats]

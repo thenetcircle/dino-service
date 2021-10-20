@@ -7,16 +7,16 @@ from test.functional.base_functional import BaseServerRestApi
 
 class TestDeleteAttachments(BaseServerRestApi):
     def test_payload_status_updated(self):
-        message = self.send_1v1_message(
+        group_message = self.send_1v1_message(
             message_type=MessageTypes.IMAGE,
             payload=json.dumps({
                 "content": "some payload",
                 "status": PayloadStatus.PENDING
             })
         )
-        message_id = message["message_id"]
-        created_at = message["created_at"]
-        group_id = message["group_id"]
+        message_id = group_message["message"]["message_id"]
+        created_at = group_message["message"]["created_at"]
+        group_id = group_message["group"]["group_id"]
 
         # sets the file id we later delete by
         self.update_attachment(message_id, created_at, payload=json.dumps({
@@ -48,10 +48,10 @@ class TestDeleteAttachments(BaseServerRestApi):
         self.assertEqual(payload["status"], PayloadStatus.DELETED)
 
     def test_delete_one_attachment(self):
-        message = self.send_1v1_message(message_type=MessageTypes.IMAGE)
-        message_id = message["message_id"]
-        created_at = message["created_at"]
-        group_id = message["group_id"]
+        group_message = self.send_1v1_message(message_type=MessageTypes.IMAGE)
+        message_id = group_message["message"]["message_id"]
+        created_at = group_message["message"]["created_at"]
+        group_id = group_message["group"]["group_id"]
 
         # sets the file id we later delete by
         self.update_attachment(message_id, created_at)
@@ -69,10 +69,10 @@ class TestDeleteAttachments(BaseServerRestApi):
         group_id = None
 
         for file_id in [str(i) for i in range(10)]:
-            message = self.send_1v1_message(message_type=MessageTypes.IMAGE)
-            message_id = message["message_id"]
-            group_id = message["group_id"]
-            created_at = message["created_at"]
+            group_message = self.send_1v1_message(message_type=MessageTypes.IMAGE)
+            message_id = group_message["message"]["message_id"]
+            group_id = group_message["group"]["group_id"]
+            created_at = group_message["message"]["created_at"]
 
             self.update_attachment(message_id, created_at, file_id=file_id)
 
@@ -103,10 +103,10 @@ class TestDeleteAttachments(BaseServerRestApi):
 
         for user_id in [BaseTest.USER_ID, BaseTest.OTHER_USER_ID]:
             for file_id in file_ids[user_id]:
-                message = self.send_1v1_message(message_type=MessageTypes.IMAGE, user_id=user_id)
-                message_id = message["message_id"]
-                group_id = message["group_id"]
-                created_at = message["created_at"]
+                group_message = self.send_1v1_message(message_type=MessageTypes.IMAGE, user_id=user_id)
+                message_id = group_message["message"]["message_id"]
+                group_id = group_message["group"]["group_id"]
+                created_at = group_message["message"]["created_at"]
 
                 self.update_attachment(message_id, created_at, user_id=user_id, file_id=file_id)
 

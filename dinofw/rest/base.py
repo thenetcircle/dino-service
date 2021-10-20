@@ -83,7 +83,8 @@ class BaseResource(ABC):
         if query.group_id is not None and len(query.group_id.strip()):
             group_id = query.group_id
         elif query.receiver_id is not None and query.receiver_id > 0:
-            group_id = self._get_or_create_group_for_1v1(user_id, query.receiver_id, db)
+            group = self._get_or_create_group_for_1v1(user_id, query.receiver_id, db)
+            group_id = group.group_id
 
         log = self.env.storage.create_action_log(user_id, group_id, query)
         self._user_sends_a_message(
@@ -138,13 +139,7 @@ class BaseResource(ABC):
             )
 
         if event_type == EventTypes.MESSAGE:
-            return self.env.client_publisher.message(
-                message,
-                notification,
-                user_ids,
-                group=group_base,
-                broadcast=broadcast
-            )
+            self.env.client_publisher.message(message, notification, user_ids, group=group_base)
 
         elif event_type == EventTypes.ACTION_LOG:
             self.env.client_publisher.action_log(message, user_ids)
@@ -157,17 +152,16 @@ class BaseResource(ABC):
 
     def _get_or_create_group_for_1v1(
         self, user_id: int, receiver_id: int, db: Session
-    ) -> str:
+    ) -> GroupBase:
         if user_id is None or receiver_id is None:
             raise ValueError(
                 f"either receiver_id ({receiver_id}) or user_id ({user_id}) is None for get/create 1v1 group"
             )
 
         try:
-            return self.env.db.get_group_id_for_1to1(user_id, receiver_id, db)
+            return self.env.db.get_group_for_1to1(user_id, receiver_id, db)
         except NoSuchGroupException:
-            group = self.env.db.create_group_for_1to1(user_id, receiver_id, db)
-            return group.group_id
+            return self.env.db.create_group_for_1to1(user_id, receiver_id, db)
 
     @staticmethod
     def need_to_update_stats_in_group(user_stats: UserGroupStatsBase, last_message_time: dt):

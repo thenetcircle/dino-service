@@ -114,7 +114,7 @@ class BaseServerRestApi(BaseDatabaseTest):
 
     def histories_for(self, group_id: str, user_id: int = BaseTest.USER_ID):
         raw_response = self.client.post(
-            f"/v1/groups/{group_id}/user/{user_id}/histories", json={"per_page": "10"},
+            f"/v1/groups/{group_id}/user/{user_id}/histories", json={"per_page": "10", "since": 0},
         )
         self.assertEqual(raw_response.status_code, 200)
 
@@ -477,7 +477,7 @@ class BaseServerRestApi(BaseDatabaseTest):
         self, group_id: str, user_id: int = BaseTest.USER_ID, amount: int = 0
     ):
         raw_response = self.client.post(
-            f"/v1/groups/{group_id}/user/{user_id}/histories", json={"per_page": 100},
+            f"/v1/groups/{group_id}/user/{user_id}/histories", json={"per_page": 100, "since": 0},
         )
         self.assertEqual(raw_response.status_code, 200)
         self.assertEqual(amount, len(raw_response.json()["messages"]))

@@ -515,12 +515,14 @@ class FakeDatabase:
         return groups
 
     def get_users_in_group(
-        self, group_id: str, db
+        self, group_id: str, db, include_group: bool = True
     ) -> (Optional[GroupBase], Optional[Dict[int, float]], Optional[int]):
-        if group_id not in self.groups:
-            raise NoSuchGroupException(group_id)
+        group = None
+        if include_group:
+            if group_id not in self.groups:
+                raise NoSuchGroupException(group_id)
+            group = self.groups[group_id]
 
-        group = self.groups[group_id]
         users = self.get_user_ids_and_join_time_in_group(group_id, db)
         user_count = self.count_users_in_group(group_id, db)
 
@@ -700,6 +702,9 @@ class FakePublisherHandler(IClientPublishHandler):
     def leave(
         self, group_id: str, user_ids: List[int], leaver_id: int, now: float
     ) -> None:
+        pass
+
+    def action_log(self, message: MessageBase, user_ids: List[int]) -> None:
         pass
 
 

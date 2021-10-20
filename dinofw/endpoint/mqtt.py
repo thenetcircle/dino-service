@@ -185,11 +185,10 @@ class MqttPublishHandler(IClientPublishHandler):
     def message(
             self,
             message: MessageBase,
-            notification: dict,  # TODO: this can maybe be removed now that we return the event instead of broadcast it
+            notification: dict,  # TODO: maybe not needed since we'll use the /notify or /broadcast api
             user_ids: List[int],
-            group: GroupBase,
-            broadcast: bool = True,
-    ) -> Optional[dict]:
+            group: GroupBase
+    ) -> None:
         data = MqttPublishHandler.message_base_to_event(
             message,
             notification=notification,
@@ -197,13 +196,8 @@ class MqttPublishHandler(IClientPublishHandler):
             group=group
         )
 
-        if broadcast:
-            self.send(user_ids, data)
-        else:
-            return {
-                "event": data,
-                "user_ids": user_ids
-            }
+        # TODO: don't send to mqtt
+        self.send(user_ids, data)
 
     def action_log(self, message: MessageBase, user_ids: List[int]) -> None:
         data = MqttPublishHandler.message_base_to_event(message, event_type=EventTypes.ACTION_LOG)

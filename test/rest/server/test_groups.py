@@ -91,9 +91,8 @@ class TestGroupResource(BaseTest):
     @async_test
     async def test_histories(self):
         send_query = SendMessageQuery(message_payload="some text", message_type=MessageTypes.MESSAGE)
-        message_query = MessageQuery(per_page=10)
+        message_query = MessageQuery(per_page=10, since=0)
         create_query = CreateGroupQuery(group_name="some group name", group_type=0, users=[BaseTest.USER_ID])
-        log_query = CreateActionLogQuery(action_type=0, user_ids=[BaseTest.USER_ID])
 
         with self.assertRaises(NoSuchGroupException):
             await self.group.histories(BaseTest.GROUP_ID, BaseTest.USER_ID, message_query, db=None)  # noqa

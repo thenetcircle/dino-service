@@ -5,7 +5,6 @@ from typing import List, Union
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.storage.schemas import MessageBase
 from dinofw.rest.models import Message
-from dinofw.rest.models import MqttEvent
 from dinofw.rest.queries import AbstractQuery
 
 
@@ -48,7 +47,7 @@ class IServerPublishHandler(IPublishHandler, ABC):
 
 class IClientPublishHandler(IPublishHandler, ABC):
     @abstractmethod
-    def message(self, message: MessageBase, notification: dict, user_ids: List[int], group: GroupBase) -> MqttEvent:
+    def message(self, message: MessageBase, notification: dict, user_ids: List[int], group: GroupBase) -> None:
         """pass"""
 
     @abstractmethod

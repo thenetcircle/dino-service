@@ -87,9 +87,6 @@ class GroupResource(BaseResource):
         users = sorted([user_id_a, user_id_b])
         group = self.env.db.get_group_for_1to1(users[0], users[1], db)
 
-        if group is None:
-            raise NoSuchGroupException(",".join([str(user_id) for user_id in users]))
-
         group_id = group.group_id
         message_amount = await self.count_messages_in_group(group_id)
         users_and_join_time = self.env.db.get_user_ids_and_join_time_in_group(

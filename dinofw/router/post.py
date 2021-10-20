@@ -9,7 +9,7 @@ from starlette.background import BackgroundTask
 from starlette.responses import Response
 from starlette.status import HTTP_201_CREATED
 
-from dinofw.rest.models import Group
+from dinofw.rest.models import Group, GroupMessage
 from dinofw.rest.models import Histories
 from dinofw.rest.models import Message
 from dinofw.rest.models import OneToOneStats
@@ -54,13 +54,12 @@ async def broadcast(query: BroadcastQuery) -> None:
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-# TODO: test if response model can be union
-@router.post("/users/{user_id}/send", response_model=Union[Message, dict])
+@router.post("/users/{user_id}/send", response_model=GroupMessage)
 @timeit(logger, "POST", "/users/{user_id}/send")
 @wrap_exception()
 async def send_message_to_user(
     user_id: int, query: SendMessageQuery, db: Session = Depends(get_db)
-) -> Union[Message, dict]:
+) -> GroupMessage:
     """
     User sends a message in a **1-to-1** conversation. It is not always known on client side if a
     **1-to-1** group exists between two users, so this API can then be used; Dino will do a group
