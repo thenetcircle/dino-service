@@ -1,15 +1,16 @@
 import sys
-from typing import List, Optional, Union
+from typing import List, Optional
 
 from fastapi import APIRouter
 from fastapi import Depends
+from fastapi import Request
 from loguru import logger
 from sqlalchemy.orm import Session
 from starlette.background import BackgroundTask
 from starlette.responses import Response
 from starlette.status import HTTP_201_CREATED
 
-from dinofw.rest.models import Group, GroupMessage
+from dinofw.rest.models import Group
 from dinofw.rest.models import Histories
 from dinofw.rest.models import Message
 from dinofw.rest.models import OneToOneStats
@@ -20,7 +21,6 @@ from dinofw.rest.queries import AttachmentQuery
 from dinofw.rest.queries import CreateAttachmentQuery
 from dinofw.rest.queries import CreateGroupQuery
 from dinofw.rest.queries import GroupInfoQuery
-from dinofw.rest.queries import BroadcastQuery
 from dinofw.rest.queries import GroupQuery
 from dinofw.rest.queries import GroupUpdatesQuery
 from dinofw.rest.queries import MessageInfoQuery
@@ -44,12 +44,17 @@ from dinofw.utils.exceptions import UserNotInGroupException
 router = APIRouter()
 
 
-@router.post("/broadcast", response_model=None)
-@timeit(logger, "POST", "/broadcast")
+@router.post("/notification/group/{group_id}", response_model=None)
+@timeit(logger, "POST", "/notification/group/{group_id}")
 @wrap_exception()
-async def broadcast(query: BroadcastQuery) -> None:
+async def notify_group(
+        group_id: str,
+        request: Request,
+        db: Session = Depends(get_db)
+) -> None:
     try:
-        return await environ.env.rest.broadcast.broadcast_event(query)
+        event = request.json()
+        return await environ.env.rest.broadcast.broadcast_event(group_id, event, db)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 
