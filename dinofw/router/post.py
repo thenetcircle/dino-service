@@ -53,7 +53,7 @@ async def notify_group(
         db: Session = Depends(get_db)
 ) -> None:
     try:
-        event = request.json()
+        event = await request.json()
         return await environ.env.rest.broadcast.broadcast_event(group_id, event, db)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
