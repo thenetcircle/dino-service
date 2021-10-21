@@ -164,6 +164,7 @@ def init_rest(gn_env: GNEnvironment) -> None:
     from dinofw.rest.groups import GroupResource
     from dinofw.rest.users import UserResource
     from dinofw.rest.message import MessageResource
+    from dinofw.rest.broadcast import BroadcastResource
 
     class RestResources:
         group: GroupResource
@@ -174,6 +175,7 @@ def init_rest(gn_env: GNEnvironment) -> None:
     gn_env.rest.group = GroupResource(gn_env)
     gn_env.rest.user = UserResource(gn_env)
     gn_env.rest.message = MessageResource(gn_env)
+    gn_env.rest.broadcast = BroadcastResource(gn_env)
 
 
 def _get_pub_host_port_db(gn_env: GNEnvironment) -> (str, int, int):

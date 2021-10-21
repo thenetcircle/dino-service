@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from dinofw.rest.base import BaseResource
 
 
-class MessageResource(BaseResource):
+class BroadcastResource(BaseResource):
     async def send_message_to_group(
         self, group_id: str, event: dict, db: Session
     ) -> None:
