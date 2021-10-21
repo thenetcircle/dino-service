@@ -437,7 +437,7 @@ class TestServerRestApi(BaseServerRestApi):
         self.assertGreater(groups[0]["stats"]["last_updated_time"], last_updated_at)
 
     def test_create_action_log_in_all_groups_for_user(self):
-        group_1 = self.send_1v1_message()["group"]["group_id"]
+        group_1 = self.send_1v1_message()["group_id"]
         group_2 = self.create_and_join_group()
         group_3 = self.create_and_join_group()
 
@@ -564,12 +564,12 @@ class TestServerRestApi(BaseServerRestApi):
 
     def test_last_updated_at_changed_on_update_attachment(self):
         group_message = self.send_1v1_message(message_type=MessageTypes.IMAGE)
-        self.assertEqual(MessageTypes.IMAGE, group_message["message"]["message_type"])
+        self.assertEqual(MessageTypes.IMAGE, group_message["message_type"])
         groups = self.groups_for_user(user_id=BaseTest.USER_ID, count_unread=False)
         last_updated_at = groups[0]["stats"]["last_updated_time"]
 
         self.update_attachment(
-            group_message["message"]["message_id"], group_message["message"]["created_at"]
+            group_message["message_id"], group_message["created_at"]
         )
 
         groups = self.groups_for_user(user_id=BaseTest.USER_ID, count_unread=False)
@@ -582,7 +582,7 @@ class TestServerRestApi(BaseServerRestApi):
         last_updated_at = groups[0]["stats"]["last_updated_time"]
 
         group_message = self.send_1v1_message(message_type=MessageTypes.IMAGE)
-        self.assertEqual(MessageTypes.IMAGE, group_message["message"]["message_type"])
+        self.assertEqual(MessageTypes.IMAGE, group_message["message_type"])
 
         groups = self.groups_for_user(user_id=BaseTest.USER_ID, count_unread=False)
         create_attachment_updated_at = groups[0]["stats"]["last_updated_time"]
@@ -644,23 +644,23 @@ class TestServerRestApi(BaseServerRestApi):
 
     def test_update_attachment(self):
         group_message = self.send_1v1_message(message_type=MessageTypes.IMAGE)
-        self.assertEqual(MessageTypes.IMAGE, group_message["message"]["message_type"])
+        self.assertEqual(MessageTypes.IMAGE, group_message["message_type"])
 
-        history = self.histories_for(group_message["group"]["group_id"])
-        all_attachments = self.attachments_for(group_message["group"]["group_id"])
+        history = self.histories_for(group_message["group_id"])
+        all_attachments = self.attachments_for(group_message["group_id"])
 
         # a 'placeholder' message should have been created, but no attachment
         self.assertEqual(1, len(history["messages"]))
         self.assertEqual(0, len(all_attachments))
 
         attachment = self.update_attachment(
-            group_message["message"]["message_id"], group_message["message"]["created_at"]
+            group_message["message_id"], group_message["created_at"]
         )
-        history = self.histories_for(group_message["group"]["group_id"])
-        all_attachments = self.attachments_for(group_message["group"]["group_id"])
+        history = self.histories_for(group_message["group_id"])
+        all_attachments = self.attachments_for(group_message["group_id"])
 
         # now the message should have been updated, and the attachment created
-        self.assertEqual(group_message["message"]["message_id"], attachment["message_id"])
+        self.assertEqual(group_message["message_id"], attachment["message_id"])
         self.assertNotEqual(attachment["created_at"], attachment["updated_at"])
         self.assertEqual(1, len(history["messages"]))
         self.assertEqual(1, len(all_attachments))
@@ -705,7 +705,7 @@ class TestServerRestApi(BaseServerRestApi):
         last_sent_time_first = stats["last_sent_time"]
         last_sent_group_id = stats["last_sent_group_id"]
 
-        self.assertEqual(group_message["group"]["group_id"], last_sent_group_id)
+        self.assertEqual(group_message["group_id"], last_sent_group_id)
         self.assertIsNotNone(last_sent_time_first)
 
         group_message = self.send_1v1_message()
@@ -714,26 +714,26 @@ class TestServerRestApi(BaseServerRestApi):
         last_sent_time_second = stats["last_sent_time"]
         last_sent_group_id = stats["last_sent_group_id"]
 
-        self.assertEqual(group_message["group"]["group_id"], last_sent_group_id)
+        self.assertEqual(group_message["group_id"], last_sent_group_id)
         self.assertNotEqual(last_sent_time_first, last_sent_time_second)
 
     def test_create_attachment_updates_group_overview(self):
         group_message = self.send_1v1_message()
 
-        histories = self.histories_for(group_message["group"]["group_id"])
+        histories = self.histories_for(group_message["group_id"])
         self.assertEqual(1, len(histories["messages"]))
 
         groups = self.groups_for_user()
         last_msg_overview = groups[0]["group"]["last_message_overview"]
 
-        self.update_attachment(group_message["message"]["message_id"], group_message["message"]["created_at"])
+        self.update_attachment(group_message["message_id"], group_message["created_at"])
 
         groups = self.groups_for_user()
         new_msg_overview = groups[0]["group"]["last_message_overview"]
 
         self.assertNotEqual(last_msg_overview, new_msg_overview)
 
-        histories = self.histories_for(group_message["group"]["group_id"])
+        histories = self.histories_for(group_message["group_id"])
         self.assertEqual(1, len(histories["messages"]))
 
     def test_receiver_highlight_exists_in_group_list(self):
@@ -743,7 +743,7 @@ class TestServerRestApi(BaseServerRestApi):
         receiver_highlight_time = groups[0]["stats"]["receiver_highlight_time"]
         self.assertIsNotNone(receiver_highlight_time)
 
-        self.highlight_group_for_user(group_message["group"]["group_id"], user_id=BaseTest.OTHER_USER_ID)
+        self.highlight_group_for_user(group_message["group_id"], user_id=BaseTest.OTHER_USER_ID)
 
         groups = self.groups_for_user()
         new_receiver_highlight_time = groups[0]["stats"]["receiver_highlight_time"]
@@ -759,7 +759,7 @@ class TestServerRestApi(BaseServerRestApi):
         self.assertFalse(receiver_hide)
         self.assertFalse(hide)
 
-        self.update_hide_group_for(group_message["group"]["group_id"], hide=True, user_id=BaseTest.OTHER_USER_ID)
+        self.update_hide_group_for(group_message["group_id"], hide=True, user_id=BaseTest.OTHER_USER_ID)
 
         groups = self.groups_for_user()
         new_receiver_hide = groups[0]["stats"]["receiver_hide"]
@@ -777,7 +777,7 @@ class TestServerRestApi(BaseServerRestApi):
         self.assertEqual(receiver_delete_before, delete_before)
 
         delete_time = utcnow_ts()
-        self.update_delete_before(group_message["group"]["group_id"], delete_time, user_id=BaseTest.OTHER_USER_ID)
+        self.update_delete_before(group_message["group_id"], delete_time, user_id=BaseTest.OTHER_USER_ID)
 
         groups = self.groups_for_user()
         new_receiver_delete_before = groups[0]["stats"]["receiver_delete_before"]
@@ -794,13 +794,13 @@ class TestServerRestApi(BaseServerRestApi):
         bookmark = groups[0]["stats"]["bookmark"]
         self.assertFalse(bookmark)
 
-        self.bookmark_group(group_message["group"]["group_id"], bookmark=True)
+        self.bookmark_group(group_message["group_id"], bookmark=True)
 
         groups = self.groups_for_user()
         bookmark = groups[0]["stats"]["bookmark"]
         self.assertTrue(bookmark)
 
-        self.bookmark_group(group_message["group"]["group_id"], bookmark=False)
+        self.bookmark_group(group_message["group_id"], bookmark=False)
 
         groups = self.groups_for_user()
         bookmark = groups[0]["stats"]["bookmark"]
@@ -808,7 +808,7 @@ class TestServerRestApi(BaseServerRestApi):
 
     def test_mark_all_groups_as_read_removes_bookmark(self):
         group_message = self.send_1v1_message()
-        self.bookmark_group(group_message["group"]["group_id"], bookmark=True)
+        self.bookmark_group(group_message["group_id"], bookmark=True)
 
         stats = self.groups_for_user()[0]["stats"]
         self.assertTrue(stats["bookmark"])
@@ -834,22 +834,22 @@ class TestServerRestApi(BaseServerRestApi):
         groups = self.groups_for_user(only_unread=True)
         self.assertEqual(0, len(groups))
 
-        self.bookmark_group(group_message["group"]["group_id"], bookmark=True)
+        self.bookmark_group(group_message["group_id"], bookmark=True)
 
         groups = self.groups_for_user(only_unread=True)
         self.assertEqual(1, len(groups))
-        self.assertEqual(group_message["group"]["group_id"], groups[0]["group"]["group_id"])
+        self.assertEqual(group_message["group_id"], groups[0]["group"]["group_id"])
 
     def test_bookmark_removed_on_get_histories(self):
         group_message = self.send_1v1_message()
         groups = self.groups_for_user(only_unread=True)
         self.assertEqual(0, len(groups))
 
-        self.bookmark_group(group_message["group"]["group_id"], bookmark=True)
+        self.bookmark_group(group_message["group_id"], bookmark=True)
         groups = self.groups_for_user(only_unread=True)
         self.assertEqual(1, len(groups))
 
-        self.histories_for(group_message["group"]["group_id"])
+        self.histories_for(group_message["group_id"])
 
         groups = self.groups_for_user(only_unread=True)
         self.assertEqual(0, len(groups))
@@ -859,7 +859,7 @@ class TestServerRestApi(BaseServerRestApi):
         groups = self.groups_for_user(only_unread=True)
         self.assertEqual(0, len(groups))
 
-        self.update_hide_group_for(group_message["group"]["group_id"], hide=True)
+        self.update_hide_group_for(group_message["group_id"], hide=True)
 
         # make sure it's hidden
         group_and_stats = self.groups_for_user(hidden=True)
@@ -891,7 +891,7 @@ class TestServerRestApi(BaseServerRestApi):
         self.assertEqual(join_time, delete_before_original)
 
         yesterday = round(arrow.utcnow().shift(days=-1).float_timestamp, 3)
-        self.update_delete_before(group_message["group"]["group_id"], delete_before=yesterday)
+        self.update_delete_before(group_message["group_id"], delete_before=yesterday)
 
         group_and_stats = self.groups_updated_since(user_id=BaseTest.USER_ID, since=1560000000)
         delete_before_updated = group_and_stats[0]["stats"]["delete_before"]
@@ -901,7 +901,7 @@ class TestServerRestApi(BaseServerRestApi):
 
         # update it again so the next message resets it to join_time
         now = utcnow_ts()
-        self.update_delete_before(group_message["group"]["group_id"], delete_before=now)
+        self.update_delete_before(group_message["group_id"], delete_before=now)
 
         # should not reset 'delete_before'
         self.send_1v1_message(user_id=BaseTest.OTHER_USER_ID, receiver_id=BaseTest.USER_ID)
@@ -914,7 +914,7 @@ class TestServerRestApi(BaseServerRestApi):
 
     def test_create_action_log_updating_delete_before(self):
         group_message = self.send_1v1_message(user_id=BaseTest.USER_ID, receiver_id=BaseTest.OTHER_USER_ID)
-        group_id = group_message["group"]["group_id"]
+        group_id = group_message["group_id"]
 
         histories = self.histories_for(group_id)
         self.assertEqual(1, len(histories["messages"]))
@@ -960,7 +960,7 @@ class TestServerRestApi(BaseServerRestApi):
 
     def test_get_attachment_from_file_id_returns_no_such_attachment(self):
         group_message = self.send_1v1_message(message_type=MessageTypes.IMAGE)
-        attachment = self.attachment_for_file_id(group_message["group"]["group_id"], BaseTest.FILE_ID, assert_response=False)
+        attachment = self.attachment_for_file_id(group_message["group_id"], BaseTest.FILE_ID, assert_response=False)
         self.assert_error(attachment, ErrorCodes.NO_SUCH_ATTACHMENT)
 
     def test_get_attachment_from_file_id_returns_no_such_group(self):
@@ -969,9 +969,9 @@ class TestServerRestApi(BaseServerRestApi):
 
     def test_get_attachment_from_file_id_returns_ok(self):
         group_message = self.send_1v1_message(message_type=MessageTypes.IMAGE)
-        message_id = group_message["message"]["message_id"]
-        created_at = group_message["message"]["created_at"]
-        group_id = group_message["group"]["group_id"]
+        message_id = group_message["message_id"]
+        created_at = group_message["created_at"]
+        group_id = group_message["group_id"]
 
         self.update_attachment(message_id, created_at, payload=json.dumps({
             "file_id": BaseTest.FILE_ID,
@@ -988,7 +988,7 @@ class TestServerRestApi(BaseServerRestApi):
         group_message = self.send_1v1_message()
         self.assertEqual(0, len(self.env.client_publisher.sent_reads))
 
-        self.histories_for(group_message["group"]["group_id"], user_id=BaseTest.OTHER_USER_ID)
+        self.histories_for(group_message["group_id"], user_id=BaseTest.OTHER_USER_ID)
 
         # USER_ID should have gotten a read-receipt from OTHER_USER_ID
         self.assertEqual(1, len(self.env.client_publisher.sent_reads[BaseTest.USER_ID]))
@@ -998,13 +998,13 @@ class TestServerRestApi(BaseServerRestApi):
         group_message = self.send_1v1_message()
         self.assertEqual(0, len(self.env.client_publisher.sent_reads))
 
-        self.histories_for(group_message["group"]["group_id"], user_id=BaseTest.OTHER_USER_ID)
+        self.histories_for(group_message["group_id"], user_id=BaseTest.OTHER_USER_ID)
 
         # USER_ID should have gotten a read-receipt from OTHER_USER_ID
         self.assertEqual(1, len(self.env.client_publisher.sent_reads[BaseTest.USER_ID]))
         self.assertEqual(BaseTest.OTHER_USER_ID, self.env.client_publisher.sent_reads[BaseTest.USER_ID][0][1])
 
-        self.histories_for(group_message["group"]["group_id"], user_id=BaseTest.OTHER_USER_ID)
+        self.histories_for(group_message["group_id"], user_id=BaseTest.OTHER_USER_ID)
 
         # should not have another one
         self.assertEqual(1, len(self.env.client_publisher.sent_reads[BaseTest.USER_ID]))
@@ -1014,8 +1014,8 @@ class TestServerRestApi(BaseServerRestApi):
         group_message0 = self.send_1v1_message(receiver_id=4444)
         group_message1 = self.send_1v1_message(receiver_id=5555)
 
-        group_id0 = group_message0["group"]["group_id"]
-        group_id1 = group_message1["group"]["group_id"]
+        group_id0 = group_message0["group_id"]
+        group_id1 = group_message1["group_id"]
 
         stats = self.get_global_user_stats(hidden=False)
         self.assertEqual(0, stats["group_amount"])
@@ -1041,8 +1041,8 @@ class TestServerRestApi(BaseServerRestApi):
         group_message1 = self.send_1v1_message(receiver_id=5555)
         self.send_1v1_message(receiver_id=6666)
 
-        group_id0 = group_message0["group"]["group_id"]
-        group_id1 = group_message1["group"]["group_id"]
+        group_id0 = group_message0["group_id"]
+        group_id1 = group_message1["group_id"]
 
         stats = self.get_global_user_stats(hidden=False)
         self.assertEqual(0, stats["group_amount"])
@@ -1065,8 +1065,8 @@ class TestServerRestApi(BaseServerRestApi):
         group_message1 = self.send_1v1_message(receiver_id=5555)
         self.send_1v1_message(receiver_id=6666)
 
-        group_id0 = group_message0["group"]["group_id"]
-        group_id1 = group_message1["group"]["group_id"]
+        group_id0 = group_message0["group_id"]
+        group_id1 = group_message1["group_id"]
 
         stats = self.get_global_user_stats(hidden=None)
         self.assertEqual(0, stats["group_amount"])
@@ -1113,15 +1113,15 @@ class TestServerRestApi(BaseServerRestApi):
         group_message = self.send_1v1_message()
 
         # defaults to -1 if not counting
-        info = self.get_group_info(group_message["group"]["group_id"], count_messages=False)
+        info = self.get_group_info(group_message["group_id"], count_messages=False)
         self.assertEqual(-1, info["message_amount"])
 
-        info = self.get_group_info(group_message["group"]["group_id"], count_messages=True)
+        info = self.get_group_info(group_message["group_id"], count_messages=True)
         self.assertEqual(1, info["message_amount"])
 
         # should be two now
         group_message = self.send_1v1_message()
-        info = self.get_group_info(group_message["group"]["group_id"], count_messages=True)
+        info = self.get_group_info(group_message["group_id"], count_messages=True)
         self.assertEqual(2, info["message_amount"])
 
     def test_unread_groups_amount_in_user_stats(self):

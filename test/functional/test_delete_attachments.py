@@ -14,9 +14,9 @@ class TestDeleteAttachments(BaseServerRestApi):
                 "status": PayloadStatus.PENDING
             })
         )
-        message_id = group_message["message"]["message_id"]
-        created_at = group_message["message"]["created_at"]
-        group_id = group_message["group"]["group_id"]
+        message_id = group_message["message_id"]
+        created_at = group_message["created_at"]
+        group_id = group_message["group_id"]
 
         # sets the file id we later delete by
         self.update_attachment(message_id, created_at, payload=json.dumps({
@@ -49,9 +49,9 @@ class TestDeleteAttachments(BaseServerRestApi):
 
     def test_delete_one_attachment(self):
         group_message = self.send_1v1_message(message_type=MessageTypes.IMAGE)
-        message_id = group_message["message"]["message_id"]
-        created_at = group_message["message"]["created_at"]
-        group_id = group_message["group"]["group_id"]
+        message_id = group_message["message_id"]
+        created_at = group_message["created_at"]
+        group_id = group_message["group_id"]
 
         # sets the file id we later delete by
         self.update_attachment(message_id, created_at)
@@ -70,9 +70,9 @@ class TestDeleteAttachments(BaseServerRestApi):
 
         for file_id in [str(i) for i in range(10)]:
             group_message = self.send_1v1_message(message_type=MessageTypes.IMAGE)
-            message_id = group_message["message"]["message_id"]
-            group_id = group_message["group"]["group_id"]
-            created_at = group_message["message"]["created_at"]
+            message_id = group_message["message_id"]
+            group_id = group_message["group_id"]
+            created_at = group_message["created_at"]
 
             self.update_attachment(message_id, created_at, file_id=file_id)
 
@@ -104,9 +104,9 @@ class TestDeleteAttachments(BaseServerRestApi):
         for user_id in [BaseTest.USER_ID, BaseTest.OTHER_USER_ID]:
             for file_id in file_ids[user_id]:
                 group_message = self.send_1v1_message(message_type=MessageTypes.IMAGE, user_id=user_id)
-                message_id = group_message["message"]["message_id"]
-                group_id = group_message["group"]["group_id"]
-                created_at = group_message["message"]["created_at"]
+                message_id = group_message["message_id"]
+                group_id = group_message["group_id"]
+                created_at = group_message["created_at"]
 
                 self.update_attachment(message_id, created_at, user_id=user_id, file_id=file_id)
 

@@ -11,7 +11,7 @@ class TestBookmark(BaseServerRestApi):
             user_id=BaseTest.USER_ID,
             receiver_id=BaseTest.OTHER_USER_ID
         )
-        group_id = group_message["group"]["group_id"]
+        group_id = group_message["group_id"]
 
         stats = self.groups_for_user(BaseTest.OTHER_USER_ID, count_unread=True)[0]["stats"]
         self.assertEqual(1, stats["unread"])
@@ -33,7 +33,7 @@ class TestBookmark(BaseServerRestApi):
             user_id=BaseTest.USER_ID,
             receiver_id=BaseTest.OTHER_USER_ID
         )
-        group_id = group_message["group"]["group_id"]
+        group_id = group_message["group_id"]
 
         stats = self.groups_for_user(BaseTest.OTHER_USER_ID, count_unread=True)[0]["stats"]
         self.assertEqual(1, stats["unread"])
@@ -81,7 +81,7 @@ class TestBookmark(BaseServerRestApi):
             user_id=BaseTest.USER_ID,
             receiver_id=BaseTest.OTHER_USER_ID
         )
-        group_id = group_message["group"]["group_id"]
+        group_id = group_message["group_id"]
 
         stats = self.groups_for_user(BaseTest.OTHER_USER_ID, count_unread=True)[0]["stats"]
         self.assertEqual(1, stats["unread"])

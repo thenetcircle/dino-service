@@ -10,13 +10,13 @@ class TestGetMessageInfo(BaseServerRestApi):
 
         info = self.get_message_info(
             user_id=BaseTest.USER_ID,
-            message_id=group_message["message"]["message_id"],
-            group_id=group_message["group"]["group_id"],
-            created_at=group_message["message"]["created_at"],
+            message_id=group_message["message_id"],
+            group_id=group_message["group_id"],
+            created_at=group_message["created_at"],
             expected_response_code=200
         )
 
-        self.assertEqual(group_message["message"]["message_payload"], info["message_payload"])
+        self.assertEqual(group_message["message_payload"], info["message_payload"])
 
     def test_get_message_info_1v1_wrong_created_at(self):
         self.assert_groups_for_user(0)
@@ -24,9 +24,9 @@ class TestGetMessageInfo(BaseServerRestApi):
 
         response = self.get_message_info(
             user_id=BaseTest.USER_ID,
-            message_id=group_message["message"]["message_id"],
-            group_id=group_message["group"]["group_id"],
-            created_at=group_message["message"]["created_at"] - 3600,
+            message_id=group_message["message_id"],
+            group_id=group_message["group_id"],
+            created_at=group_message["created_at"] - 3600,
             expected_response_code=400
         )
 
@@ -38,9 +38,9 @@ class TestGetMessageInfo(BaseServerRestApi):
 
         response = self.get_message_info(
             user_id=BaseTest.OTHER_USER_ID,
-            message_id=group_message["message"]["message_id"],
-            group_id=group_message["group"]["group_id"],
-            created_at=group_message["message"]["created_at"],
+            message_id=group_message["message_id"],
+            group_id=group_message["group_id"],
+            created_at=group_message["created_at"],
             expected_response_code=400
         )
 
@@ -52,9 +52,9 @@ class TestGetMessageInfo(BaseServerRestApi):
 
         response = self.get_message_info(
             user_id=BaseTest.USER_ID,
-            message_id=group_message["message"]["message_id"],
+            message_id=group_message["message_id"],
             group_id="bad-group-id",
-            created_at=group_message["message"]["created_at"],
+            created_at=group_message["created_at"],
             expected_response_code=400
         )
 

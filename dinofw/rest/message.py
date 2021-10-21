@@ -19,10 +19,10 @@ from dinofw.utils.exceptions import QueryValidationError
 class MessageResource(BaseResource):
     async def send_message_to_group(
         self, group_id: str, user_id: int, query: SendMessageQuery, db: Session
-    ) -> (Message, Group):
+    ) -> Message:
         message = self.env.storage.store_message(group_id, user_id, query)
 
-        group_base = self._user_sends_a_message(
+        self._user_sends_a_message(
             group_id,
             user_id=user_id,
             message=message,
@@ -32,28 +32,24 @@ class MessageResource(BaseResource):
             event_type=EventTypes.MESSAGE
         )
 
+        """
         message_amount = self.env.storage.count_messages_in_group_since(group_id, group_base.created_at)
         _, join_times, n_users = self.env.db.get_users_in_group(group_id, db, include_group=False)
-
         group = MessageResource.group_base_to_group(
             group_base, users=join_times, user_count=n_users, message_amount=message_amount,
         )
+        """
 
-        return MessageResource.message_base_to_message(message), group
+        return MessageResource.message_base_to_message(message)
 
     async def send_message_to_user(
         self, user_id: int, query: SendMessageQuery, db: Session
-    ) -> GroupMessage:
+    ) -> Message:
         if query.receiver_id < 1:
             raise NoSuchUserException(query.receiver_id)
 
         group_id = self._get_or_create_group_for_1v1(user_id, query.receiver_id, db)
-        message, updated_group = await self.send_message_to_group(group_id, user_id, query, db)
-
-        return GroupMessage(
-            group=updated_group,
-            message=message
-        )
+        return await self.send_message_to_group(group_id, user_id, query, db)
 
     async def messages_in_group(
         self, group_id: str, query: MessageQuery

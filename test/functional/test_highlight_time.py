@@ -18,7 +18,7 @@ class TestHighlightTime(BaseServerRestApi):
         now_plus_2_days = arrow.utcnow().shift(days=2).datetime
         now_plus_2_days = AbstractQuery.to_ts(now_plus_2_days)
         self.highlight_group_for_user(
-            group_message["group"]["group_id"],
+            group_message["group_id"],
             user_id=BaseTest.OTHER_USER_ID,
             highlight_time=now_plus_2_days
         )

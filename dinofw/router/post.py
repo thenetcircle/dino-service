@@ -54,12 +54,12 @@ async def broadcast(query: BroadcastQuery) -> None:
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.post("/users/{user_id}/send", response_model=GroupMessage)
+@router.post("/users/{user_id}/send", response_model=Message)
 @timeit(logger, "POST", "/users/{user_id}/send")
 @wrap_exception()
 async def send_message_to_user(
     user_id: int, query: SendMessageQuery, db: Session = Depends(get_db)
-) -> GroupMessage:
+) -> Message:
     """
     User sends a message in a **1-to-1** conversation. It is not always known on client side if a
     **1-to-1** group exists between two users, so this API can then be used; Dino will do a group
@@ -291,13 +291,12 @@ async def get_group_information(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-# TODO: test if response model can be union
-@router.post("/groups/{group_id}/user/{user_id}/send", response_model=Union[Message, dict])
+@router.post("/groups/{group_id}/user/{user_id}/send", response_model=Message)
 @timeit(logger, "POST", "/groups/{group_id}/user/{user_id}/send")
 @wrap_exception()
 async def send_message_to_group(
     group_id: str, user_id: int, query: SendMessageQuery, db: Session = Depends(get_db)
-) -> GroupMessage:
+) -> Message:
     """
     User sends a message in a group. This API should also be used for **1-to-1** conversations
     if the client knows the `group_id` for the **1-to-1** conversations. Otherwise the
@@ -309,10 +308,9 @@ async def send_message_to_group(
     * `250`: if an unknown error occurred.
     """
     try:
-        message, group = await environ.env.rest.message.send_message_to_group(
+        return await environ.env.rest.message.send_message_to_group(
             group_id, user_id, query, db
         )
-        return GroupMessage(group=group, message=message)
     except NoSuchGroupException as e:
         log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
     except UserNotInGroupException as e:
