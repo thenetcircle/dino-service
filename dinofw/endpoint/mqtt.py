@@ -266,6 +266,7 @@ class MqttPublishHandler(IClientPublishHandler):
     def send(self, user_ids, data, qos: int = 1):
         for user_id in user_ids:
             try:
+                logger.debug(f"sending to user {user_id}: {data}")
                 self.publisher.send(user_id, data, qos)
             except Exception as e:
                 logger.error(f"could not handle message: {str(e)}")
