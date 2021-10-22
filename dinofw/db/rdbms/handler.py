@@ -419,9 +419,7 @@ class RelationalHandler:
         if update_unread_count:
             statement.update({
                 models.UserGroupStatsEntity.last_updated_time: sent_time,
-                models.UserGroupStatsEntity.unread_count:
-                    0 if models.UserGroupStatsEntity.user_id == sender_user_id
-                    else models.UserGroupStatsEntity.unread_count + 1,
+                models.UserGroupStatsEntity.unread_count: models.UserGroupStatsEntity.unread_count + 1,
                 models.UserGroupStatsEntity.hide: False,
                 models.UserGroupStatsEntity.deleted: False
             })
@@ -429,6 +427,15 @@ class RelationalHandler:
             statement.update({
                 models.UserGroupStatsEntity.last_updated_time: sent_time,
             })
+
+        # above we increase unread for all; now set sender to 0, since it won't be unread for him/her
+        # TODO maybe there's a better way to do this instead of two queries?
+        db.query(models.UserGroupStatsEntity).filter(
+            models.UserGroupStatsEntity.group_id == message.group_id,
+            models.UserGroupStatsEntity.user_id == sender_user_id
+        ).update({
+            models.UserGroupStatsEntity.unread_count: 0
+        })
 
         group_base = GroupBase(**group.__dict__)
 
