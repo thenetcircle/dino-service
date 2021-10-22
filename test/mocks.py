@@ -377,7 +377,6 @@ class FakeDatabase:
     def update_group_new_message(
         self,
         message: MessageBase,
-        sent_time: dt,
         db,
         sender_user_id: int,
         user_ids: List[int],
@@ -387,7 +386,7 @@ class FakeDatabase:
         if message.group_id not in self.groups:
             return
 
-        self.groups[message.group_id].last_message_time = sent_time
+        self.groups[message.group_id].last_message_time = message.created_at
         self.groups[message.group_id].last_message_overview = message.message_payload
         self.groups[message.group_id].last_message_type = message.message_type
         self.groups[message.group_id].last_message_id = message.message_id

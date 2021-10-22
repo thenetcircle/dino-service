@@ -118,7 +118,6 @@ class BaseResource(ABC):
 
         group_base = self.env.db.update_group_new_message(
             message,
-            now,
             db,
             sender_user_id=user_id,
             user_ids=user_ids.copy(),
