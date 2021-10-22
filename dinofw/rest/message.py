@@ -1,11 +1,10 @@
-from typing import List, Union
+from typing import List
 
 from sqlalchemy.orm import Session
 
 from dinofw.endpoint import EventTypes
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import Message, Group
-from dinofw.rest.models import GroupMessage
+from dinofw.rest.models import Message
 from dinofw.rest.queries import AttachmentQuery, EditMessageQuery
 from dinofw.rest.queries import CreateAttachmentQuery
 from dinofw.rest.queries import MessageInfoQuery

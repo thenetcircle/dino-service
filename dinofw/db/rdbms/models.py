@@ -56,6 +56,9 @@ class UserGroupStatsEntity(env.Base):
     join_time = Column(DateTime(timezone=True))
     first_sent = Column(DateTime(timezone=True))
 
+    # increase by one on new message, set to 0 on updating 'last_read'
+    unread_count = Column(Integer, nullable=False, server_default="0")
+
     # used to sync changes to apps
     last_updated_time = Column(DateTime(timezone=True), nullable=False)
 

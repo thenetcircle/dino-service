@@ -329,6 +329,7 @@ class RelationalHandler:
 
             return _unread_count, _receiver_unread_count
 
+        # TODO: use unread_count in postgres
         groups = list()
 
         receivers = dict()
@@ -368,7 +369,6 @@ class RelationalHandler:
     def update_group_new_message(
         self,
         message: MessageBase,
-        sent_time: dt,  # TODO: remove if not needed
         db: Session,
         sender_user_id: int,
         user_ids: List[int],
@@ -380,10 +380,6 @@ class RelationalHandler:
             .filter(models.GroupEntity.group_id == message.group_id)
             .first()
         )
-
-        # TODO: does this work? something about cassandra and python dt
-        #  before, the 'sent_time' argument was used, but that's a new utc_now(), which
-        #  will be a bit off the message creation time
         sent_time = message.created_at
 
         if group is None:
@@ -423,6 +419,7 @@ class RelationalHandler:
         if update_unread_count:
             statement.update({
                 models.UserGroupStatsEntity.last_updated_time: sent_time,
+                models.UserGroupStatsEntity.unread_count: models.UserGroupStatsEntity.unread_count + 1,
                 models.UserGroupStatsEntity.hide: False,
                 models.UserGroupStatsEntity.deleted: False
             })
@@ -1114,6 +1111,7 @@ class RelationalHandler:
         user_stats.receiver_highlight_time = self.long_ago
         user_stats.bookmark = False
         user_stats.hide = False
+        user_stats.unread_count = 0
 
         # have to reset the highlight time (if any) of the other users int he group as well
         if current_highlight_time > long_ago_ts:
