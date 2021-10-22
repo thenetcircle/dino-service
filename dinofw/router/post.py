@@ -47,7 +47,7 @@ router = APIRouter()
 @router.post("/notification/send", response_model=None)
 @timeit(logger, "POST", "/notification/send")
 @wrap_exception()
-async def notify_group(query: NotificationQuery) -> None:
+async def notify_users(query: NotificationQuery) -> None:
     try:
         return await environ.env.rest.broadcast.broadcast_event(query)
     except Exception as e:
