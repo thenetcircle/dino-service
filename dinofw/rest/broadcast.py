@@ -1,13 +1,11 @@
-from sqlalchemy.orm import Session
-
 from dinofw.rest.base import BaseResource
+from dinofw.rest.queries import NotificationQuery
 
 
 class BroadcastResource(BaseResource):
     async def broadcast_event(
-        self, group_id: str, event: dict, db: Session
+        self, query: NotificationQuery
     ) -> None:
-        _, users_and_join_time, _ = self.env.db.get_users_in_group(group_id, db, include_group=False)
-        user_ids = list(users_and_join_time.keys())
-
-        self.env.client_publisher.send(user_ids, event)
+        # TODO: timeit
+        for event in query.events:
+            self.env.client_publisher.send_to_one(event.user_id, event.event)

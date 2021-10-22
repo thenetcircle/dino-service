@@ -271,3 +271,11 @@ class MqttPublishHandler(IClientPublishHandler):
                 logger.error(f"could not handle message: {str(e)}")
                 logger.exception(e)
                 self.env.capture_exception(sys.exc_info())
+
+    def send_to_one(self, user_id: int, data, qos: int = 1):
+        try:
+            self.publisher.send(user_id, data, qos)
+        except Exception as e:
+            logger.error(f"could not handle message: {str(e)}")
+            logger.exception(e)
+            self.env.capture_exception(sys.exc_info())

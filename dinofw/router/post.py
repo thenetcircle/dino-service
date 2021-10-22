@@ -16,7 +16,7 @@ from dinofw.rest.models import Message
 from dinofw.rest.models import OneToOneStats
 from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UserStats
-from dinofw.rest.queries import ActionLogQuery
+from dinofw.rest.queries import ActionLogQuery, NotificationQuery
 from dinofw.rest.queries import AttachmentQuery
 from dinofw.rest.queries import CreateAttachmentQuery
 from dinofw.rest.queries import CreateGroupQuery
@@ -49,12 +49,10 @@ router = APIRouter()
 @wrap_exception()
 async def notify_group(
         group_id: str,
-        request: Request,
-        db: Session = Depends(get_db)
+        query: NotificationQuery
 ) -> None:
     try:
-        event = await request.json()
-        return await environ.env.rest.broadcast.broadcast_event(group_id, event, db)
+        return await environ.env.rest.broadcast.broadcast_event(group_id, query)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 

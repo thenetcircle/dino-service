@@ -75,6 +75,15 @@ class OneToOneQuery(AbstractQuery):
     notification: Optional[dict]
 
 
+class Notification(BaseModel):
+    user_id: int
+    event: dict
+
+
+class NotificationQuery(AbstractQuery):
+    events: List[Notification]
+
+
 class MessageQuery(PaginationQuery, AdminQuery):
     pass
 
