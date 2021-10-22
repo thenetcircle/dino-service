@@ -419,7 +419,9 @@ class RelationalHandler:
         if update_unread_count:
             statement.update({
                 models.UserGroupStatsEntity.last_updated_time: sent_time,
-                models.UserGroupStatsEntity.unread_count: models.UserGroupStatsEntity.unread_count + 1,
+                models.UserGroupStatsEntity.unread_count:
+                    0 if models.UserGroupStatsEntity.user_id == sender_user_id
+                    else models.UserGroupStatsEntity.unread_count + 1,
                 models.UserGroupStatsEntity.hide: False,
                 models.UserGroupStatsEntity.deleted: False
             })
