@@ -25,7 +25,43 @@ from dinofw.rest.queries import UpdateUserGroupStats
 from dinofw.utils import utcnow_dt
 from dinofw.utils import utcnow_ts
 from dinofw.utils.decorators import time_method
-from dinofw.utils.exceptions import NoSuchGroupException, InvalidRangeException
+from dinofw.utils.exceptions import InvalidRangeException
+
+
+def to_user_group_stats(user_stats: UserGroupStatsBase) -> UserGroupStats:
+    delete_before = AbstractQuery.to_ts(user_stats.delete_before)
+    last_updated_time = AbstractQuery.to_ts(user_stats.last_updated_time)
+    last_sent = AbstractQuery.to_ts(user_stats.last_sent, allow_none=True)
+    last_read = AbstractQuery.to_ts(user_stats.last_read, allow_none=True)
+    first_sent = AbstractQuery.to_ts(user_stats.first_sent, allow_none=True)
+    join_time = AbstractQuery.to_ts(user_stats.join_time, allow_none=True)
+    highlight_time = AbstractQuery.to_ts(user_stats.highlight_time, allow_none=True)
+
+    # try using the counter column on the stats table instead of actually counting
+    """
+    unread_amount = self.env.storage.count_messages_in_group_since(
+        group_id, user_stats.last_read
+    )
+    """
+
+    return UserGroupStats(
+        user_id=user_stats.user_id,
+        group_id=user_stats.group_id,
+        unread=user_stats.unread_count,
+        join_time=join_time,
+        receiver_unread=-1,  # TODO: should be count for other user here as well?
+        last_read_time=last_read,
+        last_sent_time=last_sent,
+        delete_before=delete_before,
+        first_sent=first_sent,
+        rating=user_stats.rating,
+        highlight_time=highlight_time,
+        hide=user_stats.hide,
+        pin=user_stats.pin,
+        deleted=user_stats.deleted,
+        bookmark=user_stats.bookmark,
+        last_updated_time=last_updated_time,
+    )
 
 
 class GroupResource(BaseResource):
@@ -183,6 +219,16 @@ class GroupResource(BaseResource):
         self.env.cache.set_messages_in_group(group_id, total_messages, now)
         return total_messages
 
+    async def get_all_user_group_stats(self, group_id: str, db: Session) -> List[UserGroupStats]:
+        user_stats: UserGroupStatsBase = self.env.db.get_user_stats_in_group(
+            group_id, db
+        )
+
+        return [
+            to_user_group_stats(user_stat)
+            for user_stat in user_stats
+        ]
+
     async def get_user_group_stats(
         self, group_id: str, user_id: int, db: Session
     ) -> Optional[UserGroupStats]:
@@ -193,39 +239,7 @@ class GroupResource(BaseResource):
         if user_stats is None:
             return None
 
-        delete_before = AbstractQuery.to_ts(user_stats.delete_before)
-        last_updated_time = AbstractQuery.to_ts(user_stats.last_updated_time)
-        last_sent = AbstractQuery.to_ts(user_stats.last_sent, allow_none=True)
-        last_read = AbstractQuery.to_ts(user_stats.last_read, allow_none=True)
-        first_sent = AbstractQuery.to_ts(user_stats.first_sent, allow_none=True)
-        join_time = AbstractQuery.to_ts(user_stats.join_time, allow_none=True)
-        highlight_time = AbstractQuery.to_ts(user_stats.highlight_time, allow_none=True)
-
-        # try using the counter column on the stats table instead of actually counting
-        """
-        unread_amount = self.env.storage.count_messages_in_group_since(
-            group_id, user_stats.last_read
-        )
-        """
-
-        return UserGroupStats(
-            user_id=user_id,
-            group_id=group_id,
-            unread=user_stats.unread_count,
-            join_time=join_time,
-            receiver_unread=-1,  # TODO: should be count for other user here as well?
-            last_read_time=last_read,
-            last_sent_time=last_sent,
-            delete_before=delete_before,
-            first_sent=first_sent,
-            rating=user_stats.rating,
-            highlight_time=highlight_time,
-            hide=user_stats.hide,
-            pin=user_stats.pin,
-            deleted=user_stats.deleted,
-            bookmark=user_stats.bookmark,
-            last_updated_time=last_updated_time,
-        )
+        return to_user_group_stats(user_stats)
 
     async def update_user_group_stats(
         self, group_id: str, user_id: int, query: UpdateUserGroupStats, db: Session

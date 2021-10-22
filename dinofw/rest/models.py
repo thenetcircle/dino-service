@@ -116,6 +116,11 @@ class UserGroup(BaseModel):
     stats: UserGroupStats
 
 
+class UsersGroup(BaseModel):
+    group: Group
+    stats: List[UserGroupStats]
+
+
 class Histories(BaseModel):
     messages: List[Message]
     last_reads: List[GroupLastRead]
