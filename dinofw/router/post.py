@@ -44,15 +44,12 @@ from dinofw.utils.exceptions import UserNotInGroupException
 router = APIRouter()
 
 
-@router.post("/notification/group/{group_id}", response_model=None)
-@timeit(logger, "POST", "/notification/group/{group_id}")
+@router.post("/notification/send", response_model=None)
+@timeit(logger, "POST", "/notification/send")
 @wrap_exception()
-async def notify_group(
-        group_id: str,
-        query: NotificationQuery
-) -> None:
+async def notify_group(query: NotificationQuery) -> None:
     try:
-        return await environ.env.rest.broadcast.broadcast_event(group_id, query)
+        return await environ.env.rest.broadcast.broadcast_event(query)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 
