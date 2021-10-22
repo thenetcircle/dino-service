@@ -872,6 +872,22 @@ class RelationalHandler:
         db.commit()
 
     # noinspection PyMethodMayBeStatic
+    def get_all_user_stats_in_group(self, group_id: str, db: Session) -> List[UserGroupStatsBase]:
+        user_stats = (
+            db.query(models.UserGroupStatsEntity)
+            .filter(models.UserGroupStatsEntity.group_id == group_id)
+            .all()
+        )
+
+        if user_stats is None:
+            raise NoSuchGroupException(f"no user stats is not in group {group_id}")
+
+        return [
+            UserGroupStatsBase(**user_stat.__dict__)
+            for user_stat in user_stats
+        ]
+
+    # noinspection PyMethodMayBeStatic
     def get_user_stats_in_group(
         self, group_id: str, user_id: int, db: Session
     ) -> Optional[UserGroupStatsBase]:

@@ -220,7 +220,7 @@ class GroupResource(BaseResource):
         return total_messages
 
     async def get_all_user_group_stats(self, group_id: str, db: Session) -> List[UserGroupStats]:
-        user_stats: UserGroupStatsBase = self.env.db.get_user_stats_in_group(
+        user_stats: UserGroupStatsBase = self.env.db.get_all_user_stats_in_group(
             group_id, db
         )
 
