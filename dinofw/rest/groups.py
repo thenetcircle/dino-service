@@ -201,14 +201,17 @@ class GroupResource(BaseResource):
         join_time = AbstractQuery.to_ts(user_stats.join_time, allow_none=True)
         highlight_time = AbstractQuery.to_ts(user_stats.highlight_time, allow_none=True)
 
+        # try using the counter column on the stats table instead of actually counting
+        """
         unread_amount = self.env.storage.count_messages_in_group_since(
             group_id, user_stats.last_read
         )
+        """
 
         return UserGroupStats(
             user_id=user_id,
             group_id=group_id,
-            unread=unread_amount,
+            unread=user_stats.unread_count,
             join_time=join_time,
             receiver_unread=-1,  # TODO: should be count for other user here as well?
             last_read_time=last_read,
