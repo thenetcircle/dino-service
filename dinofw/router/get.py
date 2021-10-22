@@ -1,5 +1,5 @@
 import sys
-from typing import Optional
+from typing import Optional, List
 
 from fastapi import APIRouter
 from fastapi import Depends
@@ -24,7 +24,7 @@ from dinofw.utils.exceptions import UserNotInGroupException
 router = APIRouter()
 
 
-@router.get("/groups/{group_id}/users", response_model=Optional[UserGroup])
+@router.get("/groups/{group_id}/users", response_model=UsersGroup)
 @timeit(logger, "GET", "/groups/{group_id}/users")
 @wrap_exception()
 async def get_all_users_statistics_in_group(
