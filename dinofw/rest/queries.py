@@ -74,7 +74,6 @@ class NotificationGroup(AbstractQuery):
     user_ids: List[int]
     group: dict
     message: dict
-    client_id: str
 
 
 class NotificationQuery(AbstractQuery):
