@@ -47,7 +47,7 @@ class IServerPublishHandler(IPublishHandler, ABC):
 
 class IClientPublishHandler(IPublishHandler, ABC):
     @abstractmethod
-    def message(self, message: MessageBase, notification: dict, user_ids: List[int], group: GroupBase) -> None:
+    def message(self, message: MessageBase, user_ids: List[int], group: GroupBase) -> None:
         """pass"""
 
     @abstractmethod
@@ -55,7 +55,7 @@ class IClientPublishHandler(IPublishHandler, ABC):
         """pass"""
 
     @abstractmethod
-    def attachment(self, attachment: MessageBase, notification: dict, user_ids: List[int], group: GroupBase) -> None:
+    def attachment(self, attachment: MessageBase, user_ids: List[int], group: GroupBase) -> None:
         """pass"""
 
     @abstractmethod
@@ -120,7 +120,6 @@ class IClientPublishHandler(IPublishHandler, ABC):
     @staticmethod
     def message_base_to_event(
             message: Union[MessageBase, Message],
-            notification: dict = None,
             event_type: EventTypes = EventTypes.MESSAGE,
             group: GroupBase = None
     ):
@@ -134,9 +133,6 @@ class IClientPublishHandler(IPublishHandler, ABC):
             "updated_at": to_int(AbstractQuery.to_ts(message.updated_at, allow_none=True)),
             "created_at": to_int(AbstractQuery.to_ts(message.created_at)),
         }
-
-        if notification is not None:
-            event["notification"] = notification
 
         # if the 'message' variable is Message instead of MessageBase, there's no file_id available; (e.g. for /edit)
         if hasattr(message, "file_id"):

@@ -668,7 +668,7 @@ class FakePublisherHandler(IClientPublishHandler):
 
         self.sent_deletions[group_id].append(data)
 
-    def message(self, message: MessageBase, notification: dict = None, user_ids: List[int] = None, group: GroupBase = None) -> None:
+    def message(self, message: MessageBase, user_ids: List[int] = None, group: GroupBase = None) -> None:
         if message.group_id not in self.sent_messages:
             self.sent_messages[message.group_id] = list()
 
@@ -677,7 +677,7 @@ class FakePublisherHandler(IClientPublishHandler):
 
         self.sent_messages[message.group_id].append(message)
 
-    def attachment(self, attachment: MessageBase, notification: dict = None, user_ids: List[int] = None, group: GroupBase = None) -> None:
+    def attachment(self, attachment: MessageBase, user_ids: List[int] = None, group: GroupBase = None) -> None:
         pass
 
     def edit(self, message: MessageBase, user_ids: List[int]) -> None:

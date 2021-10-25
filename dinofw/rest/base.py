@@ -106,7 +106,6 @@ class BaseResource(ABC):
             db,
             should_increase_unread: bool,
             event_type: EventTypes,
-            notification: dict = None,
             update_last_message: bool = True
     ) -> GroupBase:
         """
@@ -136,7 +135,9 @@ class BaseResource(ABC):
             )
 
         if event_type == EventTypes.MESSAGE:
-            self.env.client_publisher.message(message, notification, user_ids, group=group_base)
+            # notifications for message now sent using /v1/notification/send
+            # self.env.client_publisher.message(message, user_ids, group=group_base)
+            pass
 
         elif event_type == EventTypes.ACTION_LOG:
             self.env.client_publisher.action_log(message, user_ids)
@@ -145,7 +146,7 @@ class BaseResource(ABC):
             self.env.client_publisher.edit(message, user_ids)
 
         elif event_type == EventTypes.ATTACHMENT:
-            self.env.client_publisher.attachment(message, notification, user_ids, group=group_base)
+            self.env.client_publisher.attachment(message, user_ids, group=group_base)
 
         return group_base
 

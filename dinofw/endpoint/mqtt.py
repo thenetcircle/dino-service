@@ -185,13 +185,11 @@ class MqttPublishHandler(IClientPublishHandler):
     def message(
             self,
             message: MessageBase,
-            notification: dict,  # TODO: maybe not needed since we'll use the /notify or /broadcast api
             user_ids: List[int],
             group: GroupBase
     ) -> None:
         data = MqttPublishHandler.message_base_to_event(
             message,
-            notification=notification,
             event_type=EventTypes.MESSAGE,
             group=group
         )
@@ -203,10 +201,9 @@ class MqttPublishHandler(IClientPublishHandler):
         data = MqttPublishHandler.message_base_to_event(message, event_type=EventTypes.ACTION_LOG)
         self.send(user_ids, data)
 
-    def attachment(self, attachment: MessageBase, notification: dict, user_ids: List[int], group: GroupBase) -> None:
+    def attachment(self, attachment: MessageBase, user_ids: List[int], group: GroupBase) -> None:
         data = MqttPublishHandler.message_base_to_event(
             attachment,
-            notification=notification,
             event_type=EventTypes.ATTACHMENT,
             group=group
         )
