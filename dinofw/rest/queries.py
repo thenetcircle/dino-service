@@ -72,8 +72,7 @@ class AdminQuery(AbstractQuery):
 
 class NotificationGroup(AbstractQuery):
     user_ids: List[int]
-    group: dict
-    message: dict
+    data: dict
 
 
 class NotificationQuery(AbstractQuery):

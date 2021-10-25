@@ -10,11 +10,8 @@ class BroadcastResource(BaseResource):
         user_id_to_stats = self.get_stats_for(query.group_id, db)
 
         for user_group in query.notification:
-            event = {
-                "event_type": EventTypes.MESSAGE,
-                "message": user_group.data.message,
-                "group": user_group.data.group
-            }
+            event = user_group.data.copy()
+            event["event_type"] = EventTypes.MESSAGE
 
             for user_id in user_group.user_ids:
                 event_with_stats = event.copy()
