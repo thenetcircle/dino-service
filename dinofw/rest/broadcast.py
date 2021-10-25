@@ -31,6 +31,20 @@ class BroadcastResource(BaseResource):
         stats_dict["last_read"] = int(NotificationQuery.to_ts(stats_dict["last_read"]) * 1000)
         stats_dict["last_sent"] = int(NotificationQuery.to_ts(stats_dict["last_sent"]) * 1000)
         stats_dict["delete_before"] = int(NotificationQuery.to_ts(stats_dict["delete_before"]) * 1000)
+        stats_dict["join_time"] = int(NotificationQuery.to_ts(stats_dict["join_time"]) * 1000)
+
+        if stats_dict["highlight_time"]:
+            stats_dict["highlight_time"] = int(NotificationQuery.to_ts(stats_dict["highlight_time"]) * 1000)
+
+        if stats_dict["last_updated_time"]:
+            stats_dict["last_updated_time"] = int(NotificationQuery.to_ts(stats_dict["last_updated_time"]) * 1000)
+
+        if stats_dict["first_sent"]:
+            stats_dict["first_sent"] = int(NotificationQuery.to_ts(stats_dict["first_sent"]) * 1000)
+
+        if stats_dict["receiver_highlight_time"]:
+            stats_dict["receiver_highlight_time"] = \
+                int(NotificationQuery.to_ts(stats_dict["receiver_highlight_time"]) * 1000)
 
         # not needed in the mqtt event
         del stats_dict["user_id"]
