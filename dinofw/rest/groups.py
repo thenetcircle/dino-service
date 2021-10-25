@@ -24,8 +24,8 @@ from dinofw.rest.queries import UpdateGroupQuery
 from dinofw.rest.queries import UpdateUserGroupStats
 from dinofw.utils import utcnow_dt
 from dinofw.utils import utcnow_ts
-from dinofw.utils.decorators import time_method
 from dinofw.utils.exceptions import InvalidRangeException
+from dinofw.utils.perf import time_method
 
 
 def to_user_group_stats(user_stats: UserGroupStatsBase) -> UserGroupStats:
