@@ -70,18 +70,24 @@ class AdminQuery(AbstractQuery):
     admin_id: Optional[int]
 
 
-class OneToOneQuery(AbstractQuery):
-    receiver_id: Optional[int]
-    notification: Optional[dict]
+class Notification(AbstractQuery):
+    group: dict
+    message: dict
+    client_id: str
 
 
-class Notification(BaseModel):
-    user_id: int
-    event: dict
+class NotificationGroup(AbstractQuery):
+    user_ids: List[int]
+    data: Notification
 
 
 class NotificationQuery(AbstractQuery):
-    events: List[Notification]
+    group_id: str
+    notification: List[NotificationGroup]
+
+
+class OneToOneQuery(AbstractQuery):
+    receiver_id: Optional[int]
 
 
 class MessageQuery(PaginationQuery, AdminQuery):

@@ -3,7 +3,6 @@ from typing import List, Optional
 
 from fastapi import APIRouter
 from fastapi import Depends
-from fastapi import Request
 from loguru import logger
 from sqlalchemy.orm import Session
 from starlette.background import BackgroundTask
