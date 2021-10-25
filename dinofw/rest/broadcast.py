@@ -1,11 +1,13 @@
+from sqlalchemy.orm import Session
+
 from dinofw.endpoint import EventTypes
 from dinofw.rest.base import BaseResource
 from dinofw.rest.queries import NotificationQuery
 
 
 class BroadcastResource(BaseResource):
-    async def broadcast_event(self, query: NotificationQuery) -> None:
-        user_id_to_stats = self.get_stats_for(query.group_id)
+    async def broadcast_event(self, query: NotificationQuery, db: Session) -> None:
+        user_id_to_stats = self.get_stats_for(query.group_id, db)
 
         for user_group in query.notification:
             event = {
@@ -20,10 +22,10 @@ class BroadcastResource(BaseResource):
 
                 self.env.client_publisher.send_to_one(user_id, event_with_stats)
 
-    def get_stats_for(self, group_id: str):
+    def get_stats_for(self, group_id: str, db: Session):
         return {
             stat.user_id: self.stats_to_event_dict(stat)
-            for stat in self.env.db.get_all_user_stats_in_group(group_id)
+            for stat in self.env.db.get_all_user_stats_in_group(group_id, db)
         }
 
     def stats_to_event_dict(self, user_stats):
