@@ -22,8 +22,8 @@ from dinofw.rest.queries import AbstractQuery
 from dinofw.rest.queries import ActionLogQuery
 from dinofw.utils import utcnow_dt, users_to_group_id
 from dinofw.utils import utcnow_ts
-from dinofw.utils.decorators import time_method
 from dinofw.utils.exceptions import NoSuchGroupException
+from dinofw.utils.perf import time_method
 
 
 class BaseResource(ABC):
