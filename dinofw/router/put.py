@@ -18,9 +18,10 @@ from dinofw.utils.api import get_db
 from dinofw.utils.api import log_error_and_raise_known
 from dinofw.utils.api import log_error_and_raise_unknown
 from dinofw.utils.config import ErrorCodes
-from dinofw.utils.decorators import timeit, wrap_exception
+from dinofw.utils.decorators import wrap_exception
 from dinofw.utils.exceptions import NoSuchGroupException, NoSuchMessageException
 from dinofw.utils.exceptions import UserNotInGroupException
+from dinofw.utils.perf import timeit
 
 router = APIRouter()
 

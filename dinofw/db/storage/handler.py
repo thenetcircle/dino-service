@@ -1,7 +1,7 @@
 import json
 from datetime import datetime as dt
 from time import time
-from typing import Dict, Union
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple

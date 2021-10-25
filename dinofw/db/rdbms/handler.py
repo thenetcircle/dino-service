@@ -31,9 +31,9 @@ from dinofw.utils import users_to_group_id
 from dinofw.utils import utcnow_dt
 from dinofw.utils import utcnow_ts
 from dinofw.utils.config import GroupTypes
-from dinofw.utils.decorators import timeit, time_method
 from dinofw.utils.exceptions import NoSuchGroupException
 from dinofw.utils.exceptions import UserNotInGroupException
+from dinofw.utils.perf import time_method
 
 
 class RelationalHandler:
