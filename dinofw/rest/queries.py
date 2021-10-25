@@ -70,15 +70,11 @@ class AdminQuery(AbstractQuery):
     admin_id: Optional[int]
 
 
-class Notification(AbstractQuery):
+class NotificationGroup(AbstractQuery):
+    user_ids: List[int]
     group: dict
     message: dict
     client_id: str
-
-
-class NotificationGroup(AbstractQuery):
-    user_ids: List[int]
-    data: Notification
 
 
 class NotificationQuery(AbstractQuery):
