@@ -24,8 +24,9 @@ from dinofw.rest.queries import GroupQuery
 from dinofw.rest.queries import GroupUpdatesQuery
 from dinofw.rest.queries import UpdateGroupQuery
 from dinofw.rest.queries import UpdateUserGroupStats
-from dinofw.utils import group_id_to_users
+from dinofw.utils import group_id_to_users, to_dt
 from dinofw.utils import split_into_chunks
+from dinofw.utils import to_ts
 from dinofw.utils import trim_micros
 from dinofw.utils import users_to_group_id
 from dinofw.utils import utcnow_dt
@@ -89,7 +90,7 @@ class RelationalHandler:
             return None, None
 
         group_id, last_sent = group_id_and_last_sent
-        last_sent = AbstractQuery.to_ts(last_sent)
+        last_sent = to_ts(last_sent)
         self.env.cache.set_last_sent_for_user(user_id, group_id, last_sent)
 
         return group_id, last_sent
@@ -140,7 +141,7 @@ class RelationalHandler:
         """
         @time_method(logger, "get_groups_for_user(): query groups")
         def query_groups():
-            until = GroupQuery.to_dt(query.until)
+            until = to_dt(query.until)
 
             statement = (
                 db.query(
@@ -227,10 +228,10 @@ class RelationalHandler:
         """
         @time_method(logger, "get_groups_updated_since(): query groups")
         def query_groups():
-            since = GroupUpdatesQuery.to_dt(query.since)
+            since = to_dt(query.since)
             until = None
             if query.until is not None and query.until > 0:
-                until = GroupUpdatesQuery.to_dt(query.until)
+                until = to_dt(query.until)
 
             statement = (
                 db.query(models.GroupEntity, models.UserGroupStatsEntity)
@@ -390,7 +391,7 @@ class RelationalHandler:
             # for knowing if we need to send read-receipts when user opens a conversation
             self.env.cache.set_last_message_time_in_group(
                 message.group_id,
-                AbstractQuery.to_ts(sent_time)
+                to_ts(sent_time)
             )
 
             # don't increase unread for the sender
@@ -476,7 +477,7 @@ class RelationalHandler:
         )
 
         for user_id, last_read in reads:
-            last_read_float = GroupQuery.to_ts(last_read)
+            last_read_float = to_ts(last_read)
             last_reads[user_id] = last_read_float
 
         self.env.cache.set_last_read_in_group_for_users(
@@ -581,7 +582,7 @@ class RelationalHandler:
         for group_id, user_id, join_time in users:
             if group_id not in group_and_users:
                 group_and_users[group_id] = dict()
-            group_and_users[group_id][user_id] = GroupQuery.to_ts(join_time)
+            group_and_users[group_id][user_id] = to_ts(join_time)
 
         self.env.cache.set_user_ids_and_join_time_in_groups(group_and_users)
         return group_and_users
@@ -604,7 +605,7 @@ class RelationalHandler:
         if users is None or len(users) == 0:
             return dict()
 
-        user_ids_join_time = {user[0]: GroupQuery.to_ts(user[1]) for user in users}
+        user_ids_join_time = {user[0]: to_ts(user[1]) for user in users}
         self.env.cache.set_user_ids_and_join_time_in_group(group_id, user_ids_join_time)
 
         return user_ids_join_time
@@ -683,10 +684,10 @@ class RelationalHandler:
 
         db.commit()
 
-        now_ts = AbstractQuery.to_ts(now)
+        now_ts = to_ts(now)
 
         join_times = {
-            user_id: GroupQuery.to_ts(stats.join_time)
+            user_id: to_ts(stats.join_time)
             for user_id, stats in user_ids_to_stats.items()
         }
         read_times = {user_id: now_ts for user_id in user_ids}
@@ -1032,9 +1033,9 @@ class RelationalHandler:
 
         user_stats, that_user_stats, group = self.get_both_user_stats_in_group(group_id, user_id, query, db)
 
-        last_read = AbstractQuery.to_dt(query.last_read_time, allow_none=True)
-        delete_before = AbstractQuery.to_dt(query.delete_before, allow_none=True)
-        highlight_time = AbstractQuery.to_dt(
+        last_read = to_dt(query.last_read_time, allow_none=True)
+        delete_before = to_dt(query.delete_before, allow_none=True)
+        highlight_time = to_dt(
             query.highlight_time, allow_none=True
         )
         now = utcnow_dt()
@@ -1095,7 +1096,7 @@ class RelationalHandler:
     def get_last_message_time_in_group(self, group_id: str, db: Session) -> dt:
         last_message_time = self.env.cache.get_last_message_time_in_group(group_id)
         if last_message_time is not None:
-            return AbstractQuery.to_dt(last_message_time)
+            return to_dt(last_message_time)
 
         last_message_time = (
             db.query(
@@ -1111,7 +1112,7 @@ class RelationalHandler:
             raise NoSuchGroupException(group_id)
 
         last_message_time = last_message_time[0]
-        self.env.cache.set_last_message_time_in_group(group_id, AbstractQuery.to_ts(last_message_time))
+        self.env.cache.set_last_message_time_in_group(group_id, to_ts(last_message_time))
 
         return last_message_time
 
@@ -1127,8 +1128,8 @@ class RelationalHandler:
         if user_stats is None:
             raise UserNotInGroupException(f"user {user_id} is not in group {group_id}")
 
-        current_highlight_time = AbstractQuery.to_ts(user_stats.highlight_time)
-        long_ago_ts = AbstractQuery.to_ts(self.long_ago)
+        current_highlight_time = to_ts(user_stats.highlight_time)
+        long_ago_ts = to_ts(self.long_ago)
 
         user_stats.last_read = the_time
         user_stats.last_updated_time = the_time
@@ -1156,7 +1157,7 @@ class RelationalHandler:
         else:
             logger.info("current highlight time is not more than long ago")
 
-        self.env.cache.set_last_read_in_group_for_user(group_id, user_id, AbstractQuery.to_ts(the_time))
+        self.env.cache.set_last_read_in_group_for_user(group_id, user_id, to_ts(the_time))
 
         db.add(user_stats)
         db.commit()
@@ -1171,7 +1172,7 @@ class RelationalHandler:
             .first()
         )
 
-        the_time_ts = GroupQuery.to_ts(the_time)
+        the_time_ts = to_ts(the_time)
         self.env.cache.set_last_read_in_group_for_user(group_id, user_id, the_time_ts)
 
         # used for user global stats api

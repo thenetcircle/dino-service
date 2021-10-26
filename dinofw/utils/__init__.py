@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 
 import arrow
 
@@ -47,3 +48,40 @@ def group_id_to_users(group_id: str) -> (int, int):
     user_b = int(group_id[16:].lstrip("0"), 16)
 
     return sorted([user_a, user_b])
+
+
+def to_dt(s, allow_none: bool = False, default: datetime = None) -> Optional[datetime]:
+    if s is None and default is not None:
+        return default
+
+    if s is None and allow_none:
+        return None
+
+    if s is None:
+        s = utcnow_dt()
+    else:
+        # millis not micros
+        s = arrow.get(round(float(s), 3)).datetime
+
+    return s
+
+
+def to_ts(ds, allow_none: bool = False) -> Optional[float]:
+    if ds is None and allow_none:
+        return None
+
+    if ds is None:
+        return utcnow_ts()
+
+    # millis not micros
+    return round(arrow.get(ds).float_timestamp, 3)
+
+
+def need_to_update_stats_in_group(user_stats, last_message_time: datetime):
+    if user_stats.bookmark:
+        return True
+
+    if user_stats.highlight_time > last_message_time:
+        return True
+
+    return last_message_time > user_stats.last_read

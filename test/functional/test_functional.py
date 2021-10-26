@@ -4,7 +4,7 @@ import time
 import arrow
 
 from dinofw.rest.queries import AbstractQuery
-from dinofw.utils import utcnow_ts
+from dinofw.utils import utcnow_ts, to_dt
 from dinofw.utils.config import MessageTypes, ErrorCodes
 from test.base import BaseTest
 from test.functional.base_functional import BaseServerRestApi
@@ -1194,4 +1194,4 @@ class TestServerRestApi(BaseServerRestApi):
 
         # returns a list of tuples: [(group_id, min(delete_before)),]
         self.assertEqual(to_del[0][0], groups[0])
-        self.assertEqual(to_del[0][1], AbstractQuery.to_dt(delete_time))
+        self.assertEqual(to_del[0][1], to_dt(delete_time))

@@ -25,12 +25,13 @@ from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.models import AttachmentModel
 from dinofw.db.storage.models import MessageModel
 from dinofw.db.storage.schemas import MessageBase
-from dinofw.rest.queries import ActionLogQuery, EditMessageQuery
+from dinofw.rest.queries import ActionLogQuery
 from dinofw.rest.queries import AttachmentQuery
 from dinofw.rest.queries import CreateAttachmentQuery
+from dinofw.rest.queries import EditMessageQuery
 from dinofw.rest.queries import MessageQuery
 from dinofw.rest.queries import SendMessageQuery
-from dinofw.utils import utcnow_dt
+from dinofw.utils import utcnow_dt, to_dt
 from dinofw.utils.config import ConfigKeys, PayloadStatus
 from dinofw.utils.config import DefaultValues
 from dinofw.utils.config import MessageTypes
@@ -112,7 +113,7 @@ class CassandraHandler:
         group_id: str,
         query: MessageQuery
     ) -> List[MessageBase]:
-        until = MessageQuery.to_dt(query.until)
+        until = to_dt(query.until)
 
         raw_messages = (
             MessageModel.objects(
@@ -137,8 +138,8 @@ class CassandraHandler:
             user_stats: UserGroupStatsBase,
             query: MessageQuery
     ) -> List[MessageBase]:
-        until = MessageQuery.to_dt(query.until, allow_none=True)
-        since = MessageQuery.to_dt(query.since, allow_none=True)
+        until = to_dt(query.until, allow_none=True)
+        since = to_dt(query.since, allow_none=True)
 
         statement = AttachmentModel.objects.filter(
             AttachmentModel.group_id == group_id
@@ -177,8 +178,8 @@ class CassandraHandler:
             user_stats: UserGroupStatsBase,
             query: MessageQuery
     ) -> List[MessageBase]:
-        until = MessageQuery.to_dt(query.until, allow_none=True)
-        since = MessageQuery.to_dt(query.since, allow_none=True)
+        until = to_dt(query.until, allow_none=True)
+        since = to_dt(query.since, allow_none=True)
 
         statement = MessageModel.objects.filter(
             MessageModel.group_id == group_id

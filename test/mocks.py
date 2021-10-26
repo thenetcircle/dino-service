@@ -22,7 +22,7 @@ from dinofw.rest.queries import CreateGroupQuery
 from dinofw.rest.queries import GroupQuery
 from dinofw.rest.queries import MessageQuery
 from dinofw.rest.queries import SendMessageQuery
-from dinofw.utils import trim_micros
+from dinofw.utils import trim_micros, to_ts
 from dinofw.utils import utcnow_dt
 from dinofw.utils.config import MessageTypes, PayloadStatus
 from dinofw.utils.exceptions import NoSuchAttachmentException
@@ -609,7 +609,7 @@ class FakeDatabase:
         for user_id in self.stats:
             for group_stats in self.stats[user_id]:
                 if group_stats.group_id == group_id:
-                    last_reads[user_id] = AbstractQuery.to_ts(group_stats.last_read)
+                    last_reads[user_id] = to_ts(group_stats.last_read)
 
         return last_reads
 
@@ -621,7 +621,7 @@ class FakeDatabase:
         for _, stats in self.stats.items():
             for stat in stats:
                 if stat.group_id == group_id:
-                    response[stat.user_id] = AbstractQuery.to_ts(stat.join_time)
+                    response[stat.user_id] = to_ts(stat.join_time)
                     break
 
         return response  # noqa

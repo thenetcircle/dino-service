@@ -15,8 +15,10 @@ from dinofw.rest.queries import CreateActionLogQuery
 from dinofw.rest.queries import GroupQuery
 from dinofw.rest.queries import GroupUpdatesQuery
 from dinofw.rest.queries import UserStatsQuery
-from dinofw.utils import utcnow_ts
+from dinofw.utils import utcnow_ts, to_ts
 from dinofw.utils.config import GroupTypes
+from dinofw.utils.convert import to_user_group
+from dinofw.utils.convert import user_group_stats_base_to_user_group_stats
 
 
 class UserResource(BaseResource):
@@ -27,7 +29,7 @@ class UserResource(BaseResource):
             user_id, query, db
         )
 
-        return BaseResource.to_user_group(user_groups)
+        return to_user_group(user_groups)
 
     def create_action_log_in_all_groups(
             self, user_id: int, query: ActionLogQuery, db: Session
@@ -68,11 +70,11 @@ class UserResource(BaseResource):
             user_id, query, db
         )
 
-        return BaseResource.to_user_group(user_groups)
+        return to_user_group(user_groups)
 
     async def get_user_group_stats(self, group_id: str, user_id: int, db: Session) -> UserGroupStats:
         stats = self.env.db.get_user_stats_in_group(group_id, user_id, db)
-        return BaseResource.user_group_stats_base_to_user_group_stats(stats)
+        return user_group_stats_base_to_user_group_stats(stats)
 
     async def get_user_stats(self, user_id: int, query: UserStatsQuery, db: Session) -> UserStats:
         # if the user has more than 100 groups with unread messages in
@@ -111,7 +113,7 @@ class UserResource(BaseResource):
         if last_sent_time is None:
             last_sent_time = self.long_ago
 
-        last_sent_time_ts = GroupQuery.to_ts(last_sent_time)
+        last_sent_time_ts = to_ts(last_sent_time)
 
         # TODO: what about last_update_time? it's in the model
         return UserStats(

@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from dinofw.endpoint import EventTypes
 from dinofw.rest.base import BaseResource
 from dinofw.rest.queries import NotificationQuery
+from dinofw.utils.convert import stats_to_event_dict
 
 
 class BroadcastResource(BaseResource):
@@ -21,33 +22,6 @@ class BroadcastResource(BaseResource):
 
     def get_stats_for(self, group_id: str, db: Session):
         return {
-            stat.user_id: self.stats_to_event_dict(stat)
+            stat.user_id: stats_to_event_dict(stat)
             for stat in self.env.db.get_all_user_stats_in_group(group_id, db)
         }
-
-    def stats_to_event_dict(self, user_stats):
-        stats_dict = user_stats.dict()
-
-        stats_dict["last_read"] = int(NotificationQuery.to_ts(stats_dict["last_read"]) * 1000)
-        stats_dict["last_sent"] = int(NotificationQuery.to_ts(stats_dict["last_sent"]) * 1000)
-        stats_dict["delete_before"] = int(NotificationQuery.to_ts(stats_dict["delete_before"]) * 1000)
-        stats_dict["join_time"] = int(NotificationQuery.to_ts(stats_dict["join_time"]) * 1000)
-
-        if stats_dict["highlight_time"]:
-            stats_dict["highlight_time"] = int(NotificationQuery.to_ts(stats_dict["highlight_time"]) * 1000)
-
-        if stats_dict["last_updated_time"]:
-            stats_dict["last_updated_time"] = int(NotificationQuery.to_ts(stats_dict["last_updated_time"]) * 1000)
-
-        if stats_dict["first_sent"]:
-            stats_dict["first_sent"] = int(NotificationQuery.to_ts(stats_dict["first_sent"]) * 1000)
-
-        if stats_dict["receiver_highlight_time"]:
-            stats_dict["receiver_highlight_time"] = \
-                int(NotificationQuery.to_ts(stats_dict["receiver_highlight_time"]) * 1000)
-
-        # not needed in the mqtt event
-        del stats_dict["user_id"]
-        del stats_dict["group_id"]
-
-        return stats_dict

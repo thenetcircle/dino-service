@@ -12,7 +12,7 @@ from dinofw.rest.models import UserGroupStats
 from dinofw.rest.models import UsersGroup
 from dinofw.rest.queries import AbstractQuery
 from dinofw.rest.queries import GroupInfoQuery
-from dinofw.utils import environ
+from dinofw.utils import environ, to_ts
 from dinofw.utils.api import get_db
 from dinofw.utils.api import log_error_and_raise_known
 from dinofw.utils.api import log_error_and_raise_unknown
@@ -111,7 +111,7 @@ async def get_message_count_for_user_in_group(
         return MessageCount(
             group_id=group_id,
             user_id=user_id,
-            delete_before=AbstractQuery.to_ts(group_info.delete_before),
+            delete_before=to_ts(group_info.delete_before),
             message_count=messages_since
         )
 

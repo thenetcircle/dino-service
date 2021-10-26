@@ -2,7 +2,7 @@ import time
 
 import arrow
 
-from dinofw.rest.queries import AbstractQuery
+from dinofw.utils import to_ts
 from dinofw.utils import utcnow_ts
 from dinofw.utils.config import MessageTypes
 from test.base import BaseTest
@@ -169,7 +169,7 @@ class BaseServerRestApi(BaseDatabaseTest):
 
     def update_user_stats_to_now(self, group_id: str, user_id: int = BaseTest.USER_ID):
         now = arrow.utcnow().datetime
-        now_ts = AbstractQuery.to_ts(now)
+        now_ts = to_ts(now)
 
         raw_response = self.client.put(
             f"/v1/groups/{group_id}/user/{user_id}/update",
@@ -301,7 +301,7 @@ class BaseServerRestApi(BaseDatabaseTest):
     def highlight_group_for_user(self, group_id: str, user_id: int, highlight_time: float = None) -> None:
         if highlight_time is None:
             now_plus_2_days = arrow.utcnow().shift(days=2).datetime
-            now_plus_2_days = AbstractQuery.to_ts(now_plus_2_days)
+            now_plus_2_days = to_ts(now_plus_2_days)
             highlight_time = now_plus_2_days
 
         raw_response = self.client.put(

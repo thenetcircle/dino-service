@@ -1,27 +1,21 @@
 from abc import ABC
-from datetime import datetime as dt
-from typing import Dict, Union
-from typing import List
+from typing import Union
 
 import arrow
 from loguru import logger
 from sqlalchemy.orm import Session
 
 from dinofw.db.rdbms.schemas import GroupBase
-from dinofw.db.rdbms.schemas import UserGroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.schemas import MessageBase
 from dinofw.endpoint import EventTypes
-from dinofw.rest.models import Group
-from dinofw.rest.models import GroupJoinTime
-from dinofw.rest.models import GroupLastRead
 from dinofw.rest.models import Message
-from dinofw.rest.models import UserGroup
-from dinofw.rest.models import UserGroupStats
-from dinofw.rest.queries import AbstractQuery
 from dinofw.rest.queries import ActionLogQuery
-from dinofw.utils import utcnow_dt, users_to_group_id
+from dinofw.utils import need_to_update_stats_in_group
+from dinofw.utils import users_to_group_id
+from dinofw.utils import utcnow_dt
 from dinofw.utils import utcnow_ts
+from dinofw.utils.convert import message_base_to_message
 from dinofw.utils.exceptions import NoSuchGroupException
 from dinofw.utils.perf import time_method
 
@@ -42,7 +36,7 @@ class BaseResource(ABC):
         last_message_time = self.env.db.get_last_message_time_in_group(group_id, db)
 
         # if a user opens a conversation a second time and nothing has changed, we don't need to update
-        if BaseResource.need_to_update_stats_in_group(user_stats, last_message_time):
+        if need_to_update_stats_in_group(user_stats, last_message_time):
             now_ts = utcnow_ts()
             now_dt = utcnow_dt(now_ts)
 
@@ -96,7 +90,7 @@ class BaseResource(ABC):
             event_type=EventTypes.ACTION_LOG
         )
 
-        return BaseResource.message_base_to_message(log)
+        return message_base_to_message(log)
 
     def _user_sends_a_message(
             self,
@@ -146,6 +140,7 @@ class BaseResource(ABC):
             self.env.client_publisher.edit(message, user_ids)
 
         elif event_type == EventTypes.ATTACHMENT:
+            # TODO: don't send to mqtt here, use the /notification/send api instead
             self.env.client_publisher.attachment(message, user_ids, group=group_base)
 
         return group_base
@@ -170,131 +165,3 @@ class BaseResource(ABC):
         group_id = group.group_id
         self.env.cache.set_group_exists(group_id, True)
         return group_id
-
-    @staticmethod
-    def need_to_update_stats_in_group(user_stats: UserGroupStatsBase, last_message_time: dt):
-        if user_stats.bookmark:
-            return True
-
-        if user_stats.highlight_time > last_message_time:
-            return True
-
-        return last_message_time > user_stats.last_read
-
-    @staticmethod
-    @time_method(logger, "to_user_group()")
-    def to_user_group(user_groups: List[UserGroupBase]):
-        groups: List[UserGroup] = list()
-
-        for user_group in user_groups:
-            groups.append(
-                BaseResource.group_base_to_user_group(
-                    group_base=user_group.group,
-                    stats_base=user_group.user_stats,
-                    receiver_stats_base=user_group.receiver_user_stats,
-                    unread=user_group.unread,
-                    receiver_unread=user_group.receiver_unread,
-                    user_count=user_group.user_count,
-                    users=user_group.user_join_times,
-                )
-            )
-
-        return groups
-
-    @staticmethod
-    def message_base_to_message(message: MessageBase) -> Message:
-        message_dict = message.dict()
-
-        message_dict["updated_at"] = AbstractQuery.to_ts(
-            message_dict["updated_at"], allow_none=True
-        )
-        message_dict["created_at"] = AbstractQuery.to_ts(
-            message_dict["created_at"], allow_none=True
-        )
-
-        return Message(**message_dict)
-
-    @staticmethod
-    def group_base_to_group(
-        group: GroupBase,
-        users: Dict[int, float],
-        user_count: int,
-        message_amount: int = -1
-    ) -> Group:
-        group_dict = group.dict()
-
-        users = [
-            GroupJoinTime(user_id=user_id, join_time=join_time,)
-            for user_id, join_time in users.items()
-        ]
-        users.sort(key=lambda user: user.join_time, reverse=True)
-
-        group_dict["updated_at"] = AbstractQuery.to_ts(
-            group_dict["updated_at"], allow_none=True
-        )
-        group_dict["created_at"] = AbstractQuery.to_ts(group_dict["created_at"])
-        group_dict["last_message_time"] = AbstractQuery.to_ts(
-            group_dict["last_message_time"]
-        )
-        group_dict["first_message_time"] = AbstractQuery.to_ts(
-            group_dict["first_message_time"]
-        )
-        group_dict["users"] = users
-        group_dict["user_count"] = user_count
-        group_dict["message_amount"] = message_amount
-
-        return Group(**group_dict)
-
-    @staticmethod
-    def group_base_to_user_group(
-        group_base: GroupBase,
-        stats_base: UserGroupStatsBase,
-        receiver_stats_base: UserGroupStatsBase,
-        users: Dict[int, float],
-        user_count: int,
-        receiver_unread: int,
-        unread: int,
-    ) -> UserGroup:
-        group = BaseResource.group_base_to_group(group_base, users, user_count)
-
-        stats_dict = stats_base.__dict__
-        stats_dict["unread"] = unread
-        stats_dict["receiver_unread"] = receiver_unread
-        stats_dict["receiver_highlight_time"] = AbstractQuery.to_ts(stats_base.receiver_highlight_time)
-
-        if receiver_stats_base is not None:
-            stats_dict["receiver_delete_before"] = AbstractQuery.to_ts(receiver_stats_base.delete_before)
-            stats_dict["receiver_hide"] = receiver_stats_base.hide
-            stats_dict["receiver_deleted"] = receiver_stats_base.deleted
-
-        stats_dict["last_read_time"] = AbstractQuery.to_ts(stats_base.last_read)
-        stats_dict["last_sent_time"] = AbstractQuery.to_ts(stats_base.last_sent)
-        stats_dict["join_time"] = AbstractQuery.to_ts(stats_base.join_time)
-        stats_dict["delete_before"] = AbstractQuery.to_ts(stats_base.delete_before)
-        stats_dict["highlight_time"] = AbstractQuery.to_ts(
-            stats_base.highlight_time, allow_none=True
-        )
-        stats_dict["first_sent"] = AbstractQuery.to_ts(
-            stats_base.first_sent, allow_none=True
-        )
-        stats_dict["last_updated_time"] = AbstractQuery.to_ts(
-            stats_base.last_updated_time
-        )
-
-        stats = UserGroupStats(**stats_dict)
-
-        return UserGroup(group=group, stats=stats,)
-
-    @staticmethod
-    def user_group_stats_base_to_user_group_stats(user_stats: UserGroupStatsBase) -> UserGroupStats:
-        stats_dict = user_stats.dict()
-
-        stats_dict["last_read"] = AbstractQuery.to_ts(stats_dict["last_read"])
-        stats_dict["last_sent"] = AbstractQuery.to_ts(stats_dict["last_sent"])
-        stats_dict["delete_before"] = AbstractQuery.to_ts(stats_dict["delete_before"])
-
-        return UserGroupStats(**stats_dict)
-
-    @staticmethod
-    def to_last_read(user_id: int, last_read: float) -> GroupLastRead:
-        return GroupLastRead(user_id=user_id, last_read=last_read)

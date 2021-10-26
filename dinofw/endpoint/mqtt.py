@@ -2,7 +2,7 @@ import json
 import os
 import socket
 import sys
-from typing import List, Optional
+from typing import List
 
 import bcrypt
 import redis
@@ -16,6 +16,9 @@ from dinofw.endpoint import EventTypes
 from dinofw.endpoint import IClientPublishHandler
 from dinofw.endpoint import IClientPublisher
 from dinofw.utils.config import ConfigKeys
+from dinofw.utils.convert import group_base_to_event
+from dinofw.utils.convert import message_base_to_event
+from dinofw.utils.convert import read_to_event
 
 
 class MqttPublisher(IClientPublisher):
@@ -188,7 +191,7 @@ class MqttPublishHandler(IClientPublishHandler):
             user_ids: List[int],
             group: GroupBase
     ) -> None:
-        data = MqttPublishHandler.message_base_to_event(
+        data = message_base_to_event(
             message,
             event_type=EventTypes.MESSAGE,
             group=group
@@ -198,11 +201,11 @@ class MqttPublishHandler(IClientPublishHandler):
         self.send(user_ids, data)
 
     def action_log(self, message: MessageBase, user_ids: List[int]) -> None:
-        data = MqttPublishHandler.message_base_to_event(message, event_type=EventTypes.ACTION_LOG)
+        data = message_base_to_event(message, event_type=EventTypes.ACTION_LOG)
         self.send(user_ids, data)
 
     def attachment(self, attachment: MessageBase, user_ids: List[int], group: GroupBase) -> None:
-        data = MqttPublishHandler.message_base_to_event(
+        data = message_base_to_event(
             attachment,
             event_type=EventTypes.ATTACHMENT,
             group=group
@@ -210,7 +213,7 @@ class MqttPublishHandler(IClientPublishHandler):
         self.send(user_ids, data)
 
     def edit(self, message: MessageBase, user_ids: List[int]) -> None:
-        data = MqttPublishHandler.message_base_to_event(message, event_type=EventTypes.EDIT)
+        data = message_base_to_event(message, event_type=EventTypes.EDIT)
         self.send(user_ids, data)
 
     def read(self, group_id: str, user_id: int, user_ids: List[int], now: float) -> None:
@@ -218,7 +221,7 @@ class MqttPublishHandler(IClientPublishHandler):
         if len(user_ids) > 2:
             return
 
-        data = MqttPublishHandler.read_to_event(group_id, user_id, now)
+        data = read_to_event(group_id, user_id, now)
         self.send(user_ids, data)
 
     def delete_attachments(
@@ -242,14 +245,14 @@ class MqttPublishHandler(IClientPublishHandler):
         #     loop.close()
         #
         # for now, just use qos of 0 for deletion events, not the end of the
-        # world if they aren't delivered, and vernemq will upgrade the qos for
-        # us as specified in the configuration:
+        # world if they aren't delivered, and vernemq should upgrade the qos for
+        # us anyway as specified in the configuration:
         #
         #     upgrade_outgoing_qos = on
         self.send(user_ids, data, qos=0)
 
     def group_change(self, group_base: GroupBase, user_ids: List[int]) -> None:
-        data = MqttPublishHandler.group_base_to_event(group_base, user_ids)
+        data = group_base_to_event(group_base, user_ids)
         self.send(user_ids, data)
 
     def join(self, group_id: str, user_ids: List[int], joiner_ids: List[int], now: float) -> None:

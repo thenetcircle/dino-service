@@ -12,8 +12,8 @@ from strict_rfc3339 import timestamp_to_rfc3339_utcoffset
 from dinofw.db.storage.schemas import MessageBase
 from dinofw.endpoint import IServerPublishHandler
 from dinofw.endpoint import IServerPublisher
-from dinofw.rest.queries import AbstractQuery
 from dinofw.utils import split_into_chunks
+from dinofw.utils import to_ts
 from dinofw.utils.activity import ActivityBuilder
 from dinofw.utils.config import ConfigKeys
 
@@ -22,7 +22,7 @@ logging.getLogger("kafka.conn").setLevel(logging.WARNING)
 
 
 def to_rfc3339(date: dt):
-    return timestamp_to_rfc3339_utcoffset(AbstractQuery.to_ts(date))
+    return timestamp_to_rfc3339_utcoffset(to_ts(date))
 
 
 class IKafkaWriterFactory(ABC):

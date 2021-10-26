@@ -1,4 +1,5 @@
 from dinofw.rest.queries import AbstractQuery
+from dinofw.utils import to_ts
 from test.base import BaseTest
 import arrow
 from test.functional.base_functional import BaseServerRestApi
@@ -16,7 +17,7 @@ class TestHighlightTime(BaseServerRestApi):
         self.assertEqual(self.long_ago, stats["receiver_highlight_time"])
 
         now_plus_2_days = arrow.utcnow().shift(days=2).datetime
-        now_plus_2_days = AbstractQuery.to_ts(now_plus_2_days)
+        now_plus_2_days = to_ts(now_plus_2_days)
         self.highlight_group_for_user(
             group_message["group_id"],
             user_id=BaseTest.OTHER_USER_ID,

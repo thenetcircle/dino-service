@@ -1,17 +1,10 @@
 from abc import ABC
 from abc import abstractmethod
-from typing import List, Union
+from typing import List
 
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.storage.schemas import MessageBase
-from dinofw.rest.models import Message
-from dinofw.rest.queries import AbstractQuery
-
-
-def to_int(time_float):
-    if not time_float:
-        return 0
-    return int(time_float * 1000)
+from dinofw.utils.convert import to_int
 
 
 class EventTypes:
@@ -107,68 +100,6 @@ class IClientPublishHandler(IPublishHandler, ABC):
             data["user_ids"] = [str(uid) for uid in user_ids]
 
         return data
-
-    @staticmethod
-    def read_to_event(group_id: str, user_id: int, now: float):
-        return {
-            "event_type": EventTypes.READ,
-            "group_id": group_id,
-            "user_id": str(user_id),
-            "read_at": to_int(now),
-        }
-
-    @staticmethod
-    def message_base_to_event(
-            message: Union[MessageBase, Message],
-            event_type: EventTypes = EventTypes.MESSAGE,
-            group: GroupBase = None
-    ):
-        event = {
-            "event_type": event_type,
-            "group_id": message.group_id,
-            "sender_id": str(message.user_id),
-            "message_id": message.message_id,
-            "message_payload": message.message_payload,
-            "message_type": message.message_type,
-            "updated_at": to_int(AbstractQuery.to_ts(message.updated_at, allow_none=True)),
-            "created_at": to_int(AbstractQuery.to_ts(message.created_at)),
-        }
-
-        # if the 'message' variable is Message instead of MessageBase, there's no file_id available; (e.g. for /edit)
-        if hasattr(message, "file_id"):
-            event["file_id"] = message.file_id
-
-        if group is not None:
-            group_dict = IClientPublishHandler.group_base_to_event(group)
-            del group_dict["event_type"]
-
-            event["group"] = group_dict
-
-        return event
-
-    @staticmethod
-    def group_base_to_event(group: GroupBase, user_ids: List[int] = None) -> dict:
-        group_dict = {
-            "event_type": EventTypes.GROUP,
-            "group_id": group.group_id,
-            "name": group.name,
-            "description": group.description,
-            "updated_at": to_int(AbstractQuery.to_ts(group.updated_at, allow_none=True)),
-            "created_at": to_int(AbstractQuery.to_ts(group.created_at)),
-            "last_message_time": to_int(AbstractQuery.to_ts(group.last_message_time, allow_none=True)),
-            "last_message_overview": group.last_message_overview,
-            "last_message_type": group.last_message_type,
-            "last_message_user_id": str(group.last_message_user_id),
-            "status": group.status,
-            "group_type": group.group_type,
-            "owner_id": str(group.owner_id),
-            "meta": group.meta
-        }
-
-        if user_ids is not None:
-            group_dict["user_ids"] = [str(uid) for uid in user_ids]
-
-        return group_dict
 
 
 class IClientPublisher(ABC):

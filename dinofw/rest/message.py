@@ -5,12 +5,15 @@ from sqlalchemy.orm import Session
 from dinofw.endpoint import EventTypes
 from dinofw.rest.base import BaseResource
 from dinofw.rest.models import Message
-from dinofw.rest.queries import AttachmentQuery, EditMessageQuery
+from dinofw.rest.queries import AttachmentQuery
 from dinofw.rest.queries import CreateAttachmentQuery
+from dinofw.rest.queries import EditMessageQuery
 from dinofw.rest.queries import MessageInfoQuery
 from dinofw.rest.queries import MessageQuery
 from dinofw.rest.queries import SendMessageQuery
-from dinofw.utils import utcnow_ts, users_to_group_id
+from dinofw.utils import users_to_group_id
+from dinofw.utils import utcnow_ts
+from dinofw.utils.convert import message_base_to_message
 from dinofw.utils.exceptions import NoSuchUserException
 from dinofw.utils.exceptions import QueryValidationError
 
@@ -38,7 +41,7 @@ class MessageResource(BaseResource):
         )
         """
 
-        return MessageResource.message_base_to_message(message)
+        return message_base_to_message(message)
 
     async def send_message_to_user(
         self, user_id: int, query: SendMessageQuery, db: Session
@@ -56,7 +59,7 @@ class MessageResource(BaseResource):
         messages = list()
 
         for message_base in raw_messages:
-            message = MessageResource.message_base_to_message(message_base)
+            message = message_base_to_message(message_base)
             messages.append(message)
 
         return messages
@@ -75,7 +78,7 @@ class MessageResource(BaseResource):
         messages = list()
 
         for message_base in raw_messages:
-            message = MessageResource.message_base_to_message(message_base)
+            message = message_base_to_message(message_base)
             messages.append(message)
 
         return messages
@@ -89,7 +92,7 @@ class MessageResource(BaseResource):
             query
         )
 
-        return MessageResource.message_base_to_message(message_base)
+        return message_base_to_message(message_base)
 
     async def get_message_info(self, user_id: int, message_id: str, query: MessageInfoQuery) -> Message:
         message_base = self.env.storage.get_message_with_id(
@@ -99,7 +102,7 @@ class MessageResource(BaseResource):
             created_at=query.created_at
         )
 
-        return MessageResource.message_base_to_message(message_base)
+        return message_base_to_message(message_base)
 
     async def create_attachment(
         self, user_id: int, message_id: str, query: CreateAttachmentQuery, db: Session
@@ -134,7 +137,7 @@ class MessageResource(BaseResource):
             update_last_message=update_last_message
         )
 
-        return MessageResource.message_base_to_message(attachment)
+        return message_base_to_message(attachment)
 
     def delete_message(
         self, group_id: str, user_id: int, message_id: str, db: Session

@@ -1,41 +1,11 @@
-from datetime import datetime as dt
 from typing import List
 from typing import Optional
 
-import arrow
 from pydantic import BaseModel
-
-from dinofw.utils import utcnow_dt
-from dinofw.utils import utcnow_ts
 
 
 class AbstractQuery(BaseModel):
-    @staticmethod
-    def to_dt(s, allow_none: bool = False, default: dt = None) -> Optional[dt]:
-        if s is None and default is not None:
-            return default
-
-        if s is None and allow_none:
-            return None
-
-        if s is None:
-            s = utcnow_dt()
-        else:
-            # millis not micros
-            s = arrow.get(round(float(s), 3)).datetime
-
-        return s
-
-    @staticmethod
-    def to_ts(ds, allow_none: bool = False) -> Optional[float]:
-        if ds is None and allow_none:
-            return None
-
-        if ds is None:
-            return utcnow_ts()
-
-        # millis not micros
-        return round(arrow.get(ds).float_timestamp, 3)
+    pass
 
 
 class ActionLogQuery(BaseModel):
@@ -86,13 +56,6 @@ class OneToOneQuery(AbstractQuery):
 
 class MessageQuery(PaginationQuery, AdminQuery):
     pass
-
-
-class SearchQuery(PaginationQuery):
-    # TODO: not used
-    keyword: Optional[str]
-    group_type: Optional[int]
-    status: Optional[int]
 
 
 class SendMessageQuery(OneToOneQuery):
@@ -174,6 +137,4 @@ class EditMessageQuery(OneToOneQuery):
 
     created_at: float
     group_id: Optional[str]
-
-    # fields that can be updated
     context: Optional[str]

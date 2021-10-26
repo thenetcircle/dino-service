@@ -52,8 +52,6 @@ async def delete_all_groups_for_user(
     """
     When a user removes his/her profile, make the user leave all groups.
 
-    # TODO: discuss about deletion of messages; when? GDPR
-
     This API is run asynchronously, and returns a `201 Created` instead of
     `200 OK`.
 

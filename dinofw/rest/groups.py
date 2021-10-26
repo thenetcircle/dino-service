@@ -14,7 +14,6 @@ from dinofw.rest.models import Histories
 from dinofw.rest.models import Message
 from dinofw.rest.models import OneToOneStats
 from dinofw.rest.models import UserGroupStats
-from dinofw.rest.queries import AbstractQuery
 from dinofw.rest.queries import CreateActionLogQuery
 from dinofw.rest.queries import CreateGroupQuery
 from dinofw.rest.queries import GroupInfoQuery
@@ -22,46 +21,16 @@ from dinofw.rest.queries import JoinGroupQuery
 from dinofw.rest.queries import MessageQuery
 from dinofw.rest.queries import UpdateGroupQuery
 from dinofw.rest.queries import UpdateUserGroupStats
+from dinofw.utils import to_dt
+from dinofw.utils import to_ts
 from dinofw.utils import utcnow_dt
 from dinofw.utils import utcnow_ts
+from dinofw.utils.convert import group_base_to_group
+from dinofw.utils.convert import message_base_to_message
+from dinofw.utils.convert import to_last_read
+from dinofw.utils.convert import to_user_group_stats
 from dinofw.utils.exceptions import InvalidRangeException
 from dinofw.utils.perf import time_method
-
-
-def to_user_group_stats(user_stats: UserGroupStatsBase) -> UserGroupStats:
-    delete_before = AbstractQuery.to_ts(user_stats.delete_before)
-    last_updated_time = AbstractQuery.to_ts(user_stats.last_updated_time)
-    last_sent = AbstractQuery.to_ts(user_stats.last_sent, allow_none=True)
-    last_read = AbstractQuery.to_ts(user_stats.last_read, allow_none=True)
-    first_sent = AbstractQuery.to_ts(user_stats.first_sent, allow_none=True)
-    join_time = AbstractQuery.to_ts(user_stats.join_time, allow_none=True)
-    highlight_time = AbstractQuery.to_ts(user_stats.highlight_time, allow_none=True)
-
-    # try using the counter column on the stats table instead of actually counting
-    """
-    unread_amount = self.env.storage.count_messages_in_group_since(
-        group_id, user_stats.last_read
-    )
-    """
-
-    return UserGroupStats(
-        user_id=user_stats.user_id,
-        group_id=user_stats.group_id,
-        unread=user_stats.unread_count,
-        join_time=join_time,
-        receiver_unread=-1,  # TODO: should be count for other user here as well?
-        last_read_time=last_read,
-        last_sent_time=last_sent,
-        delete_before=delete_before,
-        first_sent=first_sent,
-        rating=user_stats.rating,
-        highlight_time=highlight_time,
-        hide=user_stats.hide,
-        pin=user_stats.pin,
-        deleted=user_stats.deleted,
-        bookmark=user_stats.bookmark,
-        last_updated_time=last_updated_time,
-    )
 
 
 class GroupResource(BaseResource):
@@ -94,7 +63,7 @@ class GroupResource(BaseResource):
         if query.count_messages:
             message_amount = self.env.storage.count_messages_in_group_since(group_id, group.created_at)
 
-        return GroupResource.group_base_to_group(
+        return group_base_to_group(
             group, users=first_users, user_count=n_users, message_amount=message_amount,
         )
 
@@ -110,7 +79,7 @@ class GroupResource(BaseResource):
         attachments = self.env.storage.get_attachments_in_group_for_user(group_id, user_stats, query)
 
         return [
-            GroupResource.message_base_to_message(attachment)
+            message_base_to_message(attachment)
             for attachment in attachments
         ]
 
@@ -148,7 +117,7 @@ class GroupResource(BaseResource):
 
         return OneToOneStats(
             stats=user_stats,
-            group=GroupResource.group_base_to_group(
+            group=group_base_to_group(
                 group=group,
                 users=users_and_join_time,
                 user_count=len(users_and_join_time),
@@ -169,7 +138,7 @@ class GroupResource(BaseResource):
         @time_method(logger, "histories().get_messages()")
         def get_messages():
             return [
-                GroupResource.message_base_to_message(message)
+                message_base_to_message(message)
                 for message in self.env.storage.get_messages_in_group_for_user(
                     group_id, user_stats, query
                 )
@@ -178,7 +147,7 @@ class GroupResource(BaseResource):
         @time_method(logger, "histories().get_last_reads()")
         def get_last_reads():
             return [
-                GroupResource.to_last_read(this_user_id, last_read)
+                to_last_read(this_user_id, last_read)
                 for this_user_id, last_read in self.env.db.get_last_reads_in_group(
                     group_id, db
                 ).items()
@@ -210,7 +179,7 @@ class GroupResource(BaseResource):
             until = self.long_ago
             n_messages = 0
         else:
-            until = AbstractQuery.to_dt(until)
+            until = to_dt(until)
 
         messages_since = self.env.storage.count_messages_in_group_since(group_id, until)
         total_messages = n_messages + messages_since
@@ -220,7 +189,7 @@ class GroupResource(BaseResource):
         return total_messages
 
     async def get_all_user_group_stats(self, group_id: str, db: Session) -> List[UserGroupStats]:
-        user_stats: UserGroupStatsBase = self.env.db.get_all_user_stats_in_group(
+        user_stats: List[UserGroupStatsBase] = self.env.db.get_all_user_stats_in_group(
             group_id, db
         )
 
@@ -251,7 +220,7 @@ class GroupResource(BaseResource):
         self, user_id: int, query: CreateGroupQuery, db: Session
     ) -> Group:
         now = utcnow_dt()
-        now_ts = CreateGroupQuery.to_ts(now)
+        now_ts = to_ts(now)
 
         group_base = self.env.db.create_group(user_id, query, now, db)
         users = {user_id: float(now_ts)}
@@ -263,7 +232,7 @@ class GroupResource(BaseResource):
             group_base.group_id, users, now, db
         )
 
-        group = GroupResource.group_base_to_group(
+        group = group_base_to_group(
             group=group_base, users=users, user_count=len(users),
         )
 
@@ -288,7 +257,7 @@ class GroupResource(BaseResource):
 
     async def join_group(self, group_id: str, query: JoinGroupQuery, db: Session) -> None:
         now = utcnow_dt()
-        now_ts = AbstractQuery.to_ts(now)
+        now_ts = to_ts(now)
 
         user_ids_and_last_read = {
             user_id: float(now_ts)
