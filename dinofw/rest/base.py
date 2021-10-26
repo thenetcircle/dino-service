@@ -8,16 +8,15 @@ from sqlalchemy.orm import Session
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.schemas import MessageBase
-from dinofw.endpoint import EventTypes
 from dinofw.rest.models import Message
 from dinofw.rest.queries import ActionLogQuery
 from dinofw.utils import need_to_update_stats_in_group
 from dinofw.utils import users_to_group_id
 from dinofw.utils import utcnow_dt
 from dinofw.utils import utcnow_ts
+from dinofw.utils.config import EventTypes
 from dinofw.utils.convert import message_base_to_message
 from dinofw.utils.exceptions import NoSuchGroupException
-from dinofw.utils.perf import time_method
 
 
 class BaseResource(ABC):
@@ -28,7 +27,6 @@ class BaseResource(ABC):
         beginning_of_1995 = 789_000_000
         self.long_ago = arrow.Arrow.utcfromtimestamp(beginning_of_1995).datetime
 
-    @time_method(logger, "_user_opens_conversation()")
     def _user_opens_conversation(self, group_id: str, user_id: int, user_stats: UserGroupStatsBase, db):
         """
         update database and cache with everything related to opening a conversation (if needed)

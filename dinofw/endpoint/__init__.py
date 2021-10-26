@@ -4,20 +4,8 @@ from typing import List
 
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.storage.schemas import MessageBase
+from dinofw.utils.config import EventTypes
 from dinofw.utils.convert import to_int
-
-
-class EventTypes:
-    JOIN = "join"
-    LEAVE = "leave"
-    GROUP = "group"
-    READ = "read"
-    EDIT = "edit"
-    ATTACHMENT = "attachment"
-    MESSAGE = "message"
-    ACTION_LOG = "action_log"
-    DELETE_ATTACHMENT = "delete_attachment"
-    DELETE_MESSAGE = "delete_message"
 
 
 class IPublishHandler(ABC):

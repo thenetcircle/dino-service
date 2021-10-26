@@ -44,5 +44,6 @@ class BaseTest(TestCase):
                 pin=False,
                 bookmark=False,
                 deleted=False,
+                unread_count=0,
             )
         ]

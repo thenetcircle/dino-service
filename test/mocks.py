@@ -567,6 +567,7 @@ class FakeDatabase:
             pin=False,
             bookmark=False,
             deleted=False,
+            unread_count=0,
         )
 
         if user_id in self.stats:

@@ -2,7 +2,6 @@ from typing import List
 
 from sqlalchemy.orm import Session
 
-from dinofw.endpoint import EventTypes
 from dinofw.rest.base import BaseResource
 from dinofw.rest.models import Message
 from dinofw.rest.queries import AttachmentQuery
@@ -13,6 +12,7 @@ from dinofw.rest.queries import MessageQuery
 from dinofw.rest.queries import SendMessageQuery
 from dinofw.utils import users_to_group_id
 from dinofw.utils import utcnow_ts
+from dinofw.utils.config import EventTypes
 from dinofw.utils.convert import message_base_to_message
 from dinofw.utils.exceptions import NoSuchUserException
 from dinofw.utils.exceptions import QueryValidationError

@@ -1,13 +1,10 @@
 from typing import Dict, Union
 from typing import List
 
-from loguru import logger
-
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.rdbms.schemas import UserGroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.schemas import MessageBase
-from dinofw.endpoint import EventTypes
 from dinofw.rest.models import Group
 from dinofw.rest.models import GroupJoinTime
 from dinofw.rest.models import GroupLastRead
@@ -15,7 +12,7 @@ from dinofw.rest.models import Message
 from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UserGroupStats
 from dinofw.utils import to_ts
-from dinofw.utils.perf import time_method
+from dinofw.utils.config import EventTypes
 
 
 def to_int(time_float):
@@ -146,7 +143,6 @@ def group_base_to_group(
     return Group(**group_dict)
 
 
-@time_method(logger, "to_user_group()")
 def to_user_group(user_groups: List[UserGroupBase]):
     groups: List[UserGroup] = list()
 

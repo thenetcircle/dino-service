@@ -30,7 +30,6 @@ from dinofw.utils.convert import message_base_to_message
 from dinofw.utils.convert import to_last_read
 from dinofw.utils.convert import to_user_group_stats
 from dinofw.utils.exceptions import InvalidRangeException
-from dinofw.utils.perf import time_method
 
 
 class GroupResource(BaseResource):
@@ -131,11 +130,9 @@ class GroupResource(BaseResource):
     async def histories(
         self, group_id: str, user_id: int, query: MessageQuery, db: Session
     ) -> Histories:
-        @time_method(logger, "histories().user_stats()")
         def get_user_stats():
             return self.env.db.get_user_stats_in_group(group_id, user_id, db)
 
-        @time_method(logger, "histories().get_messages()")
         def get_messages():
             return [
                 message_base_to_message(message)
@@ -144,7 +141,6 @@ class GroupResource(BaseResource):
                 )
             ]
 
-        @time_method(logger, "histories().get_last_reads()")
         def get_last_reads():
             return [
                 to_last_read(this_user_id, last_read)

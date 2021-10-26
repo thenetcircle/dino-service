@@ -32,6 +32,19 @@ class DefaultValues:
     ACTION_TYPE_LEAVE: Final = 1
 
 
+class EventTypes:
+    JOIN = "join"
+    LEAVE = "leave"
+    GROUP = "group"
+    READ = "read"
+    EDIT = "edit"
+    ATTACHMENT = "attachment"
+    MESSAGE = "message"
+    ACTION_LOG = "action_log"
+    DELETE_ATTACHMENT = "delete_attachment"
+    DELETE_MESSAGE = "delete_message"
+
+
 class RedisKeys:
     RKEY_AUTH: Final = "user:auth:{}"  # user:auth:user_id
     RKEY_USERS_IN_GROUP: Final = "group:users:{}"  # group:users:group_id
