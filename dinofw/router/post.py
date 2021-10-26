@@ -347,7 +347,7 @@ async def create_an_attachment(
     message_id: str,
     query: CreateAttachmentQuery,
     db: Session = Depends(get_db),
-) -> None:
+) -> Message:
     """
     Create an attachment.
 
