@@ -1,5 +1,4 @@
 import sys
-from typing import Optional
 
 from fastapi import APIRouter
 from fastapi import Depends
@@ -10,6 +9,7 @@ from starlette.responses import Response
 from starlette.status import HTTP_201_CREATED
 
 from dinofw.rest.queries import AttachmentQuery
+from dinofw.rest.queries import DeleteAttachmentQuery
 from dinofw.rest.queries import CreateActionLogQuery
 from dinofw.utils import environ
 from dinofw.utils.api import get_db
@@ -72,7 +72,7 @@ async def delete_all_groups_for_user(
 @router.delete("/groups/{group_id}/attachment", status_code=HTTP_201_CREATED)
 @wrap_exception()
 async def delete_attachment_with_file_id(
-    group_id: str, query: AttachmentQuery, db: Session = Depends(get_db)
+    group_id: str, query: DeleteAttachmentQuery, db: Session = Depends(get_db)
 ) -> Response:
     """
     Delete an attachment.
@@ -101,7 +101,7 @@ async def delete_attachment_with_file_id(
 )
 @wrap_exception()
 async def delete_attachments_in_group_for_user(
-    group_id: str, user_id: int, query: Optional[CreateActionLogQuery], db: Session = Depends(get_db)
+    group_id: str, user_id: int, query: DeleteAttachmentQuery, db: Session = Depends(get_db)
 ) -> Response:
     """
     Delete all attachments in this group for this user.
@@ -134,7 +134,7 @@ async def delete_attachments_in_group_for_user(
 @router.delete("/user/{user_id}/attachments", status_code=HTTP_201_CREATED)
 @wrap_exception()
 async def delete_attachments_in_all_groups_from_user(
-    user_id: int, query: CreateActionLogQuery, db: Session = Depends(get_db)
+    user_id: int, query: DeleteAttachmentQuery, db: Session = Depends(get_db)
 ) -> Response:
     """
     Delete all attachments send by this user in all groups.

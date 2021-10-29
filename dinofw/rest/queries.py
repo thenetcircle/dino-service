@@ -103,6 +103,11 @@ class AttachmentQuery(CreateActionLogQuery):
     file_id: str
 
 
+class DeleteAttachmentQuery(CreateActionLogQuery):
+    file_id: Optional[str]
+    status: Optional[int]
+
+
 class UpdateGroupQuery(CreateActionLogQuery):
     status: Optional[int]
     owner: Optional[int]

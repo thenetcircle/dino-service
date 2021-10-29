@@ -14,7 +14,7 @@ from dinofw.rest.models import Histories
 from dinofw.rest.models import Message
 from dinofw.rest.models import OneToOneStats
 from dinofw.rest.models import UserGroupStats
-from dinofw.rest.queries import CreateActionLogQuery
+from dinofw.rest.queries import CreateActionLogQuery, DeleteAttachmentQuery
 from dinofw.rest.queries import CreateGroupQuery
 from dinofw.rest.queries import GroupInfoQuery
 from dinofw.rest.queries import JoinGroupQuery
@@ -275,13 +275,13 @@ class GroupResource(BaseResource):
             self,
             group_id: str,
             user_id: int,
-            query: CreateActionLogQuery,
+            query: DeleteAttachmentQuery,
             db: Session
     ) -> None:
         group = self.env.db.get_group_from_id(group_id, db)
 
         attachments = self.env.storage.delete_attachments(
-            group_id, group.created_at, user_id
+            group_id, group.created_at, user_id, query
         )
 
         now = utcnow_ts()

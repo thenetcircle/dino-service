@@ -10,7 +10,7 @@ from dinofw.rest.base import BaseResource
 from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UserGroupStats
 from dinofw.rest.models import UserStats
-from dinofw.rest.queries import ActionLogQuery
+from dinofw.rest.queries import ActionLogQuery, DeleteAttachmentQuery
 from dinofw.rest.queries import CreateActionLogQuery
 from dinofw.rest.queries import GroupQuery
 from dinofw.rest.queries import GroupUpdatesQuery
@@ -126,9 +126,9 @@ class UserResource(BaseResource):
             last_sent_group_id=last_sent_group_id,
         )
 
-    def delete_all_user_attachments(self, user_id: int, query: CreateActionLogQuery, db: Session) -> None:
+    def delete_all_user_attachments(self, user_id: int, query: DeleteAttachmentQuery, db: Session) -> None:
         group_created_at = self.env.db.get_group_ids_and_created_at_for_user(user_id, db)
-        group_to_atts = self.env.storage.delete_attachments_in_all_groups(group_created_at, user_id)
+        group_to_atts = self.env.storage.delete_attachments_in_all_groups(group_created_at, user_id, query)
 
         now = utcnow_ts()
 

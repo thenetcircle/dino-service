@@ -25,7 +25,7 @@ from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.models import AttachmentModel
 from dinofw.db.storage.models import MessageModel
 from dinofw.db.storage.schemas import MessageBase
-from dinofw.rest.queries import ActionLogQuery
+from dinofw.rest.queries import ActionLogQuery, DeleteAttachmentQuery
 from dinofw.rest.queries import AttachmentQuery
 from dinofw.rest.queries import CreateAttachmentQuery
 from dinofw.rest.queries import EditMessageQuery
@@ -237,13 +237,14 @@ class CassandraHandler:
     def delete_attachments_in_all_groups(
         self,
         group_created_at: List[Tuple[str, dt]],
-        user_id: int
+        user_id: int,
+        query: DeleteAttachmentQuery
     ) -> Dict[str, List[MessageBase]]:
         group_to_atts = dict()
         start = time()
 
         for group_id, created_at in group_created_at:
-            attachments = self.delete_attachments(group_id, created_at, user_id)
+            attachments = self.delete_attachments(group_id, created_at, user_id, query)
 
             if len(attachments):
                 group_to_atts[group_id] = attachments
@@ -288,7 +289,8 @@ class CassandraHandler:
         self,
         group_id: str,
         group_created_at: dt,
-        user_id: int
+        user_id: int,
+        query: DeleteAttachmentQuery
     ) -> List[MessageBase]:
         attachments = (
             AttachmentModel.objects(
@@ -324,7 +326,11 @@ class CassandraHandler:
             if message.message_id in attachment_msg_ids
         ]
 
-        self._update_payload_status_to(messages, PayloadStatus.DELETED)
+        payload_status = query.status
+        if payload_status is None:
+            payload_status = PayloadStatus.DELETED
+
+        self._update_payload_status_to(messages, payload_status)
         self._delete_messages(attachments, "attachments")
 
         return attachment_bases
@@ -333,7 +339,7 @@ class CassandraHandler:
         self,
         group_id: str,
         group_created_at: dt,
-        query: AttachmentQuery
+        query: DeleteAttachmentQuery
     ) -> MessageBase:
         attachment = (
             AttachmentModel.objects(
@@ -364,7 +370,11 @@ class CassandraHandler:
             group_id, str(attachment.message_id), attachment.user_id
         ))
 
-        self._update_payload_status_to([message], PayloadStatus.DELETED)
+        payload_status = query.status
+        if payload_status is None:
+            payload_status = PayloadStatus.DELETED
+
+        self._update_payload_status_to([message], payload_status)
         attachment.delete()
 
         return attachment_base
@@ -593,7 +603,7 @@ class CassandraHandler:
             amount += len(messages)
             until = self._update_messages(messages, callback)
 
-    def _update_payload_status_to(self, messages: List[MessageModel], status: PayloadStatus):
+    def _update_payload_status_to(self, messages: List[MessageModel], status: int):
         start = time()
         with BatchQuery() as b:
             for message in messages:
