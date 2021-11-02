@@ -103,6 +103,7 @@ class BaseResource(ABC):
         """
         update database and cache with everything related to sending a message
         """
+        # TODO: fix this instead of creating a new DT
         # cassandra DT is different from python DT
         now = utcnow_dt()
         user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
@@ -132,14 +133,16 @@ class BaseResource(ABC):
             pass
 
         elif event_type == EventTypes.ACTION_LOG:
-            self.env.client_publisher.action_log(message, user_ids)
+            # self.env.client_publisher.action_log(message, user_ids)
+            pass
 
         elif event_type == EventTypes.EDIT:
             self.env.client_publisher.edit(message, user_ids)
 
         elif event_type == EventTypes.ATTACHMENT:
             # TODO: don't send to mqtt here, use the /notification/send api instead
-            self.env.client_publisher.attachment(message, user_ids, group=group_base)
+            # self.env.client_publisher.attachment(message, user_ids, group=group_base)
+            pass
 
         return group_base
 
