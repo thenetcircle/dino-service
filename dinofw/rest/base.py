@@ -94,7 +94,7 @@ class BaseResource(ABC):
             self,
             group_id: str,
             user_id: int,
-            message: Union[MessageBase, Message],  # can either be a message or an action log
+            message: MessageBase,
             db,
             should_increase_unread: bool,
             event_type: EventTypes,
