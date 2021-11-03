@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import List
 from typing import Optional
 
@@ -45,9 +46,23 @@ class NotificationGroup(AbstractQuery):
     data: dict
 
 
+class EventType(str, Enum):
+    message = "message"
+    recall = "recall"
+    read = "read"
+    hide = "hide"
+    delete = "delete"
+    highlight = "highlight"
+    delete_attachment = "delete_attachment"
+
+
 class NotificationQuery(AbstractQuery):
     group_id: str
+    event_type: EventType
     notification: List[NotificationGroup]
+
+    class Config:
+        use_enum_values = True
 
 
 class OneToOneQuery(AbstractQuery):
