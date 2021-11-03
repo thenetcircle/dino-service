@@ -8,17 +8,16 @@ from sqlalchemy.orm import Session
 from dinofw.db.rdbms.schemas import UserGroupBase
 from dinofw.rest.base import BaseResource
 from dinofw.rest.models import UserGroup
-from dinofw.rest.models import UserGroupStats
 from dinofw.rest.models import UserStats
-from dinofw.rest.queries import ActionLogQuery, DeleteAttachmentQuery
-from dinofw.rest.queries import CreateActionLogQuery
+from dinofw.rest.queries import ActionLogQuery
+from dinofw.rest.queries import DeleteAttachmentQuery
 from dinofw.rest.queries import GroupQuery
 from dinofw.rest.queries import GroupUpdatesQuery
 from dinofw.rest.queries import UserStatsQuery
-from dinofw.utils import utcnow_ts, to_ts
+from dinofw.utils import to_ts
+from dinofw.utils import utcnow_ts
 from dinofw.utils.config import GroupTypes
 from dinofw.utils.convert import to_user_group
-from dinofw.utils.convert import user_group_stats_base_to_user_group_stats
 
 
 class UserResource(BaseResource):
@@ -71,10 +70,6 @@ class UserResource(BaseResource):
         )
 
         return to_user_group(user_groups)
-
-    async def get_user_group_stats(self, group_id: str, user_id: int, db: Session) -> UserGroupStats:
-        stats = self.env.db.get_user_stats_in_group(group_id, user_id, db)
-        return user_group_stats_base_to_user_group_stats(stats)
 
     async def get_user_stats(self, user_id: int, query: UserStatsQuery, db: Session) -> UserStats:
         # if the user has more than 100 groups with unread messages in

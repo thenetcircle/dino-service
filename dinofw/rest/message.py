@@ -149,7 +149,8 @@ class MessageResource(BaseResource):
         )
 
         # TODO: how to tell apps a message was deleted? <-- update: create action log on deletions
-        # TODO: self.env.publisher.delete_message(group_id, message_id)
+        #  now the /notification/send api should be used for this?
+        #  self.env.publisher.delete_message(group_id, message_id)
 
     def delete_attachment(self, group_id: str, query: AttachmentQuery, db: Session) -> None:
         group = self.env.db.get_group_from_id(group_id, db)

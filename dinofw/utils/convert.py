@@ -73,17 +73,6 @@ def to_user_group_stats(user_stats: UserGroupStatsBase) -> UserGroupStats:
     )
 
 
-# TODO: can this be removed? we do something similar in the "to_user_group_stats" above
-def user_group_stats_base_to_user_group_stats(user_stats: UserGroupStatsBase) -> UserGroupStats:
-    stats_dict = user_stats.dict()
-
-    stats_dict["last_read"] = to_ts(stats_dict["last_read"])
-    stats_dict["last_sent"] = to_ts(stats_dict["last_sent"])
-    stats_dict["delete_before"] = to_ts(stats_dict["delete_before"])
-
-    return UserGroupStats(**stats_dict)
-
-
 def group_base_to_user_group(
     group_base: GroupBase,
     stats_base: UserGroupStatsBase,

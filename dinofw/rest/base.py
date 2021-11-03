@@ -127,22 +127,17 @@ class BaseResource(ABC):
                 group_id, user_id, now, db
             )
 
+        # TODO: don't send to mqtt here, use the /notification/send api instead
+        """
         if event_type == EventTypes.MESSAGE:
-            # notifications for message now sent using /v1/notification/send
-            # self.env.client_publisher.message(message, user_ids, group=group_base)
-            pass
-
+            self.env.client_publisher.message(message, user_ids, group=group_base)
         elif event_type == EventTypes.ACTION_LOG:
-            # self.env.client_publisher.action_log(message, user_ids)
-            pass
-
+            self.env.client_publisher.action_log(message, user_ids)
         elif event_type == EventTypes.EDIT:
             self.env.client_publisher.edit(message, user_ids)
-
         elif event_type == EventTypes.ATTACHMENT:
-            # TODO: don't send to mqtt here, use the /notification/send api instead
-            # self.env.client_publisher.attachment(message, user_ids, group=group_base)
-            pass
+            self.env.client_publisher.attachment(message, user_ids, group=group_base)
+        """
 
         return group_base
 

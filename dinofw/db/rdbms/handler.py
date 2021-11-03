@@ -322,6 +322,7 @@ class RelationalHandler:
                 )
 
             if query.count_unread:
+                # TODO: use unread_count in postgres? storage will check redis first, maybe enough
                 _unread_count = self.env.storage.get_unread_in_group(
                     group_id=group.group_id,
                     user_id=user_id,
@@ -330,7 +331,6 @@ class RelationalHandler:
 
             return _unread_count, _receiver_unread_count
 
-        # TODO: use unread_count in postgres
         groups = list()
 
         receivers = dict()
