@@ -28,6 +28,8 @@ class BroadcastResource(BaseResource):
 
     def send_other_event(self, query: NotificationQuery):
         for user_group in query.notification:
+            user_group.data["event_type"] = query.event_type
+
             for user_id in user_group.user_ids:
                 self.env.client_publisher.send_to_one(user_id, user_group.data)
 
