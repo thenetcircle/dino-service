@@ -59,7 +59,6 @@ def timeit(_logger, method: str, tag: str = None, threshold_ms: int = 10, only_l
                             tag_cleaned = tag.lstrip("/").replace("/", ".").replace("{", "").replace("}", "")
                             stats_tag = f"{stats_tag}.{tag_cleaned}"
 
-                        _logger.debug(f"{stats_tag} took {the_time:.2f}ms")
                         environ.env.stats.timing('api.' + stats_tag, the_time)
 
         return decorator
