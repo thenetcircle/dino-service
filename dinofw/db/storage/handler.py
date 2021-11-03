@@ -1,4 +1,5 @@
 import json
+import sys
 from datetime import datetime as dt
 from time import time
 from typing import Dict
@@ -202,8 +203,18 @@ class CassandraHandler:
             # default ordering is descending, so change to ascending when using 'since'
             statement = statement.order_by('created_at')
 
-        messages = statement.limit(query.per_page or DefaultValues.PER_PAGE).all()
-        messages = [CassandraHandler.message_base_from_entity(message) for message in messages]
+        raw_messages = statement.limit(query.per_page or DefaultValues.PER_PAGE).all()
+        # messages = [CassandraHandler.message_base_from_entity(message) for message in raw_messages]
+
+        # TODO: temporarily try/except parsing, invalid attachment data once in db
+        messages = list()
+        for message in raw_messages:
+            try:
+                messages.append(CassandraHandler.message_base_from_entity(message))
+            except Exception as e:
+                logger.error(f"get_messages_in_group_for_user: {str(e)}")
+                logger.exception(e)
+                self.env.capture_exception(sys.exc_info())
 
         if since is None:
             return messages
