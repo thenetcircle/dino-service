@@ -335,8 +335,6 @@ class RelationalHandler:
 
         receivers = dict()
         for stat in receiver_stats:
-            logger.info(stat)
-            logger.info(stat.__dict__)
             receivers[stat.group_id] = UserGroupStatsBase(**stat.__dict__)
 
         # batch all redis/db queries for join times
