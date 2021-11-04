@@ -6,6 +6,7 @@ from abc import abstractmethod
 from datetime import datetime as dt
 from typing import List
 
+from activitystreams import Activity
 from loguru import logger
 from strict_rfc3339 import timestamp_to_rfc3339_utcoffset
 
@@ -128,16 +129,16 @@ class KafkaPublishHandler(IServerPublishHandler):
     ) -> None:
         # batch it in case there's a ton of images, don't want the events to become too large
         for attachments_chunk in split_into_chunks(attachments, 100):
-            event = self.generate_event(group_id, attachments_chunk)
+            event = self.generate_event(group_id, attachments_chunk, user_ids)
             logger.info("sending event to kafka:")
             logger.info(event)
             self.publisher.send(event)
 
-    def generate_event(self, group_id: str, attachments: List[MessageBase]) -> dict:
+    def generate_event(self, group_id: str, attachments: List[MessageBase], user_ids: List[int]) -> dict:
         # same owner for all attachments
         owner_id = attachments[0].user_id
 
-        return ActivityBuilder.enrich(self.env, {
+        activity = ActivityBuilder.enrich(self.env, {
             "actor": {
                 "id": str(owner_id),
             },
@@ -154,6 +155,11 @@ class KafkaPublishHandler(IServerPublishHandler):
             },
             "target": {
                 "objectType": "group",
-                "content": group_id,
+                "content": group_id
             },
         })
+
+        if len(user_ids) == 2:
+            activity["target"]["summary"] = ",".join([str(user_id) for user_id in user_ids])
+
+        return activity
