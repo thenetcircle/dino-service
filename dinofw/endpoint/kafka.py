@@ -6,7 +6,6 @@ from abc import abstractmethod
 from datetime import datetime as dt
 from typing import List
 
-from activitystreams import Activity
 from loguru import logger
 from strict_rfc3339 import timestamp_to_rfc3339_utcoffset
 
