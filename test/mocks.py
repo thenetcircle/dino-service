@@ -14,7 +14,7 @@ from dinofw.db.rdbms.schemas import UserGroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.schemas import MessageBase
 from dinofw.endpoint import IClientPublishHandler, IClientPublisher
-from dinofw.rest.queries import AbstractQuery
+from dinofw.rest.queries import AbstractQuery, DeleteAttachmentQuery
 from dinofw.rest.queries import ActionLogQuery
 from dinofw.rest.queries import AttachmentQuery
 from dinofw.rest.queries import CreateAttachmentQuery
@@ -108,7 +108,8 @@ class FakeStorage:
         self,
         group_id: str,
         group_created_at: dt,
-        user_id: int
+        user_id: int,
+        query: DeleteAttachmentQuery
     ) -> List[MessageBase]:
         attachments = list()
 
@@ -134,7 +135,8 @@ class FakeStorage:
     def delete_attachments_in_all_groups(
         self,
         group_created_at: List[Tuple[str, dt]],
-        user_id: int
+        user_id: int,
+        query: DeleteAttachmentQuery
     ) -> Dict[str, List[MessageBase]]:
         attachments = dict()
 
@@ -391,6 +393,15 @@ class FakeDatabase:
         self.groups[message.group_id].last_message_type = message.message_type
         self.groups[message.group_id].last_message_id = message.message_id
 
+        for user_id in user_ids:
+            for stat in self.stats[user_id]:
+                if stat.group_id != message.group_id:
+                    continue
+                if sender_user_id == user_id:
+                    stat.unread_count = 0
+                else:
+                    stat.unread_count += 1
+
     def set_last_updated_at_for_all_in_group(self, group_id: str, _):
         now = arrow.utcnow().datetime
 
@@ -413,6 +424,7 @@ class FakeDatabase:
 
             stat.last_read = the_time
             stat.highlight_time = the_time
+            stat.unread_count = 0
 
     def create_group(self, owner_id: int, query: CreateGroupQuery, now, _) -> GroupBase:
         created_at = trim_micros(arrow.get(now).shift(seconds=-1).datetime)
