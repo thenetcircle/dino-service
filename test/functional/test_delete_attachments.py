@@ -132,8 +132,8 @@ class TestDeleteAttachments(BaseServerRestApi):
                     self.assert_error(att, ErrorCodes.NO_SUCH_ATTACHMENT)
 
         # only one deletion event even though we deleted five attachments
-        if create_action_logs:
-            # one message, one deletion; client published don't distinguish between the two, both are messages
-            self.assertEqual(2, len(self.env.client_publisher.sent_messages))
+        # if create_action_logs:
+        #     # one message, one deletion; client published don't distinguish between the two, both are messages
+        #     self.assertEqual(2, len(self.env.client_publisher.sent_messages))
 
         self.assertEqual(1, len(self.env.server_publisher.sent_deletions))

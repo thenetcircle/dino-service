@@ -141,7 +141,7 @@ class FakeStorage:
         attachments = dict()
 
         for group_id, created_at in group_created_at:
-            attachments[group_id] = self.delete_attachments(group_id, created_at, user_id)
+            attachments[group_id] = self.delete_attachments(group_id, created_at, user_id, query)
 
         return attachments
 

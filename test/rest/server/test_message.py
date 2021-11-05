@@ -29,9 +29,6 @@ class TestMessageResource(BaseTest):
             db=None,  # noqa
         )
         time.sleep(0.01)
-        self.assertEqual(
-            1, len(self.resource.env.client_publisher.sent_messages[BaseTest.GROUP_ID])
-        )
         self.assertEqual(type(message), Message)
         self.assertIsNotNone(message.message_id)
 
@@ -49,9 +46,6 @@ class TestMessageResource(BaseTest):
             db=None,  # noqa
         )
         time.sleep(0.01)
-        self.assertEqual(
-            2, len(self.resource.env.client_publisher.sent_messages[BaseTest.GROUP_ID])
-        )
 
         new_last_sent = self.resource.env.db.stats[BaseTest.USER_ID][0].last_sent
         new_last_read = self.resource.env.db.stats[BaseTest.USER_ID][0].last_read

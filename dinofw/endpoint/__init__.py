@@ -60,7 +60,7 @@ class IClientPublishHandler(IPublishHandler, ABC):
         data = IClientPublishHandler.create_simple_event(
             event_type=EventTypes.DELETE_ATTACHMENT,
             group_id=group_id,
-            now=to_int(now),
+            now=now,
         )
 
         data["message_ids"] = [att.message_id for att in attachments]

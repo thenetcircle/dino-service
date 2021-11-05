@@ -19,6 +19,6 @@ class TestKafkaPublisher(BaseTest):
         ) for file_id in [f"{str(uuid()).replace('-', '').upper()}.jpg" for _ in range(10)]]
 
         handler = KafkaPublishHandler(self.fake_env)
-        event = handler.generate_event(BaseTest.GROUP_ID, messages)
+        event = handler.generate_event(BaseTest.GROUP_ID, messages, [BaseTest.USER_ID, BaseTest.OTHER_USER_ID])
 
         self.assertEqual(len(messages), len(event["object"]["attachments"]))
