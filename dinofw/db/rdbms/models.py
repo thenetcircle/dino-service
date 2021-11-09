@@ -75,7 +75,7 @@ class UserGroupStatsEntity(env.Base):
     hide = Column(Boolean, default=False, nullable=False)
 
     # for syncing group deletions to apps; will become false as soon as a new message is sent (similar to 'hide')
-    deleted = Column(Boolean, default=False, nullable=False)
+    deleted = Column(Boolean, default=False, nullable=False, server_default="false")
 
     # a user can bookmark a group, which makes it count as "one unread message in this group" (only for this user)
     bookmark = Column(Boolean, default=False, nullable=False)

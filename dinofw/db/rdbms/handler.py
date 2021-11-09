@@ -1333,6 +1333,7 @@ class RelationalHandler:
             last_updated_time=now,
             hide=False,
             pin=False,
+            deleted=False,
             highlight_time=self.long_ago,
             receiver_highlight_time=self.long_ago
         )
