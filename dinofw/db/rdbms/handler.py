@@ -477,7 +477,7 @@ class RelationalHandler:
             .filter(models.UserGroupStatsEntity.group_id == group_id)
             .filter(models.UserGroupStatsEntity.user_id == user_id)
             .first()
-        )
+        )[0]
 
         # the db default value is -1, so even if it's -1, set it in the cache so that we
         # don't have to check the db for every new message
@@ -953,7 +953,7 @@ class RelationalHandler:
             .filter(models.UserGroupStatsEntity.group_id == group_id)
             .filter(models.UserGroupStatsEntity.user_id == user_id)
             .first()
-        )
+        )[0]
 
         if sent == -1:
             return None
