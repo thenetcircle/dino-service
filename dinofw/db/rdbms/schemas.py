@@ -37,6 +37,7 @@ class UserGroupStatsBase(BaseModel):
     first_sent: Optional[datetime]
     receiver_highlight_time: Optional[datetime]
 
+    sent_message_count: int
     unread_count: int
     deleted: bool
     hide: bool

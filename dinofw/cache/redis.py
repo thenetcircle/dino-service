@@ -87,6 +87,19 @@ class CacheRedis(ICache):
     def set_group_exists(self, group_id: str, exists: bool) -> None:
         self.redis.set(RedisKeys.group_exists(group_id), '1' if exists else '0')
 
+    def get_sent_message_count_in_group_for_user(self, group_id: str, user_id: int) -> Optional[int]:
+        key = RedisKeys.sent_message_count_in_group(group_id)
+        count = self.redis.hget(key, str(user_id))
+
+        if count is None:
+            return None
+
+        return int(float(str(count, "utf-8")))
+
+    def set_sent_message_count_in_group_for_user(self, group_id: str, user_id: int, count: int) -> None:
+        key = RedisKeys.sent_message_count_in_group(group_id)
+        self.redis.hset(key, str(user_id), count)
+
     def get_last_read_in_group_for_users(
         self, group_id: str, user_ids: List[int]
     ) -> Tuple[dict, list]:
@@ -94,7 +107,7 @@ class CacheRedis(ICache):
 
         for user_id in user_ids:
             key = RedisKeys.last_read_time(group_id)
-            p.hget(key, user_id)
+            p.hget(key, str(user_id))
 
         not_cached = list()
         last_reads = dict()
@@ -111,7 +124,7 @@ class CacheRedis(ICache):
         self, group_id: str, user_id: int
     ) -> Optional[float]:
         key = RedisKeys.last_read_time(group_id)
-        last_read = self.redis.hget(key, user_id)
+        last_read = self.redis.hget(key, str(user_id))
 
         if last_read is None:
             return None
@@ -125,7 +138,7 @@ class CacheRedis(ICache):
         p = self.redis.pipeline()
 
         for user_id, last_read in users.items():
-            p.hset(key, user_id, last_read)
+            p.hset(key, str(user_id), last_read)
 
         p.execute()
 
@@ -133,18 +146,18 @@ class CacheRedis(ICache):
         self, group_id: str, user_id: int, last_read: float
     ) -> None:
         key = RedisKeys.last_read_time(group_id)
-        self.redis.hset(key, user_id, last_read)
+        self.redis.hset(key, str(user_id), last_read)
 
     def remove_last_read_in_group_for_user(self, group_id: str, user_id: int) -> None:
         key = RedisKeys.last_read_time(group_id)
-        self.redis.hdel(key, user_id)
+        self.redis.hdel(key, str(user_id))
 
     def increase_unread_in_group_for(self, group_id: str, user_ids: List[int]) -> None:
         key = RedisKeys.unread_in_group(group_id)
         p = self.redis.pipeline()
 
         for user_id in user_ids:
-            p.hincrby(key, user_id, 1)
+            p.hincrby(key, str(user_id), 1)
 
         p.execute()
 
@@ -153,14 +166,14 @@ class CacheRedis(ICache):
 
         for group_id in group_ids:
             key = RedisKeys.unread_in_group(group_id)
-            p.hset(key, user_id, 0)
+            p.hset(key, str(user_id), 0)
 
         p.execute()
 
     def get_unread_in_group(self, group_id: str, user_id: int) -> Optional[int]:
         key = RedisKeys.unread_in_group(group_id)
 
-        n_unread = self.redis.hget(key, user_id)
+        n_unread = self.redis.hget(key, str(user_id))
         if n_unread is None:
             return None
 
@@ -171,7 +184,7 @@ class CacheRedis(ICache):
 
     def set_unread_in_group(self, group_id: str, user_id: int, unread: int) -> None:
         key = RedisKeys.unread_in_group(group_id)
-        self.redis.hset(key, user_id, unread)
+        self.redis.hset(key, str(user_id), unread)
 
     def get_user_count_in_group(self, group_id: str) -> Optional[int]:
         key = RedisKeys.user_in_group(group_id)

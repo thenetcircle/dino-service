@@ -56,10 +56,15 @@ class RedisKeys:
     RKEY_MESSAGES_IN_GROUP: Final = "group:messages:{}"  # group:messages:group_id
     RKEY_GROUP_COUNT_INCL_HIDDEN: Final = "group:count:inclhidden:{}"  # group:count:inclhidden:user_id
     RKEY_GROUP_COUNT_NO_HIDDEN: Final = "group:count:visible:{}"  # group:count:visible:user_id
+    RKEY_SENT_MSGS_COUNT_IN_GROUP = "group:count:sent:{}"  # group:count:sent:group_id
     RKEY_LAST_SENT_TIME_USER: Final = "user:lastsent:{}"  # user:lastsent:user_id
     RKEY_LAST_READ_TIME_USER: Final = "user:lastread:{}"  # user:lastread:user_id
     RKEY_LAST_MESSAGE_TIME: Final = "group:lastmsgtime:{}"  # group:lastmsgtime:group_id
     RKEY_GROUP_EXISTS: Final = "group:exist:{}"  # group:exist:group_id
+
+    @staticmethod
+    def sent_message_count_in_group(group_id: str) -> str:
+        return RedisKeys.RKEY_SENT_MSGS_COUNT_IN_GROUP.format(group_id)
 
     @staticmethod
     def group_exists(group_id: str) -> str:

@@ -9,13 +9,15 @@ from starlette.background import BackgroundTask
 from starlette.responses import Response
 from starlette.status import HTTP_201_CREATED
 
+from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.rest.models import Group
 from dinofw.rest.models import Histories
 from dinofw.rest.models import Message
+from dinofw.rest.models import MessageCount
 from dinofw.rest.models import OneToOneStats
 from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UserStats
-from dinofw.rest.queries import ActionLogQuery, NotificationQuery
+from dinofw.rest.queries import ActionLogQuery, NotificationQuery, CountMessageQuery
 from dinofw.rest.queries import AttachmentQuery
 from dinofw.rest.queries import CreateAttachmentQuery
 from dinofw.rest.queries import CreateGroupQuery
@@ -27,7 +29,7 @@ from dinofw.rest.queries import MessageQuery
 from dinofw.rest.queries import OneToOneQuery
 from dinofw.rest.queries import SendMessageQuery
 from dinofw.rest.queries import UserStatsQuery
-from dinofw.utils import environ
+from dinofw.utils import environ, to_ts
 from dinofw.utils.api import get_db
 from dinofw.utils.api import log_error_and_raise_known
 from dinofw.utils.api import log_error_and_raise_unknown
@@ -508,5 +510,56 @@ async def create_a_new_group(
     """
     try:
         return await environ.env.rest.group.create_new_group(user_id, query, db)
+    except Exception as e:
+        log_error_and_raise_unknown(sys.exc_info(), e)
+
+
+@router.post("/groups/{group_id}/user/{user_id}/count", response_model=Optional[MessageCount])
+@timeit(logger, "POST", "/groups/{group_id}/user/{user_id}/count")
+@wrap_exception()
+async def get_message_count_for_user_in_group(
+    group_id: str, user_id: int, query: Optional[CountMessageQuery], db: Session = Depends(get_db)
+) -> MessageCount:
+    """
+    Count the number of messages in a group since a user's `delete_before`.
+
+    **Potential error codes in response:**
+    * `600`: if the user is not in the group,
+    * `601`: if the group does not exist,
+    * `250`: if an unknown error occurred.
+    """
+    try:
+        group_info: UserGroupStatsBase = environ.env.db.get_user_stats_in_group(group_id, user_id, db)
+
+        # can't filter by user id in cassandra without restricting 'created_at', so
+        # use the cached value from the rdbms
+        if query and query.only_count_sender:
+            # can return both None and -1; -1 means we've checked the db before, but it has not
+            # yet been counted, to avoid checking the db every time a new message is sent
+            message_count = environ.env.db.get_sent_message_count(group_id, user_id, db)
+
+            # if it hasn't been counted before, count from cassandra in batches (could be slow)
+            if message_count is None or message_count == -1:
+                message_count = environ.env.storage.count_messages_in_group_from_user_since(
+                    group_id, user_id, group_info.delete_before
+                )
+                environ.env.db.set_sent_message_count(group_id, user_id, message_count, db)
+
+        else:
+            message_count = environ.env.storage.count_messages_in_group_since(
+                group_id, group_info.delete_before
+            )
+
+        return MessageCount(
+            group_id=group_id,
+            user_id=user_id,
+            delete_before=to_ts(group_info.delete_before),
+            message_count=message_count
+        )
+
+    except NoSuchGroupException as e:
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
+    except UserNotInGroupException as e:
+        log_error_and_raise_known(ErrorCodes.USER_NOT_IN_GROUP, sys.exc_info(), e)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)

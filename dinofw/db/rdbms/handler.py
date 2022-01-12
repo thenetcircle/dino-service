@@ -429,14 +429,29 @@ class RelationalHandler:
                 models.UserGroupStatsEntity.last_updated_time: sent_time,
             })
 
-        # above we increase unread for all; now set sender to 0, since it won't be unread for him/her
-        # TODO maybe there's a better way to do this instead of two queries?
-        db.query(models.UserGroupStatsEntity).filter(
-            models.UserGroupStatsEntity.group_id == message.group_id,
-            models.UserGroupStatsEntity.user_id == sender_user_id
-        ).update({
-            models.UserGroupStatsEntity.unread_count: 0
-        })
+        # update 'sent_message_count' in cache and db
+        previous_sent_count = self._get_then_update_sent_count(message.group_id, sender_user_id, db)
+
+        # previously we increase unread for all; now set to 0 for the sender, since
+        # it won't be unread for him/her
+        #
+        # also only update 'sent_message_count' if it's been previously counted using
+        # the /count api (-1 means it has not been counted in cassandra yet)
+        if previous_sent_count == -1:
+            db.query(models.UserGroupStatsEntity).filter(
+                models.UserGroupStatsEntity.group_id == message.group_id,
+                models.UserGroupStatsEntity.user_id == sender_user_id
+            ).update({
+                models.UserGroupStatsEntity.unread_count: 0
+            })
+        else:
+            db.query(models.UserGroupStatsEntity).filter(
+                models.UserGroupStatsEntity.group_id == message.group_id,
+                models.UserGroupStatsEntity.user_id == sender_user_id
+            ).update({
+                models.UserGroupStatsEntity.unread_count: 0,
+                models.UserGroupStatsEntity.sent_message_count: previous_sent_count + 1
+            })
 
         group_base = GroupBase(**group.__dict__)
 
@@ -444,6 +459,37 @@ class RelationalHandler:
         db.commit()
 
         return group_base
+
+    def _get_then_update_sent_count(self, group_id, user_id, db):
+        # first check the cache
+        sent_count = self.env.cache.get_sent_message_count_in_group_for_user(group_id, user_id)
+
+        # count be -1, which means we've checked the db before, and it has not yet been
+        # counted from cassandra, in which case we'll skip increasing the sent count for
+        # this new message, since we don't know yet how many messages the user has sent
+        # previously without counting in cassandra first
+        if sent_count is not None:
+            return sent_count
+
+        # then check the db
+        sent_count = (
+            db.query(models.UserGroupStatsEntity.sent_message_count)
+            .filter(models.UserGroupStatsEntity.group_id == group_id)
+            .filter(models.UserGroupStatsEntity.user_id == user_id)
+            .first()
+        )
+
+        # the db default value is -1, so even if it's -1, set it in the cache so that we
+        # don't have to check the db for every new message
+        if sent_count == -1:
+            self.env.cache.set_sent_message_count_in_group_for_user(group_id, user_id, sent_count)
+
+        # if it's been counted before, increase by one in cache since the user is now
+        # sending a new message
+        else:
+            self.env.cache.set_sent_message_count_in_group_for_user(group_id, user_id, sent_count + 1)
+
+        return sent_count
 
     def get_last_reads_in_group(self, group_id: str, db: Session) -> Dict[int, float]:
         # TODO: rethink this; some cached some not? maybe we don't have to do this twice
@@ -897,6 +943,36 @@ class RelationalHandler:
             for user_stat in user_stats
         ]
 
+    def get_sent_message_count(self, group_id: str, user_id: int, db: Session) -> Optional[int]:
+        sent = self.env.cache.get_sent_message_count_in_group_for_user(group_id, user_id)
+        if sent is not None:
+            return sent
+
+        sent = (
+            db.query(models.UserGroupStatsEntity.sent_message_count)
+            .filter(models.UserGroupStatsEntity.group_id == group_id)
+            .filter(models.UserGroupStatsEntity.user_id == user_id)
+            .first()
+        )
+
+        if sent == -1:
+            return None
+
+        self.env.cache.set_sent_message_count_in_group_for_user(group_id, user_id, sent)
+        return sent
+
+    def set_sent_message_count(self, group_id, user_id, message_count, db) -> None:
+        self.env.cache.set_sent_message_count_in_group_for_user(group_id, user_id, message_count)
+
+        _ = (
+            db.query(models.UserGroupStatsEntity)
+            .filter(models.UserGroupStatsEntity.group_id == group_id)
+            .filter(models.UserGroupStatsEntity.user_id == user_id)
+            .update({models.UserGroupStatsEntity.sent_message_count: message_count})
+        )
+
+        db.commit()
+
     # noinspection PyMethodMayBeStatic
     def get_user_stats_in_group(
         self, group_id: str, user_id: int, db: Session
@@ -911,9 +987,7 @@ class RelationalHandler:
         if user_stats is None:
             raise UserNotInGroupException(f"user {user_id} is not in group {group_id}")
 
-        base = UserGroupStatsBase(**user_stats.__dict__)
-
-        return base
+        return UserGroupStatsBase(**user_stats.__dict__)
 
     def get_both_user_stats_in_group(
             self,
@@ -1078,6 +1152,11 @@ class RelationalHandler:
 
             # for syncing deletions to apps, returned in /updates api
             user_stats.deleted = True
+
+            # set to 0 and not -1, since we know there's actually 0 sent
+            # messages from this user after he deletes a conversation,
+            # so there's no need to count from cassandra from now on
+            self.env.db.set_sent_message_count(group_id, user_id, 0, db)
 
         # can't set highlight time if also setting last read time
         if highlight_time is not None and last_read is None:

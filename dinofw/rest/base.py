@@ -103,8 +103,8 @@ class BaseResource(ABC):
         """
         update database and cache with everything related to sending a message
         """
-        # TODO: fix this instead of creating a new DT
-        # cassandra DT is different from python DT
+        # TODO: fix this instead of creating a new DT,
+        #  cassandra DT is different from python DT
         now = utcnow_dt()
         user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
 

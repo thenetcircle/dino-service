@@ -79,6 +79,10 @@ class SendMessageQuery(OneToOneQuery):
     context: Optional[str]
 
 
+class CountMessageQuery(AbstractQuery):
+    only_count_sender: Optional[bool] = False
+
+
 class CreateGroupQuery(AbstractQuery):
     users: List[int]
 

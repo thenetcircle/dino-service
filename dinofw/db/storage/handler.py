@@ -235,6 +235,31 @@ class CassandraHandler:
             .count()
         )
 
+    # noinspection PyMethodMayBeStatic
+    def count_messages_in_group_from_user_since(self, group_id: str, user_id: int, since: dt) -> int:
+        start = time()
+        count = 0
+
+        while True:
+            messages = self._get_batch_of_messages_in_group_since(
+                group_id=group_id, since=since
+            )
+
+            if not len(messages):
+                elapsed = time() - start
+                if elapsed > 5 or count > 500:
+                    logger.info(f"done counting {count} msgs in {group_id} by {user_id}: {elapsed:.2f}s")
+                break
+
+            for message in messages:
+                if message.created_at > since:
+                    since = message.created_at
+
+                if message.user_id == user_id:
+                    count += 1
+
+        return count
+
     def get_unread_in_group(self, group_id: str, user_id: int, last_read: dt) -> int:
         unread = self.env.cache.get_unread_in_group(group_id, user_id)
         if unread is not None:
@@ -593,11 +618,14 @@ class CassandraHandler:
     def _update_all_messages_in_group(
         self, group_id: str, callback: callable, user_id: int = None
     ):
+        # TODO: this method is not used?
         until = utcnow_dt()
         start = time()
         amount = 0
 
         while True:
+            # TODO: column "user_id" cannot be restricted (preceding
+            #  column "created_at" is restricted by a non-EQ relation
             messages = self._get_batch_of_messages_in_group(
                 group_id=group_id, until=until, user_id=user_id,
             )
@@ -661,6 +689,19 @@ class CassandraHandler:
                 until = message.created_at
 
         return until
+
+    # noinspection PyMethodMayBeStatic
+    def _get_batch_of_messages_in_group_since(
+        self, group_id: str, since: dt
+    ) -> List[MessageModel]:
+        return (
+            MessageModel.objects(
+                MessageModel.group_id == group_id,
+                MessageModel.created_at > since,
+            )
+            .limit(500)
+            .all()
+        )
 
     # noinspection PyMethodMayBeStatic
     def _get_batch_of_messages_in_group(

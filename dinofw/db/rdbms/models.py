@@ -59,6 +59,9 @@ class UserGroupStatsEntity(env.Base):
     # increase by one on new message, set to 0 on updating 'last_read'
     unread_count = Column(Integer, nullable=False, server_default="0")
 
+    # increase by one on new message, set to 0 on updating 'delete_before'
+    sent_message_count = Column(Integer, nullable=False, server_default="-1")
+
     # used to sync changes to apps
     last_updated_time = Column(DateTime(timezone=True), nullable=False)
 
