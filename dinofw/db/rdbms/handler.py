@@ -445,6 +445,7 @@ class RelationalHandler:
                 models.UserGroupStatsEntity.unread_count: 0
             })
         else:
+            logger.info(f"updating sent_message_count for group/user {message.group_id}/{sender_user_id} to {previous_sent_count+1}")
             db.query(models.UserGroupStatsEntity).filter(
                 models.UserGroupStatsEntity.group_id == message.group_id,
                 models.UserGroupStatsEntity.user_id == sender_user_id
@@ -463,6 +464,7 @@ class RelationalHandler:
     def _get_then_update_sent_count(self, group_id, user_id, db):
         # first check the cache
         sent_count = self.env.cache.get_sent_message_count_in_group_for_user(group_id, user_id)
+        logger.info(f"sent_count for group/user {group_id}/{user_id} from redis: {sent_count}")
 
         # count be -1, which means we've checked the db before, and it has not yet been
         # counted from cassandra, in which case we'll skip increasing the sent count for
@@ -478,6 +480,7 @@ class RelationalHandler:
             .filter(models.UserGroupStatsEntity.user_id == user_id)
             .first()
         )[0]
+        logger.info(f"sent_count for group/user {group_id}/{user_id} from db: {sent_count}")
 
         # the db default value is -1, so even if it's -1, set it in the cache so that we
         # don't have to check the db for every new message

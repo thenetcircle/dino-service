@@ -260,7 +260,7 @@ class CassandraHandler:
             if not n_messages or n_messages < limit:
                 elapsed = time() - start
                 # if elapsed > 5 or count > 500:
-                logger.info(f"done counting {count} ({all_messages}) msgs in {group_id} by {user_id}: {elapsed:.2f}s")
+                logger.info(f"done counting {count} msgs in {group_id} for user {user_id}: {elapsed:.2f}s")
                 break
 
         return count
