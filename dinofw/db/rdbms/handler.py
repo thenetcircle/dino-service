@@ -1,3 +1,4 @@
+import json
 from datetime import datetime as dt
 from typing import Dict
 from typing import List
@@ -18,13 +19,12 @@ from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.rdbms.schemas import UserGroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.schemas import MessageBase
-from dinofw.rest.queries import AbstractQuery
 from dinofw.rest.queries import CreateGroupQuery
 from dinofw.rest.queries import GroupQuery
 from dinofw.rest.queries import GroupUpdatesQuery
 from dinofw.rest.queries import UpdateGroupQuery
 from dinofw.rest.queries import UpdateUserGroupStats
-from dinofw.utils import group_id_to_users, to_dt
+from dinofw.utils import group_id_to_users, to_dt, truncate_json_message
 from dinofw.utils import split_into_chunks
 from dinofw.utils import to_ts
 from dinofw.utils import trim_micros
@@ -376,6 +376,7 @@ class RelationalHandler:
         update_unread_count: bool = True,
         update_last_message: bool = True
     ) -> GroupBase:
+
         group = (
             db.query(models.GroupEntity)
             .filter(models.GroupEntity.group_id == message.group_id)
@@ -404,7 +405,7 @@ class RelationalHandler:
             group.last_message_id = message.message_id
             group.last_message_type = message.message_type
             group.last_message_user_id = message.user_id
-            group.last_message_overview = message.message_payload
+            group.last_message_overview = truncate_json_message(message.message_payload, limit=100)
 
         # always update this
         group.updated_at = sent_time

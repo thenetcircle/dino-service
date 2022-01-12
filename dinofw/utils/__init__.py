@@ -2,12 +2,35 @@ from datetime import datetime
 from typing import Optional
 
 import arrow
+import json
 
 
 def split_into_chunks(objects, n):
     for i in range(0, len(objects), n):
         # yields successive n-sized chunks of data
         yield objects[i:i + n]
+
+
+def truncate_json_message(msg, limit=100):
+    if msg is None:
+        return None
+
+    try:
+        msg_json = json.loads(msg)
+    except Exception:
+        return msg
+
+    # not a text message
+    if "content" not in msg_json:
+        return msg
+
+    n_chars_content = len(msg_json["content"])
+
+    if n_chars_content <= limit:
+        return msg
+
+    msg_json["content"] = msg_json["content"][:limit]
+    return json.dumps(msg_json)
 
 
 def utcnow_ts():
