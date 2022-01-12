@@ -236,22 +236,23 @@ class CassandraHandler:
         )
 
     # noinspection PyMethodMayBeStatic
-    def count_messages_in_group_from_user_since(self, group_id: str, user_id: int, since: dt) -> int:
+    def count_messages_in_group_from_user_since(self, group_id: str, user_id: int, until: dt, since: dt) -> int:
+        # the user hasn't sent any message in this group yet
+        if until is None:
+            return 0
+
         start = time()
         count = 0
         limit = 1000
         all_messages = 0
-        since_naive = since.replace(tzinfo=None)
 
         while True:
+            # until is not inclusive
             messages = self._get_batch_of_messages_in_group_since(
-                group_id=group_id, since=since, limit=limit
+                group_id=group_id, until=until, since=since, limit=limit
             )
 
             for message in messages:
-                if message.created_at > since_naive:
-                    since = message.created_at
-
                 if message.user_id == user_id:
                     count += 1
 
@@ -262,8 +263,12 @@ class CassandraHandler:
                 # if elapsed > 5 or count > 500:
                 logger.info(f"[{elapsed:.2f}s] counted {all_messages} msgs in {group_id}; {count} messages were from user {user_id}")
                 break
+            else:
+                until = messages[-1].created_at
 
-        return count
+        # plus one since 'until' is not inclusive, and the last message sent
+        # won't be counted otherwise
+        return count + 1
 
     def get_unread_in_group(self, group_id: str, user_id: int, last_read: dt) -> int:
         unread = self.env.cache.get_unread_in_group(group_id, user_id)
@@ -697,11 +702,12 @@ class CassandraHandler:
 
     # noinspection PyMethodMayBeStatic
     def _get_batch_of_messages_in_group_since(
-        self, group_id: str, since: dt, limit=1000
+        self, group_id: str, until: dt, since: dt, limit=1000
     ) -> List[MessageModel]:
         return (
             MessageModel.objects(
                 MessageModel.group_id == group_id,
+                MessageModel.created_at < until,
                 MessageModel.created_at > since,
             )
             .limit(limit)

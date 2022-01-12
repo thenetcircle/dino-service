@@ -541,7 +541,10 @@ async def get_message_count_for_user_in_group(
             # if it hasn't been counted before, count from cassandra in batches (could be slow)
             if message_count is None or message_count == -1:
                 message_count = environ.env.storage.count_messages_in_group_from_user_since(
-                    group_id, user_id, group_info.delete_before
+                    group_id,
+                    user_id,
+                    until=group_info.last_sent,
+                    since=group_info.delete_before
                 )
                 environ.env.db.set_sent_message_count(group_id, user_id, message_count, db)
 
