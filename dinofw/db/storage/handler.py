@@ -32,7 +32,7 @@ from dinofw.rest.queries import CreateAttachmentQuery
 from dinofw.rest.queries import EditMessageQuery
 from dinofw.rest.queries import MessageQuery
 from dinofw.rest.queries import SendMessageQuery
-from dinofw.utils import utcnow_dt, to_dt
+from dinofw.utils import utcnow_dt, to_dt, to_ts
 from dinofw.utils.config import ConfigKeys, PayloadStatus
 from dinofw.utils.config import DefaultValues
 from dinofw.utils.config import MessageTypes
@@ -239,6 +239,7 @@ class CassandraHandler:
     def count_messages_in_group_from_user_since(self, group_id: str, user_id: int, since: dt) -> int:
         start = time()
         count = 0
+        since_ts = to_ts(since)
 
         while True:
             messages = self._get_batch_of_messages_in_group_since(
@@ -252,7 +253,7 @@ class CassandraHandler:
                 break
 
             for message in messages:
-                if message.created_at > since:
+                if to_ts(message.created_at) > since_ts:
                     since = message.created_at
 
                 if message.user_id == user_id:
