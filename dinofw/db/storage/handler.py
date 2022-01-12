@@ -239,25 +239,27 @@ class CassandraHandler:
     def count_messages_in_group_from_user_since(self, group_id: str, user_id: int, since: dt) -> int:
         start = time()
         count = 0
-        since_ts = to_ts(since)
+        limit = 1000
+        since_naive = since.replace(tzinfo=None)
 
         while True:
             messages = self._get_batch_of_messages_in_group_since(
-                group_id=group_id, since=since
+                group_id=group_id, since=since, limit=limit
             )
 
-            if not len(messages):
-                elapsed = time() - start
-                if elapsed > 5 or count > 500:
-                    logger.info(f"done counting {count} msgs in {group_id} by {user_id}: {elapsed:.2f}s")
-                break
-
             for message in messages:
-                if to_ts(message.created_at) > since_ts:
+                if message.created_at > since_naive:
                     since = message.created_at
 
                 if message.user_id == user_id:
                     count += 1
+
+            n_messages = len(messages)
+            if not n_messages or n_messages < limit:
+                elapsed = time() - start
+                if elapsed > 5 or count > 500:
+                    logger.info(f"done counting {count} msgs in {group_id} by {user_id}: {elapsed:.2f}s")
+                break
 
         return count
 
@@ -693,14 +695,14 @@ class CassandraHandler:
 
     # noinspection PyMethodMayBeStatic
     def _get_batch_of_messages_in_group_since(
-        self, group_id: str, since: dt
+        self, group_id: str, since: dt, limit=1000
     ) -> List[MessageModel]:
         return (
             MessageModel.objects(
                 MessageModel.group_id == group_id,
                 MessageModel.created_at > since,
             )
-            .limit(500)
+            .limit(limit)
             .all()
         )
 
