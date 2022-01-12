@@ -240,6 +240,7 @@ class CassandraHandler:
         start = time()
         count = 0
         limit = 1000
+        all_messages = 0
         since_naive = since.replace(tzinfo=None)
 
         while True:
@@ -255,10 +256,11 @@ class CassandraHandler:
                     count += 1
 
             n_messages = len(messages)
+            all_messages += n_messages
             if not n_messages or n_messages < limit:
                 elapsed = time() - start
-                if elapsed > 5 or count > 500:
-                    logger.info(f"done counting {count} msgs in {group_id} by {user_id}: {elapsed:.2f}s")
+                # if elapsed > 5 or count > 500:
+                logger.info(f"done counting {count} ({all_messages}) msgs in {group_id} by {user_id}: {elapsed:.2f}s")
                 break
 
         return count
