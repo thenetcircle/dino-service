@@ -445,7 +445,6 @@ class RelationalHandler:
                 models.UserGroupStatsEntity.unread_count: 0
             })
         else:
-            logger.info(f"updating sent_message_count for group/user {message.group_id}/{sender_user_id} to {previous_sent_count+1}")
             db.query(models.UserGroupStatsEntity).filter(
                 models.UserGroupStatsEntity.group_id == message.group_id,
                 models.UserGroupStatsEntity.user_id == sender_user_id
@@ -462,15 +461,26 @@ class RelationalHandler:
         return group_base
 
     def _get_then_update_sent_count(self, group_id, user_id, db):
+        def update_cache_value(_sent_count):
+            # the db default value is -1, so even if it's -1, set it in the cache so that we
+            # don't have to check the db for every new message
+            if sent_count == -1:
+                self.env.cache.set_sent_message_count_in_group_for_user(group_id, user_id, sent_count)
+
+            # if it's been counted before, increase by one in cache since the user is now
+            # sending a new message
+            else:
+                self.env.cache.set_sent_message_count_in_group_for_user(group_id, user_id, sent_count + 1)
+
         # first check the cache
         sent_count = self.env.cache.get_sent_message_count_in_group_for_user(group_id, user_id)
-        logger.info(f"sent_count for group/user {group_id}/{user_id} from redis: {sent_count}")
 
         # count be -1, which means we've checked the db before, and it has not yet been
         # counted from cassandra, in which case we'll skip increasing the sent count for
         # this new message, since we don't know yet how many messages the user has sent
         # previously without counting in cassandra first
         if sent_count is not None:
+            update_cache_value(sent_count)
             return sent_count
 
         # then check the db
@@ -480,18 +490,8 @@ class RelationalHandler:
             .filter(models.UserGroupStatsEntity.user_id == user_id)
             .first()
         )[0]
-        logger.info(f"sent_count for group/user {group_id}/{user_id} from db: {sent_count}")
 
-        # the db default value is -1, so even if it's -1, set it in the cache so that we
-        # don't have to check the db for every new message
-        if sent_count == -1:
-            self.env.cache.set_sent_message_count_in_group_for_user(group_id, user_id, sent_count)
-
-        # if it's been counted before, increase by one in cache since the user is now
-        # sending a new message
-        else:
-            self.env.cache.set_sent_message_count_in_group_for_user(group_id, user_id, sent_count + 1)
-
+        update_cache_value(sent_count)
         return sent_count
 
     def get_last_reads_in_group(self, group_id: str, db: Session) -> Dict[int, float]:
