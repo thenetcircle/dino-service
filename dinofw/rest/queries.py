@@ -69,7 +69,11 @@ class OneToOneQuery(AbstractQuery):
     receiver_id: Optional[int]
 
 
-class MessageQuery(PaginationQuery, AdminQuery):
+class OnlySenderQuery(AbstractQuery):
+    only_sender: Optional[bool] = False
+
+
+class MessageQuery(PaginationQuery, AdminQuery, OnlySenderQuery):
     pass
 
 
@@ -77,10 +81,6 @@ class SendMessageQuery(OneToOneQuery):
     message_payload: Optional[str]
     message_type: int
     context: Optional[str]
-
-
-class CountMessageQuery(AbstractQuery):
-    only_count_sender: Optional[bool] = False
 
 
 class CreateGroupQuery(AbstractQuery):
