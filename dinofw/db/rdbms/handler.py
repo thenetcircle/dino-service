@@ -490,7 +490,12 @@ class RelationalHandler:
             .filter(models.UserGroupStatsEntity.group_id == group_id)
             .filter(models.UserGroupStatsEntity.user_id == user_id)
             .first()
-        )[0]
+        )
+
+        if sent_count is None:
+            sent_count = -1
+        else:
+            sent_count = sent_count[0]
 
         update_cache_value(sent_count)
         return sent_count
