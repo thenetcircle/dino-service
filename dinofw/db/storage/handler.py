@@ -207,10 +207,11 @@ class CassandraHandler:
         if until is None:
             # until is not inclusive, so add 1 ms to include the last sent message
             until = user_stats.last_sent
-            until += timedelta(milliseconds=500)
+            until += timedelta(milliseconds=1)
 
         # keep querying until we have all messages from this user in the group, or hit the query limit
         while len(messages) < query_limit:
+            logger.info(f"len(messages): {len(messages)}, query_limit: {query_limit}")
             raw_messages = self._get_messages_in_group_from_user(
                 group_id,
                 user_stats.user_id,
@@ -222,6 +223,7 @@ class CassandraHandler:
             messages.extend(self._try_parse_messages(raw_messages))
 
             # find the last messages in the group already
+            logger.info(f"len(raw_messages): {len(raw_messages)}, batch_limit: {batch_limit}")
             if len(raw_messages) < batch_limit:
                 break
 
@@ -304,6 +306,7 @@ class CassandraHandler:
             n_messages = len(messages)
             n_all_messages += n_messages
 
+            logger.info(f"n_messages: {n_messages}, limit: {limit}")
             if not n_messages or n_messages < limit:
                 elapsed = time() - start
                 logger.info((
