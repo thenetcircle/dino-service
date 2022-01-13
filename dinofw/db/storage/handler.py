@@ -212,7 +212,6 @@ class CassandraHandler:
             until = user_stats.last_sent
             until += timedelta(milliseconds=1)
 
-        logger.info(f"len(messages): {len(messages)}, query_limit: {query_limit}")
         raw_messages = self._get_messages_in_group_from_user(
             group_id,
             user_stats.user_id,
@@ -303,7 +302,6 @@ class CassandraHandler:
             n_messages = len(messages)
             n_all_messages += n_messages
 
-            logger.info(f"n_messages: {n_messages}, limit: {limit}, len(messages_from_user): {len(messages_from_user)}, query_limit: {query_limit}")
             if not n_messages or n_messages < limit or len(messages_from_user) > query_limit > 0:
                 elapsed = time() - start
                 logger.info((

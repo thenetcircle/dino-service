@@ -138,6 +138,11 @@ async def get_group_history_for_user(
     Only one of `since` and `until` can be used at the same time. At least one needs to be
     specified.
 
+    If `only_sender=true` (default is `false`), the API will only return messages history in
+    this group that were sent by `user_id`. This can be combined with `until` and `per_page`,
+    to paginate through all the messages for a user, but setting the next query's `until` to
+    the `created_at` time of the last message returned from the previous query.
+
     If `admin_id` is set, and is greater than `0`, the read status will not be updated. Useful
     for getting history in admin UI without updating `last_read_time` of the user.
 
