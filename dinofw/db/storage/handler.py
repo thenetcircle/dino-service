@@ -304,7 +304,7 @@ class CassandraHandler:
             n_all_messages += n_messages
 
             logger.info(f"n_messages: {n_messages}, limit: {limit}")
-            if not n_messages or n_messages <= limit or len(messages_from_user) > query_limit > 0:
+            if not n_messages or n_messages < limit or len(messages_from_user) > query_limit > 0:
                 elapsed = time() - start
                 logger.info((
                     f"[{elapsed:.2f}s] fetched {n_all_messages} msgs"
