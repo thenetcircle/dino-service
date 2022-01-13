@@ -197,8 +197,11 @@ class CassandraHandler:
         until = to_dt(query.until, allow_none=True)
         since = to_dt(query.since, allow_none=True)
         query_limit = query.per_page or DefaultValues.PER_PAGE
-        batch_limit = 500
         messages = list()
+
+        batch_limit = query_limit * 10
+        if batch_limit > 1000:
+            batch_limit = 1000
 
         if since is None:
             since = user_stats.first_sent
@@ -209,23 +212,17 @@ class CassandraHandler:
             until = user_stats.last_sent
             until += timedelta(milliseconds=1)
 
-        # keep querying until we have all messages from this user in the group, or hit the query limit
-        while len(messages) < query_limit:
-            logger.info(f"len(messages): {len(messages)}, query_limit: {query_limit}")
-            raw_messages = self._get_messages_in_group_from_user(
-                group_id,
-                user_stats.user_id,
-                until=until,
-                since=since,
-                limit=batch_limit
-            )
+        logger.info(f"len(messages): {len(messages)}, query_limit: {query_limit}")
+        raw_messages = self._get_messages_in_group_from_user(
+            group_id,
+            user_stats.user_id,
+            until=until,
+            since=since,
+            limit=batch_limit,
+            query_limit=query_limit
+        )
 
-            messages.extend(self._try_parse_messages(raw_messages))
-
-            # find the last messages in the group already
-            logger.info(f"len(raw_messages): {len(raw_messages)}, batch_limit: {batch_limit}")
-            if len(raw_messages) < batch_limit:
-                break
+        messages.extend(self._try_parse_messages(raw_messages))
 
         if since is None:
             return messages[:query_limit]
@@ -287,7 +284,7 @@ class CassandraHandler:
         )
 
     def _get_messages_in_group_from_user(
-            self, group_id: str, user_id: int, until: dt, since: dt, limit: int = 1000
+            self, group_id: str, user_id: int, until: dt, since: dt, limit: int = 1000, query_limit: int = -1
     ) -> List[MessageModel]:
         start = time()
         n_all_messages = 0
@@ -307,7 +304,7 @@ class CassandraHandler:
             n_all_messages += n_messages
 
             logger.info(f"n_messages: {n_messages}, limit: {limit}")
-            if not n_messages or n_messages < limit:
+            if not n_messages or n_messages < limit or len(messages_from_user) > query_limit > 0:
                 elapsed = time() - start
                 logger.info((
                     f"[{elapsed:.2f}s] fetched {n_all_messages} msgs"
