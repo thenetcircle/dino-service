@@ -1423,5 +1423,7 @@ class RelationalHandler:
             pin=False,
             deleted=False,
             highlight_time=self.long_ago,
-            receiver_highlight_time=self.long_ago
+            receiver_highlight_time=self.long_ago,
+            # for new groups, we can set this to 0 directly and start counting, instead of the default -1
+            sent_message_count=0,
         )
