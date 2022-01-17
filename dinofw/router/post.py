@@ -518,7 +518,7 @@ async def create_a_new_group(
 @timeit(logger, "POST", "/groups/{group_id}/user/{user_id}/count")
 @wrap_exception()
 async def get_message_count_for_user_in_group(
-    group_id: str, user_id: int, query: Optional[CountMessageQuery], db: Session = Depends(get_db)
+    group_id: str, user_id: int, query: Optional[CountMessageQuery] = None, db: Session = Depends(get_db)
 ) -> MessageCount:
     """
     Count the number of messages in a group since a user's `delete_before`.
