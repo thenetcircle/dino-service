@@ -134,11 +134,19 @@ class GroupResource(BaseResource):
             return self.env.db.get_user_stats_in_group(group_id, user_id, db)
 
         def get_messages():
-            return [
-                message_base_to_message(message)
-                for message in self.env.storage.get_messages_in_group_for_user(
+            # need to batch query cassandra, can't filter by user id
+            if query.only_sender:
+                _messages = self.env.storage.get_messages_in_group_only_from_user(
                     group_id, user_stats, query
                 )
+            else:
+                _messages = self.env.storage.get_messages_in_group_for_user(
+                    group_id, user_stats, query
+                )
+
+            return [
+                message_base_to_message(message)
+                for message in _messages
             ]
 
         def get_last_reads():

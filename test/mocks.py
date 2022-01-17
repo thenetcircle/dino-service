@@ -580,6 +580,7 @@ class FakeDatabase:
             bookmark=False,
             deleted=False,
             unread_count=0,
+            sent_message_count=-1
         )
 
         if user_id in self.stats:

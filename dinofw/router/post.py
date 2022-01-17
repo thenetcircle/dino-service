@@ -1,5 +1,6 @@
 import sys
-from typing import List, Optional
+from typing import List
+from typing import Optional
 
 from fastapi import APIRouter
 from fastapi import Depends
@@ -17,7 +18,7 @@ from dinofw.rest.models import MessageCount
 from dinofw.rest.models import OneToOneStats
 from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UserStats
-from dinofw.rest.queries import ActionLogQuery, NotificationQuery, CountMessageQuery
+from dinofw.rest.queries import ActionLogQuery, OnlySenderQuery
 from dinofw.rest.queries import AttachmentQuery
 from dinofw.rest.queries import CreateAttachmentQuery
 from dinofw.rest.queries import CreateGroupQuery
@@ -26,19 +27,23 @@ from dinofw.rest.queries import GroupQuery
 from dinofw.rest.queries import GroupUpdatesQuery
 from dinofw.rest.queries import MessageInfoQuery
 from dinofw.rest.queries import MessageQuery
+from dinofw.rest.queries import NotificationQuery
 from dinofw.rest.queries import OneToOneQuery
 from dinofw.rest.queries import SendMessageQuery
 from dinofw.rest.queries import UserStatsQuery
-from dinofw.utils import environ, to_ts
+from dinofw.utils import environ
+from dinofw.utils import to_ts
 from dinofw.utils.api import get_db
 from dinofw.utils.api import log_error_and_raise_known
 from dinofw.utils.api import log_error_and_raise_unknown
 from dinofw.utils.config import ErrorCodes
 from dinofw.utils.decorators import wrap_exception
-from dinofw.utils.exceptions import NoSuchAttachmentException, QueryValidationError, InvalidRangeException
+from dinofw.utils.exceptions import InvalidRangeException
+from dinofw.utils.exceptions import NoSuchAttachmentException
 from dinofw.utils.exceptions import NoSuchGroupException
 from dinofw.utils.exceptions import NoSuchMessageException
 from dinofw.utils.exceptions import NoSuchUserException
+from dinofw.utils.exceptions import QueryValidationError
 from dinofw.utils.exceptions import UserNotInGroupException
 from dinofw.utils.perf import timeit
 
@@ -131,6 +136,11 @@ async def get_group_history_for_user(
 
     Only one of `since` and `until` can be used at the same time. At least one needs to be
     specified.
+
+    If `only_sender=true` (default is `false`), the API will only return messages history in
+    this group that were sent by `user_id`. This can be combined with `until` and `per_page`,
+    to paginate through all the messages for a user, but setting the next query's `until` to
+    the `created_at` time of the last message returned from the previous query.
 
     If `admin_id` is set, and is greater than `0`, the read status will not be updated. Useful
     for getting history in admin UI without updating `last_read_time` of the user.
@@ -518,10 +528,21 @@ async def create_a_new_group(
 @timeit(logger, "POST", "/groups/{group_id}/user/{user_id}/count")
 @wrap_exception()
 async def get_message_count_for_user_in_group(
-    group_id: str, user_id: int, query: Optional[CountMessageQuery] = None, db: Session = Depends(get_db)
+    group_id: str, user_id: int, query: Optional[OnlySenderQuery] = None, db: Session = Depends(get_db)
 ) -> MessageCount:
     """
     Count the number of messages in a group since a user's `delete_before`.
+
+    If `only_sender` is set to False (default value), the messages for all
+    users in the groups will be counted. If set to True, only messages sent
+    by the specified `user_id` will be counted. When set to True, only
+    messages send by this user _after_ his/her `delete_before` and _before_
+    his/her `last_sent_time` will be counted.
+
+    Note: setting `only_sender=true` is slow. Around 2 seconds for a group
+    of 6k messages. This is because we can not filter by `user_id` in
+    Cassandra, and have to instead batch query for all messages in the group
+    and filter out and count afterwards.
 
     **Potential error codes in response:**
     * `600`: if the user is not in the group,
@@ -533,7 +554,7 @@ async def get_message_count_for_user_in_group(
 
         # can't filter by user id in cassandra without restricting 'created_at', so
         # use the cached value from the rdbms
-        if query and query.only_count_sender:
+        if query and query.only_sender:
             # can return both None and -1; -1 means we've checked the db before, but it has not
             # yet been counted, to avoid checking the db every time a new message is sent
             message_count = environ.env.db.get_sent_message_count(group_id, user_id, db)

@@ -1,6 +1,7 @@
 import json
 import sys
 from datetime import datetime as dt
+from datetime import timedelta
 from time import time
 from typing import Dict
 from typing import List
@@ -172,6 +173,62 @@ class CassandraHandler:
         # since we need ascending order on cassandra query if we use 'since', reverse the results here
         return list(reversed(messages))
 
+    def _try_parse_messages(self, raw_messages: List[MessageModel]) -> List[MessageBase]:
+        messages = list()
+
+        for message in raw_messages:
+            try:
+                messages.append(CassandraHandler.message_base_from_entity(message))
+            except Exception as e:
+                logger.error(f"could not parse raw message: {str(e)}")
+                logger.error(message.__dict__)
+                logger.exception(e)
+                self.env.capture_exception(sys.exc_info())
+
+        return messages
+
+    # noinspection PyMethodMayBeStatic
+    def get_messages_in_group_only_from_user(
+            self,
+            group_id: str,
+            user_stats: UserGroupStatsBase,
+            query: MessageQuery
+    ) -> List[MessageBase]:
+        until = to_dt(query.until, allow_none=True)
+        since = to_dt(query.since, allow_none=True)
+        query_limit = query.per_page or DefaultValues.PER_PAGE
+        messages = list()
+
+        batch_limit = query_limit * 10
+        if batch_limit > 1000:
+            batch_limit = 1000
+
+        if since is None:
+            since = user_stats.first_sent
+
+        # if not specified, use the last sent time (e.g. to get for first page results)
+        if until is None:
+            # until is not inclusive, so add 1 ms to include the last sent message
+            until = user_stats.last_sent
+            until += timedelta(milliseconds=1)
+
+        raw_messages = self._get_messages_in_group_from_user(
+            group_id,
+            user_stats.user_id,
+            until=until,
+            since=since,
+            limit=batch_limit,
+            query_limit=query_limit
+        )
+
+        messages.extend(self._try_parse_messages(raw_messages))
+
+        if since is None:
+            return messages[:query_limit]
+
+        # since we need ascending order on cassandra query if we use 'since', reverse the results here
+        return list(reversed(messages))[:query_limit]
+
     # noinspection PyMethodMayBeStatic
     def get_messages_in_group_for_user(
             self,
@@ -204,17 +261,7 @@ class CassandraHandler:
             statement = statement.order_by('created_at')
 
         raw_messages = statement.limit(query.per_page or DefaultValues.PER_PAGE).all()
-        # messages = [CassandraHandler.message_base_from_entity(message) for message in raw_messages]
-
-        # TODO: temporarily try/except parsing, invalid attachment data once in db
-        messages = list()
-        for message in raw_messages:
-            try:
-                messages.append(CassandraHandler.message_base_from_entity(message))
-            except Exception as e:
-                logger.error(f"get_messages_in_group_for_user: {str(e)}")
-                logger.exception(e)
-                self.env.capture_exception(sys.exc_info())
+        messages = self._try_parse_messages(raw_messages)
 
         if since is None:
             return messages
@@ -235,16 +282,12 @@ class CassandraHandler:
             .count()
         )
 
-    # noinspection PyMethodMayBeStatic
-    def count_messages_in_group_from_user_since(self, group_id: str, user_id: int, until: dt, since: dt) -> int:
-        # the user hasn't sent any message in this group yet
-        if until is None:
-            return 0
-
+    def _get_messages_in_group_from_user(
+            self, group_id: str, user_id: int, until: dt, since: dt, limit: int = 1000, query_limit: int = -1
+    ) -> List[MessageModel]:
         start = time()
-        count = 0
-        limit = 1000
-        all_messages = 0
+        n_all_messages = 0
+        messages_from_user = list()
 
         while True:
             # until is not inclusive
@@ -254,21 +297,34 @@ class CassandraHandler:
 
             for message in messages:
                 if message.user_id == user_id:
-                    count += 1
+                    messages_from_user.append(message)
 
             n_messages = len(messages)
-            all_messages += n_messages
-            if not n_messages or n_messages < limit:
+            n_all_messages += n_messages
+
+            if not n_messages or n_messages < limit or len(messages_from_user) > query_limit > 0:
                 elapsed = time() - start
-                # if elapsed > 5 or count > 500:
-                logger.info(f"[{elapsed:.2f}s] counted {all_messages} msgs in {group_id}; {count} messages were from user {user_id}")
+                logger.info((
+                    f"[{elapsed:.2f}s] fetched {n_all_messages} msgs"
+                    f" in {group_id}; {len(messages_from_user)} messages were from user {user_id}"
+                ))
                 break
             else:
                 until = messages[-1].created_at
 
+        return messages_from_user
+
+    # noinspection PyMethodMayBeStatic
+    def count_messages_in_group_from_user_since(self, group_id: str, user_id: int, until: dt, since: dt) -> int:
+        # the user hasn't sent any message in this group yet
+        if until is None:
+            return 0
+
+        messages_from_user = self._get_messages_in_group_from_user(group_id, user_id, until, since)
+
         # plus one since 'until' is not inclusive, and the last message sent
         # won't be counted otherwise
-        return count + 1
+        return len(messages_from_user) + 1
 
     def get_unread_in_group(self, group_id: str, user_id: int, last_read: dt) -> int:
         unread = self.env.cache.get_unread_in_group(group_id, user_id)
