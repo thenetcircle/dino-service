@@ -1,4 +1,5 @@
 import sys
+from datetime import timedelta
 from typing import List
 from typing import Optional
 
@@ -561,10 +562,14 @@ async def get_message_count_for_user_in_group(
 
             # if it hasn't been counted before, count from cassandra in batches (could be slow)
             if message_count is None or message_count == -1:
+                # until isn't inclusive, so the last message sent won't be counted otherwise;
+                until = group_info.last_sent
+                until += timedelta(milliseconds=1)
+
                 message_count = environ.env.storage.count_messages_in_group_from_user_since(
                     group_id,
                     user_id,
-                    until=group_info.last_sent,
+                    until=until,
                     since=group_info.delete_before
                 )
                 environ.env.db.set_sent_message_count(group_id, user_id, message_count, db)

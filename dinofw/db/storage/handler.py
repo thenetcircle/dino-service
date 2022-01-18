@@ -315,10 +315,7 @@ class CassandraHandler:
             return 0
 
         messages_from_user = self._get_messages_in_group_from_user(group_id, user_id, until, since)
-
-        # plus one since 'until' is not inclusive, and the last message sent
-        # won't be counted otherwise
-        return len(messages_from_user) + 1
+        return len(messages_from_user)
 
     def get_unread_in_group(self, group_id: str, user_id: int, last_read: dt) -> int:
         unread = self.env.cache.get_unread_in_group(group_id, user_id)
