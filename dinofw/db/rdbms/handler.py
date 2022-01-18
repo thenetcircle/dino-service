@@ -131,7 +131,7 @@ class RelationalHandler:
             u.user_id = 5000441 and
             u.hide = false and
             u.deleted = false and
-            u.delete_before <= g.updated_at and
+            u.delete_before < g.updated_at and
             g.last_message_time < now() and
             ((u.last_read < g.last_message_time) or u.bookmark = true)
         order by
@@ -156,7 +156,11 @@ class RelationalHandler:
                     models.GroupEntity.last_message_time < until,
                     models.UserGroupStatsEntity.deleted.is_(False),
                     models.UserGroupStatsEntity.user_id == user_id,
-                    models.UserGroupStatsEntity.delete_before <= models.GroupEntity.updated_at,
+
+                    # TODO: double check this; before was '<= updated at', but then the '/groups' api
+                    #  will return all groups that the user deleted (when a user deletes a group,
+                    #  'delete_before' will be set to the same time as 'updated_at'
+                    models.UserGroupStatsEntity.delete_before < models.GroupEntity.updated_at,
 
                     # TODO: when joining a "group", the last message was before you joined; if we create
                     #  an action log when a user joins it will update `last_message_time` and we can use
