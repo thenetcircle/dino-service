@@ -781,9 +781,6 @@ class RelationalHandler:
             statement.group_by(
                 models.GroupEntity.group_type
             )
-            .limit(
-                query.per_page
-            )
             .all()
         )
 
