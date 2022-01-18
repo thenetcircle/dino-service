@@ -197,7 +197,6 @@ class CassandraHandler:
         until = to_dt(query.until, allow_none=True)
         since = to_dt(query.since, allow_none=True)
         query_limit = query.per_page or DefaultValues.PER_PAGE
-        messages = list()
 
         batch_limit = query_limit * 10
         if batch_limit > 1000:
@@ -221,13 +220,8 @@ class CassandraHandler:
             query_limit=query_limit
         )
 
-        messages.extend(self._try_parse_messages(raw_messages))
-
-        if since is None:
-            return messages[:query_limit]
-
-        # since we need ascending order on cassandra query if we use 'since', reverse the results here
-        return list(reversed(messages))[:query_limit]
+        messages = self._try_parse_messages(raw_messages)
+        return messages[:query_limit]
 
     # noinspection PyMethodMayBeStatic
     def get_messages_in_group_for_user(
