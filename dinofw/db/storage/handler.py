@@ -203,7 +203,7 @@ class CassandraHandler:
             batch_limit = 1000
 
         if since is None:
-            since = user_stats.first_sent
+            since = user_stats.delete_before
 
         # if not specified, use the last sent time (e.g. to get for first page results)
         if until is None:
