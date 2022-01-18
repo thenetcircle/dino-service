@@ -768,7 +768,7 @@ class RelationalHandler:
             )
             .filter(
                 models.UserGroupStatsEntity.user_id == user_id,
-                models.UserGroupStatsEntity.delete_before < models.GroupEntity.last_message_time,
+                models.UserGroupStatsEntity.delete_before < models.GroupEntity.updated_at,
             )
         )
 

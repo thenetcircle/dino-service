@@ -92,11 +92,9 @@ class UserResource(BaseResource):
             n_unread_groups = 0
 
             for user_group in user_groups:
-                if user_group.unread == -1:
-                    continue
-
-                unread_amount += user_group.unread
-                n_unread_groups += 1
+                if user_group.unread > 0:
+                    unread_amount += user_group.unread
+                    n_unread_groups += 1
         else:
             unread_amount = -1
             n_unread_groups = -1
