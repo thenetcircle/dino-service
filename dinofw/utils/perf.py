@@ -47,7 +47,7 @@ def timeit(_logger, method: str, tag: str = None, threshold_ms: int = 10, only_l
                             key, value in kwargs.items()
                             if kwargs is not None and key not in {"db"}
                         }
-                        _logger.debug(f"{method} {tag or ''}... {the_time:.2f}ms {relevant_args}")
+                        _logger.info(f"{method} {tag or ''}... {the_time:.2f}ms {relevant_args}")
 
                     # don't always need to send telemetry to upstreams stats collector
                     if only_log:
