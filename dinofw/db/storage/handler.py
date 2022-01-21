@@ -197,14 +197,13 @@ class CassandraHandler:
         until = to_dt(query.until, allow_none=True)
         since = to_dt(query.since, allow_none=True)
         query_limit = query.per_page or DefaultValues.PER_PAGE
-        messages = list()
 
         batch_limit = query_limit * 10
         if batch_limit > 1000:
             batch_limit = 1000
 
         if since is None:
-            since = user_stats.first_sent
+            since = user_stats.delete_before
 
         # if not specified, use the last sent time (e.g. to get for first page results)
         if until is None:
@@ -221,13 +220,8 @@ class CassandraHandler:
             query_limit=query_limit
         )
 
-        messages.extend(self._try_parse_messages(raw_messages))
-
-        if since is None:
-            return messages[:query_limit]
-
-        # since we need ascending order on cassandra query if we use 'since', reverse the results here
-        return list(reversed(messages))[:query_limit]
+        messages = self._try_parse_messages(raw_messages)
+        return messages[:query_limit]
 
     # noinspection PyMethodMayBeStatic
     def get_messages_in_group_for_user(
@@ -321,10 +315,7 @@ class CassandraHandler:
             return 0
 
         messages_from_user = self._get_messages_in_group_from_user(group_id, user_id, until, since)
-
-        # plus one since 'until' is not inclusive, and the last message sent
-        # won't be counted otherwise
-        return len(messages_from_user) + 1
+        return len(messages_from_user)
 
     def get_unread_in_group(self, group_id: str, user_id: int, last_read: dt) -> int:
         unread = self.env.cache.get_unread_in_group(group_id, user_id)
