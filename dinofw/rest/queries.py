@@ -46,11 +46,13 @@ class NotificationGroup(AbstractQuery):
     data: dict
 
 
-class EventType(str, Enum):
+# only used for matching in BroadcastResource, some types need extra info
+class EventType:
     message = "message"
     recall = "recall"
     read = "read"
     hide = "hide"
+    unhide = "unhide"
     delete = "delete"
     highlight = "highlight"
     delete_attachment = "delete_attachment"
@@ -58,7 +60,7 @@ class EventType(str, Enum):
 
 class NotificationQuery(AbstractQuery):
     group_id: str
-    event_type: EventType
+    event_type: str  # previously an Enum, but dino doesn't need to validate it, so changed to string
     notification: List[NotificationGroup]
 
     class Config:
