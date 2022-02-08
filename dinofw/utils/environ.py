@@ -3,7 +3,6 @@ import os
 from gnenv import create_env
 from gnenv.environ import GNEnvironment
 from loguru import logger
-from sentry_sdk.integrations.redis import RedisIntegration
 
 from dinofw.utils.config import ConfigKeys
 
@@ -44,6 +43,7 @@ def init_logging(gn_env: GNEnvironment) -> None:
     import sentry_sdk
     from sentry_sdk import capture_exception as sentry_capture_exception
     from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+    from sentry_sdk.integrations.redis import RedisIntegration
 
     sentry_sdk.init(
         dsn=dsn,
