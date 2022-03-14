@@ -6,12 +6,10 @@ from fastapi import Depends
 from loguru import logger
 from sqlalchemy.orm import Session
 
-from dinofw.rest.models import MessageCount
 from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UsersGroup
-from dinofw.rest.queries import AbstractQuery
 from dinofw.rest.queries import GroupInfoQuery
-from dinofw.utils import environ, to_ts
+from dinofw.utils import environ
 from dinofw.utils.api import get_db
 from dinofw.utils.api import log_error_and_raise_known
 from dinofw.utils.api import log_error_and_raise_unknown
