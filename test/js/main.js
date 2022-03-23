@@ -8,7 +8,10 @@ let other_user_last_read_idx = 0;
 const user_id = '5588';
 const other_user_id = '4321';
 const rest_endpoint = 'http://maggie-kafka-1.thenetcircle.lab:9800';
-const mqtt_endpoint = 'ws://maggie-kafka-1.thenetcircle.lab:1880/mqtt';
+//const mqtt_endpoint = 'ws://maggie-kafka-1.thenetcircle.lab:1880/mqtt';
+//const mqtt_endpoint = 'ws://maggie-kafka-3.thenetcircle.lab:1886/mqtt';
+const mqtt_endpoint = 'ws://maggie-kafka-3.thenetcircle.lab:1887/mqtt';
+//const mqtt_endpoint = 'wss://dino2.thenetcircle.com/mqtt';
 //const mqtt_endpoint = 'mqtt://maggie-kafka-1.thenetcircle.lab:1883/mqtt';
 const version = 'v1';
 
@@ -37,7 +40,11 @@ function setup_mqtt() {
         clean: false,
         rejectUnauthorized: false,
         protocolVersion: 5,
-        qos: 1
+        qos: 1,
+        keepalive: 600,
+        properties: {
+            sessionExpiryInterval: 600
+        }
     }
 
     client = mqtt.connect(mqtt_endpoint, settings);
