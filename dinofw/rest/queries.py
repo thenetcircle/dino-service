@@ -75,6 +75,10 @@ class OnlySenderQuery(AbstractQuery):
     only_sender: Optional[bool] = False
 
 
+class CountMessageQuery(OnlySenderQuery):
+    only_attachments: Optional[bool] = False
+
+
 class MessageQuery(PaginationQuery, AdminQuery, OnlySenderQuery):
     pass
 

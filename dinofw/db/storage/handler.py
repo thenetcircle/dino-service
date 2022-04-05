@@ -276,6 +276,37 @@ class CassandraHandler:
             .count()
         )
 
+    def count_attachments_in_group_since_for_user(self, group_id: str, since: dt, user_id: int):
+        messages = (
+            MessageModel.objects(
+                MessageModel.group_id == group_id,
+            )
+            .filter(
+                MessageModel.created_at > since,
+            )
+            .limit(None)
+            .all()
+        )
+
+        n_messages = 0
+        for message in messages:
+            if message.user_id == user_id:
+                n_messages += 1
+
+        return n_messages
+
+    def count_attachments_in_group_since(self, group_id: str, since: dt):
+        return (
+            MessageModel.objects(
+                MessageModel.group_id == group_id,
+            )
+            .filter(
+                MessageModel.created_at > since,
+            )
+            .limit(None)
+            .count()
+        )
+
     def _get_messages_in_group_from_user(
             self, group_id: str, user_id: int, until: dt, since: dt, limit: int = 1000, query_limit: int = -1
     ) -> List[MessageModel]:

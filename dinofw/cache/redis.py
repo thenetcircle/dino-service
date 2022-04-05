@@ -11,6 +11,7 @@ import redis
 from loguru import logger
 
 from dinofw.cache import ICache
+from dinofw.utils import to_ts
 from dinofw.utils.config import ConfigKeys
 from dinofw.utils.config import RedisKeys
 
@@ -225,6 +226,42 @@ class CacheRedis(ICache):
 
         key = RedisKeys.count_group_types_not_including_hidden(user_id)
         self.redis.delete(key)
+
+    def increase_attachment_count_in_group_for_users(self, group_id: str, user_ids: List[int]):
+        # TODO
+        pass
+
+    def remove_attachment_count_in_group_for_users(self, group_id: str, user_ids: List[int]):
+        # TODO
+        pass
+
+    def get_attachment_count_in_group_since_for_user(self, group_id: str, since: dt, user_id: int) -> Optional[int]:
+        key = RedisKeys.attachment_count_group_user_since(group_id, user_id, int(to_ts(since)))
+        the_count = self.redis.get(key)
+
+        if the_count is None:
+            return None
+
+        return int(float(str(the_count, "utf-8")))
+
+    def set_attachment_count_in_group_since_for_user(self, group_id: str, since: dt, user_id: int, the_count: int) -> None:
+        key = RedisKeys.attachment_count_group_user_since(group_id, user_id, int(to_ts(since)))
+        self.redis.set(key, str(the_count))
+        self.redis.expire(key, ONE_DAY * 14)
+
+    def get_attachment_count_in_group_since(self, group_id: str, since: dt) -> Optional[int]:
+        key = RedisKeys.attachment_count_group_since(group_id, int(to_ts(since)))
+        the_count = self.redis.get(key)
+
+        if the_count is None:
+            return None
+
+        return int(float(str(the_count, "utf-8")))
+
+    def set_attachment_count_in_group_since(self, group_id: str, since: dt, the_count: int) -> None:
+        key = RedisKeys.attachment_count_group_since(group_id, int(to_ts(since)))
+        self.redis.set(key, str(the_count))
+        self.redis.expire(key, ONE_DAY * 14)
 
     def set_last_sent_for_user(self, user_id: int, group_id: str, last_time: float) -> None:
         key = RedisKeys.last_sent_time_user(user_id)

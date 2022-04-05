@@ -1,3 +1,4 @@
+from datetime import datetime as dt
 from typing import List
 
 from sqlalchemy.orm import Session
@@ -82,6 +83,31 @@ class MessageResource(BaseResource):
             messages.append(message)
 
         return messages
+
+    def count_attachments_in_group_since_for_user(self, group_id: str, since: dt, user_id: int):
+        the_count = self.env.cache.get_attachment_count_in_group_since_for_user(group_id, since, user_id)
+        if the_count is not None:
+            return the_count
+
+        the_count = self.env.storage.count_attachments_in_group_since_for_user(
+            group_id, since, user_id=user_id
+        )
+
+        self.env.cache.set_attachment_count_in_group_since_for_user(group_id, since, user_id, the_count)
+        return the_count
+
+    def count_attachments_in_group_since(self, group_id: str, since: dt):
+        the_count = self.env.cache.get_attachment_count_in_group_since(group_id, since)
+        if the_count is not None:
+            return the_count
+
+        the_count = self.env.storage.count_attachments_in_group_since(
+            group_id, since
+        )
+
+        # TODO: 7/14 days ttl
+        self.env.cache.set_attachment_count_in_group_since(group_id, since, the_count)
+        return the_count
 
     async def get_attachment_info(self, group_id: str, query: AttachmentQuery, db: Session) -> Message:
         group = self.env.db.get_group_from_id(group_id, db)

@@ -127,6 +127,14 @@ class BaseResource(ABC):
                 group_id, user_id, now, db
             )
 
+        if event_type == EventTypes.ATTACHMENT:
+            self.env.cache.increase_attachment_count_in_group_for_users(group_id, list(user_ids.keys()))
+        elif event_type == EventTypes.DELETE_ATTACHMENT:
+            # we don't know all users delete_before, this might be an old attachment,
+            # and only some users should decrease count for, so instead just delete
+            # the cached value and recount the value the next time the count is requested
+            self.env.cache.remove_attachment_count_in_group_for_users(group_id, list(user_ids.keys()))
+
         # TODO: don't send to mqtt here, use the /notification/send api instead
         """
         if event_type == EventTypes.MESSAGE:

@@ -19,8 +19,9 @@ from dinofw.rest.models import MessageCount
 from dinofw.rest.models import OneToOneStats
 from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UserStats
-from dinofw.rest.queries import ActionLogQuery, OnlySenderQuery
+from dinofw.rest.queries import ActionLogQuery
 from dinofw.rest.queries import AttachmentQuery
+from dinofw.rest.queries import CountMessageQuery
 from dinofw.rest.queries import CreateAttachmentQuery
 from dinofw.rest.queries import CreateGroupQuery
 from dinofw.rest.queries import GroupInfoQuery
@@ -371,7 +372,7 @@ async def create_an_attachment(
 
     When a user sends an image or video, first call the "send message API" with the
     `message_type` set to `image` (or similar). When the image has finished processing
-    in the backend, call this API to create the actual attachment meta data for it.
+    in the backend, call this API to create the actual attachment metadata for it.
 
     First we create the "empty" message so indicate to all relevant users that someone
     has sent something, usually the client application will show a loading icon for this
@@ -534,10 +535,14 @@ async def create_a_new_group(
 @timeit(logger, "POST", "/groups/{group_id}/user/{user_id}/count")
 @wrap_exception()
 async def get_message_count_for_user_in_group(
-    group_id: str, user_id: int, query: Optional[OnlySenderQuery] = None, db: Session = Depends(get_db)
+    group_id: str, user_id: int, query: Optional[CountMessageQuery] = None, db: Session = Depends(get_db)
 ) -> MessageCount:
     """
     Count the number of messages in a group since a user's `delete_before`.
+
+    If `only_attachments` is True (default is False), only attachments are
+    counted and not all messages. This parameter can be used together with
+    `only_sender` as well.
 
     If `only_sender` is set to False (default value), the messages for all
     users in the groups will be counted. If set to True, only messages sent
@@ -555,9 +560,8 @@ async def get_message_count_for_user_in_group(
     * `601`: if the group does not exist,
     * `250`: if an unknown error occurred.
     """
-    try:
-        group_info: UserGroupStatsBase = environ.env.db.get_user_stats_in_group(group_id, user_id, db)
 
+    def count_messages():
         # can't filter by user id in cassandra without restricting 'created_at', so
         # use the cached value from the rdbms
         if query and query.only_sender:
@@ -584,11 +588,31 @@ async def get_message_count_for_user_in_group(
                 group_id, group_info.delete_before
             )
 
+        return message_count
+
+    def count_attachments():
+        if query and query.only_sender:
+            return environ.env.rest.message.count_attachments_in_group_since_for_user(
+                group_id, group_info.delete_before, sender_id=user_id
+            )
+
+        return environ.env.rest.message.count_attachments_in_group_since(
+            group_id, group_info.delete_before, sender_id=user_id
+        )
+
+    try:
+        group_info: UserGroupStatsBase = environ.env.db.get_user_stats_in_group(group_id, user_id, db)
+
+        if query.only_attachments:
+            the_count = count_attachments()
+        else:
+            the_count = count_messages()
+
         return MessageCount(
             group_id=group_id,
             user_id=user_id,
             delete_before=to_ts(group_info.delete_before),
-            message_count=message_count
+            message_count=the_count
         )
 
     except NoSuchGroupException as e:
