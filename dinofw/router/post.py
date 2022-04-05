@@ -215,6 +215,11 @@ async def get_groups_updated_since(
     Get a list of groups for this user that has changed since a certain time, sorted
     by last message sent. Used to sync changes to mobile apps.
 
+    Caveat: If the result of this request is >500 groups (e.g. the user uses the app
+    for the first time in a long while), the results will be discarded, and this API
+    will return the results from the API `POST /api/v1/users/{user_id}/groups`
+    instead.
+
     If `count_unread` is False, the field `unread` will have the value `-1`, and
     similarly if `receiver_unread` is False, the field `receiver_unread` will have
     the value `-1`.
