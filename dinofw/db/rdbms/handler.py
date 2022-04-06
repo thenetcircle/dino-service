@@ -32,7 +32,7 @@ from dinofw.utils import users_to_group_id
 from dinofw.utils import utcnow_dt
 from dinofw.utils import utcnow_ts
 from dinofw.utils.config import GroupTypes
-from dinofw.utils.exceptions import NoSuchGroupException
+from dinofw.utils.exceptions import NoSuchGroupException, NoSuchUserException
 from dinofw.utils.exceptions import UserNotInGroupException
 from dinofw.utils.perf import time_method
 
@@ -1169,6 +1169,13 @@ class RelationalHandler:
             # so there's no need to count from cassandra from now on
             self.env.db.set_sent_message_count(group_id, user_id, 0, db)
 
+            # update the cached value of delete before, and also remove
+            # the cached count of attachments in this group for this
+            # user; it will be recounted and cached again the next time
+            # it's requested
+            self.env.cache.set_delete_before(group_id, user_id, to_ts(delete_before))
+            self.env.cache.remove_attachment_count_in_group_for_users(group_id, [user_id])
+
         # can't set highlight time if also setting last read time
         if highlight_time is not None and last_read is None:
             set_highlight_time()
@@ -1182,6 +1189,30 @@ class RelationalHandler:
 
         db.add(user_stats)
         db.commit()
+
+    def get_delete_before(self, group_id: str, user_id: int, db: Session) -> dt:
+        delete_before = self.env.cache.get_delete_before(group_id, user_id)
+        if delete_before is not None:
+            return delete_before
+
+        delete_before = (
+            db.query(
+                models.UserGroupStatsEntity.delete_before
+            )
+            .filter(
+                models.UserGroupStatsEntity.group_id == group_id,
+                models.UserGroupStatsEntity.user_id == user_id
+            )
+            .first()
+        )
+
+        if delete_before is None or len(delete_before) == 0:
+            raise NoSuchUserException(user_id)
+
+        delete_before = delete_before[0]
+        self.env.cache.set_delete_before(group_id, user_id, to_ts(delete_before))
+
+        return delete_before
 
     def get_last_message_time_in_group(self, group_id: str, db: Session) -> dt:
         last_message_time = self.env.cache.get_last_message_time_in_group(group_id)

@@ -541,8 +541,8 @@ async def get_message_count_for_user_in_group(
     Count the number of messages in a group since a user's `delete_before`.
 
     If `only_attachments` is True (default is False), only attachments are
-    counted and not all messages. This parameter can be used together with
-    `only_sender` as well.
+    counted and not all messages. This parameter can NOT be used together
+    with `only_sender=true`.
 
     If `only_sender` is set to False (default value), the messages for all
     users in the groups will be counted. If set to True, only messages sent
@@ -565,6 +565,8 @@ async def get_message_count_for_user_in_group(
         # can't filter by user id in cassandra without restricting 'created_at', so
         # use the cached value from the rdbms
         if query and query.only_sender:
+            group_info: UserGroupStatsBase = environ.env.db.get_user_stats_in_group(group_id, user_id, db)
+
             # can return both None and -1; -1 means we've checked the db before, but it has not
             # yet been counted, to avoid checking the db every time a new message is sent
             message_count = environ.env.db.get_sent_message_count(group_id, user_id, db)
@@ -585,23 +587,18 @@ async def get_message_count_for_user_in_group(
 
         else:
             message_count = environ.env.storage.count_messages_in_group_since(
-                group_id, group_info.delete_before
+                group_id, delete_before
             )
 
         return message_count
 
     def count_attachments():
-        if query and query.only_sender:
-            return environ.env.rest.message.count_attachments_in_group_since_for_user(
-                group_id, group_info.delete_before, sender_id=user_id
-            )
-
-        return environ.env.rest.message.count_attachments_in_group_since(
-            group_id, group_info.delete_before, sender_id=user_id
+        return environ.env.rest.message.count_attachments_in_group_for_user(
+            group_id, user_id, delete_before
         )
 
     try:
-        group_info: UserGroupStatsBase = environ.env.db.get_user_stats_in_group(group_id, user_id, db)
+        delete_before = environ.env.db.get_delete_before(group_id, user_id, db)
 
         if query.only_attachments:
             the_count = count_attachments()
@@ -611,7 +608,7 @@ async def get_message_count_for_user_in_group(
         return MessageCount(
             group_id=group_id,
             user_id=user_id,
-            delete_before=to_ts(group_info.delete_before),
+            delete_before=to_ts(delete_before),
             message_count=the_count
         )
 

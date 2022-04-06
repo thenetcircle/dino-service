@@ -11,7 +11,7 @@ import redis
 from loguru import logger
 
 from dinofw.cache import ICache
-from dinofw.utils import to_ts
+from dinofw.utils import to_ts, to_dt
 from dinofw.utils.config import ConfigKeys
 from dinofw.utils.config import RedisKeys
 
@@ -227,16 +227,38 @@ class CacheRedis(ICache):
         key = RedisKeys.count_group_types_not_including_hidden(user_id)
         self.redis.delete(key)
 
+    def get_delete_before(self, group_id: str, user_id: int) -> Optional[dt]:
+        key = RedisKeys.delete_before(group_id, user_id)
+        delete_before = self.redis.get(key)
+
+        if delete_before is not None:
+            delete_before = float(str(delete_before, "utf-8"))
+            return to_dt(delete_before, allow_none=True)
+
+    def set_delete_before(self, group_id: str, user_id: int, delete_before: float) -> None:
+        key = RedisKeys.delete_before(group_id, user_id)
+        self.redis.set(key, delete_before)
+        self.redis.expire(key, 14 * ONE_DAY)
+
     def increase_attachment_count_in_group_for_users(self, group_id: str, user_ids: List[int]):
-        # TODO
-        pass
+        p = self.redis.pipeline()
+
+        for user_id in user_ids:
+            key = RedisKeys.attachment_count_group_user(group_id, user_id)
+            p.incr(key)
+            p.expire(key, ONE_DAY * 14)
+
+        p.execute()
 
     def remove_attachment_count_in_group_for_users(self, group_id: str, user_ids: List[int]):
-        # TODO
-        pass
+        keys = [
+            RedisKeys.attachment_count_group_user(group_id, user_id)
+            for user_id in user_ids
+        ]
+        self.redis.delete(*keys)
 
-    def get_attachment_count_in_group_since_for_user(self, group_id: str, since: dt, user_id: int) -> Optional[int]:
-        key = RedisKeys.attachment_count_group_user_since(group_id, user_id, int(to_ts(since)))
+    def get_attachment_count_in_group_for_user(self, group_id: str, user_id: int) -> Optional[int]:
+        key = RedisKeys.attachment_count_group_user(group_id, user_id)
         the_count = self.redis.get(key)
 
         if the_count is None:
@@ -244,22 +266,8 @@ class CacheRedis(ICache):
 
         return int(float(str(the_count, "utf-8")))
 
-    def set_attachment_count_in_group_since_for_user(self, group_id: str, since: dt, user_id: int, the_count: int) -> None:
-        key = RedisKeys.attachment_count_group_user_since(group_id, user_id, int(to_ts(since)))
-        self.redis.set(key, str(the_count))
-        self.redis.expire(key, ONE_DAY * 14)
-
-    def get_attachment_count_in_group_since(self, group_id: str, since: dt) -> Optional[int]:
-        key = RedisKeys.attachment_count_group_since(group_id, int(to_ts(since)))
-        the_count = self.redis.get(key)
-
-        if the_count is None:
-            return None
-
-        return int(float(str(the_count, "utf-8")))
-
-    def set_attachment_count_in_group_since(self, group_id: str, since: dt, the_count: int) -> None:
-        key = RedisKeys.attachment_count_group_since(group_id, int(to_ts(since)))
+    def set_attachment_count_in_group_for_user(self, group_id: str, user_id: int, the_count: int) -> None:
+        key = RedisKeys.attachment_count_group_user(group_id, user_id)
         self.redis.set(key, str(the_count))
         self.redis.expire(key, ONE_DAY * 14)
 
@@ -347,7 +355,7 @@ class CacheRedis(ICache):
 
         for group_id, users in group_users.items():
             key = RedisKeys.user_in_group(group_id)
-            self.redis.delete(key)
+            p.delete(key)
 
             if len(users):
                 for user_id, join_time in users.items():

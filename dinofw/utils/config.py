@@ -61,16 +61,16 @@ class RedisKeys:
     RKEY_LAST_READ_TIME_USER: Final = "user:lastread:{}"  # user:lastread:user_id
     RKEY_LAST_MESSAGE_TIME: Final = "group:lastmsgtime:{}"  # group:lastmsgtime:group_id
     RKEY_GROUP_EXISTS: Final = "group:exist:{}"  # group:exist:group_id
-    RKEY_ATT_COUNT_GROUP_USER_SINCE: Final = "att:count:sender:{}:{}:{}"  # att:count:all:group:user:since
-    RKEY_ATT_COUNT_GROUP_SINCE: Final = "att:count:all:{}:{}"  # att:count:all:group:since
+    RKEY_ATT_COUNT_GROUP_USER: Final = "att:count:user:{}:{}"  # att:count:user:group_id:user_id
+    RKEY_DELETE_BEFORE: Final = "delete:before:user:{}:{}"  # delete:before:user:group_id:user_id
 
     @staticmethod
-    def attachment_count_group_user_since(group_id: str, user_id: int, since: int):
-        return RedisKeys.RKEY_ATT_COUNT_GROUP_USER_SINCE.format(group_id, user_id, since)
+    def delete_before(group_id: str, user_id: int) -> str:
+        return RedisKeys.RKEY_DELETE_BEFORE.format(group_id, user_id)
 
     @staticmethod
-    def attachment_count_group_since(group_id: str, since: int):
-        return RedisKeys.RKEY_ATT_COUNT_GROUP_SINCE.format(group_id, since)
+    def attachment_count_group_user(group_id: str, user_id: int) -> str:
+        return RedisKeys.RKEY_ATT_COUNT_GROUP_USER.format(group_id, user_id)
 
     @staticmethod
     def sent_message_count_in_group(group_id: str) -> str:
