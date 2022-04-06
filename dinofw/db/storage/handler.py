@@ -279,11 +279,11 @@ class CassandraHandler:
     # noinspection PyMethodMayBeStatic
     def count_attachments_in_group_since(self, group_id: str, since: dt) -> int:
         return (
-            MessageModel.objects(
-                MessageModel.group_id == group_id,
+            AttachmentModel.objects(
+                AttachmentModel.group_id == group_id,
             )
             .filter(
-                MessageModel.created_at > since,
+                AttachmentModel.created_at > since,
             )
             .limit(None)
             .count()
