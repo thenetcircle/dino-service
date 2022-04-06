@@ -95,9 +95,6 @@ class GroupResource(BaseResource):
         group_id = group.group_id
         message_amount = await self.count_messages_in_group(group_id)
 
-        delete_before = self.env.db.get_delete_before(group_id, user_id_a, db)
-        attachment_amount = await self.count_attachments_in_group_for_user(group_id, user_id_a, delete_before)
-
         users_and_join_time = self.env.db.get_user_ids_and_join_time_in_group(
             group_id, db
         )
@@ -107,6 +104,14 @@ class GroupResource(BaseResource):
                 group_id, user_id, db
             ) for user_id in users
         ]
+
+        delete_before = self.env.db.get_delete_before(group_id, user_id_a, db)
+        attachment_amount = await self.count_attachments_in_group_for_user(group_id, user_id_a, delete_before)
+
+        # only need ths count for the calling user
+        for user_stat in user_stats:
+            if user_stat.user_id == user_id_a:
+                user_stat.attachment_amount = attachment_amount
 
         user_a: Optional[UserGroupStats] = user_stats[0]
         user_b: Optional[UserGroupStats] = user_stats[1]
@@ -125,8 +130,7 @@ class GroupResource(BaseResource):
                 group=group,
                 users=users_and_join_time,
                 user_count=len(users_and_join_time),
-                message_amount=message_amount,
-                attachment_amount=attachment_amount
+                message_amount=message_amount
             ),
         )
 
@@ -135,12 +139,10 @@ class GroupResource(BaseResource):
 
     async def count_attachments_in_group_for_user(self, group_id: str, user_id: int, since: dt) -> int:
         the_count = self.env.cache.get_attachment_count_in_group_for_user(group_id, user_id)
-        logger.info(f"[{group_id}] [{user_id}] [{since}] count from cache: {the_count}")
         if the_count is not None:
             return the_count
 
         the_count = self.env.storage.count_attachments_in_group_since(group_id, since)
-        logger.info(f"[{group_id}] [{user_id}] [{since}] count from cassandra: {the_count}")
         self.env.cache.set_attachment_count_in_group_for_user(group_id, user_id, the_count)
 
         return the_count

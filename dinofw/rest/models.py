@@ -50,6 +50,7 @@ class UserGroupStats(BaseModel):
     highlight_time: Optional[float]
     last_updated_time: float
     first_sent: Optional[float]
+    attachment_amount: Optional[int] = -1
 
     hide: Optional[bool]
     pin: Optional[bool]
@@ -99,7 +100,6 @@ class Group(BaseModel):
     last_message_id: Optional[str]
     user_count: int
     message_amount: Optional[int] = -1
-    attachment_amount: Optional[int] = -1
 
 
 class GroupMessage(BaseModel):

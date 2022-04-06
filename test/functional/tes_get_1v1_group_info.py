@@ -24,6 +24,7 @@ class TestReceiverStats(BaseServerRestApi):
         info = self.get_1v1_group_info()
         self.assertIsNotNone(info)
 
+        # TODO: attachment amount moved to "stats"
         self.assertEqual(0, info["group"]["attachment_amount"])
         self.assertEqual(1, info["group"]["message_amount"])
 
@@ -34,5 +35,6 @@ class TestReceiverStats(BaseServerRestApi):
         info = self.get_1v1_group_info()
         self.assertIsNotNone(info)
 
+        # TODO: attachment amount moved to "stats"
         self.assertEqual(1, info["group"]["attachment_amount"])
         self.assertEqual(2, info["group"]["message_amount"])
