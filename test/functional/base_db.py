@@ -21,9 +21,9 @@ class BaseDatabaseTest(BaseTest):
         from gnenv.environ import find_config
         from gnenv.environ import load_secrets_file
 
-        config_dict, config_path = find_config("..")
+        config_dict, config_path = find_config(".")
         config_dict = load_secrets_file(
-            config_dict, secrets_path="../secrets", env_name="test"
+            config_dict, secrets_path="./secrets", env_name="test"
         )
         config = ConfigDict(config_dict)
 
@@ -35,7 +35,6 @@ class BaseDatabaseTest(BaseTest):
 
         # need to replace the global environ.env with our FakeEnv, functional model files import it directly
         from dinofw.utils import environ
-
         environ.env = self.env
 
         # init with our test db

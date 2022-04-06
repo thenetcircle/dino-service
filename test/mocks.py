@@ -41,6 +41,20 @@ class FakeStorage:
         self.attachments_by_message = dict()
         self.action_log = dict()
 
+    def count_attachments_in_group_since(self, group_id: str, since: dt) -> int:
+        if group_id not in self.attachments_by_group:
+            return 0
+
+        attachments = list()
+
+        for attachment in self.attachments_by_group[group_id]:
+            if attachment.created_at <= since:
+                continue
+
+            attachments.append(attachment)
+
+        return len(attachments)
+
     def get_message_with_id(self, group_id: str, user_id: int, message_id: str, created_at: float):
         if group_id not in self.messages_by_group:
             raise NoSuchMessageException(message_id)
