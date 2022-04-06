@@ -99,6 +99,7 @@ class Group(BaseModel):
     last_message_id: Optional[str]
     user_count: int
     message_amount: Optional[int] = -1
+    attachment_amount: Optional[int] = -1
 
 
 class GroupMessage(BaseModel):

@@ -1,8 +1,8 @@
 import itertools
+from datetime import datetime as dt
 from typing import List
 from typing import Optional
 
-from loguru import logger
 from sqlalchemy.orm import Session
 
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
@@ -93,6 +93,10 @@ class GroupResource(BaseResource):
 
         group_id = group.group_id
         message_amount = await self.count_messages_in_group(group_id)
+
+        delete_before = self.env.db.get_delete_before(group_id, user_id_a, db)
+        attachment_amount = await self.count_attachments_in_group_for_user(group_id, user_id_a, delete_before)
+
         users_and_join_time = self.env.db.get_user_ids_and_join_time_in_group(
             group_id, db
         )
@@ -120,12 +124,23 @@ class GroupResource(BaseResource):
                 group=group,
                 users=users_and_join_time,
                 user_count=len(users_and_join_time),
-                message_amount=message_amount
+                message_amount=message_amount,
+                attachment_amount=attachment_amount
             ),
         )
 
     def set_last_updated_at_on_all_stats_related_to_user(self, user_id: int, db: Session) -> None:
         self.env.db.set_last_updated_at_on_all_stats_related_to_user(user_id, db)
+
+    async def count_attachments_in_group_for_user(self, group_id: str, user_id: int, since: dt) -> int:
+        the_count = self.env.cache.get_attachment_count_in_group_for_user(group_id, user_id)
+        if the_count is not None:
+            return the_count
+
+        the_count = self.env.storage.count_attachments_in_group_since(group_id, since)
+        self.env.cache.set_attachment_count_in_group_for_user(group_id, user_id, the_count)
+
+        return the_count
 
     async def histories(
         self, group_id: str, user_id: int, query: MessageQuery, db: Session

@@ -84,16 +84,6 @@ class MessageResource(BaseResource):
 
         return messages
 
-    def count_attachments_in_group_for_user(self, group_id: str, user_id: int, since: dt) -> int:
-        the_count = self.env.cache.get_attachment_count_in_group_for_user(group_id, user_id)
-        if the_count is not None:
-            return the_count
-
-        the_count = self.env.storage.count_attachments_in_group_since(group_id, since)
-        self.env.cache.set_attachment_count_in_group_for_user(group_id, user_id, the_count)
-
-        return the_count
-
     async def get_attachment_info(self, group_id: str, query: AttachmentQuery, db: Session) -> Message:
         group = self.env.db.get_group_from_id(group_id, db)
 

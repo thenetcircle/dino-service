@@ -68,7 +68,7 @@ class TestCountAttachments(BaseServerRestApi):
         self.assertEqual(1, the_count)
 
     def test_count_removed_in_cache_when_removing_attachment(self):
-        group_id, user_id = self._create_attachment()
+        group_id, user_id = self.create_attachment()
 
         the_count = self.env.cache.get_attachment_count_in_group_for_user(group_id, user_id)
         self.assertEqual(1, the_count)
@@ -80,7 +80,7 @@ class TestCountAttachments(BaseServerRestApi):
 
     def test_count_removed_in_cache_when_updating_delete_before(self):
         group_message = self.send_1v1_message()
-        group_id, user_id = self._create_attachment()
+        group_id, user_id = self.create_attachment()
 
         the_count = self.env.cache.get_attachment_count_in_group_for_user(group_id, user_id)
         self.assertEqual(1, the_count)
@@ -95,9 +95,9 @@ class TestCountAttachments(BaseServerRestApi):
 
     def test_count_multiple_attachments_delete_one_user(self):
         group_message = self.send_1v1_message()
-        self._create_attachment()
-        self._create_attachment()
-        group_id, user_id = self._create_attachment()
+        self.create_attachment()
+        self.create_attachment()
+        group_id, user_id = self.create_attachment()
 
         the_count = self.env.cache.get_attachment_count_in_group_for_user(group_id, BaseTest.USER_ID)
         self.assertEqual(3, the_count)
@@ -113,31 +113,3 @@ class TestCountAttachments(BaseServerRestApi):
         self.assertEqual(3, the_count)
         the_count = self.env.cache.get_attachment_count_in_group_for_user(group_id, BaseTest.OTHER_USER_ID)
         self.assertIsNone(the_count)
-
-    def _create_attachment(self):
-        group_message = self.send_1v1_message(
-            message_type=MessageTypes.IMAGE,
-            user_id=BaseTest.USER_ID,
-            receiver_id=BaseTest.OTHER_USER_ID,
-            payload=json.dumps({
-                "content": "some payload",
-                "status": PayloadStatus.PENDING
-            })
-        )
-
-        message_id = group_message["message_id"]
-        created_at = group_message["created_at"]
-        group_id = group_message["group_id"]
-        user_id = group_message["user_id"]
-
-        self.update_attachment(
-            message_id=message_id,
-            created_at=created_at,
-            file_id=BaseTest.FILE_ID,
-            payload=json.dumps({
-                "content": "some payload",
-                "status": PayloadStatus.RESIZED
-            })
-        )
-
-        return group_id, user_id

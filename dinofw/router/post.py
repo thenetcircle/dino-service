@@ -345,6 +345,9 @@ async def get_one_to_one_information(
 ) -> OneToOneStats:
     """
     Get details about a 1v1 group.
+    
+    * `message_amount` is NOT per user, it's the total amount of messages since the creation of the group,
+    * `attachment_amount` IS per user, counted since the user's `delete_before`.
 
     **Potential error codes in response:**
     * `601`: if the group does not exist,
@@ -592,8 +595,8 @@ async def get_message_count_for_user_in_group(
 
         return message_count
 
-    def count_attachments():
-        return environ.env.rest.message.count_attachments_in_group_for_user(
+    async def count_attachments():
+        return await environ.env.rest.group.count_attachments_in_group_for_user(
             group_id, user_id, delete_before
         )
 
@@ -601,7 +604,7 @@ async def get_message_count_for_user_in_group(
         delete_before = environ.env.db.get_delete_before(group_id, user_id, db)
 
         if query.only_attachments:
-            the_count = count_attachments()
+            the_count = await count_attachments()
         else:
             the_count = count_messages()
 

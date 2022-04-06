@@ -1,10 +1,11 @@
+import json
 import time
 
 import arrow
 
 from dinofw.utils import to_ts
 from dinofw.utils import utcnow_ts
-from dinofw.utils.config import MessageTypes
+from dinofw.utils.config import MessageTypes, PayloadStatus
 from test.base import BaseTest
 from test.functional.base_db import BaseDatabaseTest
 
@@ -24,6 +25,34 @@ class BaseServerRestApi(BaseDatabaseTest):
                 return group
 
         return dict()
+
+    def create_attachment(self):
+        group_message = self.send_1v1_message(
+            message_type=MessageTypes.IMAGE,
+            user_id=BaseTest.USER_ID,
+            receiver_id=BaseTest.OTHER_USER_ID,
+            payload=json.dumps({
+                "content": "some payload",
+                "status": PayloadStatus.PENDING
+            })
+        )
+
+        message_id = group_message["message_id"]
+        created_at = group_message["created_at"]
+        group_id = group_message["group_id"]
+        user_id = group_message["user_id"]
+
+        self.update_attachment(
+            message_id=message_id,
+            created_at=created_at,
+            file_id=BaseTest.FILE_ID,
+            payload=json.dumps({
+                "content": "some payload",
+                "status": PayloadStatus.RESIZED
+            })
+        )
+
+        return group_id, user_id
 
     def update_delete_before(
             self,
