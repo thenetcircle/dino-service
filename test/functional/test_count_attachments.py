@@ -141,14 +141,3 @@ class TestCountAttachments(BaseServerRestApi):
         )
 
         return group_id, user_id
-
-    def assert_attachment_count(self, group_id: str, user_id: int, expected_amount: int):
-        raw_response = self.client.post(
-            f"/v1/groups/{group_id}/user/{user_id}/count", json={
-                "only_attachments": True
-            },
-        )
-        self.assertEqual(raw_response.status_code, 200)
-
-        group = raw_response.json()
-        self.assertEqual(expected_amount, group["message_count"])

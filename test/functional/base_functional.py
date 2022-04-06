@@ -473,6 +473,17 @@ class BaseServerRestApi(BaseDatabaseTest):
     def assert_error(self, response, error_code):
         self.assertEqual(int(response["detail"].split(":")[0]), error_code)
 
+    def assert_attachment_count(self, group_id: str, user_id: int, expected_amount: int):
+        raw_response = self.client.post(
+            f"/v1/groups/{group_id}/user/{user_id}/count", json={
+                "only_attachments": True
+            },
+        )
+        self.assertEqual(raw_response.status_code, 200)
+
+        group = raw_response.json()
+        self.assertEqual(expected_amount, group["message_count"])
+
     def assert_messages_in_group(
         self, group_id: str, user_id: int = BaseTest.USER_ID, amount: int = 0
     ):
