@@ -1,6 +1,6 @@
 import json
 
-from dinofw.utils.config import MessageTypes, ErrorCodes, PayloadStatus
+from dinofw.utils.config import MessageTypes, PayloadStatus
 from test.base import BaseTest
 from test.functional.base_functional import BaseServerRestApi
 
@@ -68,6 +68,53 @@ class TestCountAttachments(BaseServerRestApi):
         self.assertEqual(1, the_count)
 
     def test_count_removed_in_cache_when_removing_attachment(self):
+        group_id, user_id = self._create_attachment()
+
+        the_count = self.env.cache.get_attachment_count_in_group_for_user(group_id, user_id)
+        self.assertEqual(1, the_count)
+
+        self.delete_attachment(group_id, BaseTest.FILE_ID)
+
+        the_count = self.env.cache.get_attachment_count_in_group_for_user(group_id, user_id)
+        self.assertIsNone(the_count)
+
+    def test_count_removed_in_cache_when_updating_delete_before(self):
+        group_message = self.send_1v1_message()
+        group_id, user_id = self._create_attachment()
+
+        the_count = self.env.cache.get_attachment_count_in_group_for_user(group_id, user_id)
+        self.assertEqual(1, the_count)
+
+        # should reset the count in the cache
+        self.update_delete_before(
+            group_id, delete_before=group_message["created_at"], user_id=BaseTest.USER_ID
+        )
+
+        the_count = self.env.cache.get_attachment_count_in_group_for_user(group_id, user_id)
+        self.assertIsNone(the_count)
+
+    def test_count_multiple_attachments_delete_one_user(self):
+        group_message = self.send_1v1_message()
+        self._create_attachment()
+        self._create_attachment()
+        group_id, user_id = self._create_attachment()
+
+        the_count = self.env.cache.get_attachment_count_in_group_for_user(group_id, BaseTest.USER_ID)
+        self.assertEqual(3, the_count)
+        the_count = self.env.cache.get_attachment_count_in_group_for_user(group_id, BaseTest.OTHER_USER_ID)
+        self.assertEqual(3, the_count)
+
+        # should reset the count in the cache
+        self.update_delete_before(
+            group_id, delete_before=group_message["created_at"], user_id=BaseTest.OTHER_USER_ID
+        )
+
+        the_count = self.env.cache.get_attachment_count_in_group_for_user(group_id, BaseTest.USER_ID)
+        self.assertEqual(3, the_count)
+        the_count = self.env.cache.get_attachment_count_in_group_for_user(group_id, BaseTest.OTHER_USER_ID)
+        self.assertIsNone(the_count)
+
+    def _create_attachment(self):
         group_message = self.send_1v1_message(
             message_type=MessageTypes.IMAGE,
             user_id=BaseTest.USER_ID,
@@ -93,13 +140,7 @@ class TestCountAttachments(BaseServerRestApi):
             })
         )
 
-        the_count = self.env.cache.get_attachment_count_in_group_for_user(group_id, user_id)
-        self.assertEqual(1, the_count)
-
-        self.delete_attachment(group_id, BaseTest.FILE_ID)
-
-        the_count = self.env.cache.get_attachment_count_in_group_for_user(group_id, user_id)
-        self.assertIsNone(the_count)
+        return group_id, user_id
 
     def assert_attachment_count(self, group_id: str, user_id: int, expected_amount: int):
         raw_response = self.client.post(

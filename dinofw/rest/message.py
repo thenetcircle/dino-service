@@ -173,6 +173,7 @@ class MessageResource(BaseResource):
         now = utcnow_ts()
         user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db).keys()
 
+        self.env.cache.remove_attachment_count_in_group_for_users(group_id, user_ids)
         self.create_action_log(query.action_log, db, group_id=group_id)
         self.env.server_publisher.delete_attachments(group_id, [attachment], user_ids, now)
 
