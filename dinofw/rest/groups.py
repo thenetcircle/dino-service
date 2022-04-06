@@ -3,6 +3,7 @@ from datetime import datetime as dt
 from typing import List
 from typing import Optional
 
+from loguru import logger
 from sqlalchemy.orm import Session
 
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
@@ -134,10 +135,12 @@ class GroupResource(BaseResource):
 
     async def count_attachments_in_group_for_user(self, group_id: str, user_id: int, since: dt) -> int:
         the_count = self.env.cache.get_attachment_count_in_group_for_user(group_id, user_id)
+        logger.info(f"[{group_id}] [{user_id}] [{since}] count from cache: {the_count}")
         if the_count is not None:
             return the_count
 
         the_count = self.env.storage.count_attachments_in_group_since(group_id, since)
+        logger.info(f"[{group_id}] [{user_id}] [{since}] count from cassandra: {the_count}")
         self.env.cache.set_attachment_count_in_group_for_user(group_id, user_id, the_count)
 
         return the_count
