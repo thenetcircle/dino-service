@@ -206,20 +206,15 @@ async def get_groups_for_user(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.post("/users/{user_id}/groups/updates", response_model=Optional[UserGroupList])
+@router.post("/users/{user_id}/groups/updates", response_model=Optional[List[UserGroup]])
 @timeit(logger, "POST", "/users/{user_id}/groups/updates")
 @wrap_exception()
 async def get_groups_updated_since(
     user_id: int, query: GroupUpdatesQuery, db: Session = Depends(get_db)
-) -> UserGroupList:
+) -> List[UserGroup]:
     """
     Get a list of groups for this user that has changed since a certain time, sorted
     by last message sent. Used to sync changes to mobile apps.
-
-    Caveat: If the result of this request is >500 groups (e.g. the user uses the app
-    for the first time in a long while), the results will be discarded, and this API
-    will return the results from the API `POST /api/v1/users/{user_id}/groups`
-    instead.
 
     If `count_unread` is False, the field `unread` will have the value `-1`, and
     similarly if `receiver_unread` is False, the field `receiver_unread` will have
@@ -244,11 +239,7 @@ async def get_groups_updated_since(
     * `250`: if an unknown error occurred.
     """
     try:
-        list_of_groups = await environ.env.rest.user.get_groups_updated_since(user_id, query, db)
-        return UserGroupList(
-            groups=list_of_groups,
-            group_amount=len(list_of_groups)
-        )
+        return await environ.env.rest.user.get_groups_updated_since(user_id, query, db)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 

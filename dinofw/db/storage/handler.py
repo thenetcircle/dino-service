@@ -337,7 +337,6 @@ class CassandraHandler:
 
         unread = self.count_messages_in_group_since(group_id, last_read)
 
-        logger.info(f"set_unread_in_group({group_id}, {user_id}, {unread}")
         self.env.cache.set_unread_in_group(group_id, user_id, unread)
         return unread
 
