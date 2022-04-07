@@ -119,7 +119,7 @@ class UserGroup(BaseModel):
 
 class UserGroupList(BaseModel):
     groups: List[UserGroup]
-    n_groups: int
+    group_amount: int
 
 
 class UsersGroup(BaseModel):
