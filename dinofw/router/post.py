@@ -12,7 +12,7 @@ from starlette.responses import Response
 from starlette.status import HTTP_201_CREATED
 
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
-from dinofw.rest.models import Group
+from dinofw.rest.models import Group, UserGroupList
 from dinofw.rest.models import Histories
 from dinofw.rest.models import Message
 from dinofw.rest.models import MessageCount
@@ -206,12 +206,12 @@ async def get_groups_for_user(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.post("/users/{user_id}/groups/updates", response_model=Optional[List[UserGroup]])
+@router.post("/users/{user_id}/groups/updates", response_model=Optional[UserGroupList])
 @timeit(logger, "POST", "/users/{user_id}/groups/updates")
 @wrap_exception()
 async def get_groups_updated_since(
     user_id: int, query: GroupUpdatesQuery, db: Session = Depends(get_db)
-) -> List[UserGroup]:
+) -> UserGroupList:
     """
     Get a list of groups for this user that has changed since a certain time, sorted
     by last message sent. Used to sync changes to mobile apps.
@@ -244,7 +244,11 @@ async def get_groups_updated_since(
     * `250`: if an unknown error occurred.
     """
     try:
-        return await environ.env.rest.user.get_groups_updated_since(user_id, query, db)
+        list_of_groups = await environ.env.rest.user.get_groups_updated_since(user_id, query, db)
+        return UserGroupList(
+            groups=list_of_groups,
+            group_amount=len(list_of_groups)
+        )
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 

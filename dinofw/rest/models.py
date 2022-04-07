@@ -117,6 +117,11 @@ class UserGroup(BaseModel):
     stats: UserGroupStats
 
 
+class UserGroupList(BaseModel):
+    groups: List[UserGroup]
+    n_groups: int
+
+
 class UsersGroup(BaseModel):
     group: Group
     stats: List[UserGroupStats]
