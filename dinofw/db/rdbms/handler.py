@@ -1260,6 +1260,9 @@ class RelationalHandler:
         user_stats.hide = False
         user_stats.unread_count = 0
 
+        # /groups api will check the cache, need to update this value if we read a group
+        self.env.cache.set_unread_in_group(group_id, user_id, 0)
+
         # have to reset the highlight time (if any) of the other users int he group as well
         if current_highlight_time > long_ago_ts:
             other_user_stats = (

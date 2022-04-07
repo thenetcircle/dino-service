@@ -69,7 +69,6 @@ def group_id_to_users(group_id: str) -> (int, int):
     group_id = group_id.replace("-", "")
     user_a = int(group_id[:16].lstrip("0"), 16)
     user_b = int(group_id[16:].lstrip("0"), 16)
-
     return sorted([user_a, user_b])
 
 
