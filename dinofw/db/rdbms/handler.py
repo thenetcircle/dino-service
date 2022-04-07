@@ -322,7 +322,7 @@ class RelationalHandler:
                 _receiver_unread_count = self.env.storage.get_unread_in_group(
                     group_id=group.group_id,
                     user_id=user_to_count_for,
-                    last_read=user_group_stats.last_read,
+                    last_read=receivers[group.group_id].last_read,
                 )
 
             if query.count_unread:
