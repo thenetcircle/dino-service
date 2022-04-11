@@ -141,6 +141,7 @@ class CacheRedis(ICache):
         for user_id, last_read in users.items():
             p.hset(key, str(user_id), last_read)
 
+        p.expire(key, 7 * ONE_DAY)
         p.execute()
 
     def set_last_read_in_group_for_user(
@@ -148,6 +149,7 @@ class CacheRedis(ICache):
     ) -> None:
         key = RedisKeys.last_read_time(group_id)
         self.redis.hset(key, str(user_id), last_read)
+        self.redis.expire(key, 7 * ONE_DAY)
 
     def remove_last_read_in_group_for_user(self, group_id: str, user_id: int) -> None:
         key = RedisKeys.last_read_time(group_id)

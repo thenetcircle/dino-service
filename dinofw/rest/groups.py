@@ -189,6 +189,7 @@ class GroupResource(BaseResource):
         if query.admin_id is None or query.admin_id == 0:
             self._user_opens_conversation(group_id, user_id, user_stats, db)
 
+        # get last reads _after_ opening conversation, so last read of this user is now()
         last_reads = get_last_reads()
 
         return Histories(
