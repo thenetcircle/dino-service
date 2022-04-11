@@ -243,10 +243,13 @@ class CacheRedis(ICache):
     def increase_attachment_count_in_group_for_users(self, group_id: str, user_ids: List[int]):
         p = self.redis.pipeline()
 
+        # loop-invariant-global-usage
+        two_weeks = ONE_DAY * 14
+
         for user_id in user_ids:
             key = RedisKeys.attachment_count_group_user(group_id, user_id)
             p.incr(key)
-            p.expire(key, ONE_DAY * 14)
+            p.expire(key, two_weeks)
 
         p.execute()
 

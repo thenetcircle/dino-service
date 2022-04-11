@@ -14,7 +14,8 @@ from sqlalchemy import literal
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
-from dinofw.db.rdbms import models
+from dinofw.db.rdbms.models import UserGroupStatsEntity
+from dinofw.db.rdbms.models import GroupEntity
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.rdbms.schemas import UserGroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
@@ -56,8 +57,8 @@ class RelationalHandler:
         # not always needed
         if include_group:
             group_entity = (
-                db.query(models.GroupEntity)
-                .filter(models.GroupEntity.group_id == group_id)
+                db.query(GroupEntity)
+                .filter(GroupEntity.group_id == group_id)
                 .first()
             )
 
@@ -77,11 +78,11 @@ class RelationalHandler:
 
         group_id_and_last_sent = (
             db.query(
-                models.UserGroupStatsEntity.group_id,
-                models.UserGroupStatsEntity.last_sent
+                UserGroupStatsEntity.group_id,
+                UserGroupStatsEntity.last_sent
             )
-            .filter(models.UserGroupStatsEntity.user_id == user_id)
-            .order_by(models.UserGroupStatsEntity.last_sent)
+            .filter(UserGroupStatsEntity.user_id == user_id)
+            .order_by(UserGroupStatsEntity.last_sent)
             .limit(1)
             .first()
         )
@@ -99,15 +100,15 @@ class RelationalHandler:
     def get_group_ids_and_created_at_for_user(self, user_id: int, db: Session) -> List[Tuple[str, dt]]:
         groups = (
             db.query(
-                models.GroupEntity.group_id,
-                models.GroupEntity.created_at,
+                GroupEntity.group_id,
+                GroupEntity.created_at,
             )
             .join(
-                models.UserGroupStatsEntity,
-                models.UserGroupStatsEntity.group_id == models.GroupEntity.group_id,
+                UserGroupStatsEntity,
+                UserGroupStatsEntity.group_id == GroupEntity.group_id,
             )
             .filter(
-                models.UserGroupStatsEntity.user_id == user_id
+                UserGroupStatsEntity.user_id == user_id
             )
             .all()
         )
@@ -145,40 +146,40 @@ class RelationalHandler:
 
             statement = (
                 db.query(
-                    models.GroupEntity,
-                    models.UserGroupStatsEntity
+                    GroupEntity,
+                    UserGroupStatsEntity
                 )
                 .join(
-                    models.UserGroupStatsEntity,
-                    models.UserGroupStatsEntity.group_id == models.GroupEntity.group_id
+                    UserGroupStatsEntity,
+                    UserGroupStatsEntity.group_id == GroupEntity.group_id
                 )
                 .filter(
-                    models.GroupEntity.last_message_time < until,
-                    models.UserGroupStatsEntity.deleted.is_(False),
-                    models.UserGroupStatsEntity.user_id == user_id,
+                    GroupEntity.last_message_time < until,
+                    UserGroupStatsEntity.deleted.is_(False),
+                    UserGroupStatsEntity.user_id == user_id,
 
                     # TODO: double check this; before was '<= updated at', but then the '/groups' api
                     #  will return all groups that the user deleted (when a user deletes a group,
                     #  'delete_before' will be set to the same time as 'updated_at'
-                    models.UserGroupStatsEntity.delete_before < models.GroupEntity.updated_at,
+                    UserGroupStatsEntity.delete_before < GroupEntity.updated_at,
 
                     # TODO: when joining a "group", the last message was before you joined; if we create
                     #  an action log when a user joins it will update `last_message_time` and we can use
                     #  that instead of `updated_at`, which would make more sense
-                    # models.UserGroupStatsEntity.delete_before < models.GroupEntity.last_message_time
+                    # UserGroupStatsEntity.delete_before < GroupEntity.last_message_time
                 )
             )
 
             if query.hidden is not None:
                 statement = statement.filter(
-                    models.UserGroupStatsEntity.hide.is_(query.hidden),
+                    UserGroupStatsEntity.hide.is_(query.hidden),
                 )
 
             if query.only_unread:
                 statement = statement.filter(
                     or_(
-                        models.UserGroupStatsEntity.last_read < models.GroupEntity.last_message_time,
-                        models.UserGroupStatsEntity.bookmark.is_(True),
+                        UserGroupStatsEntity.last_read < GroupEntity.last_message_time,
+                        UserGroupStatsEntity.bookmark.is_(True),
                     )
                 )
 
@@ -189,16 +190,16 @@ class RelationalHandler:
                     for receiver_id in query.receiver_ids
                 ]
                 statement = statement.filter(
-                    models.GroupEntity.group_type == GroupTypes.ONE_TO_ONE,
-                    models.UserGroupStatsEntity.group_id.in_(group_ids)
+                    GroupEntity.group_type == GroupTypes.ONE_TO_ONE,
+                    UserGroupStatsEntity.group_id.in_(group_ids)
                 )
 
             statement = (
                 statement.order_by(
-                    models.UserGroupStatsEntity.pin.desc(),
+                    UserGroupStatsEntity.pin.desc(),
                     func.greatest(
-                        models.UserGroupStatsEntity.highlight_time,
-                        models.GroupEntity.last_message_time,
+                        UserGroupStatsEntity.highlight_time,
+                        GroupEntity.last_message_time,
                     ).desc(),
                 )
                 .limit(query.per_page)
@@ -238,25 +239,25 @@ class RelationalHandler:
                 until = to_dt(query.until)
 
             statement = (
-                db.query(models.GroupEntity, models.UserGroupStatsEntity)
+                db.query(GroupEntity, UserGroupStatsEntity)
                 .filter(
-                    models.GroupEntity.group_id == models.UserGroupStatsEntity.group_id,
-                    models.UserGroupStatsEntity.user_id == user_id,
-                    models.UserGroupStatsEntity.last_updated_time >= since,
+                    GroupEntity.group_id == UserGroupStatsEntity.group_id,
+                    UserGroupStatsEntity.user_id == user_id,
+                    UserGroupStatsEntity.last_updated_time >= since,
                 )
             )
 
             if until is not None:
                 statement = statement.filter(
-                    models.UserGroupStatsEntity.last_updated_time <= until
+                    UserGroupStatsEntity.last_updated_time <= until
                 )
 
             return (
                 statement.order_by(
-                    models.UserGroupStatsEntity.pin.desc(),
+                    UserGroupStatsEntity.pin.desc(),
                     func.greatest(
-                        models.UserGroupStatsEntity.highlight_time,
-                        models.GroupEntity.last_message_time,
+                        UserGroupStatsEntity.highlight_time,
+                        GroupEntity.last_message_time,
                     ).desc(),
                 )
                 .limit(query.per_page)
@@ -279,11 +280,7 @@ class RelationalHandler:
         if not receiver_stats:
             return list()
 
-        group_ids = list()
-        for group, stats in results:
-            if group.group_type == GroupTypes.ONE_TO_ONE:
-                group_ids.append(group.group_id)
-
+        group_ids = [g.group_id for g, _ in results if g.group_type == GroupTypes.ONE_TO_ONE]
         if len(group_ids):
             return self.get_receiver_user_stats(group_ids, user_id, db)
 
@@ -292,10 +289,10 @@ class RelationalHandler:
     # noinspection PyMethodMayBeStatic
     def get_receiver_user_stats(self, group_ids: List[str], user_id: int, db: Session):
         return (
-            db.query(models.UserGroupStatsEntity)
+            db.query(UserGroupStatsEntity)
             .filter(
-                models.UserGroupStatsEntity.group_id.in_(group_ids),
-                models.UserGroupStatsEntity.user_id != user_id,
+                UserGroupStatsEntity.group_id.in_(group_ids),
+                UserGroupStatsEntity.user_id != user_id,
             )
             .all()
         )
@@ -304,8 +301,8 @@ class RelationalHandler:
     def format_group_stats_and_count_unread(
         self,
         db: Session,
-        results: List[Tuple[models.GroupEntity, models.UserGroupStatsEntity]],
-        receiver_stats: List[models.UserGroupStatsEntity],
+        results: List[Tuple[GroupEntity, UserGroupStatsEntity]],
+        receiver_stats: List[UserGroupStatsEntity],
         user_id: int,
         query: GroupQuery
     ) -> List[UserGroupBase]:
@@ -382,8 +379,8 @@ class RelationalHandler:
     ) -> GroupBase:
 
         group = (
-            db.query(models.GroupEntity)
-            .filter(models.GroupEntity.group_id == message.group_id)
+            db.query(GroupEntity)
+            .filter(GroupEntity.group_id == message.group_id)
             .first()
         )
         sent_time = message.created_at
@@ -415,23 +412,23 @@ class RelationalHandler:
         group.updated_at = sent_time
 
         statement = (
-            db.query(models.UserGroupStatsEntity)
+            db.query(UserGroupStatsEntity)
             .filter(
-                models.UserGroupStatsEntity.group_id == message.group_id
+                UserGroupStatsEntity.group_id == message.group_id
             )
         )
 
         # when creating action logs, we want to sync changes to apps, but not necessarily un-hide a group
         if update_unread_count:
             statement.update({
-                models.UserGroupStatsEntity.last_updated_time: sent_time,
-                models.UserGroupStatsEntity.unread_count: models.UserGroupStatsEntity.unread_count + 1,
-                models.UserGroupStatsEntity.hide: False,
-                models.UserGroupStatsEntity.deleted: False
+                UserGroupStatsEntity.last_updated_time: sent_time,
+                UserGroupStatsEntity.unread_count: UserGroupStatsEntity.unread_count + 1,
+                UserGroupStatsEntity.hide: False,
+                UserGroupStatsEntity.deleted: False
             })
         else:
             statement.update({
-                models.UserGroupStatsEntity.last_updated_time: sent_time,
+                UserGroupStatsEntity.last_updated_time: sent_time,
             })
 
         # update 'sent_message_count' in cache and db
@@ -443,19 +440,19 @@ class RelationalHandler:
         # also only update 'sent_message_count' if it's been previously counted using
         # the /count api (-1 means it has not been counted in cassandra yet)
         if previous_sent_count == -1:
-            db.query(models.UserGroupStatsEntity).filter(
-                models.UserGroupStatsEntity.group_id == message.group_id,
-                models.UserGroupStatsEntity.user_id == sender_user_id
+            db.query(UserGroupStatsEntity).filter(
+                UserGroupStatsEntity.group_id == message.group_id,
+                UserGroupStatsEntity.user_id == sender_user_id
             ).update({
-                models.UserGroupStatsEntity.unread_count: 0
+                UserGroupStatsEntity.unread_count: 0
             })
         else:
-            db.query(models.UserGroupStatsEntity).filter(
-                models.UserGroupStatsEntity.group_id == message.group_id,
-                models.UserGroupStatsEntity.user_id == sender_user_id
+            db.query(UserGroupStatsEntity).filter(
+                UserGroupStatsEntity.group_id == message.group_id,
+                UserGroupStatsEntity.user_id == sender_user_id
             ).update({
-                models.UserGroupStatsEntity.unread_count: 0,
-                models.UserGroupStatsEntity.sent_message_count: previous_sent_count + 1
+                UserGroupStatsEntity.unread_count: 0,
+                UserGroupStatsEntity.sent_message_count: previous_sent_count + 1
             })
 
         group_base = GroupBase(**group.__dict__)
@@ -490,9 +487,9 @@ class RelationalHandler:
 
         # then check the db
         sent_count = (
-            db.query(models.UserGroupStatsEntity.sent_message_count)
-            .filter(models.UserGroupStatsEntity.group_id == group_id)
-            .filter(models.UserGroupStatsEntity.user_id == user_id)
+            db.query(UserGroupStatsEntity.sent_message_count)
+            .filter(UserGroupStatsEntity.group_id == group_id)
+            .filter(UserGroupStatsEntity.user_id == user_id)
             .first()
         )
 
@@ -523,14 +520,14 @@ class RelationalHandler:
             return last_reads
 
         reads = (
-            db.query(models.UserGroupStatsEntity)
+            db.query(UserGroupStatsEntity)
             .with_entities(
-                models.UserGroupStatsEntity.user_id,
-                models.UserGroupStatsEntity.last_read,
+                UserGroupStatsEntity.user_id,
+                UserGroupStatsEntity.last_read,
             )
             .filter(
-                models.UserGroupStatsEntity.group_id == group_id,
-                models.UserGroupStatsEntity.user_id.in_(not_cached),
+                UserGroupStatsEntity.group_id == group_id,
+                UserGroupStatsEntity.user_id.in_(not_cached),
             )
             .all()
         )
@@ -553,10 +550,10 @@ class RelationalHandler:
         """
         group_ids = (
             db.query(
-                models.UserGroupStatsEntity.group_id
+                UserGroupStatsEntity.group_id
             )
             .filter(
-                models.UserGroupStatsEntity.user_id == user_id
+                UserGroupStatsEntity.user_id == user_id
             )
             .all()
         )
@@ -569,9 +566,9 @@ class RelationalHandler:
     # noinspection PyMethodMayBeStatic
     def get_group_from_id(self, group_id: str, db: Session) -> GroupBase:
         group = (
-            db.query(models.GroupEntity)
+            db.query(GroupEntity)
             .filter(
-                models.GroupEntity.group_id == group_id,
+                GroupEntity.group_id == group_id,
             )
             .first()
         )
@@ -588,10 +585,10 @@ class RelationalHandler:
         group_id = users_to_group_id(user_a, user_b)
 
         group = (
-            db.query(models.GroupEntity)
+            db.query(GroupEntity)
             .filter(
-                models.GroupEntity.group_type == GroupTypes.ONE_TO_ONE,
-                models.GroupEntity.group_id == group_id,
+                GroupEntity.group_type == GroupTypes.ONE_TO_ONE,
+                GroupEntity.group_id == group_id,
             )
             .first()
         )
@@ -627,11 +624,11 @@ class RelationalHandler:
 
         users = (
             db.query(
-                models.UserGroupStatsEntity.group_id,
-                models.UserGroupStatsEntity.user_id,
-                models.UserGroupStatsEntity.join_time,
+                UserGroupStatsEntity.group_id,
+                UserGroupStatsEntity.user_id,
+                UserGroupStatsEntity.join_time,
             )
-            .filter(models.UserGroupStatsEntity.group_id.in_(remaining_group_ids))
+            .filter(UserGroupStatsEntity.group_id.in_(remaining_group_ids))
             .all()
         )
 
@@ -654,10 +651,10 @@ class RelationalHandler:
 
         users = (
             db.query(
-                models.UserGroupStatsEntity.user_id,
-                models.UserGroupStatsEntity.join_time,
+                UserGroupStatsEntity.user_id,
+                UserGroupStatsEntity.join_time,
             )
-            .filter(models.UserGroupStatsEntity.group_id == group_id)
+            .filter(UserGroupStatsEntity.group_id == group_id)
             .all()
         )
 
@@ -676,9 +673,9 @@ class RelationalHandler:
         called when a user leaves a group
         """
         _ = (
-            db.query(models.UserGroupStatsEntity)
-            .filter(models.UserGroupStatsEntity.user_id == user_id)
-            .filter(models.UserGroupStatsEntity.group_id == group_id)
+            db.query(UserGroupStatsEntity)
+            .filter(UserGroupStatsEntity.user_id == user_id)
+            .filter(UserGroupStatsEntity.group_id == group_id)
             .delete()
         )
         db.commit()
@@ -690,7 +687,7 @@ class RelationalHandler:
     def group_exists(self, group_id: str, db: Session) -> bool:
         group = (
             db.query(literal(True))
-            .filter(models.GroupEntity.group_id == group_id)
+            .filter(GroupEntity.group_id == group_id)
             .first()
         )
 
@@ -699,8 +696,8 @@ class RelationalHandler:
     # noinspection PyMethodMayBeStatic
     def set_group_updated_at(self, group_id: str, now: dt, db: Session) -> None:
         group = (
-            db.query(models.GroupEntity)
-            .filter(models.GroupEntity.group_id == group_id)
+            db.query(GroupEntity)
+            .filter(GroupEntity.group_id == group_id)
             .first()
         )
 
@@ -720,9 +717,9 @@ class RelationalHandler:
         user_ids = list(users.keys())
 
         user_stats = (
-            db.query(models.UserGroupStatsEntity)
-            .filter(models.UserGroupStatsEntity.user_id.in_(user_ids))
-            .filter(models.UserGroupStatsEntity.group_id == group_id)
+            db.query(UserGroupStatsEntity)
+            .filter(UserGroupStatsEntity.user_id.in_(user_ids))
+            .filter(UserGroupStatsEntity.group_id == group_id)
             .all()
         )
 
@@ -763,28 +760,28 @@ class RelationalHandler:
 
         statement = (
             db.query(
-                models.GroupEntity.group_type,
-                func.count(models.GroupEntity.group_type),
+                GroupEntity.group_type,
+                func.count(GroupEntity.group_type),
             )
             .join(
-                models.UserGroupStatsEntity,
-                models.UserGroupStatsEntity.group_id == models.GroupEntity.group_id,
+                UserGroupStatsEntity,
+                UserGroupStatsEntity.group_id == GroupEntity.group_id,
             )
             .filter(
-                models.UserGroupStatsEntity.user_id == user_id,
-                models.UserGroupStatsEntity.deleted.is_(False),
-                models.UserGroupStatsEntity.delete_before < models.GroupEntity.updated_at,
+                UserGroupStatsEntity.user_id == user_id,
+                UserGroupStatsEntity.deleted.is_(False),
+                UserGroupStatsEntity.delete_before < GroupEntity.updated_at,
             )
         )
 
         if query.hidden is not None:
             statement = statement.filter(
-                models.UserGroupStatsEntity.hide.is_(hidden)
+                UserGroupStatsEntity.hide.is_(hidden)
             )
 
         types = (
             statement.group_by(
-                models.GroupEntity.group_type
+                GroupEntity.group_type
             )
             .all()
         )
@@ -800,9 +797,9 @@ class RelationalHandler:
         now = utcnow_dt()
 
         group_ids = (
-            db.query(models.UserGroupStatsEntity.group_id)
+            db.query(UserGroupStatsEntity.group_id)
             .filter(
-                models.UserGroupStatsEntity.user_id == user_id
+                UserGroupStatsEntity.user_id == user_id
             )
             .all()
         )
@@ -814,12 +811,12 @@ class RelationalHandler:
         # some users have >10k conversations; split into chunks to not overload the db
         for group_id_chunk in split_into_chunks(group_ids, 500):
             _ = (
-                db.query(models.UserGroupStatsEntity)
+                db.query(UserGroupStatsEntity)
                 .filter(
-                    models.UserGroupStatsEntity.group_id.in_(group_id_chunk)
+                    UserGroupStatsEntity.group_id.in_(group_id_chunk)
                 )
                 .update(
-                    {models.UserGroupStatsEntity.last_updated_time: now},
+                    {UserGroupStatsEntity.last_updated_time: now},
                     synchronize_session="fetch",
                 )
             )
@@ -837,9 +834,9 @@ class RelationalHandler:
         now = utcnow_dt()
 
         _ = (
-            db.query(models.UserGroupStatsEntity)
-            .filter(models.UserGroupStatsEntity.group_id == group_id)
-            .update({models.UserGroupStatsEntity.last_updated_time: now})
+            db.query(UserGroupStatsEntity)
+            .filter(UserGroupStatsEntity.group_id == group_id)
+            .update({UserGroupStatsEntity.last_updated_time: now})
         )
 
         db.commit()
@@ -849,8 +846,8 @@ class RelationalHandler:
         self, group_id: str, query: UpdateGroupQuery, db: Session
     ) -> Optional[GroupBase]:
         group_entity = (
-            db.query(models.GroupEntity)
-            .filter(models.GroupEntity.group_id == group_id)
+            db.query(GroupEntity)
+            .filter(GroupEntity.group_id == group_id)
             .first()
         )
 
@@ -879,16 +876,16 @@ class RelationalHandler:
 
     def mark_all_groups_as_read(self, user_id: int, db: Session) -> None:
         group_ids = (
-            db.query(models.UserGroupStatsEntity.group_id)
+            db.query(UserGroupStatsEntity.group_id)
             .join(
-                models.GroupEntity,
-                models.GroupEntity.group_id == models.UserGroupStatsEntity.group_id
+                GroupEntity,
+                GroupEntity.group_id == UserGroupStatsEntity.group_id
             )
             .filter(
-                models.UserGroupStatsEntity.user_id == user_id,
+                UserGroupStatsEntity.user_id == user_id,
                 or_(
-                    models.UserGroupStatsEntity.last_read < models.GroupEntity.last_message_time,
-                    models.UserGroupStatsEntity.bookmark.is_(True),
+                    UserGroupStatsEntity.last_read < GroupEntity.last_message_time,
+                    UserGroupStatsEntity.bookmark.is_(True),
                 )
             )
             .all()
@@ -904,17 +901,17 @@ class RelationalHandler:
             self.env.cache.reset_unread_in_groups(user_id, group_id_chunk)
 
             _ = (
-                db.query(models.UserGroupStatsEntity)
+                db.query(UserGroupStatsEntity)
                 .filter(
-                    models.UserGroupStatsEntity.group_id.in_(group_id_chunk),
-                    models.UserGroupStatsEntity.user_id == user_id
+                    UserGroupStatsEntity.group_id.in_(group_id_chunk),
+                    UserGroupStatsEntity.user_id == user_id
                 )
                 .update(
                     {
-                        models.UserGroupStatsEntity.last_updated_time: now,
-                        models.UserGroupStatsEntity.last_read: now,
-                        models.UserGroupStatsEntity.bookmark: False,
-                        models.UserGroupStatsEntity.highlight_time: self.long_ago
+                        UserGroupStatsEntity.last_updated_time: now,
+                        UserGroupStatsEntity.last_read: now,
+                        UserGroupStatsEntity.bookmark: False,
+                        UserGroupStatsEntity.highlight_time: self.long_ago
                     },
                     synchronize_session="fetch",
                 )
@@ -922,15 +919,15 @@ class RelationalHandler:
 
             # need to reset the highlight time on the other user's stats too
             _ = (
-                db.query(models.UserGroupStatsEntity)
+                db.query(UserGroupStatsEntity)
                 .filter(
-                    models.UserGroupStatsEntity.group_id.in_(group_id_chunk),
-                    models.UserGroupStatsEntity.user_id != user_id,
-                    models.UserGroupStatsEntity.receiver_highlight_time > self.long_ago
+                    UserGroupStatsEntity.group_id.in_(group_id_chunk),
+                    UserGroupStatsEntity.user_id != user_id,
+                    UserGroupStatsEntity.receiver_highlight_time > self.long_ago
                 )
                 .update(
                     {
-                        models.UserGroupStatsEntity.receiver_highlight_time: self.long_ago
+                        UserGroupStatsEntity.receiver_highlight_time: self.long_ago
                     },
                     synchronize_session="fetch",
                 )
@@ -941,8 +938,8 @@ class RelationalHandler:
     # noinspection PyMethodMayBeStatic
     def get_all_user_stats_in_group(self, group_id: str, db: Session) -> List[UserGroupStatsBase]:
         user_stats = (
-            db.query(models.UserGroupStatsEntity)
-            .filter(models.UserGroupStatsEntity.group_id == group_id)
+            db.query(UserGroupStatsEntity)
+            .filter(UserGroupStatsEntity.group_id == group_id)
             .all()
         )
 
@@ -960,9 +957,9 @@ class RelationalHandler:
             return sent
 
         sent = (
-            db.query(models.UserGroupStatsEntity.sent_message_count)
-            .filter(models.UserGroupStatsEntity.group_id == group_id)
-            .filter(models.UserGroupStatsEntity.user_id == user_id)
+            db.query(UserGroupStatsEntity.sent_message_count)
+            .filter(UserGroupStatsEntity.group_id == group_id)
+            .filter(UserGroupStatsEntity.user_id == user_id)
             .first()
         )[0]
 
@@ -976,10 +973,10 @@ class RelationalHandler:
         self.env.cache.set_sent_message_count_in_group_for_user(group_id, user_id, message_count)
 
         _ = (
-            db.query(models.UserGroupStatsEntity)
-            .filter(models.UserGroupStatsEntity.group_id == group_id)
-            .filter(models.UserGroupStatsEntity.user_id == user_id)
-            .update({models.UserGroupStatsEntity.sent_message_count: message_count})
+            db.query(UserGroupStatsEntity)
+            .filter(UserGroupStatsEntity.group_id == group_id)
+            .filter(UserGroupStatsEntity.user_id == user_id)
+            .update({UserGroupStatsEntity.sent_message_count: message_count})
         )
 
         db.commit()
@@ -989,9 +986,9 @@ class RelationalHandler:
         self, group_id: str, user_id: int, db: Session
     ) -> Optional[UserGroupStatsBase]:
         user_stats = (
-            db.query(models.UserGroupStatsEntity)
-            .filter(models.UserGroupStatsEntity.user_id == user_id)
-            .filter(models.UserGroupStatsEntity.group_id == group_id)
+            db.query(UserGroupStatsEntity)
+            .filter(UserGroupStatsEntity.user_id == user_id)
+            .filter(UserGroupStatsEntity.group_id == group_id)
             .first()
         )
 
@@ -1006,7 +1003,7 @@ class RelationalHandler:
             user_id: int,
             query: UpdateUserGroupStats,
             db: Session
-    ) -> Tuple[models.UserGroupStatsEntity, Optional[models.UserGroupStatsEntity], Optional[models.GroupEntity]]:
+    ) -> Tuple[UserGroupStatsEntity, Optional[UserGroupStatsEntity], Optional[GroupEntity]]:
         # when removing a bookmark, the highlight time will be reset
         # and unread count will become 0
         need_second_user_stats = (
@@ -1016,20 +1013,20 @@ class RelationalHandler:
         )
 
         statement = (
-            db.query(models.UserGroupStatsEntity)
-            .filter(models.UserGroupStatsEntity.group_id == group_id)
+            db.query(UserGroupStatsEntity)
+            .filter(UserGroupStatsEntity.group_id == group_id)
         )
 
         that_user_stats = None
         group = None
 
         def filter_for_one():
-            return statement.filter(models.UserGroupStatsEntity.user_id == user_id).first()
+            return statement.filter(UserGroupStatsEntity.user_id == user_id).first()
 
         if need_second_user_stats:
             group = (
-                db.query(models.GroupEntity)
-                .filter(models.GroupEntity.group_id == group_id)
+                db.query(GroupEntity)
+                .filter(GroupEntity.group_id == group_id)
                 .first()
             )
 
@@ -1083,14 +1080,14 @@ class RelationalHandler:
                 return
 
             highlighted_groups = (
-                db.query(models.UserGroupStatsEntity)
-                .filter(models.UserGroupStatsEntity.user_id == user_id)
+                db.query(UserGroupStatsEntity)
+                .filter(UserGroupStatsEntity.user_id == user_id)
 
                 # in case we set it on an already highlighted group; otherwise it will count +1 towards the limit
-                .filter(models.UserGroupStatsEntity.group_id != group_id)
+                .filter(UserGroupStatsEntity.group_id != group_id)
 
-                .filter(models.UserGroupStatsEntity.highlight_time > self.long_ago)
-                .order_by(models.UserGroupStatsEntity.highlight_time)
+                .filter(UserGroupStatsEntity.highlight_time > self.long_ago)
+                .order_by(UserGroupStatsEntity.highlight_time)
                 .all()
             )
 
@@ -1103,8 +1100,8 @@ class RelationalHandler:
 
             # need to get the receiver's stat entry as well
             stats_in_groups = (
-                db.query(models.UserGroupStatsEntity)
-                .filter(models.UserGroupStatsEntity.group_id.in_(
+                db.query(UserGroupStatsEntity)
+                .filter(UserGroupStatsEntity.group_id.in_(
                     [stat.group_id for stat in oldest_groups]
                 ))
                 .all()
@@ -1197,11 +1194,11 @@ class RelationalHandler:
 
         delete_before = (
             db.query(
-                models.UserGroupStatsEntity.delete_before
+                UserGroupStatsEntity.delete_before
             )
             .filter(
-                models.UserGroupStatsEntity.group_id == group_id,
-                models.UserGroupStatsEntity.user_id == user_id
+                UserGroupStatsEntity.group_id == group_id,
+                UserGroupStatsEntity.user_id == user_id
             )
             .first()
         )
@@ -1221,10 +1218,10 @@ class RelationalHandler:
 
         last_message_time = (
             db.query(
-                models.GroupEntity.last_message_time
+                GroupEntity.last_message_time
             )
             .filter(
-                models.GroupEntity.group_id == group_id
+                GroupEntity.group_id == group_id
             )
             .first()
         )
@@ -1241,9 +1238,9 @@ class RelationalHandler:
         self, group_id: str, user_id: int, the_time: dt, db: Session
     ) -> None:
         user_stats = (
-            db.query(models.UserGroupStatsEntity)
-            .filter(models.UserGroupStatsEntity.user_id == user_id)
-            .filter(models.UserGroupStatsEntity.group_id == group_id)
+            db.query(UserGroupStatsEntity)
+            .filter(UserGroupStatsEntity.user_id == user_id)
+            .filter(UserGroupStatsEntity.group_id == group_id)
             .first()
         )
         if user_stats is None:
@@ -1263,23 +1260,20 @@ class RelationalHandler:
         # /groups api will check the cache, need to update this value if we read a group
         self.env.cache.set_unread_in_group(group_id, user_id, 0)
 
-        # have to reset the highlight time (if any) of the other users int he group as well
+        # have to reset the highlight time (if any) of the other users in the group as well
         if current_highlight_time > long_ago_ts:
             other_user_stats = (
-                db.query(models.UserGroupStatsEntity)
-                .filter(models.UserGroupStatsEntity.user_id != user_id)
-                .filter(models.UserGroupStatsEntity.group_id == group_id)
-                .filter(models.UserGroupStatsEntity.receiver_highlight_time > self.long_ago)
+                db.query(UserGroupStatsEntity)
+                .filter(UserGroupStatsEntity.user_id != user_id)
+                .filter(UserGroupStatsEntity.group_id == group_id)
+                .filter(UserGroupStatsEntity.receiver_highlight_time > self.long_ago)
                 .all()
             )
-            logger.info(f"found {len(other_user_stats)} other stats in group {group_id}")
+
             for other_stat in other_user_stats:
                 other_stat.highlight_time = self.long_ago
                 other_stat.receiver_highlight_time = self.long_ago
-                logger.info(f"setting receiver and highlight time to {self.long_ago}")
                 db.add(other_stat)
-        else:
-            logger.info("current highlight time is not more than long ago")
 
         self.env.cache.set_last_read_in_group_for_user(group_id, user_id, to_ts(the_time))
 
@@ -1290,9 +1284,9 @@ class RelationalHandler:
         self, group_id: str, user_id: int, the_time: dt, db: Session
     ) -> None:
         user_stats = (
-            db.query(models.UserGroupStatsEntity)
-            .filter(models.UserGroupStatsEntity.user_id == user_id)
-            .filter(models.UserGroupStatsEntity.group_id == group_id)
+            db.query(UserGroupStatsEntity)
+            .filter(UserGroupStatsEntity.user_id == user_id)
+            .filter(UserGroupStatsEntity.group_id == group_id)
             .first()
         )
 
@@ -1336,7 +1330,7 @@ class RelationalHandler:
         else:
             group_id = str(uuid())
 
-        group_entity = models.GroupEntity(
+        group_entity = GroupEntity(
             group_id=group_id,
             name=query.group_name,
             group_type=query.group_type,
@@ -1371,9 +1365,9 @@ class RelationalHandler:
         logger.info(f"group {group_id}: setting first_message_time = {first_message_time}")
 
         _ = (
-            db.query(models.GroupEntity)
-            .filter(models.GroupEntity.group_id == group_id)
-            .update({models.GroupEntity.first_message_time: first_message_time})
+            db.query(GroupEntity)
+            .filter(GroupEntity.group_id == group_id)
+            .update({GroupEntity.first_message_time: first_message_time})
         )
 
         db.commit()
@@ -1409,20 +1403,20 @@ class RelationalHandler:
         """
         return (
             db.query(
-                models.GroupEntity.group_id,
-                func.min(models.UserGroupStatsEntity.delete_before)
+                GroupEntity.group_id,
+                func.min(UserGroupStatsEntity.delete_before)
             )
             .join(
-                models.UserGroupStatsEntity,
-                models.UserGroupStatsEntity.group_id == models.GroupEntity.group_id
+                UserGroupStatsEntity,
+                UserGroupStatsEntity.group_id == GroupEntity.group_id
             )
             .group_by(
-                models.GroupEntity.group_id
+                GroupEntity.group_id
             )
             .having(
                 func.coalesce(
                     func.sum(case(
-                        [(models.UserGroupStatsEntity.delete_before <= models.GroupEntity.first_message_time, 1)],
+                        [(UserGroupStatsEntity.delete_before <= GroupEntity.first_message_time, 1)],
                         else_=0
                     )),
                     0
@@ -1434,20 +1428,20 @@ class RelationalHandler:
     # noinspection PyMethodMayBeStatic
     def _get_user_stats_for(self, group_id: str, user_id: int, db: Session):
         return (
-            db.query(models.UserGroupStatsEntity)
+            db.query(UserGroupStatsEntity)
             .filter(
-                models.UserGroupStatsEntity.group_id == group_id,
-                models.UserGroupStatsEntity.user_id == user_id,
+                UserGroupStatsEntity.group_id == group_id,
+                UserGroupStatsEntity.user_id == user_id,
             )
             .first()
         )
 
     def _create_user_stats(
         self, group_id: str, user_id: int, default_dt: dt
-    ) -> models.UserGroupStatsEntity:
+    ) -> UserGroupStatsEntity:
         now = utcnow_dt()
 
-        return models.UserGroupStatsEntity(
+        return UserGroupStatsEntity(
             group_id=group_id,
             user_id=user_id,
             last_read=default_dt,
