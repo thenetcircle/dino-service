@@ -33,18 +33,27 @@ def init_logging(gn_env: GNEnvironment) -> None:
         return
 
     import socket
-    from git.cmd import Git
 
     home_dir = os.environ.get("DINO_HOME", default=None)
     if home_dir is None:
         home_dir = "."
-    tag_name = Git(home_dir).describe()
+
+    tag_name = "unknown"
+    version_path = os.path.join(home_dir, "version.txt")
+
+    if os.path.exists(version_path):
+        logger.info(f"reading version file '{version_path}'...")
+        with open("version.txt", "r") as f:
+            tag_name = f.readline().replace("\n", "").strip()
+    else:
+        logger.warning(f"'{version_path}' file found")
 
     import sentry_sdk
     from sentry_sdk import capture_exception as sentry_capture_exception
     from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
     from sentry_sdk.integrations.redis import RedisIntegration
 
+    logger.info(f"initializing sentry sdk with version '{tag_name}'")
     sentry_sdk.init(
         dsn=dsn,
         environment=os.getenv("ENVIRONMENT"),  # TODO: fix DINO_ENVIRONMENT / ENVIRONMENT discrepancy
