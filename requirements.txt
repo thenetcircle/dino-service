@@ -19,3 +19,6 @@ uvicorn==0.14.0
 uvloop==0.15.2
 websockets==10.0
 activitystreams==0.2.1
+pytest<8.0.0
+coverage<7.0.0
+asynctest<1.0.0
