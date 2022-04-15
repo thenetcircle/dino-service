@@ -888,7 +888,10 @@ class TestServerRestApi(BaseServerRestApi):
         group_and_stats = self.groups_for_user()
         join_time = group_and_stats[0]["stats"]["join_time"]
         delete_before_original = group_and_stats[0]["stats"]["delete_before"]
-        self.assertEqual(join_time, delete_before_original)
+
+        # delete before is 1 second before join time, otherwise when creating groups without
+        # sending a message to it, the group would not show up in `/groups` api
+        self.assertEqual(join_time, delete_before_original + 1)
 
         yesterday = round(arrow.utcnow().shift(days=-1).float_timestamp, 3)
         self.update_delete_before(group_message["group_id"], delete_before=yesterday)

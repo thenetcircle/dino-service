@@ -1,3 +1,4 @@
+import datetime
 import json
 from datetime import datetime as dt
 from typing import Dict
@@ -1346,10 +1347,14 @@ class RelationalHandler:
         user_ids = {owner_id}
         user_ids.update(query.users)
 
+        # TODO: otherwise, newly created groups won't show in `/groups` api;
+        #  will groups ever be created without sending a message to them?
+        delete_before = created_at - datetime.timedelta(seconds=1)
+
         for user_id in user_ids:
             self.env.cache.reset_count_group_types_for_user(user_id)
             user_stats = self._create_user_stats(
-                group_entity.group_id, user_id, created_at
+                group_entity.group_id, user_id, created_at, delete_before=delete_before
             )
             db.add(user_stats)
 
@@ -1437,15 +1442,19 @@ class RelationalHandler:
         )
 
     def _create_user_stats(
-        self, group_id: str, user_id: int, default_dt: dt
+        self, group_id: str, user_id: int, default_dt: dt, delete_before: dt = None
     ) -> UserGroupStatsEntity:
         now = utcnow_dt()
+
+        # TODO: for group chats, should this be long_ago or join_time? to see old history
+        if delete_before is None:
+            delete_before = default_dt
 
         return UserGroupStatsEntity(
             group_id=group_id,
             user_id=user_id,
             last_read=default_dt,
-            delete_before=default_dt,  # TODO: for group chats, should this be long_ago or join_time? to see old history
+            delete_before=delete_before,
             last_sent=default_dt,
             join_time=default_dt,
             last_updated_time=now,
