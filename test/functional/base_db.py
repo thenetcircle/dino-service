@@ -14,6 +14,12 @@ from test.mocks import FakeEnv
 from dinofw.restful import app
 from dinofw.utils.api import get_db
 
+from pathlib import Path
+
+
+def get_project_root() -> Path:
+    return Path(__file__).parent.parent.parent
+
 
 class BaseDatabaseTest(BaseTest):
     def setUp(self) -> None:
@@ -21,9 +27,9 @@ class BaseDatabaseTest(BaseTest):
         from gnenv.environ import find_config
         from gnenv.environ import load_secrets_file
 
-        config_dict, config_path = find_config(".")
+        config_dict, config_path = find_config(str(get_project_root()))
         config_dict = load_secrets_file(
-            config_dict, secrets_path="./secrets", env_name="test"
+            config_dict, secrets_path=os.path.join(str(get_project_root()), "secrets"), env_name="test"
         )
         config = ConfigDict(config_dict)
 
