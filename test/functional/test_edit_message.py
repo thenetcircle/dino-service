@@ -16,11 +16,20 @@ class TestEditMessage(BaseServerRestApi):
                 "status": PayloadStatus.PENDING
             })
         )
+        info = self.get_message_info(
+            user_id=BaseTest.USER_ID,
+            message_id=message["message_id"],
+            group_id=message["group_id"],
+            created_at=message["created_at"],
+            expected_response_code=200
+        )
+        self.assertEqual(old_payload, json.loads(info["message_payload"])["content"])
 
         self.edit_message(
-            message["group_id"],
-            message["message_id"],
-            message["created_at"],
+            user_id=message["user_id"],
+            group_id=message["group_id"],
+            message_id=message["message_id"],
+            created_at=message["created_at"],
             new_payload=json.dumps({
                 "content": new_payload,
                 "status": PayloadStatus.PENDING
@@ -34,5 +43,4 @@ class TestEditMessage(BaseServerRestApi):
             created_at=message["created_at"],
             expected_response_code=200
         )
-
-        self.assertEqual(new_payload, info["message_payload"])
+        self.assertEqual(new_payload, json.loads(info["message_payload"])["content"])

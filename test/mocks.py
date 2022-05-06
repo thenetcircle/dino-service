@@ -14,7 +14,7 @@ from dinofw.db.rdbms.schemas import UserGroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.schemas import MessageBase
 from dinofw.endpoint import IClientPublishHandler, IClientPublisher
-from dinofw.rest.queries import AbstractQuery, DeleteAttachmentQuery
+from dinofw.rest.queries import AbstractQuery, DeleteAttachmentQuery, EditMessageQuery
 from dinofw.rest.queries import ActionLogQuery
 from dinofw.rest.queries import AttachmentQuery
 from dinofw.rest.queries import CreateAttachmentQuery
@@ -40,6 +40,24 @@ class FakeStorage:
         self.attachments_by_group = dict()
         self.attachments_by_message = dict()
         self.action_log = dict()
+
+    def edit_message(self, group_id: str, user_id: int, message_id: str, query: EditMessageQuery) -> MessageBase:
+        messages = self.messages_by_group.get(group_id)
+        if not messages:
+            raise NoSuchMessageException(message_id)
+
+        msg_to_edit = None
+
+        for message in messages:
+            if message.message_id == message_id:
+                msg_to_edit = message
+                break
+
+        if msg_to_edit is None:
+            raise NoSuchMessageException(message_id)
+
+        msg_to_edit.message_payload = query.message_payload or msg_to_edit.message_payload
+        msg_to_edit.context = query.message_payload or msg_to_edit.context
 
     def count_attachments_in_group_since(self, group_id: str, since: dt) -> int:
         if group_id not in self.attachments_by_group:

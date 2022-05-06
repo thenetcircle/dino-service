@@ -319,11 +319,15 @@ class BaseServerRestApi(BaseDatabaseTest):
         self.assertEqual(raw_response.status_code, 200)
 
     def edit_message(
-        self, group_id: str, message_id: str, created_at: float, new_payload: str
+        self, user_id: int, group_id: str, message_id: str, created_at: float, new_payload: str
     ):
         raw_response = self.client.put(
-            f"/v1/groups/{group_id}/message/{message_id}/edit",
-            json={"created_at": created_at, "message_payload": new_payload},
+            f"/v1/users/{user_id}/message/{message_id}/edit",
+            json={
+                "created_at": created_at,
+                "message_payload": new_payload,
+                "group_id": group_id,
+            },
         )
         self.assertEqual(raw_response.status_code, 200)
 
