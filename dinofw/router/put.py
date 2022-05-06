@@ -182,7 +182,7 @@ async def edit_message(
     user_id: int, message_id: str, query: EditMessageQuery, db: Session = Depends(get_db)
 ) -> Message:
     """
-    Edit the context of a message. Returns the ActionLog for the edit.
+    Edit the context or payload of a message. Returns the ActionLog for the edit.
 
     **Potential error codes in response:**
     * `602`: if the message doesn't exist for the given group and user,

@@ -661,6 +661,7 @@ class CassandraHandler:
 
         message.update(
             context=query.context or message.context,
+            message_payload=query.message_payload or message.message_payload,
             updated_at=now,
         )
 
@@ -680,6 +681,7 @@ class CassandraHandler:
         if attachment is not None:
             attachment.update(
                 context=query.context or message.context,
+                message_payload=query.message_payload or message.message_payload,
                 updated_at=now,
             )
 

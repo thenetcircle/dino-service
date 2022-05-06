@@ -168,3 +168,4 @@ class EditMessageQuery(OneToOneQuery):
     created_at: float
     group_id: Optional[str]
     context: Optional[str]
+    message_payload: Optional[str]
