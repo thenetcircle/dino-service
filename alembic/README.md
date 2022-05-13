@@ -1,10 +1,10 @@
 # Database Migrations
 
-Applying the "initial revision" on an already existing (up-to-date) db:
+Applying the first revision ("initial revision") on an already existing db that wasn't using alembic before:
 
 ```shell
 cd alembic/
-DINO_ENVIRONMENT=someenv alembic stamp head
+DINO_ENVIRONMENT=someenv alembic stamp 81ca0935443a
 ```
 
 Run new migrations:
