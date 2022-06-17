@@ -1150,7 +1150,7 @@ class RelationalHandler:
             user_stats.last_read = last_read
 
             # recount unread from cassandra and save in cache and db
-            self.env.cache.reset_unread_in_groups(user_id, [group_id])
+            self.env.cache.clear_unread_in_group_for_user(group_id, user_id)
             user_stats.unread_count = self.env.storage.get_unread_in_group(group_id, user_id, last_read)
 
             # highlight time is removed if a user reads a conversation
