@@ -887,6 +887,7 @@ class RelationalHandler:
                 or_(
                     UserGroupStatsEntity.last_read < GroupEntity.last_message_time,
                     UserGroupStatsEntity.bookmark.is_(True),
+                    UserGroupStatsEntity.unread_count > 0,
                 )
             )
             .all()
