@@ -911,6 +911,7 @@ class RelationalHandler:
                     {
                         UserGroupStatsEntity.last_updated_time: now,
                         UserGroupStatsEntity.last_read: now,
+                        UserGroupStatsEntity.unread_count: 0,
                         UserGroupStatsEntity.bookmark: False,
                         UserGroupStatsEntity.highlight_time: self.long_ago
                     },
