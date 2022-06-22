@@ -937,6 +937,7 @@ class RelationalHandler:
             )
 
         db.commit()
+        self.env.cache.reset_unread_in_groups(user_id, group_ids)
 
     # noinspection PyMethodMayBeStatic
     def get_all_user_stats_in_group(self, group_id: str, db: Session) -> List[UserGroupStatsBase]:
