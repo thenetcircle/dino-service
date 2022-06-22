@@ -173,6 +173,10 @@ class CacheRedis(ICache):
 
         p.execute()
 
+    def clear_unread_in_group_for_user(self, group_id: str, user_id) -> None:
+        key = RedisKeys.unread_in_group(group_id)
+        self.redis.hdel(key, str(user_id))
+
     def get_unread_in_group(self, group_id: str, user_id: int) -> Optional[int]:
         key = RedisKeys.unread_in_group(group_id)
 

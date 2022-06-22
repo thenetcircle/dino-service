@@ -887,6 +887,7 @@ class RelationalHandler:
                 or_(
                     UserGroupStatsEntity.last_read < GroupEntity.last_message_time,
                     UserGroupStatsEntity.bookmark.is_(True),
+                    UserGroupStatsEntity.unread_count > 0,
                 )
             )
             .all()
@@ -911,6 +912,7 @@ class RelationalHandler:
                     {
                         UserGroupStatsEntity.last_updated_time: now,
                         UserGroupStatsEntity.last_read: now,
+                        UserGroupStatsEntity.unread_count: 0,
                         UserGroupStatsEntity.bookmark: False,
                         UserGroupStatsEntity.highlight_time: self.long_ago
                     },
@@ -1157,7 +1159,10 @@ class RelationalHandler:
 
         if last_read is not None:
             user_stats.last_read = last_read
-            self.env.cache.reset_unread_in_groups(user_id, [group.group_id])
+
+            # recount unread from cassandra and save in cache and db
+            self.env.cache.clear_unread_in_group_for_user(group_id, user_id)
+            user_stats.unread_count = self.env.storage.get_unread_in_group(group_id, user_id, last_read)
 
             # highlight time is removed if a user reads a conversation
             user_stats.highlight_time = self.long_ago
