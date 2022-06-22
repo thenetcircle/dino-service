@@ -45,6 +45,7 @@ class BaseResource(ABC):
 
             # no point updating if already newer than last message (also skips
             # broadcasting unnecessary read-receipts)
+            # TODO: double check this; won't it cause read-receipts to not be sent when reading a new message?
             if last_message_time > user_stats.last_read:
                 user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
 
