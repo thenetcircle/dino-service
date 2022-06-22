@@ -1204,6 +1204,8 @@ class RelationalHandler:
         if highlight_time is not None and last_read is None:
             set_highlight_time()
 
+        # TODO: (adjustment needed here?) if you hide a group with it bookmarked, and another user
+        #  send a message  to user, then the group will have the unread and bookmark together
         elif query.hide is not None:
             user_stats.hide = query.hide
 
