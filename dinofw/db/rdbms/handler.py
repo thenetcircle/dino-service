@@ -1195,6 +1195,12 @@ class RelationalHandler:
 
         elif query.hide is not None:
             user_stats.hide = query.hide
+
+            if query.hide:
+                user_stats.bookmark = False
+                user_stats.unread_count = 0
+                self.env.cache.set_unread_in_group(group_id, user_id, 0)
+
             self.env.cache.set_hide_group(group_id, query.hide, [user_id])
 
         if query.hide is not None or query.delete_before is not None:
