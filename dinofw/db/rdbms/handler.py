@@ -1134,6 +1134,17 @@ class RelationalHandler:
         if query.bookmark is not None:
             user_stats.bookmark = query.bookmark
 
+            # only increase unread if not already bookmarked
+            if query.bookmark and not user_stats.bookmark:
+                user_stats.unread_count += 1
+
+            # only decrease unread if it's currently bookmarked
+            elif not query.bookmark and user_stats.bookmark:
+                # avoid setting to negative values
+                user_stats.unread_count = max(0, user_stats.unread_count - 1)
+
+            self.env.cache.set_unread_in_group(group_id, user_id, user_stats.unread_count)
+
             # we reset the unread count when removing a bookmark
             if query.bookmark is False:
                 last_read = group.last_message_time
