@@ -1177,10 +1177,18 @@ class RelationalHandler:
             # for syncing deletions to apps, returned in /updates api
             user_stats.deleted = True
 
+            # deleted groups can't be bookmarked or hidden
+            user_stats.bookmark = False
+            user_stats.hide = False
+
             # set to 0 and not -1, since we know there's actually 0 sent
             # messages from this user after he deletes a conversation,
             # so there's no need to count from cassandra from now on
             self.env.db.set_sent_message_count(group_id, user_id, 0, db)
+
+            # need to reset unread count when deleting a group
+            user_stats.unread_count = 0
+            self.env.cache.set_unread_in_group(group_id, user_id, 0)
 
             # update the cached value of delete before, and also remove
             # the cached count of attachments in this group for this
