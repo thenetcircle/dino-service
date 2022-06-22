@@ -1147,9 +1147,11 @@ class RelationalHandler:
             user_stats.bookmark = query.bookmark
             self.env.cache.set_unread_in_group(group_id, user_id, user_stats.unread_count)
 
-            # we reset the unread count when removing a bookmark
-            if query.bookmark is False:
-                last_read = group.last_message_time
+            # we reset the unread count when removing a bookmark, also set the
+            # last read time to now(), since a user can't remove a bookmark without
+            # opening the conversation
+            if query.bookmark is False and query.last_read_time is None:
+                last_read = now
 
         if query.pin is not None:
             user_stats.pin = query.pin
