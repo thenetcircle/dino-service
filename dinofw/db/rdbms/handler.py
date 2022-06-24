@@ -130,16 +130,18 @@ class RelationalHandler:
         inner join
             user_group_stats u on u.group_id = g.group_id
         where
-            u.user_id = 5000441 and
+            u.user_id = 5000439 and
             u.hide = false and
             u.deleted = false and
             u.delete_before < g.updated_at and
             g.last_message_time < now() and
-            ((u.last_read < g.last_message_time) or u.bookmark = true)
+            (u.unread_count > 0 or u.bookmark = true)
         order by
             u.pin desc,
             greatest(u.highlight_time, g.last_message_time) desc
         limit 10;
+
+            ((u.last_read < g.last_message_time) or u.bookmark = true)
         """
         @time_method(logger, "get_groups_for_user(): query groups")
         def query_groups():
@@ -179,8 +181,12 @@ class RelationalHandler:
             if query.only_unread:
                 statement = statement.filter(
                     or_(
-                        UserGroupStatsEntity.last_read < GroupEntity.last_message_time,
-                        UserGroupStatsEntity.bookmark.is_(True),
+                        # with 1 unread, last_read == last_message_time; in cassandra we add random MS
+                        # to creation time, but migration is too slow to use the same time for
+                        # last_message_time in postgres, so use unread_count instead
+                        # UserGroupStatsEntity.last_read < GroupEntity.last_message_time,
+                        UserGroupStatsEntity.unread_count > 0,
+                        UserGroupStatsEntity.bookmark.is_(True)
                     )
                 )
 
