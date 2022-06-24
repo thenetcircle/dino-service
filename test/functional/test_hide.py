@@ -30,9 +30,10 @@ class TestHideGroup(BaseServerRestApi):
             receiver_id=BaseTest.USER_ID
         )
 
-        # should now be un-hidden, and one two unread messages (bookmark plus the new message)
+        # should now be un-hidden, and one unread message (bookmark only counts as
+        # unread if there's no actual unread messages)
         self.assert_groups_for_user(1)
-        self.assert_total_unread_count(user_id=BaseTest.USER_ID, unread_count=2)
+        self.assert_total_unread_count(user_id=BaseTest.USER_ID, unread_count=1)
 
         # should still be bookmarked
         self.assert_bookmarked_for_user(bookmark=True, group_id=group_id, user_id=BaseTest.USER_ID)
