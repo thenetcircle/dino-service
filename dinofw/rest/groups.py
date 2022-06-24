@@ -113,6 +113,11 @@ class GroupResource(BaseResource):
             if user_stat.user_id == user_id_a:
                 user_stat.attachment_amount = attachment_amount
 
+                # bookmarked groups counts as 1 unread message only if they
+                # don't already have unread messages
+                if user_stat.unread == 0 and user_stat.bookmark:
+                    user_stat.unread = 1
+
         user_a: Optional[UserGroupStats] = user_stats[0]
         user_b: Optional[UserGroupStats] = user_stats[1]
 

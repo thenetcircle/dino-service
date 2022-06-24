@@ -307,29 +307,34 @@ class RelationalHandler:
         user_id: int,
         query: GroupQuery
     ) -> List[UserGroupBase]:
-        def count_for_group():
+        def count_for_group(_group, _stats):
             _unread_count = -1
             _receiver_unread_count = -1
 
             # only count for receiver if it's a 1v1 group
-            if query.receiver_stats and group.group_type == GroupTypes.ONE_TO_ONE:
-                user_a, user_b = group_id_to_users(group.group_id)
+            if query.receiver_stats and _group.group_type == GroupTypes.ONE_TO_ONE:
+                user_a, user_b = group_id_to_users(_group.group_id)
                 user_to_count_for = (
                     user_a if user_b == user_id else user_b
                 )
                 _receiver_unread_count = self.env.storage.get_unread_in_group(
-                    group_id=group.group_id,
+                    group_id=_group.group_id,
                     user_id=user_to_count_for,
-                    last_read=receivers[group.group_id].last_read,
+                    last_read=receivers[_group.group_id].last_read,
                 )
 
             if query.count_unread:
                 # TODO: use unread_count in postgres? storage will check redis first, maybe enough
                 _unread_count = self.env.storage.get_unread_in_group(
-                    group_id=group.group_id,
+                    group_id=_group.group_id,
                     user_id=user_id,
                     last_read=user_group_stats.last_read,
                 )
+
+                # bookmarked groups counts as 1 unread message only if they
+                # don't already have unread messages
+                if _unread_count == 0 and _stats.bookmark:
+                    _unread_count = 1
 
             return _unread_count, _receiver_unread_count
 
@@ -349,7 +354,7 @@ class RelationalHandler:
             group = GroupBase(**group_entity.__dict__)
             user_group_stats = UserGroupStatsBase(**user_group_stats_entity.__dict__)
 
-            unread_count, receiver_unread_count = count_for_group()
+            unread_count, receiver_unread_count = count_for_group(group, user_group_stats)
 
             receiver_stat = None
             if group.group_id in receivers:
@@ -1135,21 +1140,10 @@ class RelationalHandler:
         user_stats.last_updated_time = now
 
         if query.bookmark is not None:
-            # only increase unread if not already bookmarked
-            if query.bookmark and not user_stats.bookmark:
-                user_stats.unread_count += 1
-
-            # only decrease unread if it's currently bookmarked
-            elif not query.bookmark and user_stats.bookmark:
-                # avoid setting to negative values
-                user_stats.unread_count = max(0, user_stats.unread_count - 1)
-
             user_stats.bookmark = query.bookmark
-            self.env.cache.set_unread_in_group(group_id, user_id, user_stats.unread_count)
 
-            # we reset the unread count when removing a bookmark, also set the
-            # last read time to now(), since a user can't remove a bookmark without
-            # opening the conversation
+            # set the last read time to now(), since a user can't remove a
+            # bookmark without opening the conversation
             if query.bookmark is False and query.last_read_time is None:
                 last_read = now
 

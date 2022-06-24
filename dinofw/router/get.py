@@ -74,6 +74,11 @@ async def get_user_statistics_in_group(
             group_id, user_id, db
         )
 
+        # bookmarked groups counts as 1 unread message only if they
+        # don't already have unread messages
+        if user_group_stats is not None and user_group_stats.unread == 0 and user_group_stats.bookmark:
+            user_group_stats.unread = 1
+
         query = GroupInfoQuery(count_messages=False)
         group_info = await environ.env.rest.group.get_group(group_id, query, db, message_amount=message_amount)
 
