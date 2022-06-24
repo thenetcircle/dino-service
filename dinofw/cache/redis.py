@@ -419,8 +419,11 @@ class CacheRedis(ICache):
         else:
             users = user_ids
 
+        p = self.redis.pipeline()
         for user in users:
-            self.redis.hset(key, user, "t" if hide else "f")
+            p.hset(key, user, "t" if hide else "f")
+
+        p.execute()
 
     @property
     def redis(self):

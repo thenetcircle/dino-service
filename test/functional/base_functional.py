@@ -533,6 +533,11 @@ class BaseServerRestApi(BaseDatabaseTest):
         self.assertEqual(raw_response.status_code, 200)
         self.assertEqual(hidden, raw_response.json()["stats"]["hide"])
 
+    def assert_bookmarked_for_user(self, bookmark: bool, group_id: str, user_id: int = BaseTest.USER_ID) -> None:
+        raw_response = self.client.get(f"/v1/groups/{group_id}/user/{user_id}",)
+        self.assertEqual(raw_response.status_code, 200)
+        self.assertEqual(bookmark, raw_response.json()["stats"]["bookmark"])
+
     def assert_groups_for_user(self, amount_of_groups, user_id: int = BaseTest.USER_ID, until: float = None) -> None:
         response = self.groups_for_user(user_id, until=until)
         self.assertEqual(amount_of_groups, len(response))
