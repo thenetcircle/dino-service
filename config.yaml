@@ -17,6 +17,7 @@ storage:
 logging:
     type: "$DINO_LOG_TYPE"
     dsn: "$DINO_LOG_DSN"
+    trace_sample_rate: "$DINO_TRACE_SAMPLE_RATE"
 
 kafka:
     host: "$DINO_KAFKA_HOST"

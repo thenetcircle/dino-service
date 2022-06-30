@@ -63,7 +63,11 @@ def init_logging(gn_env: GNEnvironment) -> None:
             SqlalchemyIntegration(),
             RedisIntegration()
         ],
-        traces_sample_rate=0.02
+        traces_sample_rate=float(env.config.get(
+            ConfigKeys.TRACE_SAMPLE_RATE,
+            domain=ConfigKeys.LOGGING,
+            default=0.01
+        ))
     )
 
     def capture_wrapper(e_info) -> None:
