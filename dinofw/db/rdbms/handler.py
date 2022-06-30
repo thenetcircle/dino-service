@@ -948,7 +948,6 @@ class RelationalHandler:
             )
 
         db.commit()
-        logger.info(f"setting last read for {user_id} in groups [{group_ids}] to {to_ts(now)}")
         self.env.cache.set_last_read_in_groups_for_user(group_ids, user_id, to_ts(now))
         self.env.cache.reset_unread_in_groups(user_id, group_ids)
 
