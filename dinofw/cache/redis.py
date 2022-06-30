@@ -144,6 +144,18 @@ class CacheRedis(ICache):
         p.expire(key, 7 * ONE_DAY)
         p.execute()
 
+    def set_last_read_in_groups_for_user(
+        self, group_ids: List[str], user_id: int, last_read: float
+    ) -> None:
+        p = self.redis.pipeline()
+
+        for group_id in group_ids:
+            key = RedisKeys.last_read_time(group_id)
+            p.hset(key, str(user_id), last_read)
+            p.expire(key, 7 * ONE_DAY)
+
+        p.execute()
+
     def set_last_read_in_group_for_user(
         self, group_id: str, user_id: int, last_read: float
     ) -> None:

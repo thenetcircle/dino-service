@@ -948,6 +948,7 @@ class RelationalHandler:
             )
 
         db.commit()
+        self.env.cache.set_last_read_in_groups_for_user(group_ids, user_id, to_ts(now))
         self.env.cache.reset_unread_in_groups(user_id, group_ids)
 
     # noinspection PyMethodMayBeStatic
@@ -1161,6 +1162,7 @@ class RelationalHandler:
 
         if last_read is not None:
             user_stats.last_read = last_read
+            self.env.cache.set_last_read_in_group_for_user(group_id, user_id, to_ts(last_read))
 
             # recount unread from cassandra and save in cache and db
             self.env.cache.clear_unread_in_group_for_user(group_id, user_id)
