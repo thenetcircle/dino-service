@@ -1,5 +1,4 @@
 import datetime
-import json
 from datetime import datetime as dt
 from typing import Dict
 from typing import List
@@ -15,8 +14,8 @@ from sqlalchemy import literal
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
-from dinofw.db.rdbms.models import UserGroupStatsEntity
 from dinofw.db.rdbms.models import GroupEntity
+from dinofw.db.rdbms.models import UserGroupStatsEntity
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.rdbms.schemas import UserGroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
