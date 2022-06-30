@@ -63,6 +63,7 @@ def init_logging(gn_env: GNEnvironment) -> None:
             SqlalchemyIntegration(),
             RedisIntegration()
         ],
+        traces_sample_rate=0.02
     )
 
     def capture_wrapper(e_info) -> None:
