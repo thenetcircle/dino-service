@@ -59,6 +59,7 @@ class UserGroupStats(BaseModel):
     rating: Optional[int]
 
     receiver_highlight_time: Optional[float]
+    receiver_last_read_time: Optional[float]
     receiver_delete_before: Optional[float]
     receiver_hide: Optional[bool]
     receiver_deleted: Optional[bool]

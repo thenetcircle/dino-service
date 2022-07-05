@@ -93,6 +93,7 @@ def group_base_to_user_group(
         stats_dict["receiver_delete_before"] = to_ts(receiver_stats_base.delete_before)
         stats_dict["receiver_hide"] = receiver_stats_base.hide
         stats_dict["receiver_deleted"] = receiver_stats_base.deleted
+        stats_dict["receiver_last_read_time"] = to_ts(receiver_stats_base.last_read)
 
     stats_dict["last_read_time"] = to_ts(stats_base.last_read)
     stats_dict["last_sent_time"] = to_ts(stats_base.last_sent)

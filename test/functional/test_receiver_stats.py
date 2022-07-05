@@ -78,3 +78,19 @@ class TestReceiverStats(BaseServerRestApi):
         self.assertEqual(None, stats["receiver_deleted"])
         self.assertEqual(0, stats["unread"])
         self.assertEqual(-1, stats["receiver_unread"])
+
+    def test_receiver_last_read_time(self):
+        self.assert_groups_for_user(0)
+        message = self.send_1v1_message(
+            user_id=BaseTest.USER_ID,
+            receiver_id=BaseTest.OTHER_USER_ID
+        )
+
+        stats = self.groups_for_user(
+            BaseTest.USER_ID,
+            count_unread=True,
+            receiver_stats=True
+        )[0]["stats"]
+
+        self.assertEqual(message["created_at"], stats["last_read_time"])
+        self.assertGreater(message["created_at"], stats["receiver_last_read_time"])
