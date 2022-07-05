@@ -545,6 +545,12 @@ class BaseServerRestApi(BaseDatabaseTest):
         for i, group_id in enumerate(group_ids):
             self.assertEqual(group_id, groups[i]["group"]["group_id"])
 
+    def assert_mqtt_read_events(self, user_id: int, amount: int):
+        if amount == 0:
+            self.assertNotIn(user_id, self.env.client_publisher.sent_reads)
+        else:
+            self.assertEqual(amount, len(self.env.client_publisher.sent_reads[user_id]))
+
     def assert_payload(self, group_id: str, message_id: str, new_payload: str):
         histories = self.histories_for(group_id)
 
