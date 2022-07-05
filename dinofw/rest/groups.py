@@ -173,11 +173,6 @@ class GroupResource(BaseResource):
                 for message in _messages
             ]
 
-        def get_last_reads():
-            last_read = list(self.env.db.get_last_reads_in_group(group_id, db).items())
-            last_read.sort(key=lambda entry: entry[1], reverse=True)
-            return last_read[-1][1]
-
         if query.since is None and query.until is None:
             raise InvalidRangeException("both 'since' and 'until' was empty, need one")
         if query.since is not None and query.until is not None:
@@ -190,12 +185,10 @@ class GroupResource(BaseResource):
         if query.admin_id is None or query.admin_id == 0:
             self._user_opens_conversation(group_id, user_id, user_stats, db)
 
-        # get last reads _after_ opening conversation, so last read of this user is now()
-        last_reads = get_last_reads()
-
+        last_read = self.env.db.get_oldest_last_read_in_group(group_id, db)
         return Histories(
             messages=messages,
-            last_read_time=last_reads,
+            last_read_time=last_read
         )
 
     async def count_messages_in_group(self, group_id: str) -> int:

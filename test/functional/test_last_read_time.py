@@ -1,0 +1,28 @@
+from test.functional.base_functional import BaseServerRestApi
+
+
+class TestLastReadTime(BaseServerRestApi):
+    def test_get_oldest_last_read_in_group(self):
+        session = self.env.session_maker()
+
+        message = self.send_1v1_message()
+        group_id = message["group_id"]
+
+        last_read_cache = self.env.cache.get_last_read_in_group_oldest(group_id)
+        self.assertIsNone(last_read_cache)
+
+        last_read = self.env.db.get_oldest_last_read_in_group(group_id, session)
+        last_read_cache = self.env.cache.get_last_read_in_group_oldest(group_id)
+        self.assertIsNotNone(last_read)
+        self.assertIsNotNone(last_read_cache)
+
+    def test_last_read_on_histories_response(self):
+        message = self.send_1v1_message()
+        group_id = message["group_id"]
+
+        histories = self.histories_for(group_id)
+        self.assertEqual(float, type(histories["last_read_time"]))
+
+        # oldest last read is the other used; the message is unread for the other user,
+        # so the oldest last read should be less than the message creation time
+        self.assertGreater(message["created_at"], histories["last_read_time"])

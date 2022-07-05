@@ -50,6 +50,7 @@ class RedisKeys:
     RKEY_USERS_IN_GROUP: Final = "group:users:{}"  # group:users:group_id
     RKEY_LAST_SEND_TIME: Final = "group:lastsent:{}"  # group:lastsent:group_id
     RKEY_LAST_READ_TIME: Final = "group:lastread:{}"  # group:lastread:group_id
+    RKEY_LAST_READ_TIME_OLDEST: Final = "group:lastread:oldest:{}"  # group:lastread:oldest:group_id
     RKEY_USER_STATS_IN_GROUP: Final = "group:stats:{}"  # group:stats:group_id
     RKEY_UNREAD_IN_GROUP: Final = "group:unread:{}"  # user:unread:group_id
     RKEY_HIDE_GROUP: Final = "group:hide:{}"  # group:hide:group_id
@@ -111,6 +112,10 @@ class RedisKeys:
     @staticmethod
     def user_stats_in_group(group_id: str) -> str:
         return RedisKeys.RKEY_USER_STATS_IN_GROUP.format(group_id)
+
+    @staticmethod
+    def oldest_last_read_time(group_id: str):
+        return RedisKeys.RKEY_LAST_READ_TIME_OLDEST.format(group_id)
 
     @staticmethod
     def last_read_time(group_id: str) -> str:

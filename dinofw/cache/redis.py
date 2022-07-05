@@ -101,6 +101,23 @@ class CacheRedis(ICache):
         key = RedisKeys.sent_message_count_in_group(group_id)
         self.redis.hset(key, str(user_id), count)
 
+    def get_last_read_in_group_oldest(self, group_id: str) -> Optional[float]:
+        key = RedisKeys.oldest_last_read_time(group_id)
+        last_read = self.redis.get(key)
+        if last_read is None:
+            return
+
+        return float(last_read)
+
+    def set_last_read_in_group_oldest(self, group_id: str, last_read: float) -> None:
+        key = RedisKeys.oldest_last_read_time(group_id)
+        self.redis.set(key, str(last_read))
+        self.redis.expire(key, ONE_DAY * 7)
+
+    def remove_last_read_in_group_oldest(self, group_id: str) -> None:
+        key = RedisKeys.oldest_last_read_time(group_id)
+        self.redis.delete(key)
+
     def get_last_read_in_group_for_users(
         self, group_id: str, user_ids: List[int]
     ) -> Tuple[dict, list]:

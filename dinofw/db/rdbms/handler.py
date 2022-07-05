@@ -518,6 +518,30 @@ class RelationalHandler:
         user_ids = list(users.keys())
         return self.get_last_read_in_group_for_users(group_id, user_ids, db)
 
+    def get_oldest_last_read_in_group(self, group_id: str, db: Session) -> Optional[float]:
+        last_read = self.env.cache.get_last_read_in_group_oldest(group_id)
+        if last_read is not None:
+            return last_read
+
+        last_read = (
+            db.query(
+                func.min(UserGroupStatsEntity.delete_before)
+            )
+            .filter(
+                UserGroupStatsEntity.group_id == group_id
+            )
+            .first()
+        )
+
+        if last_read is None or not len(last_read):
+            logger.warning(f"no oldest last_read in db or cache for group {group_id}")
+            return
+
+        last_read = to_ts(last_read[0])
+        self.env.cache.set_last_read_in_group_oldest(group_id, last_read)
+
+        return last_read
+
     @time_method(logger, "get_last_read_in_group_for_users()")
     def get_last_read_in_group_for_users(
         self, group_id: str, user_ids: List[int], db: Session

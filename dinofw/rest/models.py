@@ -125,7 +125,7 @@ class UsersGroup(BaseModel):
 
 class Histories(BaseModel):
     messages: List[Message]
-    last_read_time: float
+    last_read_time: Optional[float]
 
 
 class MessageCount(BaseModel):
