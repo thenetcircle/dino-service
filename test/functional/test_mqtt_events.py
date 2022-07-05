@@ -31,8 +31,8 @@ class TestMqttEvents(BaseServerRestApi):
 
         event = convert.read_to_event("group_id", BaseTest.USER_ID, now_dt)
 
-        self.assertEqual(event["peer_last_read"], now_ts)
-        self.assertEqual(3, len(str(event["peer_last_read"]).split(".")[-1]))
+        self.assertEqual(event["peer_last_read"], int(now_ts * 1000))
+        self.assertEqual(13, len(str(event["peer_last_read"])))
 
     def test_message_event_formatting(self):
         now_dt = utcnow_dt()
@@ -53,8 +53,8 @@ class TestMqttEvents(BaseServerRestApi):
         event = convert.message_base_to_event(message)
 
         for key in {"updated_at", "updated_at"}:
-            self.assertEqual(event[key], now_ts)
-            self.assertEqual(3, len(str(event[key]).split(".")[-1]))
+            self.assertEqual(event[key], int(now_ts * 1000))
+            self.assertEqual(13, len(str(event[key])))
 
     def test_group_event_formatting(self):
         now_dt = utcnow_dt()
