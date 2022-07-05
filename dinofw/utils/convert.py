@@ -1,5 +1,7 @@
-from typing import Dict, Union
+from datetime import datetime as dt
+from typing import Dict
 from typing import List
+from typing import Union
 
 from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.rdbms.schemas import UserGroupBase
@@ -11,6 +13,7 @@ from dinofw.rest.models import Message
 from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UserGroupStats
 from dinofw.utils import to_ts
+from dinofw.utils import trim_micros
 from dinofw.utils.config import EventTypes
 
 
@@ -183,9 +186,9 @@ def group_base_to_event(group: GroupBase, user_ids: List[int] = None) -> dict:
         "group_id": group.group_id,
         "name": group.name,
         "description": group.description,
-        "updated_at": to_int(to_ts(group.updated_at, allow_none=True)),
-        "created_at": to_int(to_ts(group.created_at)),
-        "last_message_time": to_int(to_ts(group.last_message_time, allow_none=True)),
+        "updated_at": to_ts(trim_micros(group.updated_at, allow_none=True), allow_none=True),
+        "created_at": to_ts(trim_micros(group.created_at)),
+        "last_message_time": to_ts(trim_micros(group.last_message_time, allow_none=True), allow_none=True),
         "last_message_overview": group.last_message_overview,
         "last_message_type": group.last_message_type,
         "last_message_user_id": str(group.last_message_user_id),
@@ -201,12 +204,12 @@ def group_base_to_event(group: GroupBase, user_ids: List[int] = None) -> dict:
     return group_dict
 
 
-def read_to_event(group_id: str, user_id: int, now: float):
+def read_to_event(group_id: str, user_id: int, now: dt):
     return {
         "event_type": EventTypes.READ,
         "group_id": group_id,
         "user_id": str(user_id),
-        "read_at": to_int(now),
+        "peer_last_read": to_ts(trim_micros(now)),
     }
 
 
@@ -222,8 +225,8 @@ def message_base_to_event(
         "message_id": message.message_id,
         "message_payload": message.message_payload,
         "message_type": message.message_type,
-        "updated_at": to_int(to_ts(message.updated_at, allow_none=True)),
-        "created_at": to_int(to_ts(message.created_at)),
+        "updated_at": to_ts(trim_micros(message.updated_at, allow_none=True), allow_none=True),
+        "created_at": to_ts(trim_micros(message.created_at)),
     }
 
     # if the 'message' variable is Message instead of MessageBase, there's no file_id available; (e.g. for /edit)

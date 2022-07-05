@@ -48,7 +48,10 @@ def utcnow_dt(ts: float = None):
     return arrow.get(ts).datetime
 
 
-def trim_micros(dt: datetime) -> datetime:
+def trim_micros(dt: datetime, allow_none: bool = False) -> Optional[datetime]:
+    if allow_none and dt is None:
+        return
+
     ts_millis = round(dt.timestamp(), 3)
     return datetime.fromtimestamp(ts_millis, tz=dt.tzinfo)
 

@@ -51,7 +51,7 @@ class BaseResource(ABC):
                 user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
 
                 del user_ids[user_id]
-                self.env.client_publisher.read(group_id, user_id, user_ids, now_ts)
+                self.env.client_publisher.read(group_id, user_id, user_ids, now_dt)
                 self.env.cache.set_unread_in_group(group_id, user_id, 0)
 
     def create_action_log(

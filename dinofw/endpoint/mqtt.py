@@ -2,6 +2,7 @@ import json
 import os
 import socket
 import sys
+from datetime import datetime as dt
 from typing import List
 
 import bcrypt
@@ -216,7 +217,7 @@ class MqttPublishHandler(IClientPublishHandler):
         data = message_base_to_event(message, event_type=EventTypes.EDIT)
         self.send(user_ids, data)
 
-    def read(self, group_id: str, user_id: int, user_ids: List[int], now: float) -> None:
+    def read(self, group_id: str, user_id: int, user_ids: List[int], now: dt) -> None:
         # only send read receipt to 1v1 groups
         if len(user_ids) > 2:
             return
