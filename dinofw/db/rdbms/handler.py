@@ -1184,6 +1184,14 @@ class RelationalHandler:
             user_stats.rating = query.rating
 
         if last_read is not None:
+            # check previous last read before updating it, and send read-receipts to other users
+            # if last_message_time is more than the previous last_read
+            if group.last_message_time > user_stats.last_read:
+                user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
+
+                del user_ids[user_id]
+                self.env.client_publisher.read(group_id, user_id, user_ids, last_read)
+
             user_stats.last_read = last_read
             self.env.cache.set_last_read_in_group_for_user(group_id, user_id, to_ts(last_read))
 
