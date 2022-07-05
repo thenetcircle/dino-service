@@ -214,40 +214,15 @@ class TestServerRestApi(BaseServerRestApi):
         self.user_joins_group(group_id, BaseTest.OTHER_USER_ID)
 
         histories = self.histories_for(group_id, BaseTest.USER_ID)
-        last_read_user_1_before = self.last_read_in_histories_for(
-            histories, BaseTest.USER_ID
-        )
-        last_read_user_2_before = self.last_read_in_histories_for(
-            histories, BaseTest.OTHER_USER_ID
-        )
+        last_read_before = histories["last_read_time"]
 
         self.send_message_to_group_from(group_id, user_id=BaseTest.USER_ID)
 
-        histories = self.histories_for(group_id, BaseTest.USER_ID)
-        last_read_user_1_after = self.last_read_in_histories_for(
-            histories, BaseTest.USER_ID
-        )
-        last_read_user_2_after = self.last_read_in_histories_for(
-            histories, BaseTest.OTHER_USER_ID
-        )
+        self.histories_for(group_id, BaseTest.USER_ID)
+        histories = self.histories_for(group_id, BaseTest.OTHER_USER_ID)
+        last_read_after = histories["last_read_time"]
 
-        self.assertNotEqual(last_read_user_1_before, last_read_user_1_after)
-        self.assertEqual(last_read_user_2_before, last_read_user_2_after)
-
-    def test_last_read_removed_on_leave(self):
-        group_id = self.create_and_join_group(BaseTest.USER_ID)
-        self.user_joins_group(group_id, BaseTest.OTHER_USER_ID)
-
-        histories = self.histories_for(group_id, BaseTest.USER_ID)
-        self.assert_in_histories(BaseTest.USER_ID, histories, is_in=True)
-        self.assert_in_histories(BaseTest.OTHER_USER_ID, histories, is_in=True)
-
-        self.user_leaves_group(group_id, BaseTest.OTHER_USER_ID)
-        self.send_message_to_group_from(group_id, user_id=BaseTest.USER_ID)
-
-        histories = self.histories_for(group_id, BaseTest.USER_ID)
-        self.assert_in_histories(BaseTest.USER_ID, histories, is_in=True)
-        self.assert_in_histories(BaseTest.OTHER_USER_ID, histories, is_in=False)
+        self.assertNotEqual(last_read_before, last_read_after)
 
     def test_group_exists_when_leaving(self):
         groups = self.groups_for_user(BaseTest.USER_ID)

@@ -7,7 +7,6 @@ from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.schemas import MessageBase
 from dinofw.rest.models import Group
 from dinofw.rest.models import GroupJoinTime
-from dinofw.rest.models import GroupLastRead
 from dinofw.rest.models import Message
 from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UserGroupStats
@@ -31,10 +30,6 @@ def message_base_to_message(message: MessageBase) -> Message:
     message_dict["created_at"] = to_ts(message_dict["created_at"], allow_none=True)
 
     return Message(**message_dict)
-
-
-def to_last_read(user_id: int, last_read: float) -> GroupLastRead:
-    return GroupLastRead(user_id=user_id, last_read=last_read)
 
 
 def to_user_group_stats(user_stats: UserGroupStatsBase) -> UserGroupStats:

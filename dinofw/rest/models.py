@@ -9,11 +9,6 @@ class GroupJoinTime(BaseModel):
     join_time: float
 
 
-class GroupLastRead(BaseModel):
-    user_id: int
-    last_read: float
-
-
 class GroupUsers(BaseModel):
     group_id: str
     owner_id: int
@@ -130,7 +125,7 @@ class UsersGroup(BaseModel):
 
 class Histories(BaseModel):
     messages: List[Message]
-    last_reads: List[GroupLastRead]
+    last_read_time: float
 
 
 class MessageCount(BaseModel):

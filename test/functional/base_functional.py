@@ -134,13 +134,6 @@ class BaseServerRestApi(BaseDatabaseTest):
 
         return raw_response.json()["group_id"]
 
-    def last_read_in_histories_for(self, histories: dict, user_id: int):
-        return [
-            stat["last_read"]
-            for stat in histories["last_reads"]
-            if stat["user_id"] == user_id
-        ][0]
-
     def histories_for(self, group_id: str, user_id: int = BaseTest.USER_ID):
         raw_response = self.client.post(
             f"/v1/groups/{group_id}/user/{user_id}/histories", json={"per_page": "10", "since": 0},
@@ -551,16 +544,6 @@ class BaseServerRestApi(BaseDatabaseTest):
         groups = self.groups_for_user(user_id)
         for i, group_id in enumerate(group_ids):
             self.assertEqual(group_id, groups[i]["group"]["group_id"])
-
-    def assert_in_histories(self, user_id: int, histories, is_in: bool):
-        if is_in:
-            self.assertTrue(
-                any((user_id == user["user_id"] for user in histories["last_reads"]))
-            )
-        else:
-            self.assertFalse(
-                any((user_id == user["user_id"] for user in histories["last_reads"]))
-            )
 
     def assert_payload(self, group_id: str, message_id: str, new_payload: str):
         histories = self.histories_for(group_id)

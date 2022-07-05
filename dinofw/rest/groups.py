@@ -28,7 +28,6 @@ from dinofw.utils import utcnow_dt
 from dinofw.utils import utcnow_ts
 from dinofw.utils.convert import group_base_to_group
 from dinofw.utils.convert import message_base_to_message
-from dinofw.utils.convert import to_last_read
 from dinofw.utils.convert import to_user_group_stats
 from dinofw.utils.exceptions import InvalidRangeException
 
@@ -175,12 +174,9 @@ class GroupResource(BaseResource):
             ]
 
         def get_last_reads():
-            return [
-                to_last_read(this_user_id, last_read)
-                for this_user_id, last_read in self.env.db.get_last_reads_in_group(
-                    group_id, db
-                ).items()
-            ]
+            last_read = list(self.env.db.get_last_reads_in_group(group_id, db).items())
+            last_read.sort(key=lambda entry: entry[1], reverse=True)
+            return last_read[-1][1]
 
         if query.since is None and query.until is None:
             raise InvalidRangeException("both 'since' and 'until' was empty, need one")
@@ -199,7 +195,7 @@ class GroupResource(BaseResource):
 
         return Histories(
             messages=messages,
-            last_reads=last_reads,
+            last_read_time=last_reads,
         )
 
     async def count_messages_in_group(self, group_id: str) -> int:

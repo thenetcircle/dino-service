@@ -31,6 +31,7 @@ class BaseResource(ABC):
         """
         update database and cache with everything related to opening a conversation (if needed)
         """
+        # TODO: maybe use unread count here instead? since migration doesn't have MS on last_message_time
         last_message_time = self.env.db.get_last_message_time_in_group(group_id, db)
 
         # if a user opens a conversation a second time and nothing has changed, we don't need to update
