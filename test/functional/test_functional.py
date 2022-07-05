@@ -213,7 +213,7 @@ class TestServerRestApi(BaseServerRestApi):
         group_id = self.create_and_join_group(BaseTest.USER_ID)
         self.user_joins_group(group_id, BaseTest.OTHER_USER_ID)
 
-        histories = self.histories_for(group_id, BaseTest.USER_ID)
+        histories = self.histories_for(group_id, BaseTest.OTHER_USER_ID)
         last_read_before = histories["last_read_time"]
 
         self.send_message_to_group_from(group_id, user_id=BaseTest.USER_ID)

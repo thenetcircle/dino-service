@@ -525,7 +525,7 @@ class RelationalHandler:
 
         last_read = (
             db.query(
-                func.min(UserGroupStatsEntity.delete_before)
+                func.min(UserGroupStatsEntity.last_read)
             )
             .filter(
                 UserGroupStatsEntity.group_id == group_id
@@ -1316,6 +1316,9 @@ class RelationalHandler:
         user_stats.bookmark = False
         user_stats.hide = False
         user_stats.unread_count = 0
+
+        # re-check next time from db and cache it
+        self.env.cache.remove_last_read_in_group_oldest(group_id)
 
         # /groups api will check the cache, need to update this value if we read a group
         self.env.cache.set_unread_in_group(group_id, user_id, 0)

@@ -81,5 +81,5 @@ class TestMqttEvents(BaseServerRestApi):
         event = convert.group_base_to_event(group)
 
         for key in {"updated_at", "updated_at", "last_message_time"}:
-            self.assertEqual(event[key], now_ts)
-            self.assertEqual(3, len(str(event[key]).split(".")[-1]))
+            self.assertEqual(event[key], int(now_ts * 1000))
+            self.assertEqual(13, len(str(event[key])))
