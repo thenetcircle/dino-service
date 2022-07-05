@@ -123,6 +123,9 @@ class KafkaPublishHandler(IServerPublishHandler):
     def setup(self):
         self.publisher.setup()
 
+    def stop(self):
+        self.publisher.stop()
+
     def delete_attachments(
         self,
         group_id: str,
