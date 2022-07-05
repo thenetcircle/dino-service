@@ -13,7 +13,6 @@ from dinofw.rest.models import Message
 from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UserGroupStats
 from dinofw.utils import to_ts
-from dinofw.utils import trim_micros
 from dinofw.utils.config import EventTypes
 
 
@@ -155,24 +154,23 @@ def to_user_group(user_groups: List[UserGroupBase]):
 def stats_to_event_dict(user_stats):
     stats_dict = user_stats.dict()
 
-    # TODO: why is this *1000, while the other events have milliseconds?
-    stats_dict["last_read"] = int(to_ts(stats_dict["last_read"]) * 1000)
-    stats_dict["last_sent"] = int(to_ts(stats_dict["last_sent"]) * 1000)
-    stats_dict["delete_before"] = int(to_ts(stats_dict["delete_before"]) * 1000)
-    stats_dict["join_time"] = int(to_ts(stats_dict["join_time"]) * 1000)
+    stats_dict["last_read"] = to_int(to_ts(stats_dict["last_read"]))
+    stats_dict["last_sent"] = to_int(to_ts(stats_dict["last_sent"]))
+    stats_dict["delete_before"] = to_int(to_ts(stats_dict["delete_before"]))
+    stats_dict["join_time"] = to_int(to_ts(stats_dict["join_time"]))
 
     if stats_dict["highlight_time"]:
-        stats_dict["highlight_time"] = int(to_ts(stats_dict["highlight_time"]) * 1000)
+        stats_dict["highlight_time"] = to_int(to_ts(stats_dict["highlight_time"]))
 
     if stats_dict["last_updated_time"]:
-        stats_dict["last_updated_time"] = int(to_ts(stats_dict["last_updated_time"]) * 1000)
+        stats_dict["last_updated_time"] = to_int(to_ts(stats_dict["last_updated_time"]))
 
     if stats_dict["first_sent"]:
-        stats_dict["first_sent"] = int(to_ts(stats_dict["first_sent"]) * 1000)
+        stats_dict["first_sent"] = to_int(to_ts(stats_dict["first_sent"]))
 
     if stats_dict["receiver_highlight_time"]:
         stats_dict["receiver_highlight_time"] = \
-            int(to_ts(stats_dict["receiver_highlight_time"]) * 1000)
+            to_int(to_ts(stats_dict["receiver_highlight_time"]))
 
     # not needed in the mqtt event
     del stats_dict["user_id"]
@@ -187,9 +185,9 @@ def group_base_to_event(group: GroupBase, user_ids: List[int] = None) -> dict:
         "group_id": group.group_id,
         "name": group.name,
         "description": group.description,
-        "updated_at": to_ts(group.updated_at, allow_none=True),
-        "created_at": to_ts(group.created_at),
-        "last_message_time": to_ts(group.last_message_time, allow_none=True),
+        "updated_at": to_int(to_ts(group.updated_at, allow_none=True)),
+        "created_at": to_int(to_ts(group.created_at)),
+        "last_message_time": to_int(to_ts(group.last_message_time, allow_none=True)),
         "last_message_overview": group.last_message_overview,
         "last_message_type": group.last_message_type,
         "last_message_user_id": str(group.last_message_user_id),
@@ -210,7 +208,7 @@ def read_to_event(group_id: str, user_id: int, now: dt):
         "event_type": EventTypes.READ,
         "group_id": group_id,
         "user_id": str(user_id),
-        "peer_last_read": to_ts(now),
+        "peer_last_read": to_int(to_ts(now)),
     }
 
 
@@ -226,8 +224,8 @@ def message_base_to_event(
         "message_id": message.message_id,
         "message_payload": message.message_payload,
         "message_type": message.message_type,
-        "updated_at": to_ts(message.updated_at, allow_none=True),
-        "created_at": to_ts(message.created_at),
+        "updated_at": to_int(to_ts(message.updated_at, allow_none=True)),
+        "created_at": to_int(to_ts(message.created_at)),
     }
 
     # if the 'message' variable is Message instead of MessageBase, there's no file_id available; (e.g. for /edit)

@@ -6,6 +6,8 @@ events a client can receive, and when they are received.
 For events, it doesn't matter if they're for a 1-to-1 conversation in a multi-user group, they 
 look the same, but `group_type` will be different (if specified). 
 
+All timestamps are UTC timestamps with milliseconds, but multiplied by 1000 because of javascript restrictions.
+
 ## Possible values for fields
 
 ### `group_type`
@@ -45,9 +47,9 @@ look the same, but `group_type` will be different (if specified).
     "event_type": "group",
     "group_id": "9d78163c-1144-485a-92c6-6015afc6cd40",
     "name": "a name",
-    "created_at": 1597877421.453804,
-    "updated_at": 1597877421.453804,
-    "last_message_time": 1597877421.453804,
+    "created_at": 1597877421453,
+    "updated_at": 1597877421453,
+    "last_message_time": 1597877421453,
     "group_type": 0,
     "owner_id": 1234,
     "user_ids": [1234, 4321]
@@ -178,7 +180,7 @@ Read receipts are only broadcasted in 1-to-1 conversations, not in multi-user gr
     "event_type": "read",
     "group_id": "6cbb3265-2a7f-494d-92ad-f4503d55d49f",
     "user_id": 1234,
-    "read_at": 1597877384794
+    "peer_last_read": 1597877384794
 }
 ```
 
