@@ -66,3 +66,9 @@ app = create_app()
 async def startup():
     await environ.env.client_publisher.setup()
     environ.env.server_publisher.setup()
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    await environ.env.client_publisher.stop()
+    environ.env.server_publisher.stop()

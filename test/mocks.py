@@ -700,6 +700,9 @@ class FakePublisherHandler(IClientPublishHandler):
         self.sent_deletions = dict()
         self.sent_reads = dict()
 
+    async def stop(self):
+        pass
+
     def delete_attachments(
         self,
         group_id: str,

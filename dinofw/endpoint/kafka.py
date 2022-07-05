@@ -63,6 +63,10 @@ class KafkaPublisher(IServerPublisher):
             bootstrap_servers=bootstrap_servers,
         )
 
+    def stop(self):
+        if self.producer is not None:
+            self.producer.stop()
+
     def send(self, data: dict) -> None:
         try:
             key = data.get("actor", dict()).get("id", None)

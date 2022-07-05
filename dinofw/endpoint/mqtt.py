@@ -151,6 +151,10 @@ class MqttPublisher(IClientPublisher):
             version=MQTTv50
         )
 
+    async def stop(self):
+        if self.mqtt is not None:
+            await self.mqtt.disconnect()
+
     def send(self, user_id: int, fields: dict, qos: int = 1) -> None:
         if self.mqtt is None:
             return
@@ -185,6 +189,9 @@ class MqttPublishHandler(IClientPublishHandler):
         except Exception as e:
             logger.error(f"could not connect to mqtt: {str(e)}")
             logger.exception(e)
+
+    async def stop(self):
+        await self.publisher.stop()
 
     def message(
             self,
