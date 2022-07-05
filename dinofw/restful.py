@@ -71,4 +71,3 @@ async def startup():
 @app.on_event("shutdown")
 async def shutdown_event():
     await environ.env.client_publisher.stop()
-    environ.env.server_publisher.stop()

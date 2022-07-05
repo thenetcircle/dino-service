@@ -63,10 +63,6 @@ class KafkaPublisher(IServerPublisher):
             bootstrap_servers=bootstrap_servers,
         )
 
-    def stop(self):
-        if self.producer is not None:
-            self.producer.stop()
-
     def send(self, data: dict) -> None:
         try:
             key = data.get("actor", dict()).get("id", None)
@@ -122,9 +118,6 @@ class KafkaPublishHandler(IServerPublishHandler):
 
     def setup(self):
         self.publisher.setup()
-
-    def stop(self):
-        self.publisher.stop()
 
     def delete_attachments(
         self,
