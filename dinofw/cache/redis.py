@@ -118,6 +118,13 @@ class CacheRedis(ICache):
         key = RedisKeys.oldest_last_read_time(group_id)
         self.redis.delete(key)
 
+    def get_last_read_in_group_for_user(self, group_id: str, user_id: int) -> Optional[float]:
+        key = RedisKeys.last_read_time(group_id)
+        last_read = self.redis.hget(key, str(user_id))
+
+        if last_read is not None:
+            return float(last_read)
+
     def get_last_read_in_group_for_users(
         self, group_id: str, user_ids: List[int]
     ) -> Tuple[dict, list]:
@@ -138,17 +145,6 @@ class CacheRedis(ICache):
 
         return last_reads, not_cached
 
-    def get_last_read_in_group_for_user(
-        self, group_id: str, user_id: int
-    ) -> Optional[float]:
-        key = RedisKeys.last_read_time(group_id)
-        last_read = self.redis.hget(key, str(user_id))
-
-        if last_read is None:
-            return None
-
-        return float(str(last_read, "utf-8"))
-
     def set_last_read_in_group_for_users(
         self, group_id: str, users: Dict[int, float]
     ) -> None:
@@ -160,6 +156,15 @@ class CacheRedis(ICache):
 
         p.expire(key, 7 * ONE_DAY)
         p.execute()
+
+    def get_last_read_times_in_group(self, group_id: str):
+        key = RedisKeys.last_read_time(group_id)
+        last_reads = [value.split(":") for value in self.redis.hgetall(key)]
+
+        return [
+            (int(float(user_id)), float(last_read))
+            for user_id, last_read in last_reads
+        ]
 
     def set_last_read_in_groups_for_user(
         self, group_ids: List[str], user_id: int, last_read: float
@@ -182,6 +187,10 @@ class CacheRedis(ICache):
 
     def remove_last_read_in_group_for_user(self, group_id: str, user_id: int) -> None:
         key = RedisKeys.last_read_time(group_id)
+        self.redis.hdel(key, str(user_id))
+
+    def remove_join_time_in_group_for_user(self, group_id: str, user_id: int) -> None:
+        key = RedisKeys.user_in_group(group_id)
         self.redis.hdel(key, str(user_id))
 
     def increase_unread_in_group_for(self, group_id: str, user_ids: List[int]) -> None:

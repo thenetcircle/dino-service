@@ -12,14 +12,14 @@ from starlette.responses import Response
 from starlette.status import HTTP_201_CREATED
 
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
-from dinofw.rest.models import Group, UserGroupList
+from dinofw.rest.models import Group, UserGroupList, LastReads
 from dinofw.rest.models import Histories
 from dinofw.rest.models import Message
 from dinofw.rest.models import MessageCount
 from dinofw.rest.models import OneToOneStats
 from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UserStats
-from dinofw.rest.queries import ActionLogQuery
+from dinofw.rest.queries import ActionLogQuery, LastReadQuery
 from dinofw.rest.queries import AttachmentQuery
 from dinofw.rest.queries import CountMessageQuery
 from dinofw.rest.queries import CreateAttachmentQuery
@@ -610,6 +610,22 @@ async def get_message_count_for_user_in_group(
             message_count=the_count
         )
 
+    except NoSuchGroupException as e:
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
+    except UserNotInGroupException as e:
+        log_error_and_raise_known(ErrorCodes.USER_NOT_IN_GROUP, sys.exc_info(), e)
+    except Exception as e:
+        log_error_and_raise_unknown(sys.exc_info(), e)
+
+
+@router.post("/groups/{group_id}/lastread", response_model=Optional[LastReads])
+@timeit(logger, "GET", "/groups/{group_id}/lastread")
+@wrap_exception()
+async def get_last_read_in_group(
+    group_id: str, query: Optional[LastReadQuery] = None, db: Session = Depends(get_db)
+) -> LastReads:
+    try:
+        return await environ.env.rest.user.get_last_read(group_id, query, db)
     except NoSuchGroupException as e:
         log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
     except UserNotInGroupException as e:

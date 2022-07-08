@@ -512,8 +512,76 @@ class RelationalHandler:
         update_cache_value(sent_count)
         return sent_count
 
+    def get_last_read_for_user(self, group_id: str, user_id: int, db: Session) -> Dict[int, float]:
+        last_read = self.env.cache.get_last_read_in_group_for_user(group_id, user_id)
+        if last_read is not None:
+            return {user_id: last_read}
+
+        last_reads = (
+            db.query(
+                UserGroupStatsEntity.last_read
+            )
+            .filter(
+                UserGroupStatsEntity.group_id == group_id,
+                UserGroupStatsEntity.user_id == user_id
+            )
+            .first()
+        )
+
+        if last_reads is None or len(last_reads) == 0:
+            raise UserNotInGroupException(
+                f"no stats entity found in group {group_id} for {user_id}"
+            )
+
+        last_read = to_ts(last_reads[0])
+        self.env.cache.set_last_read_in_group_for_user(group_id, user_id, last_read)
+
+        return {user_id: last_read}
+
     def get_last_reads_in_group(self, group_id: str, db: Session) -> Dict[int, float]:
+        users = self.env.cache.get_last_read_times_in_group(group_id)
+        if users is not None:
+            return users
+
+        users = (
+            db.query(
+                UserGroupStatsEntity.user_id,
+                UserGroupStatsEntity.last_read
+            )
+            .filter(UserGroupStatsEntity.group_id == group_id)
+            .all()
+        )
+
+        if users is None or len(users) == 0:
+            return dict()
+
+        user_ids_last_read = {user[0]: to_ts(user[1]) for user in users}
+        self.env.cache.set_last_read_in_group_for_users(group_id, user_ids_last_read)
+
+        return user_ids_last_read
+
+    def remove_user_group_stats_for_user(
+        self, group_id: str, user_id: int, db: Session
+    ) -> None:
+        """
+        called when a user leaves a group
+        """
+        _ = (
+            db.query(UserGroupStatsEntity)
+            .filter(UserGroupStatsEntity.user_id == user_id)
+            .filter(UserGroupStatsEntity.group_id == group_id)
+            .delete()
+        )
+        db.commit()
+
+        self.env.cache.remove_last_read_in_group_for_user(group_id, user_id)
+        self.env.cache.remove_join_time_in_group_for_user(group_id, user_id)
+
+    def get_last_reads_in_group_old(self, group_id: str, db: Session) -> Dict[int, float]:
+        # TODO: remove this, not needed anymore
+
         # TODO: rethink this; some cached some not? maybe we don't have to do this twice
+        #  already query once to get all user ids, why not just get the last_read_time from db too...
         users = self.get_user_ids_and_join_time_in_group(group_id, db)
         user_ids = list(users.keys())
         return self.get_last_read_in_group_for_users(group_id, user_ids, db)
@@ -546,6 +614,7 @@ class RelationalHandler:
     def get_last_read_in_group_for_users(
         self, group_id: str, user_ids: List[int], db: Session
     ) -> Dict[int, float]:
+        # TODO: remove this, not needed anymore
         last_reads, not_cached = self.env.cache.get_last_read_in_group_for_users(
             group_id, user_ids
         )
@@ -700,23 +769,6 @@ class RelationalHandler:
         self.env.cache.set_user_ids_and_join_time_in_group(group_id, user_ids_join_time)
 
         return user_ids_join_time
-
-    def remove_last_read_in_group_for_user(
-        self, group_id: str, user_id: int, db: Session
-    ) -> None:
-        """
-        called when a user leaves a group
-        """
-        _ = (
-            db.query(UserGroupStatsEntity)
-            .filter(UserGroupStatsEntity.user_id == user_id)
-            .filter(UserGroupStatsEntity.group_id == group_id)
-            .delete()
-        )
-        db.commit()
-
-        self.env.cache.remove_last_read_in_group_for_user(group_id, user_id)
-        self.env.cache.clear_user_ids_and_join_time_in_group(group_id)
 
     # noinspection PyMethodMayBeStatic
     def group_exists(self, group_id: str, db: Session) -> bool:

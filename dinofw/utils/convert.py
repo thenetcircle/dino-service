@@ -1,5 +1,5 @@
 from datetime import datetime as dt
-from typing import Dict
+from typing import Dict, Tuple
 from typing import List
 from typing import Union
 
@@ -7,7 +7,7 @@ from dinofw.db.rdbms.schemas import GroupBase
 from dinofw.db.rdbms.schemas import UserGroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.schemas import MessageBase
-from dinofw.rest.models import Group
+from dinofw.rest.models import Group, LastReads, LastRead
 from dinofw.rest.models import GroupJoinTime
 from dinofw.rest.models import Message
 from dinofw.rest.models import UserGroup
@@ -130,6 +130,15 @@ def group_base_to_group(
     group_dict["attachment_amount"] = attachment_amount
 
     return Group(**group_dict)
+
+
+def to_last_reads(last_reads: Dict[int, float]) -> LastReads:
+    return LastReads(
+        last_reads=[
+            LastRead(user_id=user_id, last_read_time=last_read_time)
+            for user_id, last_read_time in last_reads.items()
+        ]
+    )
 
 
 def to_user_group(user_groups: List[UserGroupBase]):

@@ -291,7 +291,7 @@ class GroupResource(BaseResource):
         self.create_action_log(query.action_log, db, group_id=group_id)
 
     def leave_group(self, group_id: str, user_id: int, query: CreateActionLogQuery, db: Session) -> None:
-        self.env.db.remove_last_read_in_group_for_user(group_id, user_id, db)
+        self.env.db.remove_user_group_stats_for_user(group_id, user_id, db)
         self.create_action_log(query.action_log, db, user_id=user_id, group_id=group_id)
 
     def delete_attachments_in_group_for_user(

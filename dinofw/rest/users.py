@@ -7,9 +7,9 @@ from sqlalchemy.orm import Session
 
 from dinofw.db.rdbms.schemas import UserGroupBase
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import UserGroup
+from dinofw.rest.models import UserGroup, LastReads
 from dinofw.rest.models import UserStats
-from dinofw.rest.queries import ActionLogQuery
+from dinofw.rest.queries import ActionLogQuery, LastReadQuery
 from dinofw.rest.queries import DeleteAttachmentQuery
 from dinofw.rest.queries import GroupQuery
 from dinofw.rest.queries import GroupUpdatesQuery
@@ -17,7 +17,7 @@ from dinofw.rest.queries import UserStatsQuery
 from dinofw.utils import to_ts
 from dinofw.utils import utcnow_ts
 from dinofw.utils.config import GroupTypes
-from dinofw.utils.convert import to_user_group
+from dinofw.utils.convert import to_user_group, to_last_reads
 
 
 class UserResource(BaseResource):
@@ -70,6 +70,14 @@ class UserResource(BaseResource):
         )
 
         return to_user_group(user_groups)
+
+    async def get_last_read(self, group_id: str, query: LastReadQuery, db: Session) -> LastReads:
+        if query.user_id is None:
+            last_reads = self.env.db.get_last_reads_in_group(group_id, db)
+        else:
+            last_reads = self.env.db.get_last_read_for_user(group_id, query.user_id, db)
+
+        return to_last_reads(last_reads)
 
     async def get_user_stats(self, user_id: int, query: UserStatsQuery, db: Session) -> UserStats:
         # if the user has more than 100 groups with unread messages in

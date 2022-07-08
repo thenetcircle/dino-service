@@ -128,6 +128,15 @@ class Histories(BaseModel):
     last_read_time: Optional[float]
 
 
+class LastRead(BaseModel):
+    user_id: int
+    last_read_time: float
+
+
+class LastReads(BaseModel):
+    last_read: List[LastRead]
+
+
 class MessageCount(BaseModel):
     group_id: str
     user_id: int

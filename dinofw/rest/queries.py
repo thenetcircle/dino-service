@@ -89,6 +89,10 @@ class SendMessageQuery(OneToOneQuery):
     context: Optional[str]
 
 
+class LastReadQuery(AbstractQuery):
+    user_id: Optional[int] = None
+
+
 class CreateGroupQuery(AbstractQuery):
     users: List[int]
 
