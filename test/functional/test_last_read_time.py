@@ -1,3 +1,4 @@
+from test.base import BaseTest
 from test.functional.base_functional import BaseServerRestApi
 
 
@@ -15,8 +16,21 @@ class TestLastReadTime(BaseServerRestApi):
         last_read_cache = self.env.cache.get_last_read_in_group_oldest(group_id)
         self.assertIsNotNone(last_read)
         self.assertIsNotNone(last_read_cache)
+        self.assertEqual(last_read, last_read_cache)
 
-    def test_last_read_on_histories_response(self):
+    def test_last_read_api_one_user(self):
+        message = self.send_1v1_message(user_id=BaseTest.USER_ID, receiver_id=BaseTest.OTHER_USER_ID)
+
+        last_reads_4444 = self.get_last_read_for_one_user(message["group_id"], BaseTest.USER_ID)
+        last_reads_8888 = self.get_last_read_for_one_user(message["group_id"], BaseTest.OTHER_USER_ID)
+
+        self.assertEqual(1, len(last_reads_4444["last_reads"]))
+        self.assertEqual(1, len(last_reads_8888["last_reads"]))
+        self.assertGreater(1, last_reads_4444["last_reads"][0]["last_read"])
+        self.assertGreater(1, last_reads_8888["last_reads"][0]["last_read"])
+        self.assertGreater(last_reads_4444["last_reads"], last_reads_8888["last_reads"])
+
+    def _test_last_read_on_histories_response(self):
         message = self.send_1v1_message()
         group_id = message["group_id"]
 
@@ -26,3 +40,4 @@ class TestLastReadTime(BaseServerRestApi):
         # oldest last read is the other used; the message is unread for the other user,
         # so the oldest last read should be less than the message creation time
         self.assertGreater(message["created_at"], histories["last_read_time"])
+
