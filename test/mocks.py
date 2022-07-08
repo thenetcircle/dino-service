@@ -394,13 +394,32 @@ class FakeStorage:
 
 
 class FakeDatabase:
-    def __init__(self):
+    def __init__(self, env):
+        self.env = env
         self.groups = dict()
         self.stats = dict()
         self.last_sent = dict()
+        self.last_read = dict()
 
         beginning_of_1995 = 789_000_000
         self.long_ago = arrow.Arrow.utcfromtimestamp(beginning_of_1995).datetime
+
+    def get_oldest_last_read_in_group(self, group_id: str, _) -> Optional[float]:
+        last_read = self.env.cache.get_last_read_in_group_oldest(group_id)
+        if last_read is not None:
+            return last_read
+
+        if group_id not in self.last_read or not len(self.last_read[group_id]):
+            raise NoSuchGroupException(group_id)
+
+        oldest = self.last_read[group_id][0]
+
+        for last_read in self.last_read[group_id]:
+            if last_read < oldest:
+                oldest = last_read
+
+        self.env.cache.set_last_read_in_group_oldest(group_id, oldest)
+        return oldest
 
     def get_last_message_time_in_group(self, group_id: str, _) -> dt:
         if group_id not in self.groups:
@@ -785,7 +804,7 @@ class FakeEnv:
     def __init__(self):
         self.config = FakeEnv.Config()
         self.storage = FakeStorage(self)
-        self.db = FakeDatabase()
+        self.db = FakeDatabase(self)
         self.stats = None
         self.client_publisher = FakePublisherHandler()
         self.server_publisher = FakePublisherHandler()
