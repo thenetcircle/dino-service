@@ -134,6 +134,7 @@ class LastRead(BaseModel):
 
 
 class LastReads(BaseModel):
+    group_id: str
     last_read_times: List[LastRead]
 
 

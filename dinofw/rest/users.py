@@ -77,7 +77,7 @@ class UserResource(BaseResource):
         else:
             last_reads = self.env.db.get_last_read_for_user(group_id, query.user_id, db)
 
-        return to_last_reads(last_reads)
+        return to_last_reads(group_id, last_reads)
 
     async def get_user_stats(self, user_id: int, query: UserStatsQuery, db: Session) -> UserStats:
         # if the user has more than 100 groups with unread messages in

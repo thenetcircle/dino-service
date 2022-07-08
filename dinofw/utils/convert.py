@@ -132,8 +132,9 @@ def group_base_to_group(
     return Group(**group_dict)
 
 
-def to_last_reads(last_reads: Dict[int, float]) -> LastReads:
+def to_last_reads(group_id: str, last_reads: Dict[int, float]) -> LastReads:
     return LastReads(
+        group_id=group_id,
         last_read_times=[
             LastRead(user_id=user_id, last_read_time=last_read_time)
             for user_id, last_read_time in last_reads.items()
