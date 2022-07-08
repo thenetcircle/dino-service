@@ -209,21 +209,6 @@ class TestServerRestApi(BaseServerRestApi):
         self.unpin_group_for(group_id1, BaseTest.USER_ID)
         self.assert_order_of_groups(BaseTest.USER_ID, group_id2, group_id1)
 
-    def test_last_read_updated_in_history_api(self):
-        group_id = self.create_and_join_group(BaseTest.USER_ID)
-        self.user_joins_group(group_id, BaseTest.OTHER_USER_ID)
-
-        histories = self.histories_for(group_id, BaseTest.OTHER_USER_ID)
-        last_read_before = histories["last_read_time"]
-
-        self.send_message_to_group_from(group_id, user_id=BaseTest.USER_ID)
-
-        self.histories_for(group_id, BaseTest.USER_ID)
-        histories = self.histories_for(group_id, BaseTest.OTHER_USER_ID)
-        last_read_after = histories["last_read_time"]
-
-        self.assertNotEqual(last_read_before, last_read_after)
-
     def test_group_exists_when_leaving(self):
         groups = self.groups_for_user(BaseTest.USER_ID)
         self.assertEqual(0, len(groups))
