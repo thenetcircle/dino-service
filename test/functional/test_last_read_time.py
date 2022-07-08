@@ -34,6 +34,27 @@ class TestLastReadTime(BaseServerRestApi):
         self.assertLess(self.long_ago, last_read_8888)
         self.assertGreater(last_read_4444, last_read_8888)
 
+    def test_last_read_api_all_user(self):
+        self.send_1v1_message(user_id=BaseTest.USER_ID, receiver_id=BaseTest.OTHER_USER_ID)
+        message = self.send_1v1_message(user_id=BaseTest.OTHER_USER_ID, receiver_id=BaseTest.USER_ID)
+
+        last_reads = self.get_last_read_for_all_user(message["group_id"])
+
+        self.assertEqual(2, len(last_reads["last_read_times"]))
+
+        last_read_4444, last_read_8888 = -1, -1
+        for last in last_reads["last_read_times"]:
+            if last["user_id"] == 4444:
+                last_read_4444 = last["last_read_time"]
+            elif last["user_id"] == 8888:
+                last_read_8888 = last["last_read_time"]
+
+        self.assertLess(self.long_ago, last_read_4444)
+        self.assertLess(self.long_ago, last_read_8888)
+
+        # 8888 sent a message after 4444 so should have a more recent last_read
+        self.assertGreater(last_read_8888, last_read_4444)
+
     def _test_last_read_on_histories_response(self):
         message = self.send_1v1_message()
         group_id = message["group_id"]

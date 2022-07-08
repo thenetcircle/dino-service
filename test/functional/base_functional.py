@@ -384,6 +384,15 @@ class BaseServerRestApi(BaseDatabaseTest):
         if delay > 0:
             time.sleep(delay / 1000)
 
+    def get_last_read_for_all_user(self, group_id: str) -> dict:
+        raw_response = self.client.post(
+            f"/v1/groups/{group_id}/lastread",
+            json=dict(),  # empty body
+        )
+        self.assertEqual(raw_response.status_code, 200)
+
+        return raw_response.json()
+
     def get_last_read_for_one_user(self, group_id: str, user_id: int) -> dict:
         json_data = {
             "user_id": user_id
