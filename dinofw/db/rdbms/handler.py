@@ -249,7 +249,7 @@ class RelationalHandler:
                 .filter(
                     GroupEntity.group_id == UserGroupStatsEntity.group_id,
                     UserGroupStatsEntity.user_id == user_id,
-                    UserGroupStatsEntity.last_updated_time >= since,
+                    UserGroupStatsEntity.last_updated_time > since,
                 )
             )
 

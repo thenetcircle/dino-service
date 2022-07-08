@@ -157,7 +157,7 @@ class CacheRedis(ICache):
         p.expire(key, 7 * ONE_DAY)
         p.execute()
 
-    def get_last_read_times_in_group(self, group_id: str) -> Dict[int, float]:
+    def get_last_read_times_in_group(self, group_id: str) -> Optional[Dict[int, float]]:
         key = RedisKeys.last_read_time(group_id)
         last_reads = self.redis.hgetall(key)
 

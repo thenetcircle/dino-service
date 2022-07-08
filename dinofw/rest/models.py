@@ -125,7 +125,6 @@ class UsersGroup(BaseModel):
 
 class Histories(BaseModel):
     messages: List[Message]
-    last_read_time: Optional[float]
 
 
 class LastRead(BaseModel):

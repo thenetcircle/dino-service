@@ -185,10 +185,8 @@ class GroupResource(BaseResource):
         if query.admin_id is None or query.admin_id == 0:
             self._user_opens_conversation(group_id, user_id, user_stats, db)
 
-        last_read = self.env.db.get_oldest_last_read_in_group(group_id, db)
         return Histories(
-            messages=messages,
-            last_read_time=last_read
+            messages=messages
         )
 
     async def count_messages_in_group(self, group_id: str) -> int:
