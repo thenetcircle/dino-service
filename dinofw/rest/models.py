@@ -134,7 +134,7 @@ class LastRead(BaseModel):
 
 
 class LastReads(BaseModel):
-    last_read: List[LastRead]
+    last_read_times: List[LastRead]
 
 
 class MessageCount(BaseModel):
