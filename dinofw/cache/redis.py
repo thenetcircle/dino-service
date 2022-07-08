@@ -95,7 +95,7 @@ class CacheRedis(ICache):
         if count is None:
             return None
 
-        return int(float(str(count, "utf-8")))
+        return int(float(count))
 
     def set_sent_message_count_in_group_for_user(self, group_id: str, user_id: int, count: int) -> None:
         key = RedisKeys.sent_message_count_in_group(group_id)
@@ -141,7 +141,7 @@ class CacheRedis(ICache):
             if last_read is None:
                 not_cached.append(user_id)
             else:
-                last_reads[user_id] = float(str(last_read, "utf-8"))
+                last_reads[user_id] = float(last_read)
 
         return last_reads, not_cached
 
@@ -226,7 +226,7 @@ class CacheRedis(ICache):
             return None
 
         try:
-            return int(str(n_unread, "utf-8"))
+            return int(n_unread)
         except (TypeError, ValueError):
             return None
 
@@ -250,7 +250,7 @@ class CacheRedis(ICache):
         if messages_until is None:
             return None, None
 
-        messages, until = str(messages_until, "utf-8").split("|")
+        messages, until = messages_until.split("|")
         return int(messages), float(until)
 
     def set_last_message_time_in_group(self, group_id: str, last_message_time: float):
@@ -265,7 +265,7 @@ class CacheRedis(ICache):
         if last_message_time is None:
             return None
 
-        return float(str(last_message_time, "utf-8"))
+        return float(last_message_time)
 
     def reset_count_group_types_for_user(self, user_id: int) -> None:
         key = RedisKeys.count_group_types_including_hidden(user_id)
@@ -279,7 +279,7 @@ class CacheRedis(ICache):
         delete_before = self.redis.get(key)
 
         if delete_before is not None:
-            delete_before = float(str(delete_before, "utf-8"))
+            delete_before = float(delete_before)
             return to_dt(delete_before, allow_none=True)
 
     def set_delete_before(self, group_id: str, user_id: int, delete_before: float) -> None:
@@ -314,7 +314,7 @@ class CacheRedis(ICache):
         if the_count is None:
             return None
 
-        return int(float(str(the_count, "utf-8")))
+        return int(float(the_count))
 
     def set_attachment_count_in_group_for_user(self, group_id: str, user_id: int, the_count: int) -> None:
         key = RedisKeys.attachment_count_group_user(group_id, user_id)
@@ -331,7 +331,7 @@ class CacheRedis(ICache):
         if values is None:
             return None, None
 
-        group_id, last_time = str(values, "utf-8").split(":", maxsplit=1)
+        group_id, last_time = values.split(":", maxsplit=1)
         return group_id, float(last_time)
 
     def set_count_group_types_for_user(self, user_id: int, counts: List[Tuple[int, int]], hidden: bool) -> None:
@@ -358,14 +358,12 @@ class CacheRedis(ICache):
         if count is None:
             return None
 
-        types = str(count, "utf-8")
-
         # TODO: log and check this, was blank in redis once
-        if len(types) == 0 or "," not in types:
+        if len(count) == 0 or "," not in count:
             logger.warning(f"group types was none in cache for key {key}")
             return None
 
-        types = types.split(",")
+        types = count.split(",")
         types = [
             group_type.split(":", maxsplit=1)
             for group_type in types
@@ -456,7 +454,7 @@ class CacheRedis(ICache):
         key = RedisKeys.hide_group(group_id)
 
         if user_ids is None:
-            users = [str(user, "utf-8") for user in self.redis.hgetall(key)]
+            users = self.redis.hgetall(key)
         else:
             users = user_ids
 
