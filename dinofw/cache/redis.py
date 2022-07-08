@@ -59,7 +59,7 @@ class CacheRedis(ICache):
             from fakeredis import FakeStrictRedis
 
             self.redis_pool = None
-            self.redis_instance = FakeStrictRedis(host=host, port=port, db=db)
+            self.redis_instance = FakeStrictRedis(host=host, port=port, db=db, decode_responses=True)
         else:
             self.redis_pool = redis.ConnectionPool(host=host, port=port, db=db)
             self.redis_instance = None
@@ -83,7 +83,7 @@ class CacheRedis(ICache):
         value = self.redis.get(RedisKeys.group_exists(group_id))
         if value is None:
             return None
-        return str(value, 'utf-8') == '1'
+        return value == '1'
 
     def set_group_exists(self, group_id: str, exists: bool) -> None:
         self.redis.set(RedisKeys.group_exists(group_id), '1' if exists else '0')
@@ -157,14 +157,14 @@ class CacheRedis(ICache):
         p.expire(key, 7 * ONE_DAY)
         p.execute()
 
-    def get_last_read_times_in_group(self, group_id: str):
+    def get_last_read_times_in_group(self, group_id: str) -> Dict[int, float]:
         key = RedisKeys.last_read_time(group_id)
-        last_reads = [value.split(":") for value in self.redis.hgetall(key)]
+        last_reads = self.redis.hgetall(key)
 
-        return [
-            (int(float(user_id)), float(last_read))
-            for user_id, last_read in last_reads
-        ]
+        return {
+            int(float(user_id)): float(last_read)
+            for user_id, last_read in last_reads.items()
+        }
 
     def set_last_read_in_groups_for_user(
         self, group_ids: List[str], user_id: int, last_read: float
@@ -467,7 +467,7 @@ class CacheRedis(ICache):
     def redis(self):
         if self.redis_pool is None:
             return self.redis_instance
-        return redis.Redis(connection_pool=self.redis_pool)
+        return redis.Redis(connection_pool=self.redis_pool, decode_responses=True)
 
     def _flushall(self) -> None:
         self.redis.flushdb()
