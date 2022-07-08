@@ -161,6 +161,9 @@ class CacheRedis(ICache):
         key = RedisKeys.last_read_time(group_id)
         last_reads = self.redis.hgetall(key)
 
+        if not len(last_reads):
+            return
+
         return {
             int(float(user_id)): float(last_read)
             for user_id, last_read in last_reads.items()
