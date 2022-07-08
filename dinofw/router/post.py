@@ -624,6 +624,17 @@ async def get_message_count_for_user_in_group(
 async def get_last_read_in_group(
     group_id: str, query: Optional[LastReadQuery] = None, db: Session = Depends(get_db)
 ) -> LastReads:
+    """
+    Get the `last_read_time` for either one user in a group, or for all users in a group.
+
+    If no `user_id` is specified in the request body, then the `last_read_time` for ALL
+    users will be returned.
+
+    **Potential error codes in response:**
+    * `600`: if the user is not in the group,
+    * `601`: if the group does not exist,
+    * `250`: if an unknown error occurred.
+    """
     try:
         return await environ.env.rest.user.get_last_read(group_id, query, db)
     except NoSuchGroupException as e:
