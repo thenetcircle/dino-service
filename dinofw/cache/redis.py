@@ -11,7 +11,7 @@ import redis
 from loguru import logger
 
 from dinofw.cache import ICache
-from dinofw.utils import to_ts, to_dt
+from dinofw.utils import to_dt
 from dinofw.utils.config import ConfigKeys
 from dinofw.utils.config import RedisKeys
 
@@ -61,7 +61,7 @@ class CacheRedis(ICache):
             self.redis_pool = None
             self.redis_instance = FakeStrictRedis(host=host, port=port, db=db, decode_responses=True)
         else:
-            self.redis_pool = redis.ConnectionPool(host=host, port=port, db=db)
+            self.redis_pool = redis.ConnectionPool(host=host, port=port, db=db, decode_responses=True)
             self.redis_instance = None
 
         self.cache = MemoryCache()
