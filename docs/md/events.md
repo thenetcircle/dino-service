@@ -175,12 +175,15 @@ Read receipts are only broadcasted in 1-to-1 conversations, not in multi-user gr
 
 <span style="color:red"><b>Event schema not yet finalized.</b></span>
 
+If `bookmark=true`, then `peer_status=4`. If `bookmark=false`, then `peer_status=3`.
+
 ```json
 {
     "event_type": "read",
     "group_id": "6cbb3265-2a7f-494d-92ad-f4503d55d49f",
     "user_id": 1234,
-    "peer_last_read": 1597877384794
+    "peer_last_read": 1597877384794,
+    "peer_status": 3
 }
 ```
 

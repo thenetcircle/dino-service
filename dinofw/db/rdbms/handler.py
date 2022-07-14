@@ -1242,7 +1242,9 @@ class RelationalHandler:
                 user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
 
                 del user_ids[user_id]
-                self.env.client_publisher.read(group_id, user_id, user_ids, last_read)
+                self.env.client_publisher.read(
+                    group_id, user_id, user_ids, last_read, bookmark=user_stats.bookmark
+                )
 
             user_stats.last_read = last_read
             self.env.cache.set_last_read_in_group_for_user(group_id, user_id, to_ts(last_read))

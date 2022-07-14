@@ -766,7 +766,7 @@ class FakePublisherHandler(IClientPublishHandler):
     def edit(self, message: MessageBase, user_ids: List[int]) -> None:
         self.message(message, user_ids=user_ids)
 
-    def read(self, group_id: str, user_id: int, user_ids: List[int], now: dt) -> None:
+    def read(self, group_id: str, user_id: int, user_ids: List[int], now: dt, bookmark: bool) -> None:
         for receiver in user_ids:
             if receiver not in self.sent_reads:
                 self.sent_reads[receiver] = list()

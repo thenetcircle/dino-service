@@ -213,13 +213,19 @@ def group_base_to_event(group: GroupBase, user_ids: List[int] = None) -> dict:
     return group_dict
 
 
-def read_to_event(group_id: str, user_id: int, now: dt):
+def read_to_event(group_id: str, user_id: int, now: dt, bookmark: bool):
+    # bookmark: false, means read   => peer_status: 3
+    # bookmark: true,  means unread => peer_status: 4
+    peer_status = 3
+    if bookmark:
+        peer_status = 4
+
     return {
         "event_type": EventTypes.READ,
         "group_id": group_id,
         "user_id": str(user_id),
         "peer_last_read": to_int(to_ts(now)),
-        "peer_status": 3  # TODO: always 3? no other value? indicates read/unread
+        "peer_status": peer_status
     }
 
 
