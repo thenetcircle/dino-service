@@ -219,6 +219,7 @@ def read_to_event(group_id: str, user_id: int, now: dt):
         "group_id": group_id,
         "user_id": str(user_id),
         "peer_last_read": to_int(to_ts(now)),
+        "peer_status": 3  # TODO: always 3? no other value? indicates read/unread
     }
 
 

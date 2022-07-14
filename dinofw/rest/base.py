@@ -35,24 +35,26 @@ class BaseResource(ABC):
         last_message_time = self.env.db.get_last_message_time_in_group(group_id, db)
 
         # if a user opens a conversation a second time and nothing has changed, we don't need to update
-        if need_to_update_stats_in_group(user_stats, last_message_time):
-            now_ts = utcnow_ts()
-            now_dt = utcnow_dt(now_ts)
+        if not need_to_update_stats_in_group(user_stats, last_message_time):
+            return
 
-            # something changed, so update and set last_updated_time to sync to apps
-            self.env.db.update_last_read_and_highlight_in_group_for_user(
-                group_id, user_id, now_dt, db
-            )
+        now_ts = utcnow_ts()
+        now_dt = utcnow_dt(now_ts)
 
-            # no point updating if already newer than last message (also skips
-            # broadcasting unnecessary read-receipts)
-            # TODO: double check this; won't it cause read-receipts to not be sent when reading a new message?
-            if last_message_time > user_stats.last_read:
-                user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
+        # something changed, so update and set last_updated_time to sync to apps
+        self.env.db.update_last_read_and_highlight_in_group_for_user(
+            group_id, user_id, now_dt, db
+        )
 
-                del user_ids[user_id]
-                self.env.client_publisher.read(group_id, user_id, user_ids, now_dt)
-                self.env.cache.set_unread_in_group(group_id, user_id, 0)
+        # no point updating if already newer than last message (also skips
+        # broadcasting unnecessary read-receipts)
+        # TODO: double check this; won't it cause read-receipts to not be sent when reading a new message?
+        if last_message_time > user_stats.last_read:
+            user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
+
+            del user_ids[user_id]
+            self.env.client_publisher.read(group_id, user_id, user_ids, now_dt)
+            self.env.cache.set_unread_in_group(group_id, user_id, 0)
 
     def create_action_log(
         self,
