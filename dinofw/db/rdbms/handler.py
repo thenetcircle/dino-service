@@ -417,7 +417,11 @@ class RelationalHandler:
             group.last_message_id = message.message_id
             group.last_message_type = message.message_type
             group.last_message_user_id = message.user_id
-            group.last_message_overview = truncate_json_message(message.message_payload, limit=100)
+            group.last_message_overview = truncate_json_message(
+                message.message_payload,
+                limit=500,
+                only_content=True  # for overview, we don't need anything except the content
+            )
 
         # always update this
         group.updated_at = sent_time

@@ -11,7 +11,7 @@ def split_into_chunks(objects, n):
         yield objects[i:i + n]
 
 
-def truncate_json_message(msg, limit=100):
+def truncate_json_message(msg, limit=100, only_content: bool = False):
     if msg is None:
         return None
 
@@ -23,6 +23,13 @@ def truncate_json_message(msg, limit=100):
     # not a text message
     if "content" not in msg_json:
         return msg
+
+    if only_content:
+        # ignore other keys
+        msg_json = {
+            "content": msg_json["content"]
+        }
+        msg = json.dumps(msg_json)
 
     n_chars_content = len(msg_json["content"])
 
