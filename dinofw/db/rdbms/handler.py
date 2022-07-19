@@ -891,6 +891,10 @@ class RelationalHandler:
             .all()
         )
 
+        # query returns a single-item tuple of each group_id
+        if len(group_ids):
+            group_ids = [gid[0] for gid in group_ids]
+
         before = None
         if len(group_ids) > 250:
             before = utcnow_ts()
