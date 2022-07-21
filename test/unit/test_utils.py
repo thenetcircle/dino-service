@@ -34,3 +34,31 @@ class TestUserResource(TestCase):
 
         self.assertEqual(10, len(truncated_json["content"]))
         self.assertLess(len(truncated_json["content"]), len(msg_json["content"]))
+
+    def test_truncate_content_is_too_long_ignore_other_keys(self):
+        limit = 10
+        msg = '{"content":"aaaaabbbbbccccc","other_key":"sooome-vaaaalue"}'
+        truncated = truncate_json_message(msg, limit=limit, only_content=True)
+
+        self.assertLess(len(truncated), len(msg))
+
+        truncated_json = json.loads(truncated)
+        msg_json = json.loads(msg)
+
+        self.assertEqual(10, len(truncated_json["content"]))
+        self.assertLess(len(truncated_json["content"]), len(msg_json["content"]))
+        self.assertNotIn("other_key", truncated_json.keys())
+
+    def test_truncate_content_is_too_long_do_not_ignore_other_keys(self):
+        limit = 10
+        msg = '{"content":"aaaaabbbbbccccc","other_key":"sooome-vaaaalue"}'
+        truncated = truncate_json_message(msg, limit=limit, only_content=False)
+
+        self.assertLess(len(truncated), len(msg))
+
+        truncated_json = json.loads(truncated)
+        msg_json = json.loads(msg)
+
+        self.assertEqual(10, len(truncated_json["content"]))
+        self.assertLess(len(truncated_json["content"]), len(msg_json["content"]))
+        self.assertIn("other_key", truncated_json.keys())

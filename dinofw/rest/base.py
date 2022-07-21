@@ -109,9 +109,6 @@ class BaseResource(ABC):
         """
         update database and cache with everything related to sending a message
         """
-        # TODO: fix this instead of creating a new DT,
-        #  cassandra DT is different from python DT
-        now = utcnow_dt()
         user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
 
         group_base = self.env.db.update_group_new_message(
@@ -130,7 +127,7 @@ class BaseResource(ABC):
         else:
             # otherwise we update as normal
             self.env.db.update_last_read_and_sent_in_group_for_user(
-                group_id, user_id, now, db
+                group_id, user_id, message.created_at, db
             )
 
         if event_type == EventTypes.ATTACHMENT:
@@ -139,18 +136,6 @@ class BaseResource(ABC):
             # instead of decreasing, just remove it, since in case no count is cached, decreasing
             # a non-existing key will store -1, which is incorrect
             self.env.cache.remove_attachment_count_in_group_for_users(group_id, list(user_ids.keys()))
-
-        # TODO: don't send to mqtt here, use the /notification/send api instead
-        """
-        if event_type == EventTypes.MESSAGE:
-            self.env.client_publisher.message(message, user_ids, group=group_base)
-        elif event_type == EventTypes.ACTION_LOG:
-            self.env.client_publisher.action_log(message, user_ids)
-        elif event_type == EventTypes.EDIT:
-            self.env.client_publisher.edit(message, user_ids)
-        elif event_type == EventTypes.ATTACHMENT:
-            self.env.client_publisher.attachment(message, user_ids, group=group_base)
-        """
 
         return group_base
 
