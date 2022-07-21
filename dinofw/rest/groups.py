@@ -298,7 +298,7 @@ class GroupResource(BaseResource):
             user_id: int,
             query: DeleteAttachmentQuery,
             db: Session
-    ) -> None:
+    ) -> Message:
         group = self.env.db.get_group_from_id(group_id, db)
 
         attachments = self.env.storage.delete_attachments(
@@ -309,7 +309,7 @@ class GroupResource(BaseResource):
         user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db).keys()
 
         self.env.server_publisher.delete_attachments(group_id, attachments, user_ids, now)
-        self.create_action_log(query.action_log, db, user_id=user_id, group_id=group_id)
+        return self.create_action_log(query.action_log, db, user_id=user_id, group_id=group_id)
 
     def delete_all_groups_for_user(self, user_id: int, query: CreateActionLogQuery, db: Session) -> None:
         group_ids = self.env.db.get_all_group_ids_for_user(user_id, db)
