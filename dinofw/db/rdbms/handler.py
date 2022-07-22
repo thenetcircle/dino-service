@@ -969,7 +969,16 @@ class RelationalHandler:
 
         return base
 
-    def mark_all_groups_as_read(self, user_id: int, db: Session) -> None:
+    def get_user_ids_in_groups(self, group_ids: List[str], db: Session) -> Dict[str, List[int]]:
+        group_user_join_time = self.get_user_ids_and_join_time_in_groups(group_ids, db)
+        group_to_users = dict()
+
+        for group_id, user_join_time in group_user_join_time.items():
+            group_to_users[group_id] = list(user_join_time.keys())
+
+        return group_to_users
+
+    def mark_all_groups_as_read(self, user_id: int, db: Session) -> List[str]:
         group_ids = (
             db.query(UserGroupStatsEntity.group_id)
             .join(
@@ -1033,6 +1042,8 @@ class RelationalHandler:
         db.commit()
         self.env.cache.set_last_read_in_groups_for_user(group_ids, user_id, to_ts(now))
         self.env.cache.reset_unread_in_groups(user_id, group_ids)
+
+        return group_ids
 
     # noinspection PyMethodMayBeStatic
     def get_all_user_stats_in_group(self, group_id: str, db: Session) -> List[UserGroupStatsBase]:

@@ -83,7 +83,18 @@ class GroupResource(BaseResource):
         ]
 
     def mark_all_as_read(self, user_id: int, db: Session) -> None:
-        self.env.db.mark_all_groups_as_read(user_id, db)
+        group_ids_updated = self.env.db.mark_all_groups_as_read(user_id, db)
+
+        group_to_user = self.env.db.get_user_ids_in_groups(group_ids_updated, db)
+        now_dt = utcnow_dt()
+
+        for group_id, user_ids in group_to_user.items():
+            del user_ids[user_id]
+
+            # marking a group as read sets bookmark=False
+            self.env.client_publisher.read(
+                group_id, user_id, user_ids, now_dt, bookmark=False
+            )
 
     async def get_1v1_info(
         self, user_id_a: int, user_id_b: int, db: Session
