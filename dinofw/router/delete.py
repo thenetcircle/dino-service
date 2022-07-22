@@ -1,4 +1,5 @@
 import sys
+from typing import Optional
 
 from fastapi import APIRouter
 from fastapi import Depends
@@ -8,6 +9,7 @@ from starlette.background import BackgroundTask
 from starlette.responses import Response
 from starlette.status import HTTP_201_CREATED
 
+from dinofw.rest.models import Message
 from dinofw.rest.queries import CreateActionLogQuery
 from dinofw.rest.queries import DeleteAttachmentQuery
 from dinofw.utils import environ
@@ -96,36 +98,24 @@ async def delete_attachment_with_file_id(
 
 
 @router.delete(
-    "/groups/{group_id}/user/{user_id}/attachments", status_code=HTTP_201_CREATED
+    "/groups/{group_id}/user/{user_id}/attachments", response_model=Optional[Message]
 )
 @wrap_exception()
 async def delete_attachments_in_group_for_user(
     group_id: str, user_id: int, query: DeleteAttachmentQuery, db: Session = Depends(get_db)
-) -> Response:
+) -> Message:
     """
     Delete all attachments in this group for this user.
 
-    This API is run asynchronously, and returns a `201 Created` instead of
-    `200 OK`.
+    Returns the action log that is created after the deletions are done.
 
     **Potential error codes in response:**
     * `250`: if an unknown error occurred.
     """
-
-    def _delete_attachments_in_group_for_user(group_id_, user_id_, query_, db_):
-        environ.env.rest.group.delete_attachments_in_group_for_user(
-            group_id_, user_id_, query_, db_
-        )
-
     try:
-        task = BackgroundTask(
-            _delete_attachments_in_group_for_user,
-            group_id_=group_id,
-            user_id_=user_id,
-            query_=query,
-            db_=db,
+        return environ.env.rest.group.delete_attachments_in_group_for_user(
+            group_id, user_id, query, db
         )
-        return Response(background=task, status_code=HTTP_201_CREATED)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 
