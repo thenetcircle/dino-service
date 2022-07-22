@@ -2,6 +2,7 @@ from unittest import TestCase
 import json
 
 from dinofw.utils import truncate_json_message
+from dinofw.utils import unicode_len
 
 
 class TestUserResource(TestCase):
@@ -62,3 +63,12 @@ class TestUserResource(TestCase):
         self.assertEqual(10, len(truncated_json["content"]))
         self.assertLess(len(truncated_json["content"]), len(msg_json["content"]))
         self.assertIn("other_key", truncated_json.keys())
+
+    def test_truncate_emojis(self):
+        payload = "{\"content\":\"\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83e\\uddd8\\u200d\\u2642\\ufe0f\\ud83e\\uddd8\\u200d\\u2642\\ufe0f\\ud83c\\udf08\\ud83c\\udf08\\ud83e\\uddd8\\u200d\\u2642\\ufe0f\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83e\\uddd8\\u200d\\u2642\\ufe0f\\ud83e\\uddd8\\u200d\\u2642\\ufe0f\\ud83e\\uddd8\\u200d\\u2642\\ufe0f\\ud83e\\uddd8\\u200d\\u2642\\ufe0f\\ud83e\\uddd8\\u200d\\u2642\\ufe0f\\ud83e\\uddd8\\u200d\\u2642\\ufe0f\\ud83c\\udf08\\ud83e\\uddd8\\u200d\\u2642\\ufe0f\\ud83e\\uddd8\\u200d\\u2642\\ufe0f\\ud83e\\uddd8\\u200d\\u2642\\ufe0f\\ud83e\\uddd8\\u200d\\u2642\\ufe0f\\ud83c\\udf08\\ud83c\\udf08\\ud83e\\uddd8\\u200d\\u2642\\ufe0f\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\\ud83c\\udf08\"}"
+
+        length_raw = len(payload)
+        truncated = truncate_json_message(payload, limit=500, only_content=True)
+        length_truncated = len(truncated)
+        loaded = json.loads(payload)
+        print(length_truncated, length_raw)
