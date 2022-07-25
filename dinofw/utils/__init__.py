@@ -11,6 +11,10 @@ def split_into_chunks(objects, n):
         yield objects[i:i + n]
 
 
+def unicode_len(string):
+    return int(len(string.encode(encoding="utf_16_le")) / 2)
+
+
 def truncate_json_message(msg, limit=100, only_content: bool = False):
     if msg is None:
         return None
@@ -31,12 +35,14 @@ def truncate_json_message(msg, limit=100, only_content: bool = False):
         }
         msg = json.dumps(msg_json)
 
-    n_chars_content = len(msg_json["content"])
+    n_chars_content = len(json.dumps(msg_json["content"]))
 
     if n_chars_content <= limit:
         return msg
 
-    msg_json["content"] = msg_json["content"][:limit]
+    # in case of emojis, dump the string to count real length, and strip end of potential backslashes
+    msg_json["content"] = json.dumps(msg_json["content"])[:limit]
+    msg_json["content"] = msg_json["content"].rstrip("\\")
     return json.dumps(msg_json)
 
 
