@@ -89,7 +89,8 @@ class GroupResource(BaseResource):
         now_dt = utcnow_dt()
 
         for group_id, user_ids in group_to_user.items():
-            del user_ids[user_id]
+            if user_id in user_ids:
+                user_ids.remove(user_id)
 
             # marking a group as read sets bookmark=False
             self.env.client_publisher.read(
