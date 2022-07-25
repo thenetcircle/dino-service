@@ -495,10 +495,7 @@ class BaseServerRestApi(BaseDatabaseTest):
                 }
             }
         )
-        self.assertEqual(raw_response.status_code, 201)
-
-        # async api
-        time.sleep(0.01)
+        self.assertEqual(raw_response.status_code, 200)
 
     def delete_attachments_in_all_groups(self, user_id: str = BaseTest.USER_ID, send_action_log_query: bool = True):
         json_value = None
