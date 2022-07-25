@@ -27,10 +27,6 @@ class PayloadStatus:
 class DefaultValues:
     PER_PAGE: Final = 100
 
-    # TODO: when actions have been defined, use an ActionTypes class or similar
-    ACTION_TYPE_JOIN: Final = 0
-    ACTION_TYPE_LEAVE: Final = 1
-
 
 class EventTypes:
     JOIN = "join"

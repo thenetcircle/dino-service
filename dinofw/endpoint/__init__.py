@@ -28,10 +28,6 @@ class IServerPublishHandler(IPublishHandler, ABC):
 
 class IClientPublishHandler(IPublishHandler, ABC):
     @abstractmethod
-    def message(self, message: MessageBase, user_ids: List[int], group: GroupBase) -> None:
-        """pass"""
-
-    @abstractmethod
     def edit(self, message: MessageBase, user_ids: List[int]) -> None:
         """pass"""
 

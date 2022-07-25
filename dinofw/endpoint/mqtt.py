@@ -193,21 +193,6 @@ class MqttPublishHandler(IClientPublishHandler):
     async def stop(self):
         await self.publisher.stop()
 
-    def message(
-            self,
-            message: MessageBase,
-            user_ids: List[int],
-            group: GroupBase
-    ) -> None:
-        data = message_base_to_event(
-            message,
-            event_type=EventTypes.MESSAGE,
-            group=group
-        )
-
-        # TODO: don't send to mqtt
-        self.send(user_ids, data)
-
     def action_log(self, message: MessageBase, user_ids: List[int]) -> None:
         data = message_base_to_event(message, event_type=EventTypes.ACTION_LOG)
         self.send(user_ids, data)

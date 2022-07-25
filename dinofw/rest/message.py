@@ -34,14 +34,6 @@ class MessageResource(BaseResource):
             event_type=EventTypes.MESSAGE
         )
 
-        """
-        message_amount = self.env.storage.count_messages_in_group_since(group_id, group_base.created_at)
-        _, join_times, n_users = self.env.db.get_users_in_group(group_id, db, include_group=False)
-        group = MessageResource.group_base_to_group(
-            group_base, users=join_times, user_count=n_users, message_amount=message_amount,
-        )
-        """
-
         return message_base_to_message(message)
 
     async def send_message_to_user(

@@ -687,33 +687,6 @@ class CassandraHandler:
 
         return CassandraHandler.message_base_from_entity(message)
 
-    def _update_all_messages_in_group(
-        self, group_id: str, callback: callable, user_id: int = None
-    ):
-        # TODO: this method is not used?
-        until = utcnow_dt()
-        start = time()
-        amount = 0
-
-        while True:
-            # TODO: column "user_id" cannot be restricted (preceding
-            #  column "created_at" is restricted by a non-EQ relation
-            messages = self._get_batch_of_messages_in_group(
-                group_id=group_id, until=until, user_id=user_id,
-            )
-
-            if not len(messages):
-                elapsed = time() - start
-
-                if elapsed > 5 or amount > 500:
-                    logger.info(
-                        f"finished batch updating {amount} messages in group {group_id} after {elapsed:.2f}s"
-                    )
-                break
-
-            amount += len(messages)
-            until = self._update_messages(messages, callback)
-
     def _update_payload_status_to(self, messages: List[MessageModel], status: int):
         start = time()
         with BatchQuery() as b:

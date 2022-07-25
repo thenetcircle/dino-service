@@ -1,3 +1,4 @@
+from test.base import BaseTest
 from test.functional.base_functional import BaseServerRestApi
 
 
@@ -20,12 +21,17 @@ class TestReceiverStats(BaseServerRestApi):
         self.assertFalse(info["stats"][1]["receiver_deleted"])
 
     def test_attachment_count_in_1v1_info(self):
-        self.send_1v1_message()
+        self.send_1v1_message(user_id=BaseTest.USER_ID)
         info = self.get_1v1_group_info()
         self.assertIsNotNone(info)
 
-        # TODO: attachment amount moved to "stats"
-        self.assertEqual(0, info["group"]["attachment_amount"])
+        for stat in info["stats"]:
+            # only counted for one user
+            if stat["user_id"] == BaseTest.USER_ID:
+                self.assertEqual(0, stat["attachment_amount"])
+            else:
+                self.assertEqual(-1, stat["attachment_amount"])
+
         self.assertEqual(1, info["group"]["message_amount"])
 
     def test_attachment_count_in_1v1_info_with_attachment(self):
@@ -35,6 +41,11 @@ class TestReceiverStats(BaseServerRestApi):
         info = self.get_1v1_group_info()
         self.assertIsNotNone(info)
 
-        # TODO: attachment amount moved to "stats"
-        self.assertEqual(1, info["group"]["attachment_amount"])
+        for stat in info["stats"]:
+            # only counted for one user
+            if stat["user_id"] == BaseTest.USER_ID:
+                self.assertEqual(1, stat["attachment_amount"])
+            else:
+                self.assertEqual(-1, stat["attachment_amount"])
+
         self.assertEqual(2, info["group"]["message_amount"])

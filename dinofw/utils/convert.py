@@ -43,13 +43,6 @@ def to_user_group_stats(user_stats: UserGroupStatsBase) -> UserGroupStats:
     join_time = to_ts(user_stats.join_time, allow_none=True)
     highlight_time = to_ts(user_stats.highlight_time, allow_none=True)
 
-    # try using the counter column on the stats table instead of actually counting
-    """
-    unread_amount = self.env.storage.count_messages_in_group_since(
-        group_id, user_stats.last_read
-    )
-    """
-
     return UserGroupStats(
         user_id=user_stats.user_id,
         group_id=user_stats.group_id,
