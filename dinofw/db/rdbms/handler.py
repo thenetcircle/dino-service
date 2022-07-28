@@ -330,9 +330,8 @@ class RelationalHandler:
                         last_read=receivers[_group.group_id].last_read,
                     )
                 else:
-                    e_msg = f"no receiver stats in db for user {user_to_count_for} in group {_group.group_id}"
+                    e_msg = f"no receiver stats in db for user {user_to_count_for} in group {_group.group_id}, could be a deleted profile"
                     logger.warning(e_msg)
-                    self.env.capture_msg_wrapper(e_msg, level="warning")
 
             if query.count_unread:
                 # TODO: use unread_count in postgres? storage will check redis first, maybe enough
