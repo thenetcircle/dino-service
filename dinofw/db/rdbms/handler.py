@@ -322,11 +322,17 @@ class RelationalHandler:
                 user_to_count_for = (
                     user_a if user_b == user_id else user_b
                 )
-                _receiver_unread_count = self.env.storage.get_unread_in_group(
-                    group_id=_group.group_id,
-                    user_id=user_to_count_for,
-                    last_read=receivers[_group.group_id].last_read,
-                )
+
+                if _group.group_id in receivers:
+                    _receiver_unread_count = self.env.storage.get_unread_in_group(
+                        group_id=_group.group_id,
+                        user_id=user_to_count_for,
+                        last_read=receivers[_group.group_id].last_read,
+                    )
+                else:
+                    e_msg = f"no receiver stats in db for user {user_to_count_for} in group {_group.group_id}"
+                    logger.warning(e_msg)
+                    self.env.capture_msg_wrapper(e_msg, level="warning")
 
             if query.count_unread:
                 # TODO: use unread_count in postgres? storage will check redis first, maybe enough
