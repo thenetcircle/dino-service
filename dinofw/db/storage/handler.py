@@ -306,6 +306,7 @@ class CassandraHandler:
             logger.info(messages)
 
             for message in messages:
+                logger.info(message)
                 if message.user_id == user_id:
                     messages_from_user.append(message)
 
