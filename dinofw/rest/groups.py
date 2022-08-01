@@ -294,19 +294,24 @@ class GroupResource(BaseResource):
             for user_id in query.users
         }
 
-        self.env.db.set_group_updated_at(group_id, now, db)
+        self.env.db.set_groups_updated_at([group_id], now, db)
         self.env.db.update_user_stats_on_join_or_create_group(
             group_id, user_ids_and_last_read, now, db
         )
 
         self.create_action_log(query.action_log, db, group_id=group_id)
 
-    def leave_group(self, group_id: str, user_id: int, group_type: str, query: CreateActionLogQuery, db: Session) -> None:
-        self.env.db.remove_user_group_stats_for_user(group_id, user_id, db)
+    def leave_groups(self, group_id_to_type: dict, user_id: int, query: CreateActionLogQuery, db: Session) -> None:
+        group_ids = list(group_id_to_type.keys())
+        now = utcnow_dt()
 
-        # no need for an action log in 1v1 groups, it's not going to be shown anyway
-        if group_type == GroupTypes.GROUP:
-            self.create_action_log(query.action_log, db, user_id=user_id, group_id=group_id)
+        self.env.db.remove_user_group_stats_for_user(group_ids, user_id, db)
+        self.env.db.set_groups_updated_at(group_ids, now, db)
+
+        for group_id, group_type in group_id_to_type.items():
+            # no need for an action log in 1v1 groups, it's not going to be shown anyway
+            if group_type == GroupTypes.GROUP:
+                self.create_action_log(query.action_log, db, user_id=user_id, group_id=group_id)
 
     def delete_attachments_in_group_for_user(
             self,
@@ -331,5 +336,4 @@ class GroupResource(BaseResource):
         group_id_to_type = self.env.db.get_all_group_ids_and_types_for_user(user_id, db)
 
         # TODO: this is async, but check how long time this would take for like 5-10k groups
-        for group_id, group_type in group_id_to_type.items():
-            self.leave_group(group_id, user_id, group_type, query, db)
+        self.leave_groups(group_id_to_type, user_id, query, db)

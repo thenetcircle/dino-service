@@ -39,7 +39,8 @@ async def leave_group(
     """
     try:
         # TODO: double check that this api will only be called for many-to-many groups
-        return environ.env.rest.group.leave_group(group_id, user_id, GroupTypes.GROUP, query, db)
+        group_id_to_type = {group_id: GroupTypes.GROUP}
+        return environ.env.rest.group.leave_groups(group_id_to_type, user_id, query, db)
     except NoSuchGroupException as e:
         log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
     except Exception as e:

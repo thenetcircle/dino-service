@@ -570,7 +570,7 @@ class RelationalHandler:
         return user_ids_last_read
 
     def remove_user_group_stats_for_user(
-        self, group_id: str, user_id: int, db: Session
+        self, group_ids: List[str], user_id: int, db: Session
     ) -> None:
         """
         called when a user leaves a group
@@ -578,13 +578,13 @@ class RelationalHandler:
         _ = (
             db.query(UserGroupStatsEntity)
             .filter(UserGroupStatsEntity.user_id == user_id)
-            .filter(UserGroupStatsEntity.group_id == group_id)
+            .filter(UserGroupStatsEntity.group_id.in_(group_ids))
             .delete()
         )
         db.commit()
 
-        self.env.cache.remove_last_read_in_group_for_user(group_id, user_id)
-        self.env.cache.remove_join_time_in_group_for_user(group_id, user_id)
+        self.env.cache.remove_last_read_in_group_for_user(group_ids, user_id)
+        self.env.cache.remove_join_time_in_group_for_user(group_ids, user_id)
 
     def get_last_reads_in_group_old(self, group_id: str, db: Session) -> Dict[int, float]:
         # TODO: remove this, not needed anymore
@@ -795,19 +795,14 @@ class RelationalHandler:
         return group is not None
 
     # noinspection PyMethodMayBeStatic
-    def set_group_updated_at(self, group_id: str, now: dt, db: Session) -> None:
-        group = (
+    def set_groups_updated_at(self, group_ids: List[str], now: dt, db: Session) -> None:
+        _ = (
             db.query(GroupEntity)
-            .filter(GroupEntity.group_id == group_id)
-            .first()
+            .filter(GroupEntity.group_id.in_(group_ids))
+            .update({
+                GroupEntity.updated_at: now
+            })
         )
-
-        if group is None:
-            return
-
-        group.updated_at = now
-
-        db.add(group)
         db.commit()
 
     def update_user_stats_on_join_or_create_group(

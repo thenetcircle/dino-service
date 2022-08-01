@@ -404,20 +404,22 @@ class FakeDatabase:
         beginning_of_1995 = 789_000_000
         self.long_ago = arrow.Arrow.utcfromtimestamp(beginning_of_1995).datetime
 
-    def remove_user_group_stats_for_user(self, group_id: str, user_id: int, _):
+    def remove_user_group_stats_for_user(self, group_ids: List[str], user_id: int, _):
         if user_id in self.stats:
             to_keep = list()
 
-            for stat in self.stats[user_id]:
-                if stat.group_id == group_id:
-                    continue
-                to_keep.append(stat)
+            for group_id in group_ids:
+                for stat in self.stats[user_id]:
+                    if stat.group_id == group_id:
+                        continue
+                    to_keep.append(stat)
 
-            self.stats[user_id] = to_keep
+                self.stats[user_id] = to_keep
 
-        if group_id in self.last_read:
-            if user_id in self.last_read[group_id]:
-                del self.last_read[group_id][user_id]
+        for group_id in group_ids:
+            if group_id in self.last_read:
+                if user_id in self.last_read[group_id]:
+                    del self.last_read[group_id][user_id]
 
     def get_oldest_last_read_in_group(self, group_id: str, _) -> Optional[float]:
         last_read = self.env.cache.get_last_read_in_group_oldest(group_id)
