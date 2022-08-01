@@ -1068,6 +1068,7 @@ class RelationalHandler:
 
     def get_sent_message_count(self, group_id: str, user_id: int, db: Session) -> Optional[int]:
         sent = self.env.cache.get_sent_message_count_in_group_for_user(group_id, user_id)
+        logger.info(f"[get_sent_message_count] message_count in cache: {sent}")
         if sent is not None:
             return sent
 
@@ -1077,10 +1078,12 @@ class RelationalHandler:
             .filter(UserGroupStatsEntity.user_id == user_id)
             .first()
         )[0]
+        logger.info(f"[get_sent_message_count] message_count in db: {sent}")
 
         if sent == -1:
             return None
 
+        logger.info(f"[get_sent_message_count] setting cache value: {sent}")
         self.env.cache.set_sent_message_count_in_group_for_user(group_id, user_id, sent)
         return sent
 

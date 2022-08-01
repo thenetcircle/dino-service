@@ -568,6 +568,7 @@ async def get_message_count_for_user_in_group(
             # can return both None and -1; -1 means we've checked the db before, but it has not
             # yet been counted, to avoid checking the db every time a new message is sent
             message_count = environ.env.db.get_sent_message_count(group_id, user_id, db)
+            logger.info(f"[count_messages] message_count in db: {message_count}")
 
             # if it hasn't been counted before, count from cassandra in batches (could be slow)
             if message_count is None or message_count == -1:
@@ -581,6 +582,7 @@ async def get_message_count_for_user_in_group(
                     until=until,
                     since=group_info.delete_before
                 )
+                logger.info(f"[count_messages] message_count in cassandra: {message_count}")
                 environ.env.db.set_sent_message_count(group_id, user_id, message_count, db)
 
         else:
