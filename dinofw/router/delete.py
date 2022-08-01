@@ -16,7 +16,7 @@ from dinofw.utils import environ
 from dinofw.utils.api import get_db
 from dinofw.utils.api import log_error_and_raise_known
 from dinofw.utils.api import log_error_and_raise_unknown
-from dinofw.utils.config import ErrorCodes
+from dinofw.utils.config import ErrorCodes, GroupTypes
 from dinofw.utils.decorators import wrap_exception
 from dinofw.utils.exceptions import NoSuchGroupException
 from dinofw.utils.perf import timeit
@@ -38,7 +38,8 @@ async def leave_group(
     * `250`: if an unknown error occurred.
     """
     try:
-        return environ.env.rest.group.leave_group(group_id, user_id, query, db)
+        # TODO: double check that this api will only be called for many-to-many groups
+        return environ.env.rest.group.leave_group(group_id, user_id, GroupTypes.GROUP, query, db)
     except NoSuchGroupException as e:
         log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
     except Exception as e:

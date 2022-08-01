@@ -656,14 +656,19 @@ class RelationalHandler:
         return last_reads
 
     # noinspection PyMethodMayBeStatic
-    def get_all_group_ids_for_user(self, user_id: int, db: Session) -> List[str]:
+    def get_all_group_ids_and_types_for_user(self, user_id: int, db: Session) -> Dict:
         """
         used only when a user is deleting their profile, no need
         to cache it, shouldn't happen that often
         """
-        group_ids = (
+        groups = (
             db.query(
-                UserGroupStatsEntity.group_id
+                UserGroupStatsEntity.group_id,
+                GroupEntity.group_type
+            )
+            .join(
+                GroupEntity,
+                GroupEntity.group_id == UserGroupStatsEntity.group_id,
             )
             .filter(
                 UserGroupStatsEntity.user_id == user_id
@@ -671,10 +676,10 @@ class RelationalHandler:
             .all()
         )
 
-        if group_ids is None or len(group_ids) == 0:
-            return list()
+        if groups is None or len(groups) == 0:
+            return dict()
 
-        return [group_id[0] for group_id in group_ids]
+        return {group[0]: group[1] for group in groups}
 
     # noinspection PyMethodMayBeStatic
     def get_group_from_id(self, group_id: str, db: Session) -> GroupBase:
