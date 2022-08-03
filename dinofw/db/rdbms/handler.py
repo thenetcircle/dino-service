@@ -585,6 +585,7 @@ class RelationalHandler:
 
         self.env.cache.remove_last_read_in_group_for_user(group_ids, user_id)
         self.env.cache.remove_join_time_in_group_for_user(group_ids, user_id)
+        self.env.cache.remove_user_id_and_join_time_in_groups_for_user(group_ids, user_id)
 
     def get_last_reads_in_group_old(self, group_id: str, db: Session) -> Dict[int, float]:
         # TODO: remove this, not needed anymore
