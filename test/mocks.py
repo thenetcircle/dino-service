@@ -625,11 +625,12 @@ class FakeDatabase:
                 group_id, user_id, now, None
             )
 
-    def set_group_updated_at(self, group_id: str, now: dt, _) -> None:
-        if group_id not in self.groups:
-            return
+    def set_groups_updated_at(self, group_ids: List[str], now: dt, _) -> None:
+        for group_id in group_ids:
+            if group_id not in self.groups:
+                return
 
-        self.groups[group_id].updated_at = now
+            self.groups[group_id].updated_at = now
 
     def update_last_read_and_sent_in_group_for_user(
         self, group_id: str, user_id: int, created_at: dt, _
