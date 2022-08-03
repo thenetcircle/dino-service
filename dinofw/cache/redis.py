@@ -432,6 +432,16 @@ class CacheRedis(ICache):
             self.add_user_ids_and_join_time_in_group(group_id, users)
             self.redis.expire(key, ONE_HOUR)
 
+    def remove_user_id_and_join_time_in_groups_for_user(self, group_ids: List[str], user_id: int):
+        p = self.redis.pipeline()
+        user_id = str(user_id)
+
+        for group_id in group_ids:
+            key = RedisKeys.user_in_group(group_id)
+            p.hdel(key, user_id)
+
+        p.execute()
+
     def add_user_ids_and_join_time_in_group(
         self, group_id: str, users: Dict[int, float]
     ) -> None:
