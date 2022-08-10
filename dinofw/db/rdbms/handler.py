@@ -1153,7 +1153,12 @@ class RelationalHandler:
                 user_stats_dict = {user.user_id: user for user in statement.all()}
                 that_user_id = [uid for uid in group_id_to_users(group.group_id) if uid != user_id][0]
 
-                user_stats = user_stats_dict[user_id]
+                if user_id in user_stats_dict:
+                    user_stats = user_stats_dict[user_id]
+                else:
+                    logger.warning(f"user {user_id} is no longer in group {group_id}, ignoring stats")
+                    user_stats = None
+
                 that_user_stats = user_stats_dict[that_user_id]
             else:
                 user_stats = filter_for_one()
