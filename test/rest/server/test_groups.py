@@ -10,7 +10,7 @@ from dinofw.rest.queries import GroupInfoQuery
 from dinofw.rest.queries import JoinGroupQuery
 from dinofw.rest.queries import MessageQuery
 from dinofw.rest.queries import SendMessageQuery
-from dinofw.utils.config import MessageTypes
+from dinofw.utils.config import MessageTypes, GroupTypes
 from dinofw.utils.exceptions import NoSuchGroupException
 from test.base import async_test, BaseTest
 
@@ -197,7 +197,7 @@ class TestGroupResource(BaseTest):
         )
 
         # group doesn't exist yet
-        self.group.leave_group(BaseTest.GROUP_ID, BaseTest.USER_ID, CreateActionLogQuery(), None)  # noqa
+        self.group.leave_groups({BaseTest.GROUP_ID: GroupTypes.GROUP}, BaseTest.USER_ID, CreateActionLogQuery(), None)  # noqa
 
         # create a new group
         group = await self.group.create_new_group(
@@ -210,7 +210,7 @@ class TestGroupResource(BaseTest):
         self.assertEqual(1, group_users.user_count)
 
         # leave the group
-        self.group.leave_group(group.group_id, BaseTest.USER_ID, CreateActionLogQuery(), None)  # noqa
+        self.group.leave_groups({group.group_id: GroupTypes.GROUP}, BaseTest.USER_ID, CreateActionLogQuery(), None)  # noqa
 
         # check there's no users left in the group after leaving
         group_users = await self.group.get_users_in_group(group.group_id, None)  # noqa

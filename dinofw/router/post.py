@@ -573,7 +573,7 @@ async def get_message_count_for_user_in_group(
             if message_count is None or message_count == -1:
                 # until isn't inclusive, so the last message sent won't be counted otherwise;
                 until = group_info.last_sent
-                until += timedelta(milliseconds=1)
+                until += timedelta(seconds=1)
 
                 message_count = environ.env.storage.count_messages_in_group_from_user_since(
                     group_id,

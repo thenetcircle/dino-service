@@ -296,18 +296,24 @@ class CassandraHandler:
         n_all_messages = 0
         messages_from_user = list()
 
+        logger.info(f"cassandra count: group_id={group_id}, user_id={user_id}, until={until}, since={since}")
+
         while True:
             # until is not inclusive
             messages = self._get_batch_of_messages_in_group_since(
                 group_id=group_id, until=until, since=since, limit=limit
             )
+            logger.info(messages)
 
             for message in messages:
+                logger.info(message)
                 if message.user_id == user_id:
                     messages_from_user.append(message)
 
             n_messages = len(messages)
             n_all_messages += n_messages
+
+            logger.info(f"n_messages={n_messages}, n_all_messages={n_all_messages}")
 
             if not n_messages or n_messages < limit or len(messages_from_user) > query_limit > 0:
                 elapsed = time() - start

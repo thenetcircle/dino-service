@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import Union
+from typing import Union, Optional
 
 import arrow
 from loguru import logger
@@ -105,7 +105,7 @@ class BaseResource(ABC):
             should_increase_unread: bool,
             event_type: EventTypes,
             update_last_message: bool = True
-    ) -> GroupBase:
+    ) -> Optional[GroupBase]:
         """
         update database and cache with everything related to sending a message
         """
@@ -119,6 +119,10 @@ class BaseResource(ABC):
             update_unread_count=should_increase_unread,
             update_last_message=update_last_message
         )
+
+        # if all users left the group, this message is an action log, and there's nothing more to do
+        if not len(user_ids):
+            return None
 
         if user_id not in user_ids:
             # if the user deleted the group, this is an action log for the

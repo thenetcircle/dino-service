@@ -134,11 +134,32 @@ class BaseServerRestApi(BaseDatabaseTest):
 
         return raw_response.json()["group_id"]
 
-    def histories_for(self, group_id: str, user_id: int = BaseTest.USER_ID):
+    def delete_all_groups(self, user_id: int = BaseTest.USER_ID, create_action_log: bool = True):
+        if create_action_log:
+            data = {
+                "action_log": {
+                    "payload": "some payload for action log"
+                }
+            }
+        else:
+            data = dict()
+
+        raw_response = self.client.delete(
+            f"/v1/users/{user_id}/groups", json=data
+        )
+
+        self.assertEqual(raw_response.status_code, 201)
+
+        # async api
+        time.sleep(0.5)
+
+    def histories_for(self, group_id: str, user_id: int = BaseTest.USER_ID, assert_response: bool = True):
         raw_response = self.client.post(
             f"/v1/groups/{group_id}/user/{user_id}/histories", json={"per_page": "10", "since": 0},
         )
-        self.assertEqual(raw_response.status_code, 200)
+
+        if assert_response:
+            self.assertEqual(raw_response.status_code, 200)
 
         return raw_response.json()
 

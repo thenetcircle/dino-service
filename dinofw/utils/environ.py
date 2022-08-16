@@ -50,6 +50,7 @@ def init_logging(gn_env: GNEnvironment) -> None:
 
     import sentry_sdk
     from sentry_sdk import capture_exception as sentry_capture_exception
+    from sentry_sdk import capture_message as sentry_capture_message
     from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
     from sentry_sdk.integrations.redis import RedisIntegration
 
@@ -70,14 +71,22 @@ def init_logging(gn_env: GNEnvironment) -> None:
         ))
     )
 
-    def capture_wrapper(e_info) -> None:
+    def capture_exec_wrapper(e_info) -> None:
         try:
             sentry_capture_exception(e_info)
         except Exception as e2:
-            logger.exception(e_info)
+            logger.exception(e2)
             logger.error(f"could not capture exception with sentry: {str(e2)}")
 
-    gn_env.capture_exception = capture_wrapper
+    def capture_msg_wrapper(message, level=None) -> None:
+        try:
+            sentry_capture_message(message, level=level)
+        except Exception as e2:
+            logger.exception(e2)
+            logger.error(f"could not capture exception with sentry: {str(e2)}")
+
+    gn_env.capture_exception = capture_exec_wrapper
+    gn_env.capture_message = capture_msg_wrapper
 
 
 def init_database(gn_env: GNEnvironment):

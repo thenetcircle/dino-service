@@ -322,11 +322,16 @@ class RelationalHandler:
                 user_to_count_for = (
                     user_a if user_b == user_id else user_b
                 )
-                _receiver_unread_count = self.env.storage.get_unread_in_group(
-                    group_id=_group.group_id,
-                    user_id=user_to_count_for,
-                    last_read=receivers[_group.group_id].last_read,
-                )
+
+                if _group.group_id in receivers:
+                    _receiver_unread_count = self.env.storage.get_unread_in_group(
+                        group_id=_group.group_id,
+                        user_id=user_to_count_for,
+                        last_read=receivers[_group.group_id].last_read,
+                    )
+                else:
+                    e_msg = f"no receiver stats in db for user {user_to_count_for} in group {_group.group_id}, could be a deleted profile"
+                    logger.warning(e_msg)
 
             if query.count_unread:
                 # TODO: use unread_count in postgres? storage will check redis first, maybe enough
@@ -565,21 +570,21 @@ class RelationalHandler:
         return user_ids_last_read
 
     def remove_user_group_stats_for_user(
-        self, group_id: str, user_id: int, db: Session
+        self, group_ids: List[str], user_id: int, db: Session
     ) -> None:
         """
         called when a user leaves a group
         """
         _ = (
             db.query(UserGroupStatsEntity)
-            .filter(UserGroupStatsEntity.user_id == user_id)
-            .filter(UserGroupStatsEntity.group_id == group_id)
+            .filter(UserGroupStatsEntity.group_id.in_(group_ids))
             .delete(synchronize_session=False)
         )
         db.commit()
 
-        self.env.cache.remove_last_read_in_group_for_user(group_id, user_id)
-        self.env.cache.remove_join_time_in_group_for_user(group_id, user_id)
+        self.env.cache.remove_last_read_in_group_for_user(group_ids, user_id)
+        self.env.cache.remove_join_time_in_group_for_user(group_ids, user_id)
+        self.env.cache.remove_user_id_and_join_time_in_groups_for_user(group_ids, user_id)
 
     def get_last_reads_in_group_old(self, group_id: str, db: Session) -> Dict[int, float]:
         # TODO: remove this, not needed anymore
@@ -651,14 +656,19 @@ class RelationalHandler:
         return last_reads
 
     # noinspection PyMethodMayBeStatic
-    def get_all_group_ids_for_user(self, user_id: int, db: Session) -> List[str]:
+    def get_all_group_ids_and_types_for_user(self, user_id: int, db: Session) -> Dict:
         """
         used only when a user is deleting their profile, no need
         to cache it, shouldn't happen that often
         """
-        group_ids = (
+        groups = (
             db.query(
-                UserGroupStatsEntity.group_id
+                UserGroupStatsEntity.group_id,
+                GroupEntity.group_type
+            )
+            .join(
+                GroupEntity,
+                GroupEntity.group_id == UserGroupStatsEntity.group_id,
             )
             .filter(
                 UserGroupStatsEntity.user_id == user_id
@@ -666,10 +676,10 @@ class RelationalHandler:
             .all()
         )
 
-        if group_ids is None or len(group_ids) == 0:
-            return list()
+        if groups is None or len(groups) == 0:
+            return dict()
 
-        return [group_id[0] for group_id in group_ids]
+        return {group[0]: group[1] for group in groups}
 
     # noinspection PyMethodMayBeStatic
     def get_group_from_id(self, group_id: str, db: Session) -> GroupBase:
@@ -785,19 +795,14 @@ class RelationalHandler:
         return group is not None
 
     # noinspection PyMethodMayBeStatic
-    def set_group_updated_at(self, group_id: str, now: dt, db: Session) -> None:
-        group = (
+    def set_groups_updated_at(self, group_ids: List[str], now: dt, db: Session) -> None:
+        _ = (
             db.query(GroupEntity)
-            .filter(GroupEntity.group_id == group_id)
-            .first()
+            .filter(GroupEntity.group_id.in_(group_ids))
+            .update({
+                GroupEntity.updated_at: now
+            })
         )
-
-        if group is None:
-            return
-
-        group.updated_at = now
-
-        db.add(group)
         db.commit()
 
     def update_user_stats_on_join_or_create_group(
@@ -1147,7 +1152,12 @@ class RelationalHandler:
                 user_stats_dict = {user.user_id: user for user in statement.all()}
                 that_user_id = [uid for uid in group_id_to_users(group.group_id) if uid != user_id][0]
 
-                user_stats = user_stats_dict[user_id]
+                if user_id in user_stats_dict:
+                    user_stats = user_stats_dict[user_id]
+                else:
+                    logger.warning(f"user {user_id} is no longer in group {group_id}, ignoring stats")
+                    user_stats = None
+
                 that_user_stats = user_stats_dict[that_user_id]
             else:
                 user_stats = filter_for_one()
