@@ -9,7 +9,7 @@ class MessageBase(BaseModel):
     created_at: datetime
     user_id: int
     message_id: str
-    message_type: int
+    message_type: Optional[int]
     file_id: Optional[str]
     message_payload: Optional[str]
     context: Optional[str]

@@ -66,7 +66,7 @@ class Message(BaseModel):
     user_id: int
 
     message_id: str
-    message_type: int
+    message_type: Optional[int]
     message_payload: Optional[str]
     context: Optional[str]
 
