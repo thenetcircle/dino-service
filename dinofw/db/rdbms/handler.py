@@ -574,7 +574,7 @@ class RelationalHandler:
             db.query(UserGroupStatsEntity)
             .filter(UserGroupStatsEntity.user_id == user_id)
             .filter(UserGroupStatsEntity.group_id == group_id)
-            .delete()
+            .delete(synchronize_session=False)
         )
         db.commit()
 
