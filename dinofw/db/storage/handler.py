@@ -682,9 +682,11 @@ class CassandraHandler:
             .allow_filtering()
             .first()
         )
+        logger.info(f"attachment: {attachment}")
 
         # might not be an attachment
         if attachment is not None:
+            logger.info("updating attachment")
             attachment.update(
                 context=query.context or attachment.context,
                 message_payload=query.message_payload or attachment.message_payload,
