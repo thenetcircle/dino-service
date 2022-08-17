@@ -79,8 +79,28 @@ class UserResource(BaseResource):
 
         return to_last_reads(group_id, last_reads)
 
+    async def count_unread(self, user_id: int, query: GroupQuery, db: Session) -> (int, int):
+        user_groups: List[UserGroupBase] = self.env.db.get_groups_for_user(
+            user_id, query, db
+        )
+        unread_amount = 0
+        n_unread_groups = 0
+
+        for user_group in user_groups:
+            if user_group.unread > 0:
+                unread_amount += user_group.unread
+                n_unread_groups += 1
+
+            # bookmarked groups counts as 1 unread message only if they
+            # don't already have unread messages
+            elif user_group.user_stats.bookmark:
+                unread_amount += 1
+                n_unread_groups += 1
+
+        return unread_amount, n_unread_groups
+
     async def get_user_stats(self, user_id: int, query: UserStatsQuery, db: Session) -> UserStats:
-        # if the user has more than 100 groups with unread messages in
+        # if the user has more than 100 groups with unread messages,
         # it won't matter if the count is exact or not, just forget about
         # the super-old ones (if a user reads a group, another unread
         # group will be selected next time for this query anyway)
@@ -91,25 +111,8 @@ class UserResource(BaseResource):
             hidden=query.hidden,
         )
 
-        user_groups: List[UserGroupBase] = self.env.db.get_groups_for_user(
-            user_id, sub_query, db
-        )
-
         if query.count_unread:
-            unread_amount = 0
-            n_unread_groups = 0
-
-            for user_group in user_groups:
-                if user_group.unread > 0:
-                    unread_amount += user_group.unread
-                    n_unread_groups += 1
-
-                # bookmarked groups counts as 1 unread message only if they
-                # don't already have unread messages
-                elif user_group.user_stats.bookmark:
-                    unread_amount += 1
-                    n_unread_groups += 1
-
+            unread_amount, n_unread_groups = self.count_unread(user_id, sub_query, db)
         else:
             unread_amount = -1
             n_unread_groups = -1
