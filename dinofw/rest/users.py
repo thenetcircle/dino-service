@@ -80,6 +80,23 @@ class UserResource(BaseResource):
         return to_last_reads(group_id, last_reads)
 
     async def count_unread(self, user_id: int, query: GroupQuery, db: Session) -> (int, int):
+        """
+        TODO: new db method to count in postgres and cache in redis; too slow to
+          include unlimited groups otherwise, some users have 10k+ unread groups;
+          need to update cache on hide, bookmark, read, send, delete, highlight(?)
+
+            select
+                sum(unread_count) filter (where bookmark = false) +
+                count(1) filter (where bookmark = true) as unread_count,
+                count(distinct group_id) as n_unread_groups
+            from
+                user_group_stats
+            where
+                user_id = 6510486 and
+                hide = false and
+                deleted = false and
+                (bookmark = true or unread_count > 0);
+        """
         user_groups: List[UserGroupBase] = self.env.db.get_groups_for_user(
             user_id, query, db
         )
