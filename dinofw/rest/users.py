@@ -85,6 +85,7 @@ class UserResource(BaseResource):
           include unlimited groups otherwise, some users have 10k+ unread groups;
           need to update cache on hide, bookmark, read, send, delete, highlight(?)
 
+            # is conditional count needed? if bookmark=true, isn't unread_count then always 1?
             select
                 sum(unread_count) filter (where bookmark = false) +
                 count(1) filter (where bookmark = true) as unread_count,
