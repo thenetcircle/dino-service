@@ -129,17 +129,18 @@ class RelationalHandler:
         inner join
             user_group_stats u on u.group_id = g.group_id
         where
-            u.user_id = 5000439 and
+            u.user_id = 6510486 and
+            g.group_id = '00000000-005f-c238-0000-000000635796' and
             u.hide = false and
             u.deleted = false and
             u.delete_before < g.updated_at and
-            g.last_message_time < now() and
-            (u.unread_count > 0 or u.bookmark = true)
+            g.last_message_time < now()
         order by
             u.pin desc,
             greatest(u.highlight_time, g.last_message_time) desc
         limit 10;
 
+            (u.unread_count > 0 or u.bookmark = true)
             ((u.last_read < g.last_message_time) or u.bookmark = true)
         """
         @time_method(logger, "get_groups_for_user(): query groups")
