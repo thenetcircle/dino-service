@@ -800,9 +800,10 @@ class RelationalHandler:
         _ = (
             db.query(GroupEntity)
             .filter(GroupEntity.group_id.in_(group_ids))
-            .update({
-                GroupEntity.updated_at: now
-            })
+            .update(
+                {GroupEntity.updated_at: now},
+                synchronize_session='fetch'
+            )
         )
         db.commit()
 
