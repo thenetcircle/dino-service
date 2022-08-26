@@ -85,7 +85,7 @@ class UserResource(BaseResource):
         #  * delete         :
         #  * send           : done?
         #  * read           : done?
-        #  * bookmark       :
+        #  * bookmark       : done?
 
         unread_count, n_unread_groups = self.env.cache.get_total_unread_count(user_id)
         if unread_count is not None:

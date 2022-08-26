@@ -1320,6 +1320,16 @@ class RelationalHandler:
         if query.bookmark is not None:
             user_stats.bookmark = query.bookmark
 
+            if query.bookmark:
+                with self.env.cache.pipeline() as p:
+                    self.env.cache.increase_total_unread_message_count([user_id], pipeline=p)
+                    self.env.cache.add_unread_group([user_id], group_id, pipeline=p)
+            # doesn't work well with pipeline
+            else:
+                # bookmark always counts as 1 unread, so just decrease by 1
+                self.env.cache.decrease_total_unread_message_count(user_id, 1)
+                self.env.cache.remove_unread_group(user_id, group_id)
+
             # set the last read time to now(), since a user can't remove a
             # bookmark without opening the conversation
             if query.bookmark is False and query.last_read_time is None:
@@ -1350,8 +1360,13 @@ class RelationalHandler:
             self.env.cache.clear_unread_in_group_for_user(group_id, user_id)
             user_stats.unread_count = self.env.storage.get_unread_in_group(group_id, user_id, last_read)
 
+            # updating unread removes bookmark, and bookmark always counts as 1 unread
+            decrease_by = unread_count_before_opening
+            if user_stats.bookmark:
+                decrease_by = 1
+
             self.env.cache.remove_unread_group(user_id, group_id)
-            self.env.cache.decrease_total_unread_message_count(user_id, unread_count_before_opening)
+            self.env.cache.decrease_total_unread_message_count(user_id, decrease_by)
 
             # highlight time is removed if a user reads a conversation
             user_stats.highlight_time = self.long_ago

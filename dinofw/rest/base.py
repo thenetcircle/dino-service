@@ -40,12 +40,22 @@ class BaseResource(ABC):
 
         now_ts = utcnow_ts()
         now_dt = utcnow_dt(now_ts)
-        unread_count_before_opening = user_stats.unread_count
 
         # something changed, so update and set last_updated_time to sync to apps
         self.env.db.update_last_read_and_highlight_in_group_for_user(
             group_id, user_id, now_dt, db
         )
+
+        if user_stats.unread_count > 0 or user_stats.bookmark:
+            self.env.cache.set_unread_in_group(group_id, user_id, 0)
+            self.env.cache.remove_unread_group(user_id, group_id)
+
+            # bookmarked are always counted as 1 unread
+            decrease_by = user_stats.unread_count
+            if user_stats.bookmark:
+                decrease_by = 1
+
+            self.env.cache.decrease_total_unread_message_count(user_id, decrease_by)
 
         # no point updating if already newer than last message (also skips
         # broadcasting unnecessary read-receipts)
@@ -57,9 +67,6 @@ class BaseResource(ABC):
             self.env.client_publisher.read(
                 group_id, user_id, user_ids, now_dt, bookmark=user_stats.bookmark
             )
-            self.env.cache.set_unread_in_group(group_id, user_id, 0)
-            self.env.cache.remove_unread_group(user_id, group_id)
-            self.env.cache.decrease_total_unread_message_count(user_id, unread_count_before_opening)
 
     def create_action_log(
         self,
