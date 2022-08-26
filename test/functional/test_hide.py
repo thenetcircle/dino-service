@@ -33,6 +33,8 @@ class TestHideGroup(BaseServerRestApi):
         # should now be un-hidden, and one unread message (bookmark only counts as
         # unread if there's no actual unread messages)
         self.assert_groups_for_user(1)
+
+        # bookmark is removed on a new message
         self.assert_total_unread_count(user_id=BaseTest.USER_ID, unread_count=1)
 
         # should still be bookmarked

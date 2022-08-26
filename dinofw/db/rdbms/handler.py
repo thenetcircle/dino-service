@@ -1472,7 +1472,13 @@ class RelationalHandler:
             if query.hide:
                 # no pipline for removing, might have to run multiple queries
                 self.env.cache.remove_unread_group(user_id, group_id)
-                self.env.cache.decrease_total_unread_message_count(user_id, unread_count_before_changing)
+
+                # bookmark AND hide makes it a bit tricky
+                change_by = unread_count_before_changing
+                if user_stats.bookmark:
+                    change_by = 1
+
+                self.env.cache.decrease_total_unread_message_count(user_id, change_by)
             else:
                 with self.env.cache.pipeline() as p:
                     self.env.cache.add_unread_group([user_id], group_id, pipeline=p)
