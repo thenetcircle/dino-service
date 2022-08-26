@@ -40,6 +40,7 @@ class BaseResource(ABC):
 
         now_ts = utcnow_ts()
         now_dt = utcnow_dt(now_ts)
+        unread_count_before_opening = user_stats.unread_count
 
         # something changed, so update and set last_updated_time to sync to apps
         self.env.db.update_last_read_and_highlight_in_group_for_user(
@@ -57,6 +58,8 @@ class BaseResource(ABC):
                 group_id, user_id, user_ids, now_dt, bookmark=user_stats.bookmark
             )
             self.env.cache.set_unread_in_group(group_id, user_id, 0)
+            self.env.cache.remove_unread_group(user_id, group_id)
+            self.env.cache.decrease_total_unread_message_count(user_id, unread_count_before_opening)
 
     def create_action_log(
         self,

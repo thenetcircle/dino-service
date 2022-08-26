@@ -126,6 +126,21 @@ class CacheRedis(ICache):
         p.expire(key, ONE_DAY * 2)
         p.execute()
 
+    def decrease_total_unread_message_count(self, user_id: int, amount: int):
+        if amount == 0:
+            return
+
+        r = self.redis.pipeline()
+
+        key = RedisKeys.total_unread_count(user_id)
+        r.decr(key, amount)
+        r.expire(key, ONE_DAY * 2)
+
+        new_count = r.execute()
+        if new_count[0] < 0:
+            logger.warning(f"after decreasing unread count it became negative for user {user_id}: {new_count}")
+            self.redis.set(key, 0)
+
     def increase_total_unread_message_count(self, user_ids: List[int], pipeline=None):
         # use pipeline if provided
         r = pipeline or self.redis.pipeline()
@@ -151,6 +166,22 @@ class CacheRedis(ICache):
         # only execute if we weren't provided a pipeline
         if pipeline is None:
             r.execute()
+
+    def remove_unread_group(self, user_id: int, group_id: str, pipeline=None) -> None:
+        # use pipeline if provided
+        r = pipeline or self.redis.pipeline()
+
+        key = RedisKeys.unread_groups(user_id)
+        r.srem(key, group_id)
+        r.expire(key, ONE_DAY * 2)
+
+        # only execute if we weren't provided a pipeline
+        if pipeline is None:
+            try:
+                r.execute()
+            except redis.exceptions.ResponseError:
+                # if the group is not cached, redis will throw an error
+                pass
 
     def add_unread_groups(self, user_id: int, group_ids: List[str]) -> None:
         p = self.redis.pipeline()
@@ -338,6 +369,10 @@ class CacheRedis(ICache):
         r = pipeline or self.redis
 
         r.hset(key, str(user_id), unread)
+
+        # only execute if we weren't provided a pipeline
+        if pipeline is None:
+            r.execute()
 
     def get_user_count_in_group(self, group_id: str) -> Optional[int]:
         key = RedisKeys.user_in_group(group_id)

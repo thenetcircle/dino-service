@@ -83,8 +83,8 @@ class UserResource(BaseResource):
         # TODO: need to update cache on hide, bookmark, read, send, delete, highlight(?)
         #  * highlight(?)   :
         #  * delete         :
-        #  * send           :
-        #  * read           :
+        #  * send           : done?
+        #  * read           : done?
         #  * bookmark       :
 
         unread_count, n_unread_groups = self.env.cache.get_total_unread_count(user_id)
