@@ -1,3 +1,5 @@
+from uuid import uuid4 as uuid
+
 from dinofw.rest.queries import MessageQuery
 from dinofw.rest.queries import SendMessageQuery
 from dinofw.rest.queries import UpdateUserGroupStats
@@ -40,9 +42,9 @@ class TestUnreadCount(BaseServerRestApi):
     async def test_count_total_unread(self):
         session = self.env.session_maker()
 
-        unread_count, n_unread_groups = self.env.db.count_total_unread(BaseTest.USER_ID, session)
+        unread_count, unread_groups = self.env.db.count_total_unread(BaseTest.USER_ID, session)
         self.assertEqual(0, unread_count)
-        self.assertEqual(0, n_unread_groups)
+        self.assertEqual(0, len(unread_groups))
 
         await self.env.rest.message.send_message_to_user(
             BaseTest.OTHER_USER_ID,
@@ -54,17 +56,17 @@ class TestUnreadCount(BaseServerRestApi):
             session
         )
 
-        unread_count, n_unread_groups = self.env.db.count_total_unread(BaseTest.USER_ID, session)
+        unread_count, unread_groups = self.env.db.count_total_unread(BaseTest.USER_ID, session)
         self.assertEqual(1, unread_count)
-        self.assertEqual(1, n_unread_groups)
+        self.assertEqual(1, len(unread_groups))
 
     @async_test
     async def test_count_total_unread_included_bookmark(self):
         session = self.env.session_maker()
 
-        unread_count, n_unread_groups = self.env.db.count_total_unread(BaseTest.USER_ID, session)
+        unread_count, unread_groups = self.env.db.count_total_unread(BaseTest.USER_ID, session)
         self.assertEqual(0, unread_count)
-        self.assertEqual(0, n_unread_groups)
+        self.assertEqual(0, len(unread_groups))
 
         await self.env.rest.message.send_message_to_user(
             BaseTest.OTHER_USER_ID,
@@ -91,18 +93,18 @@ class TestUnreadCount(BaseServerRestApi):
             group_id = message.group_id
 
         # two groups, one each
-        unread_count, n_unread_groups = self.env.db.count_total_unread(BaseTest.USER_ID, session)
+        unread_count, unread_groups = self.env.db.count_total_unread(BaseTest.USER_ID, session)
         self.assertEqual(4, unread_count)
-        self.assertEqual(2, n_unread_groups)
+        self.assertEqual(2, len(unread_groups))
 
         # mark as read, so should have 0 unread for this group, 1 unread in total
         await self.env.rest.group.histories(
             group_id, BaseTest.USER_ID, MessageQuery(per_page=30, since=0), session
         )
 
-        unread_count, n_unread_groups = self.env.db.count_total_unread(BaseTest.USER_ID, session)
+        unread_count, unread_groups = self.env.db.count_total_unread(BaseTest.USER_ID, session)
         self.assertEqual(1, unread_count)
-        self.assertEqual(1, n_unread_groups)
+        self.assertEqual(1, len(unread_groups))
 
         # bookmark the one we just read
         await self.env.rest.group.update_user_group_stats(
@@ -110,9 +112,9 @@ class TestUnreadCount(BaseServerRestApi):
         )
 
         # should have 1 unread message, and 1 bookmarked without unread (counting as 1 unread)
-        unread_count, n_unread_groups = self.env.db.count_total_unread(BaseTest.USER_ID, session)
+        unread_count, unread_groups = self.env.db.count_total_unread(BaseTest.USER_ID, session)
         self.assertEqual(2, unread_count)
-        self.assertEqual(2, n_unread_groups)
+        self.assertEqual(2, len(unread_groups))
 
     def test_count_total_unread_cached(self):
         session = self.env.session_maker()
@@ -128,3 +130,26 @@ class TestUnreadCount(BaseServerRestApi):
         cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
         self.assertEqual(unread_count, cached_unread_count)
         self.assertEqual(unread_groups, cached_unread_groups)
+
+    def test_count_total_unread_increase_cache(self):
+        session = self.env.session_maker()
+
+        cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
+        self.assertIsNone(cached_unread_count)
+        self.assertIsNone(cached_unread_groups)
+
+        unread_count, unread_groups = self.env.rest.user.count_unread(BaseTest.USER_ID, session)
+        self.assertEqual(0, unread_count)
+        self.assertEqual(0, unread_groups)
+
+        self.env.cache.increase_total_unread_message_count([BaseTest.USER_ID])
+
+        unread_count, unread_groups = self.env.rest.user.count_unread(BaseTest.USER_ID, session)
+        self.assertEqual(1, unread_count)
+        self.assertEqual(0, unread_groups)
+
+        self.env.cache.add_unread_group([BaseTest.USER_ID], str(uuid()))
+
+        unread_count, unread_groups = self.env.rest.user.count_unread(BaseTest.USER_ID, session)
+        self.assertEqual(1, unread_count)
+        self.assertEqual(1, unread_groups)

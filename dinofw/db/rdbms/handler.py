@@ -13,6 +13,7 @@ from sqlalchemy import func
 from sqlalchemy import literal
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
+from sqlalchemy.orm import load_only
 
 from dinofw.db.rdbms.models import GroupEntity
 from dinofw.db.rdbms.models import UserGroupStatsEntity
@@ -225,7 +226,7 @@ class RelationalHandler:
             query=query
         )
 
-    def count_total_unread(self, user_id: int, db: Session) -> (int, int):
+    def count_total_unread(self, user_id: int, db: Session) -> (int, List[str]):
         """
         count all unread messages for a user, including bookmarked groups
 
@@ -244,11 +245,10 @@ class RelationalHandler:
                 (bookmark = true or unread_count > 0);
         """
         # TODO: query for hidden?
-        unread_count, n_groups_unread = (
+        unread_count = (
             db.query(
                 func.sum(UserGroupStatsEntity.unread_count).filter(UserGroupStatsEntity.bookmark.is_(False)) +
-                func.count(1).filter(UserGroupStatsEntity.bookmark.is_(True)),
-                func.count(func.distinct(UserGroupStatsEntity.group_id))
+                func.count(1).filter(UserGroupStatsEntity.bookmark.is_(True))
             )
             .filter(
                 UserGroupStatsEntity.user_id == user_id,
@@ -262,11 +262,28 @@ class RelationalHandler:
             .first()
         )
 
-        # if the user has NO groups, sqlalchemy will return None not 0
-        if unread_count is None:
-            unread_count = 0
+        unread_group_ids = (
+            db.query(
+                UserGroupStatsEntity
+            )
+            .filter(
+                UserGroupStatsEntity.user_id == user_id,
+                UserGroupStatsEntity.hide.is_(False),
+                UserGroupStatsEntity.deleted.is_(False),
+                or_(
+                    UserGroupStatsEntity.bookmark.is_(True),
+                    UserGroupStatsEntity.unread_count > 0
+                )
+            )
+            .options(load_only("group_id"))
+            .all()
+        )
 
-        return unread_count, n_groups_unread
+        # if the user has NO groups, sqlalchemy will return None not 0
+        if unread_count[0] is None:
+            unread_count = (0,)
+
+        return unread_count[0], unread_group_ids
 
     def get_groups_updated_since(
         self,
@@ -459,6 +476,8 @@ class RelationalHandler:
             # don't increase unread for the sender
             del user_ids[sender_user_id]
             self.env.cache.increase_unread_in_group_for(message.group_id, user_ids)
+            self.env.cache.increase_total_unread_message_count(user_ids)
+            self.env.cache.add_unread_group(user_ids, message.group_id)
 
         # some action logs don't need to update last message
         if update_last_message:

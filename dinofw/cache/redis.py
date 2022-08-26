@@ -99,34 +99,64 @@ class CacheRedis(ICache):
         p = self.redis.pipeline()
 
         p.get(RedisKeys.total_unread_count(user_id))
-        p.get(RedisKeys.total_unread_groups(user_id))
+        p.scard(RedisKeys.unread_groups(user_id))
 
-        unread_count, unread_groups = p.execute()
+        try:
+            unread_count, unread_groups = p.execute()
+        except redis.exceptions.ResponseError:
+            # if no value is cached, SCARD will throw an error
+            return None, None
 
         if unread_count is not None:
             return int(float(unread_count)), int(float(unread_groups))
 
         return None, None
 
-    def set_total_unread_count(self, user_id: int, unread_count: int, unread_groups: int) -> None:
+    def set_total_unread_count(self, user_id: int, unread_count: int, unread_groups: List[str]) -> None:
         key_count = RedisKeys.total_unread_count(user_id)
-        key_group = RedisKeys.total_unread_groups(user_id)
 
         p = self.redis.pipeline()
         p.set(key_count, unread_count)
-        p.set(key_group, unread_groups)
         p.expire(key_count, ONE_DAY * 2)
-        p.expire(key_group, ONE_DAY * 2)
+
+        key = RedisKeys.unread_groups(user_id)
+        for group_id in unread_groups:
+            p.sadd(key, group_id)
+
+        p.expire(key, ONE_DAY * 2)
         p.execute()
 
-    def increase_total_unread_message_count(self, user_id: int):
-        key_count = RedisKeys.total_unread_count(user_id)
-
+    def increase_total_unread_message_count(self, user_ids: List[int]):
         p = self.redis.pipeline()
-        p.incr(key_count)
-        p.expire(key_count, ONE_DAY * 2)
+
+        for user_id in user_ids:
+            key = RedisKeys.total_unread_count(user_id)
+            p.incr(key)
+            p.expire(key, ONE_DAY * 2)
+
         p.execute()
 
+    def add_unread_group(self, user_ids: List[int], group_id: str) -> None:
+        p = self.redis.pipeline()
+
+        for user_id in user_ids:
+            key = RedisKeys.unread_groups(user_id)
+            p.sadd(key, group_id)
+            p.expire(key, ONE_DAY * 2)
+
+        p.execute()
+
+    def add_unread_groups(self, user_id: int, group_ids: List[str]) -> None:
+        p = self.redis.pipeline()
+
+        key = RedisKeys.unread_groups(user_id)
+        for group_id in group_ids:
+            p.sadd(key, group_id)
+
+        p.expire(key, ONE_DAY * 2)
+        p.execute()
+
+    """
     def increase_total_unread_group_count(self, user_id: int):
         key_group = RedisKeys.total_unread_groups(user_id)
 
@@ -134,6 +164,7 @@ class CacheRedis(ICache):
         p.incr(key_group)
         p.expire(key_group, ONE_DAY * 2)
         p.execute()
+    """
 
     def get_group_exists(self, group_id: str) -> Optional[bool]:
         value = self.redis.get(RedisKeys.group_exists(group_id))

@@ -91,9 +91,10 @@ class UserResource(BaseResource):
         if unread_count is not None:
             return unread_count, n_unread_groups
 
-        unread_count, n_unread_groups = self.env.db.count_total_unread(user_id, db)
+        unread_count, unread_groups = self.env.db.count_total_unread(user_id, db)
+        n_unread_groups = len(unread_groups)
 
-        self.env.cache.set_total_unread_count(user_id, unread_count, n_unread_groups)
+        self.env.cache.set_total_unread_count(user_id, unread_count, unread_groups)
         return unread_count, n_unread_groups
 
     async def get_user_stats(self, user_id: int, query: UserStatsQuery, db: Session) -> UserStats:

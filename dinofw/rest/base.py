@@ -140,6 +140,7 @@ class BaseResource(ABC):
             # instead of decreasing, just remove it, since in case no count is cached, decreasing
             # a non-existing key will store -1, which is incorrect
             self.env.cache.remove_attachment_count_in_group_for_users(group_id, list(user_ids.keys()))
+            # TODO: decrease total unread count in redis? or remove it?
 
         return group_base
 
