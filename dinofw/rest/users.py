@@ -83,6 +83,7 @@ class UserResource(BaseResource):
         # TODO: need to update cache on hide, bookmark, read, send, delete, highlight(?)
         #  * highlight(?)   :
         #  * delete         :
+        #  * hide           :
         #  * send           : done?
         #  * read           : done?
         #  * bookmark       : done?

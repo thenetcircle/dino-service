@@ -2,9 +2,11 @@ from uuid import uuid4 as uuid
 
 import arrow
 
+from dinofw.rest.queries import CreateActionLogQuery
 from dinofw.rest.queries import MessageQuery
 from dinofw.rest.queries import SendMessageQuery
 from dinofw.rest.queries import UpdateUserGroupStats
+from dinofw.utils.config import GroupTypes
 from dinofw.utils.config import MessageTypes
 
 from test.base import BaseTest
@@ -382,6 +384,37 @@ class TestUnreadCount(BaseServerRestApi):
         await self.env.rest.group.update_user_group_stats(
             group_id, BaseTest.USER_ID, UpdateUserGroupStats(last_read_time=arrow.utcnow().timestamp()), session
         )
+        cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
+        self.assertEqual(0, cached_unread_count)
+        self.assertEqual(0, cached_unread_groups)
+
+    @async_test
+    async def test_cached_unread_count_decrease_when_leaving_group(self):
+        session = self.env.session_maker()
+
+        cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
+        self.assertIsNone(cached_unread_count)
+        self.assertIsNone(cached_unread_groups)
+
+        message = await self.env.rest.message.send_message_to_user(
+            BaseTest.OTHER_USER_ID,
+            SendMessageQuery(
+                receiver_id=BaseTest.USER_ID,
+                message_type=MessageTypes.MESSAGE,
+                message_payload="some message"
+            ),
+            session
+        )
+        group_id = message.group_id
+
+        cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
+        self.assertEqual(1, cached_unread_count)
+        self.assertEqual(1, cached_unread_groups)
+
+        # leave the group, so should have 0 unread for this group, 1 unread in total
+        group_id_to_type = {group_id: GroupTypes.ONE_TO_ONE}
+        self.env.rest.group.leave_groups(group_id_to_type, BaseTest.USER_ID, CreateActionLogQuery(), session)
+
         cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
         self.assertEqual(0, cached_unread_count)
         self.assertEqual(0, cached_unread_groups)

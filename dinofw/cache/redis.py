@@ -319,13 +319,19 @@ class CacheRedis(ICache):
         r.hset(key, str(user_id), last_read)
         r.expire(key, 7 * ONE_DAY)
 
-    def remove_last_read_in_group_for_user(self, group_id: str, user_id: int) -> None:
+    def remove_last_read_in_group_for_user(self, group_id: str, user_id: int, pipeline=None) -> None:
         key = RedisKeys.last_read_time(group_id)
-        self.redis.hdel(key, str(user_id))
 
-    def remove_join_time_in_group_for_user(self, group_id: str, user_id: int) -> None:
+        # use pipeline if provided
+        r = pipeline or self.redis
+        r.hdel(key, str(user_id))
+
+    def remove_join_time_in_group_for_user(self, group_id: str, user_id: int, pipeline=None) -> None:
         key = RedisKeys.user_in_group(group_id)
-        self.redis.hdel(key, str(user_id))
+
+        # use pipeline if provided
+        r = pipeline or self.redis
+        r.hdel(key, str(user_id))
 
     def increase_unread_in_group_for(self, group_id: str, user_ids: List[int], pipeline=None) -> None:
         key = RedisKeys.unread_in_group(group_id)
@@ -370,12 +376,7 @@ class CacheRedis(ICache):
 
         # use pipeline if provided
         r = pipeline or self.redis
-
         r.hset(key, str(user_id), unread)
-
-        # only execute if we weren't provided a pipeline
-        if pipeline is None:
-            r.execute()
 
     def get_user_count_in_group(self, group_id: str) -> Optional[int]:
         key = RedisKeys.user_in_group(group_id)
@@ -587,15 +588,18 @@ class CacheRedis(ICache):
             self.add_user_ids_and_join_time_in_group(group_id, users)
             self.redis.expire(key, ONE_HOUR)
 
-    def remove_user_id_and_join_time_in_groups_for_user(self, group_ids: List[str], user_id: int):
-        p = self.redis.pipeline()
+    def remove_user_id_and_join_time_in_groups_for_user(self, group_ids: List[str], user_id: int, pipeline=None):
+        # use pipeline if provided
+        r = pipeline or self.redis.pipeline()
         user_id = str(user_id)
 
         for group_id in group_ids:
             key = RedisKeys.user_in_group(group_id)
-            p.hdel(key, user_id)
+            r.hdel(key, user_id)
 
-        p.execute()
+        # only execute if we weren't provided a pipeline
+        if pipeline is None:
+            r.execute()
 
     def add_user_ids_and_join_time_in_group(
         self, group_id: str, users: Dict[int, float]

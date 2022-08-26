@@ -640,16 +640,48 @@ class RelationalHandler:
         """
         called when a user leaves a group
         """
+        # need to count how much to decrease the cached total unread count with
+        unread_count = (
+            db.query(
+                func.sum(UserGroupStatsEntity.unread_count).filter(UserGroupStatsEntity.bookmark.is_(False)) +
+                func.count(1).filter(UserGroupStatsEntity.bookmark.is_(True))
+            )
+            .filter(
+                UserGroupStatsEntity.user_id == user_id,
+                UserGroupStatsEntity.hide.is_(False),
+                UserGroupStatsEntity.deleted.is_(False),
+                UserGroupStatsEntity.group_id.in_(group_ids),
+                or_(
+                    UserGroupStatsEntity.bookmark.is_(True),
+                    UserGroupStatsEntity.unread_count > 0
+                )
+            )
+            .first()
+        )
+
+        # if the user has NO groups, sqlalchemy will return None not 0
+        unread_count = unread_count[0]
+        if unread_count is None:
+            unread_count = 0
+
+        # no pipeline for this one since we might have to run another query to adjust negative values
+        if unread_count > 0:
+            self.env.cache.decrease_total_unread_message_count(user_id, unread_count)
+
+        with self.env.cache.pipeline() as p:
+            for group_id in group_ids:
+                self.env.cache.remove_unread_group(user_id, group_id, pipeline=p)
+
+            self.env.cache.remove_last_read_in_group_for_user(group_ids, user_id, pipeline=p)
+            self.env.cache.remove_join_time_in_group_for_user(group_ids, user_id, pipeline=p)
+            self.env.cache.remove_user_id_and_join_time_in_groups_for_user(group_ids, user_id, pipeline=p)
+
         _ = (
             db.query(UserGroupStatsEntity)
             .filter(UserGroupStatsEntity.group_id.in_(group_ids))
             .delete(synchronize_session=False)
         )
         db.commit()
-
-        self.env.cache.remove_last_read_in_group_for_user(group_ids, user_id)
-        self.env.cache.remove_join_time_in_group_for_user(group_ids, user_id)
-        self.env.cache.remove_user_id_and_join_time_in_groups_for_user(group_ids, user_id)
 
     def get_last_reads_in_group_old(self, group_id: str, db: Session) -> Dict[int, float]:
         # TODO: remove this, not needed anymore
