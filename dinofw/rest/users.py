@@ -79,7 +79,7 @@ class UserResource(BaseResource):
 
         return to_last_reads(group_id, last_reads)
 
-    async def count_unread(self, user_id: int, query: GroupQuery, db: Session) -> (int, int):
+    def count_unread(self, user_id: int, query: GroupQuery, db: Session) -> (int, int):
         """
         TODO: new db method to count in postgres and cache in redis; too slow to
           include unlimited groups otherwise, some users have 10k+ unread groups;

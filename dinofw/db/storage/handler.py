@@ -96,8 +96,8 @@ class CassandraHandler:
 
         connection.setup(hosts, **kwargs)
 
-        sync_table(MessageModel)
-        sync_table(AttachmentModel)
+        # sync_table(MessageModel)
+        # sync_table(AttachmentModel)
 
     def _get_from_conf(self, key, domain):
         if key not in self.env.config.get(domain):
