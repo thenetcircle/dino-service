@@ -144,13 +144,13 @@ class CacheRedis(ICache):
             logger.warning(f"after decreasing unread count it became negative for user {user_id}: {new_count}")
             self.redis.set(key, 0)
 
-    def increase_total_unread_message_count(self, user_ids: List[int], pipeline=None):
+    def increase_total_unread_message_count(self, user_ids: List[int], amount: int, pipeline=None):
         # use pipeline if provided
         r = pipeline or self.redis.pipeline()
 
         for user_id in user_ids:
             key = RedisKeys.total_unread_count(user_id)
-            r.incr(key)
+            r.incrby(key, amount)
             r.expire(key, ONE_DAY * 2)
 
         # only execute if we weren't provided a pipeline

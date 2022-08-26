@@ -146,7 +146,7 @@ class TestUnreadCount(BaseServerRestApi):
         self.assertEqual(0, unread_count)
         self.assertEqual(0, unread_groups)
 
-        self.env.cache.increase_total_unread_message_count([BaseTest.USER_ID])
+        self.env.cache.increase_total_unread_message_count([BaseTest.USER_ID], 1)
 
         unread_count, unread_groups = self.env.rest.user.count_unread(BaseTest.USER_ID, session)
         self.assertEqual(1, unread_count)
@@ -418,3 +418,132 @@ class TestUnreadCount(BaseServerRestApi):
         cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
         self.assertEqual(0, cached_unread_count)
         self.assertEqual(0, cached_unread_groups)
+
+    @async_test
+    async def test_cached_unread_count_changes_on_hiding_or_unhide(self):
+        session = self.env.session_maker()
+
+        cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
+        self.assertIsNone(cached_unread_count)
+        self.assertIsNone(cached_unread_groups)
+
+        message = await self.env.rest.message.send_message_to_user(
+            BaseTest.OTHER_USER_ID,
+            SendMessageQuery(
+                receiver_id=BaseTest.USER_ID,
+                message_type=MessageTypes.MESSAGE,
+                message_payload="some message"
+            ),
+            session
+        )
+        group_id = message.group_id
+
+        cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
+        self.assertEqual(1, cached_unread_count)
+        self.assertEqual(1, cached_unread_groups)
+
+        # hide the group, so should have 0 unread for this group, 1 unread in total
+        await self.env.rest.group.update_user_group_stats(
+            group_id, BaseTest.USER_ID, UpdateUserGroupStats(hide=True), session
+        )
+
+        cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
+        self.assertEqual(0, cached_unread_count)
+        self.assertEqual(0, cached_unread_groups)
+
+        # un-hide the group, so should have 0 unread for this group, 1 unread in total
+        await self.env.rest.group.update_user_group_stats(
+            group_id, BaseTest.USER_ID, UpdateUserGroupStats(hide=False), session
+        )
+
+        cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
+        self.assertEqual(1, cached_unread_count)
+        self.assertEqual(1, cached_unread_groups)
+
+    @async_test
+    async def test_cached_unread_count_changes_on_hiding_or_unhide(self):
+        session = self.env.session_maker()
+
+        cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
+        self.assertIsNone(cached_unread_count)
+        self.assertIsNone(cached_unread_groups)
+
+        message = await self.env.rest.message.send_message_to_user(
+            BaseTest.OTHER_USER_ID,
+            SendMessageQuery(
+                receiver_id=BaseTest.USER_ID,
+                message_type=MessageTypes.MESSAGE,
+                message_payload="some message"
+            ),
+            session
+        )
+        group_id = message.group_id
+
+        cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
+        self.assertEqual(1, cached_unread_count)
+        self.assertEqual(1, cached_unread_groups)
+
+        # hide the group, so should have 0 unread for this group, 1 unread in total
+        await self.env.rest.group.update_user_group_stats(
+            group_id, BaseTest.USER_ID, UpdateUserGroupStats(hide=True), session
+        )
+
+        cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
+        self.assertEqual(0, cached_unread_count)
+        self.assertEqual(0, cached_unread_groups)
+
+        # un-hide the group, so should have 0 unread for this group, 1 unread in total
+        await self.env.rest.group.update_user_group_stats(
+            group_id, BaseTest.USER_ID, UpdateUserGroupStats(hide=False), session
+        )
+
+        cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
+        self.assertEqual(1, cached_unread_count)
+        self.assertEqual(1, cached_unread_groups)
+
+    @async_test
+    async def test_cached_unread_count_changes_new_message_for_hidden_group(self):
+        session = self.env.session_maker()
+
+        cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
+        self.assertIsNone(cached_unread_count)
+        self.assertIsNone(cached_unread_groups)
+
+        message = await self.env.rest.message.send_message_to_user(
+            BaseTest.OTHER_USER_ID,
+            SendMessageQuery(
+                receiver_id=BaseTest.USER_ID,
+                message_type=MessageTypes.MESSAGE,
+                message_payload="some message"
+            ),
+            session
+        )
+        group_id = message.group_id
+
+        cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
+        self.assertEqual(1, cached_unread_count)
+        self.assertEqual(1, cached_unread_groups)
+
+        # hide the group, so should have 0 unread for this group, 1 unread in total
+        await self.env.rest.group.update_user_group_stats(
+            group_id, BaseTest.USER_ID, UpdateUserGroupStats(hide=True), session
+        )
+
+        cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
+        self.assertEqual(0, cached_unread_count)
+        self.assertEqual(0, cached_unread_groups)
+
+        await self.env.rest.message.send_message_to_user(
+            BaseTest.OTHER_USER_ID,
+            SendMessageQuery(
+                receiver_id=BaseTest.USER_ID,
+                message_type=MessageTypes.MESSAGE,
+                message_payload="some message"
+            ),
+            session
+        )
+
+        # should have 2 unread now, but still only 1 group
+        cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
+        self.assertEqual(2, cached_unread_count)
+        self.assertEqual(1, cached_unread_groups)

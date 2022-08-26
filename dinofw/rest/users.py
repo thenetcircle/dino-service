@@ -82,7 +82,7 @@ class UserResource(BaseResource):
     def count_unread(self, user_id: int, db: Session) -> (int, int):
         # TODO: need to update cache on hide, bookmark, read, send, delete, highlight(?)
         #  * highlight(?)   :
-        #  * delete         :
+        #  * delete         : done?
         #  * hide           :
         #  * send           : done?
         #  * read           : done?

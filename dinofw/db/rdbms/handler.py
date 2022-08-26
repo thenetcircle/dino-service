@@ -467,6 +467,19 @@ class RelationalHandler:
 
         # some action logs don't need to update these
         if update_unread_count:
+            # if a group is hidden, it might have unread messages when it was hidden, so we have
+            # to query for it and restore the original amount plus one (this message)
+            hidden_groups = (
+                db.query(UserGroupStatsEntity)
+                .filter(
+                    UserGroupStatsEntity.group_id == message.group_id,
+                    UserGroupStatsEntity.hide.is_(True),
+                    UserGroupStatsEntity.user_id != sender_user_id
+                )
+                .all()
+            )
+            user_to_hidden_stats = {user.user_id: user for user in hidden_groups}
+
             with self.env.cache.pipeline() as p:
                 # for knowing if we need to send read-receipts when user opens a conversation
                 self.env.cache.set_last_message_time_in_group(
@@ -477,8 +490,17 @@ class RelationalHandler:
 
                 # don't increase unread for the sender
                 del user_ids[sender_user_id]
+
+                if len(hidden_groups):
+                    for user_id in user_ids:
+                        amount = 1
+                        if user_id in user_to_hidden_stats:
+                            amount = user_to_hidden_stats[user_id].unread_count + 1
+                        self.env.cache.increase_total_unread_message_count([user_id], amount, pipeline=p)
+                else:
+                    self.env.cache.increase_total_unread_message_count(user_ids, 1, pipeline=p)
+
                 self.env.cache.increase_unread_in_group_for(message.group_id, user_ids, pipeline=p)
-                self.env.cache.increase_total_unread_message_count(user_ids, pipeline=p)
                 self.env.cache.add_unread_group(user_ids, message.group_id, pipeline=p)
 
         # some action logs don't need to update last message
@@ -1354,7 +1376,7 @@ class RelationalHandler:
 
             if query.bookmark:
                 with self.env.cache.pipeline() as p:
-                    self.env.cache.increase_total_unread_message_count([user_id], pipeline=p)
+                    self.env.cache.increase_total_unread_message_count([user_id], 1, pipeline=p)
                     self.env.cache.add_unread_group([user_id], group_id, pipeline=p)
             # doesn't work well with pipeline
             else:
@@ -1406,6 +1428,7 @@ class RelationalHandler:
                 that_user_stats.receiver_highlight_time = self.long_ago
 
         if delete_before is not None:
+            # TODO: update cached total unread count
             user_stats.delete_before = delete_before
 
             # otherwise a deleted group could have unread messages
@@ -1441,6 +1464,17 @@ class RelationalHandler:
         elif query.hide is not None:
             user_stats.hide = query.hide
             self.env.cache.set_hide_group(group_id, query.hide, [user_id])
+
+            if query.hide:
+                # no pipline for removing, might have to run multiple queries
+                self.env.cache.remove_unread_group(user_id, group_id)
+                self.env.cache.decrease_total_unread_message_count(user_id, unread_count_before_opening)
+            else:
+                with self.env.cache.pipeline() as p:
+                    self.env.cache.add_unread_group([user_id], group_id, pipeline=p)
+                    self.env.cache.increase_total_unread_message_count(
+                        [user_id], unread_count_before_opening, pipeline=p
+                    )
 
         if query.hide is not None or query.delete_before is not None:
             self.env.cache.reset_count_group_types_for_user(user_id)
