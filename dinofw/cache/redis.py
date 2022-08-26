@@ -126,25 +126,31 @@ class CacheRedis(ICache):
         p.expire(key, ONE_DAY * 2)
         p.execute()
 
-    def increase_total_unread_message_count(self, user_ids: List[int]):
-        p = self.redis.pipeline()
+    def increase_total_unread_message_count(self, user_ids: List[int], pipeline=None):
+        # use pipeline if provided
+        r = pipeline or self.redis.pipeline()
 
         for user_id in user_ids:
             key = RedisKeys.total_unread_count(user_id)
-            p.incr(key)
-            p.expire(key, ONE_DAY * 2)
+            r.incr(key)
+            r.expire(key, ONE_DAY * 2)
 
-        p.execute()
+        # only execute if we weren't provided a pipeline
+        if pipeline is None:
+            r.execute()
 
-    def add_unread_group(self, user_ids: List[int], group_id: str) -> None:
-        p = self.redis.pipeline()
+    def add_unread_group(self, user_ids: List[int], group_id: str, pipeline=None) -> None:
+        # use pipeline if provided
+        r = pipeline or self.redis.pipeline()
 
         for user_id in user_ids:
             key = RedisKeys.unread_groups(user_id)
-            p.sadd(key, group_id)
-            p.expire(key, ONE_DAY * 2)
+            r.sadd(key, group_id)
+            r.expire(key, ONE_DAY * 2)
 
-        p.execute()
+        # only execute if we weren't provided a pipeline
+        if pipeline is None:
+            r.execute()
 
     def add_unread_groups(self, user_id: int, group_ids: List[str]) -> None:
         p = self.redis.pipeline()
@@ -287,14 +293,18 @@ class CacheRedis(ICache):
         key = RedisKeys.user_in_group(group_id)
         self.redis.hdel(key, str(user_id))
 
-    def increase_unread_in_group_for(self, group_id: str, user_ids: List[int]) -> None:
+    def increase_unread_in_group_for(self, group_id: str, user_ids: List[int], pipeline=None) -> None:
         key = RedisKeys.unread_in_group(group_id)
-        p = self.redis.pipeline()
+
+        # use pipeline if provided
+        r = pipeline or self.redis.pipeline()
 
         for user_id in user_ids:
-            p.hincrby(key, str(user_id), 1)
+            r.hincrby(key, str(user_id), 1)
 
-        p.execute()
+        # only execute if we weren't provided a pipeline
+        if pipeline is None:
+            r.execute()
 
     def reset_unread_in_groups(self, user_id: int, group_ids: List[str]):
         p = self.redis.pipeline()
@@ -348,10 +358,18 @@ class CacheRedis(ICache):
         messages, until = messages_until.split("|")
         return int(messages), float(until)
 
-    def set_last_message_time_in_group(self, group_id: str, last_message_time: float):
+    def set_last_message_time_in_group(self, group_id: str, last_message_time: float, pipeline=None):
         key = RedisKeys.last_message_time(group_id)
-        self.redis.set(key, last_message_time)
-        self.redis.expire(key, ONE_WEEK)
+
+        # use pipeline if provided
+        r = pipeline or self.redis.pipeline()
+
+        r.set(key, last_message_time)
+        r.expire(key, ONE_WEEK)
+
+        # only execute if we weren't provided a pipeline
+        if pipeline is None:
+            r.execute()
 
     def get_last_message_time_in_group(self, group_id: str):
         key = RedisKeys.last_message_time(group_id)

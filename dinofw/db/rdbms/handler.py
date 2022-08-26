@@ -467,17 +467,19 @@ class RelationalHandler:
 
         # some action logs don't need to update these
         if update_unread_count:
-            # for knowing if we need to send read-receipts when user opens a conversation
-            self.env.cache.set_last_message_time_in_group(
-                message.group_id,
-                to_ts(sent_time)
-            )
+            with self.env.cache.pipeline() as p:
+                # for knowing if we need to send read-receipts when user opens a conversation
+                self.env.cache.set_last_message_time_in_group(
+                    message.group_id,
+                    to_ts(sent_time),
+                    pipeline=p
+                )
 
-            # don't increase unread for the sender
-            del user_ids[sender_user_id]
-            self.env.cache.increase_unread_in_group_for(message.group_id, user_ids)
-            self.env.cache.increase_total_unread_message_count(user_ids)
-            self.env.cache.add_unread_group(user_ids, message.group_id)
+                # don't increase unread for the sender
+                del user_ids[sender_user_id]
+                self.env.cache.increase_unread_in_group_for(message.group_id, user_ids, pipeline=p)
+                self.env.cache.increase_total_unread_message_count(user_ids, pipeline=p)
+                self.env.cache.add_unread_group(user_ids, message.group_id, pipeline=p)
 
         # some action logs don't need to update last message
         if update_last_message:
