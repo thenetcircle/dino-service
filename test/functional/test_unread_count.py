@@ -547,3 +547,50 @@ class TestUnreadCount(BaseServerRestApi):
         cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
         self.assertEqual(2, cached_unread_count)
         self.assertEqual(1, cached_unread_groups)
+
+    @async_test
+    async def test_cached_unread_count_does_not_change_when_group_is_undeleted(self):
+        session = self.env.session_maker()
+
+        cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
+        self.assertIsNone(cached_unread_count)
+        self.assertIsNone(cached_unread_groups)
+
+        message = await self.env.rest.message.send_message_to_user(
+            BaseTest.OTHER_USER_ID,
+            SendMessageQuery(
+                receiver_id=BaseTest.USER_ID,
+                message_type=MessageTypes.MESSAGE,
+                message_payload="some message"
+            ),
+            session
+        )
+        group_id = message.group_id
+
+        cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
+        self.assertEqual(1, cached_unread_count)
+        self.assertEqual(1, cached_unread_groups)
+
+        # delete the group, so should have 0 unread (1 still when it comes back)
+        await self.env.rest.group.update_user_group_stats(
+            group_id, BaseTest.USER_ID, UpdateUserGroupStats(delete_before=arrow.utcnow().timestamp()), session
+        )
+
+        cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
+        self.assertEqual(0, cached_unread_count)
+        self.assertEqual(0, cached_unread_groups)
+
+        await self.env.rest.message.send_message_to_user(
+            BaseTest.OTHER_USER_ID,
+            SendMessageQuery(
+                receiver_id=BaseTest.USER_ID,
+                message_type=MessageTypes.MESSAGE,
+                message_payload="some message"
+            ),
+            session
+        )
+
+        # should have 1 unread now still, can't get unread back after deleting
+        cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
+        self.assertEqual(1, cached_unread_count)
+        self.assertEqual(1, cached_unread_groups)

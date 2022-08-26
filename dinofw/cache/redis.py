@@ -434,10 +434,18 @@ class CacheRedis(ICache):
             delete_before = float(delete_before)
             return to_dt(delete_before, allow_none=True)
 
-    def set_delete_before(self, group_id: str, user_id: int, delete_before: float) -> None:
+    def set_delete_before(self, group_id: str, user_id: int, delete_before: float, pipeline=None) -> None:
         key = RedisKeys.delete_before(group_id, user_id)
-        self.redis.set(key, delete_before)
-        self.redis.expire(key, 14 * ONE_DAY)
+
+        # use pipeline if provided
+        r = pipeline or self.redis.pipeline()
+
+        r.set(key, delete_before)
+        r.expire(key, 14 * ONE_DAY)
+
+        # only execute if we weren't provided a pipeline
+        if pipeline is None:
+            r.execute()
 
     def increase_attachment_count_in_group_for_users(self, group_id: str, user_ids: List[int]):
         p = self.redis.pipeline()
@@ -452,12 +460,15 @@ class CacheRedis(ICache):
 
         p.execute()
 
-    def remove_attachment_count_in_group_for_users(self, group_id: str, user_ids: List[int]):
+    def remove_attachment_count_in_group_for_users(self, group_id: str, user_ids: List[int], pipeline=None):
         keys = [
             RedisKeys.attachment_count_group_user(group_id, user_id)
             for user_id in user_ids
         ]
-        self.redis.delete(*keys)
+
+        # use pipeline if provided
+        r = pipeline or self.redis
+        r.delete(*keys)
 
     def get_attachment_count_in_group_for_user(self, group_id: str, user_id: int) -> Optional[int]:
         key = RedisKeys.attachment_count_group_user(group_id, user_id)

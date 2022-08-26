@@ -1355,7 +1355,7 @@ class RelationalHandler:
 
         user_stats, that_user_stats, group = self.get_both_user_stats_in_group(group_id, user_id, query, db)
 
-        unread_count_before_opening = user_stats.unread_count
+        unread_count_before_changing = user_stats.unread_count
         last_read = to_dt(query.last_read_time, allow_none=True)
         delete_before = to_dt(query.delete_before, allow_none=True)
         highlight_time = to_dt(
@@ -1415,7 +1415,7 @@ class RelationalHandler:
             user_stats.unread_count = self.env.storage.get_unread_in_group(group_id, user_id, last_read)
 
             # updating unread removes bookmark, and bookmark always counts as 1 unread
-            decrease_by = unread_count_before_opening
+            decrease_by = unread_count_before_changing
             if user_stats.bookmark:
                 decrease_by = 1
 
@@ -1428,7 +1428,6 @@ class RelationalHandler:
                 that_user_stats.receiver_highlight_time = self.long_ago
 
         if delete_before is not None:
-            # TODO: update cached total unread count
             user_stats.delete_before = delete_before
 
             # otherwise a deleted group could have unread messages
@@ -1446,16 +1445,21 @@ class RelationalHandler:
             # so there's no need to count from cassandra from now on
             self.env.db.set_sent_message_count(group_id, user_id, 0, db)
 
-            # need to reset unread count when deleting a group
-            user_stats.unread_count = 0
-            self.env.cache.set_unread_in_group(group_id, user_id, 0)
+            # no pipeline for these two, might have to run multiple queries to correct negative value
+            self.env.cache.decrease_total_unread_message_count(user_id, unread_count_before_changing)
+            self.env.cache.remove_unread_group(user_id, group_id)
 
-            # update the cached value of delete before, and also remove
-            # the cached count of attachments in this group for this
-            # user; it will be recounted and cached again the next time
-            # it's requested
-            self.env.cache.set_delete_before(group_id, user_id, to_ts(delete_before))
-            self.env.cache.remove_attachment_count_in_group_for_users(group_id, [user_id])
+            with self.env.cache.pipeline() as p:
+                # need to reset unread count when deleting a group
+                user_stats.unread_count = 0
+                self.env.cache.set_unread_in_group(group_id, user_id, 0, pipeline=p)
+
+                # update the cached value of delete before, and also remove
+                # the cached count of attachments in this group for this
+                # user; it will be recounted and cached again the next time
+                # it's requested
+                self.env.cache.set_delete_before(group_id, user_id, to_ts(delete_before), pipeline=p)
+                self.env.cache.remove_attachment_count_in_group_for_users(group_id, [user_id], pipeline=p)
 
         # can't set highlight time if also setting last read time
         if highlight_time is not None and last_read is None:
@@ -1468,12 +1472,12 @@ class RelationalHandler:
             if query.hide:
                 # no pipline for removing, might have to run multiple queries
                 self.env.cache.remove_unread_group(user_id, group_id)
-                self.env.cache.decrease_total_unread_message_count(user_id, unread_count_before_opening)
+                self.env.cache.decrease_total_unread_message_count(user_id, unread_count_before_changing)
             else:
                 with self.env.cache.pipeline() as p:
                     self.env.cache.add_unread_group([user_id], group_id, pipeline=p)
                     self.env.cache.increase_total_unread_message_count(
-                        [user_id], unread_count_before_opening, pipeline=p
+                        [user_id], unread_count_before_changing, pipeline=p
                     )
 
         if query.hide is not None or query.delete_before is not None:
