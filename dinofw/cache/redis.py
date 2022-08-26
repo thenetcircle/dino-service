@@ -79,6 +79,46 @@ class CacheRedis(ICache):
 
         self.listen_host = socket.gethostname().split(".")[0]
 
+    def get_total_unread_count(self, user_id: int) -> (Optional[int], Optional[int]):
+        p = self.redis.pipeline()
+
+        p.get(RedisKeys.total_unread_count(user_id))
+        p.get(RedisKeys.total_unread_groups(user_id))
+
+        unread_count, unread_groups = p.execute()
+
+        if unread_count is not None:
+            return int(float(unread_count)), int(float(unread_groups))
+
+        return None, None
+
+    def set_total_unread_count(self, user_id: int, unread_count: int, unread_groups: int) -> None:
+        key_count = RedisKeys.total_unread_count(user_id)
+        key_group = RedisKeys.total_unread_groups(user_id)
+
+        p = self.redis.pipeline()
+        p.set(key_count, unread_count)
+        p.set(key_group, unread_groups)
+        p.expire(key_count, ONE_DAY * 2)
+        p.expire(key_group, ONE_DAY * 2)
+        p.execute()
+
+    def increase_total_unread_message_count(self, user_id: int):
+        key_count = RedisKeys.total_unread_count(user_id)
+
+        p = self.redis.pipeline()
+        p.incr(key_count)
+        p.expire(key_count, ONE_DAY * 2)
+        p.execute()
+
+    def increase_total_unread_group_count(self, user_id: int):
+        key_group = RedisKeys.total_unread_groups(user_id)
+
+        p = self.redis.pipeline()
+        p.incr(key_group)
+        p.expire(key_group, ONE_DAY * 2)
+        p.execute()
+
     def get_group_exists(self, group_id: str) -> Optional[bool]:
         value = self.redis.get(RedisKeys.group_exists(group_id))
         if value is None:
@@ -343,7 +383,7 @@ class CacheRedis(ICache):
         types = ",".join([":".join(map(str, values)) for values in counts])
 
         self.redis.set(key, types)
-        self.redis.expire(key, ONE_DAY)
+        self.redis.expire(key, ONE_DAY * 2)
 
     def get_count_group_types_for_user(self, user_id: int, hidden: bool) -> Optional[List[Tuple[int, int]]]:
         if hidden is None:

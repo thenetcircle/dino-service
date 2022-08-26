@@ -60,6 +60,16 @@ class RedisKeys:
     RKEY_GROUP_EXISTS: Final = "group:exist:{}"  # group:exist:group_id
     RKEY_ATT_COUNT_GROUP_USER: Final = "att:count:user:{}:{}"  # att:count:user:group_id:user_id
     RKEY_DELETE_BEFORE: Final = "delete:before:user:{}:{}"  # delete:before:user:group_id:user_id
+    RKEY_TOTAL_UNREAD_COUNT = "unread:msgs:{}"  # unread:msgs:user_id
+    RKEY_TOTAL_UNREAD_GROUPS = "unread:groups:{}"  # unread:groups:user_id
+
+    @staticmethod
+    def total_unread_count(user_id: int) -> str:
+        return RedisKeys.RKEY_TOTAL_UNREAD_COUNT.format(user_id)
+
+    @staticmethod
+    def total_unread_groups(user_id: int) -> str:
+        return RedisKeys.RKEY_TOTAL_UNREAD_GROUPS.format(user_id)
 
     @staticmethod
     def delete_before(group_id: str, user_id: int) -> str:

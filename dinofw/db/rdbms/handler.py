@@ -225,6 +225,49 @@ class RelationalHandler:
             query=query
         )
 
+    def count_total_unread(self, user_id: int, db: Session) -> (int, int):
+        """
+        count all unread messages for a user, including bookmarked groups
+
+        postgres query:
+
+            select
+                sum(unread_count) filter (where bookmark = false) +
+                count(1) filter (where bookmark = true) as unread_count,
+                count(distinct group_id) as n_unread_groups
+            from
+                user_group_stats
+            where
+                user_id = 6510486 and
+                hide = false and
+                deleted = false and
+                (bookmark = true or unread_count > 0);
+        """
+        # TODO: query for hidden?
+        unread_count, n_groups_unread = (
+            db.query(
+                func.sum(UserGroupStatsEntity.unread_count).filter(UserGroupStatsEntity.bookmark.is_(False)) +
+                func.count(1).filter(UserGroupStatsEntity.bookmark.is_(True)),
+                func.count(func.distinct(UserGroupStatsEntity.group_id))
+            )
+            .filter(
+                UserGroupStatsEntity.user_id == user_id,
+                UserGroupStatsEntity.hide.is_(False),
+                UserGroupStatsEntity.deleted.is_(False),
+                or_(
+                    UserGroupStatsEntity.bookmark.is_(True),
+                    UserGroupStatsEntity.unread_count > 0
+                )
+            )
+            .first()
+        )
+
+        # if the user has NO groups, sqlalchemy will return None not 0
+        if unread_count is None:
+            unread_count = 0
+
+        return unread_count, n_groups_unread
+
     def get_groups_updated_since(
         self,
         user_id: int,

@@ -79,63 +79,32 @@ class UserResource(BaseResource):
 
         return to_last_reads(group_id, last_reads)
 
-    def count_unread(self, user_id: int, query: GroupQuery, db: Session) -> (int, int):
-        """
-        TODO: new db method to count in postgres and cache in redis; too slow to
-          include unlimited groups otherwise, some users have 10k+ unread groups;
-          need to update cache on hide, bookmark, read, send, delete, highlight(?)
+    def count_unread(self, user_id: int, db: Session) -> (int, int):
+        unread_count, n_unread_groups = self.env.cache.get_total_unread_count(user_id)
+        if unread_count is not None:
+            return unread_count, n_unread_groups
 
-            # is conditional count needed? if bookmark=true, isn't unread_count then always 1?
-            select
-                sum(unread_count) filter (where bookmark = false) +
-                count(1) filter (where bookmark = true) as unread_count,
-                count(distinct group_id) as n_unread_groups
-            from
-                user_group_stats
-            where
-                user_id = 6510486 and
-                hide = false and
-                deleted = false and
-                (bookmark = true or unread_count > 0);
-        """
-        user_groups: List[UserGroupBase] = self.env.db.get_groups_for_user(
-            user_id, query, db
-        )
-        unread_amount = 0
-        n_unread_groups = 0
+        unread_count, n_unread_groups = self.env.db.count_total_unread(user_id, db)
 
-        for user_group in user_groups:
-            if user_group.unread > 0:
-                unread_amount += user_group.unread
-                n_unread_groups += 1
-
-            # bookmarked groups counts as 1 unread message only if they
-            # don't already have unread messages
-            elif user_group.user_stats.bookmark:
-                unread_amount += 1
-                n_unread_groups += 1
-
-        return unread_amount, n_unread_groups
+        self.env.cache.set_total_unread_count(user_id, unread_count, n_unread_groups)
+        return unread_count, n_unread_groups
 
     async def get_user_stats(self, user_id: int, query: UserStatsQuery, db: Session) -> UserStats:
-        # if the user has more than 100 groups with unread messages,
-        # it won't matter if the count is exact or not, just forget about
-        # the super-old ones (if a user reads a group, another unread
-        # group will be selected next time for this query anyway)
-        sub_query = GroupQuery(
-            per_page=100,
-            only_unread=query.only_unread,
-            count_unread=query.count_unread,
-            hidden=query.hidden,
-        )
-
         if query.count_unread:
-            unread_amount, n_unread_groups = self.count_unread(user_id, sub_query, db)
+            unread_amount, n_unread_groups = self.count_unread(user_id, db)
         else:
             unread_amount = -1
             n_unread_groups = -1
 
-        group_amounts = self.env.db.count_group_types_for_user(user_id, sub_query, db)
+        group_amounts = self.env.db.count_group_types_for_user(
+            user_id,
+            GroupQuery(
+                only_unread=query.only_unread,
+                count_unread=query.count_unread,
+                hidden=query.hidden,
+            ),
+            db
+        )
         group_amounts = dict(group_amounts)
 
         last_sent_group_id, last_sent_time = self.env.db.get_last_sent_for_user(user_id, db)
