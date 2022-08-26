@@ -404,6 +404,10 @@ class FakeDatabase:
         beginning_of_1995 = 789_000_000
         self.long_ago = arrow.Arrow.utcfromtimestamp(beginning_of_1995).datetime
 
+    def count_total_unread(self, user_id, _):
+        # TODO: mock this as needed
+        return 0, []
+
     def remove_user_group_stats_for_user(self, group_ids: List[str], user_id: int, _):
         if user_id in self.stats:
             to_keep = list()

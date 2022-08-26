@@ -175,6 +175,7 @@ class TestServerRestApi(BaseServerRestApi):
         # sending a message should mark the group as "read"
         self.send_message_to_group_from(group_id2, user_id=BaseTest.OTHER_USER_ID)
         self.assert_total_unread_count(user_id=BaseTest.USER_ID, unread_count=1)
+        # TODO: this is 20 when running, check where it fails
         self.assert_total_unread_count(user_id=BaseTest.OTHER_USER_ID, unread_count=10)
 
         # first user should now have 2 unread
