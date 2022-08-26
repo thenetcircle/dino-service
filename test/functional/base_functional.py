@@ -76,6 +76,17 @@ class BaseServerRestApi(BaseDatabaseTest):
         )
         self.assertEqual(raw_response.status_code, 200)
 
+    def update_last_read(self, group_id: str, user_id: int):
+        the_json = {
+            "last_read_time": arrow.utcnow().timestamp()
+        }
+
+        raw_response = self.client.put(
+            f"/v1/groups/{group_id}/user/{user_id}/update",
+            json=the_json,
+        )
+        self.assertEqual(raw_response.status_code, 200)
+
     def bookmark_group(
         self, group_id: str, bookmark: bool, user_id: int = BaseTest.USER_ID
     ):
