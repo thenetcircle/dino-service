@@ -1482,13 +1482,16 @@ class RelationalHandler:
         )
 
         the_time_ts = to_ts(the_time)
-        self.env.cache.set_last_read_in_group_for_user(group_id, user_id, the_time_ts)
 
-        # used for user global stats api
-        self.env.cache.set_last_sent_for_user(user_id, group_id, the_time_ts)
+        # use a pipeline to connect the different redis calls
+        with self.env.cache.pipeline() as p:
+            self.env.cache.set_last_read_in_group_for_user(group_id, user_id, the_time_ts, pipeline=p)
 
-        self.env.cache.set_hide_group(group_id, False)
-        self.env.cache.set_unread_in_group(group_id, user_id, 0)
+            # used for user global stats api
+            self.env.cache.set_last_sent_for_user(user_id, group_id, the_time_ts, pipeline=p)
+
+            self.env.cache.set_hide_group(group_id, False, pipeline=p)
+            self.env.cache.set_unread_in_group(group_id, user_id, 0, pipeline=p)
 
         if user_stats is None:
             raise UserNotInGroupException(f"user {user_id} is not in group {group_id}")

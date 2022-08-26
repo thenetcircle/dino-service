@@ -1,5 +1,6 @@
 import socket
 import sys
+from contextlib import contextmanager
 from datetime import datetime as dt
 from datetime import timedelta
 from typing import Dict
@@ -78,6 +79,21 @@ class CacheRedis(ICache):
             self.listen_port = args[bind_arg_pos + 1].split(":")[1]
 
         self.listen_host = socket.gethostname().split(".")[0]
+
+    @contextmanager
+    def pipeline(self):
+        """
+        to chain separate cache functions using a single pipeline, will be executed
+        at the end of the context managers lifecycle
+
+        :return: a Redis pipeline object
+        """
+        p = self.redis.pipeline()
+        try:
+            yield p
+        finally:
+            if p is not None:
+                p.execute()
 
     def get_total_unread_count(self, user_id: int) -> (Optional[int], Optional[int]):
         p = self.redis.pipeline()
@@ -222,11 +238,15 @@ class CacheRedis(ICache):
         p.execute()
 
     def set_last_read_in_group_for_user(
-        self, group_id: str, user_id: int, last_read: float
+        self, group_id: str, user_id: int, last_read: float, pipeline=None
     ) -> None:
         key = RedisKeys.last_read_time(group_id)
-        self.redis.hset(key, str(user_id), last_read)
-        self.redis.expire(key, 7 * ONE_DAY)
+
+        # use pipeline if provided
+        r = pipeline or self.redis
+
+        r.hset(key, str(user_id), last_read)
+        r.expire(key, 7 * ONE_DAY)
 
     def remove_last_read_in_group_for_user(self, group_id: str, user_id: int) -> None:
         key = RedisKeys.last_read_time(group_id)
@@ -270,9 +290,13 @@ class CacheRedis(ICache):
         except (TypeError, ValueError):
             return None
 
-    def set_unread_in_group(self, group_id: str, user_id: int, unread: int) -> None:
+    def set_unread_in_group(self, group_id: str, user_id: int, unread: int, pipeline=None) -> None:
         key = RedisKeys.unread_in_group(group_id)
-        self.redis.hset(key, str(user_id), unread)
+
+        # use pipeline if provided
+        r = pipeline or self.redis
+
+        r.hset(key, str(user_id), unread)
 
     def get_user_count_in_group(self, group_id: str) -> Optional[int]:
         key = RedisKeys.user_in_group(group_id)
@@ -361,9 +385,13 @@ class CacheRedis(ICache):
         self.redis.set(key, str(the_count))
         self.redis.expire(key, ONE_DAY * 14)
 
-    def set_last_sent_for_user(self, user_id: int, group_id: str, last_time: float) -> None:
+    def set_last_sent_for_user(self, user_id: int, group_id: str, last_time: float, pipeline=None) -> None:
         key = RedisKeys.last_sent_time_user(user_id)
-        self.redis.set(key, f"{group_id}:{last_time}")
+
+        # use pipeline if provided
+        r = pipeline or self.redis
+
+        r.set(key, f"{group_id}:{last_time}")
 
     def get_last_sent_for_user(self, user_id: int) -> (str, float):
         key = RedisKeys.last_sent_time_user(user_id)
@@ -499,7 +527,7 @@ class CacheRedis(ICache):
         self.redis.delete(key)
 
     def set_hide_group(
-        self, group_id: str, hide: bool, user_ids: List[int] = None
+        self, group_id: str, hide: bool, user_ids: List[int] = None, pipeline=None
     ) -> None:
         key = RedisKeys.hide_group(group_id)
 
@@ -508,11 +536,15 @@ class CacheRedis(ICache):
         else:
             users = user_ids
 
-        p = self.redis.pipeline()
-        for user in users:
-            p.hset(key, user, "t" if hide else "f")
+        # use pipeline if provided
+        r = pipeline or self.redis.pipeline()
 
-        p.execute()
+        for user in users:
+            r.hset(key, user, "t" if hide else "f")
+
+        # only execute if we weren't provided a pipeline
+        if pipeline is None:
+            r.execute()
 
     @property
     def redis(self):

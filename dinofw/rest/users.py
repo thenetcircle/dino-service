@@ -80,6 +80,13 @@ class UserResource(BaseResource):
         return to_last_reads(group_id, last_reads)
 
     def count_unread(self, user_id: int, db: Session) -> (int, int):
+        # TODO: need to update cache on hide, bookmark, read, send, delete, highlight(?)
+        #  * highlight(?)   :
+        #  * delete         :
+        #  * send           :
+        #  * read           :
+        #  * bookmark       :
+
         unread_count, n_unread_groups = self.env.cache.get_total_unread_count(user_id)
         if unread_count is not None:
             return unread_count, n_unread_groups
