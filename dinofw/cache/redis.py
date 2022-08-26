@@ -61,6 +61,9 @@ class CacheRedis(ICache):
 
             self.redis_pool = None
             self.redis_instance = FakeStrictRedis(host=host, port=port, db=db, decode_responses=True)
+
+            # fakeredis doesn't use execute on pipelines...
+            self.redis_instance.execute = lambda: None
         else:
             self.redis_pool = redis.ConnectionPool(host=host, port=port, db=db, decode_responses=True)
             self.redis_instance = None

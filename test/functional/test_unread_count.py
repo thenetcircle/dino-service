@@ -1,5 +1,7 @@
 from uuid import uuid4 as uuid
 
+import arrow
+
 from dinofw.rest.queries import MessageQuery
 from dinofw.rest.queries import SendMessageQuery
 from dinofw.rest.queries import UpdateUserGroupStats
@@ -175,3 +177,67 @@ class TestUnreadCount(BaseServerRestApi):
         cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
         self.assertEqual(1, cached_unread_count)
         self.assertEqual(1, cached_unread_groups)
+
+    @async_test
+    async def test_cached_unread_count_decreases_on_getting_history(self):
+        session = self.env.session_maker()
+
+        cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
+        self.assertIsNone(cached_unread_count)
+        self.assertIsNone(cached_unread_groups)
+
+        message = await self.env.rest.message.send_message_to_user(
+            BaseTest.OTHER_USER_ID,
+            SendMessageQuery(
+                receiver_id=BaseTest.USER_ID,
+                message_type=MessageTypes.MESSAGE,
+                message_payload="some message"
+            ),
+            session
+        )
+        group_id = message.group_id
+
+        cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
+        self.assertEqual(1, cached_unread_count)
+        self.assertEqual(1, cached_unread_groups)
+
+        # mark as read, so should have 0 unread for this group, 1 unread in total
+        await self.env.rest.group.histories(
+            group_id, BaseTest.USER_ID, MessageQuery(per_page=30, since=0), session
+        )
+
+        cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
+        self.assertEqual(0, cached_unread_count)
+        self.assertEqual(0, cached_unread_groups)
+
+    @async_test
+    async def test_cached_unread_count_decreases_on_updating_last_read(self):
+        session = self.env.session_maker()
+
+        cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
+        self.assertIsNone(cached_unread_count)
+        self.assertIsNone(cached_unread_groups)
+
+        message = await self.env.rest.message.send_message_to_user(
+            BaseTest.OTHER_USER_ID,
+            SendMessageQuery(
+                receiver_id=BaseTest.USER_ID,
+                message_type=MessageTypes.MESSAGE,
+                message_payload="some message"
+            ),
+            session
+        )
+        group_id = message.group_id
+
+        cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
+        self.assertEqual(1, cached_unread_count)
+        self.assertEqual(1, cached_unread_groups)
+
+        # mark as read, so should have 0 unread for this group, 1 unread in total
+        await self.env.rest.group.update_user_group_stats(
+            group_id, BaseTest.USER_ID, UpdateUserGroupStats(last_read_time=arrow.utcnow().timestamp()), session
+        )
+
+        cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
+        self.assertEqual(0, cached_unread_count)
+        self.assertEqual(0, cached_unread_groups)
