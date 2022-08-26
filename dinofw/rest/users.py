@@ -99,6 +99,7 @@ class UserResource(BaseResource):
         group_amounts = self.env.db.count_group_types_for_user(
             user_id,
             GroupQuery(
+                per_page=-1,
                 only_unread=query.only_unread,
                 count_unread=query.count_unread,
                 hidden=query.hidden,
