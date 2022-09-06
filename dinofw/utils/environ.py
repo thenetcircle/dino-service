@@ -89,7 +89,7 @@ def init_logging(gn_env: GNEnvironment) -> None:
     gn_env.capture_message = capture_msg_wrapper
 
 
-def init_database(gn_env: GNEnvironment):
+def init_database(gn_env):
     if len(gn_env.config) == 0 or gn_env.config.get(ConfigKeys.TESTING, False):
         # assume we're testing
         return
@@ -140,13 +140,11 @@ def init_cache_service(gn_env: GNEnvironment):
 
     elif cache_type == "memory":
         from dinofw.cache.redis import CacheRedis
-
         gn_env.cache = CacheRedis(gn_env, host="mock")
 
     elif cache_type == "missall":
-        from dinofw.cache.miss import CacheAllMiss
-
-        gn_env.cache = CacheAllMiss()
+        from dinofw.cache.miss import CacheRedis
+        gn_env.cache = CacheRedis()
 
     else:
         raise RuntimeError(
