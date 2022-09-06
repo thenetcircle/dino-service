@@ -1415,6 +1415,7 @@ class RelationalHandler:
             self.env.cache.set_hide_group(group_id, False, pipeline=p)
             self.env.cache.set_unread_in_group(group_id, user_id, 0, pipeline=p)
 
+            # if the user sends a message while having unread messages in the group (maybe can happen on the app?)
             if current_unread_count is not None and current_unread_count > 0:
                 self.env.cache.decrease_total_unread_message_count(user_id, current_unread_count)
 
