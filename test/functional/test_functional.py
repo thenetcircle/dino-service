@@ -836,7 +836,7 @@ class TestServerRestApi(BaseServerRestApi):
         self.assertEqual(0, len(group_and_stats))
 
         # try to wake up the users
-        self.send_1v1_message()
+        self.send_1v1_message(user_id=BaseTest.OTHER_USER_ID, receiver_id=BaseTest.USER_ID)
 
         # should have woken up now
         group_and_stats = self.groups_for_user()
