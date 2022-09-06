@@ -256,7 +256,7 @@ class UpdateUserGroupStatsHandler:
             # set the last read time to now(), since a user can't remove a
             # bookmark without opening the conversation
             if query.bookmark is False and query.last_read_time is None:
-                return now
+                last_read = now
 
         if query.pin is not None:
             user_stats.pin = query.pin
