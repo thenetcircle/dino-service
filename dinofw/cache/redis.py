@@ -116,17 +116,16 @@ class CacheRedis(ICache):
         return None, None
 
     def set_total_unread_count(self, user_id: int, unread_count: int, unread_groups: List[str]) -> None:
-        key_count = RedisKeys.total_unread_count(user_id)
-
         p = self.redis.pipeline()
+
+        key_count = RedisKeys.total_unread_count(user_id)
         p.set(key_count, unread_count)
         p.expire(key_count, ONE_DAY * 2)
 
         key = RedisKeys.unread_groups(user_id)
-        for group_id in unread_groups:
-            p.sadd(key, group_id)
-
+        p.sadd(key, *unread_groups)
         p.expire(key, ONE_DAY * 2)
+
         p.execute()
 
     def decrease_total_unread_message_count(self, user_id: int, amount: int):
