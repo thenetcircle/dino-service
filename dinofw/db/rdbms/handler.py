@@ -266,7 +266,7 @@ class RelationalHandler:
 
         unread_group_ids = (
             db.query(
-                UserGroupStatsEntity.group_id
+                UserGroupStatsEntity
             )
             .filter(
                 UserGroupStatsEntity.user_id == user_id,
@@ -280,6 +280,10 @@ class RelationalHandler:
             .options(load_only("group_id"))
             .all()
         )
+
+        unread_group_ids = [
+            unread_group.group_id for unread_group in unread_group_ids
+        ]
 
         # if the user has NO groups, sqlalchemy will return None not 0
         if unread_count[0] is None:
