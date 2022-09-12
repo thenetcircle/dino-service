@@ -266,7 +266,7 @@ class RelationalHandler:
 
         unread_group_ids = (
             db.query(
-                UserGroupStatsEntity
+                UserGroupStatsEntity.group_id
             )
             .filter(
                 UserGroupStatsEntity.user_id == user_id,
