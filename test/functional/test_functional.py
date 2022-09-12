@@ -1159,3 +1159,101 @@ class TestServerRestApi(BaseServerRestApi):
         # returns a list of tuples: [(group_id, min(delete_before)),]
         self.assertEqual(to_del[0][0], groups[0])
         self.assertEqual(to_del[0][1], to_dt(delete_time))
+
+    def test_total_unread_count_after_deleting_all_group(self):
+        self.send_1v1_message(user_id=1000)
+        self.send_1v1_message(user_id=1001)
+        self.send_1v1_message(user_id=1002)
+        self.send_1v1_message(user_id=1003)
+
+        stats = self.get_global_user_stats(user_id=BaseTest.OTHER_USER_ID)
+        self.assertEqual(4, stats["one_to_one_amount"])
+        self.assertEqual(4, stats["unread_amount"])
+
+        self.delete_all_groups(user_id=BaseTest.OTHER_USER_ID)
+
+        stats = self.get_global_user_stats(user_id=BaseTest.OTHER_USER_ID)
+        self.assertEqual(0, stats["one_to_one_amount"])
+        self.assertEqual(0, stats["unread_amount"])
+
+    def test_total_unread_count_after_hiding_one_group(self):
+        msg = self.send_1v1_message(user_id=1000)
+        self.send_1v1_message(user_id=1001)
+        self.send_1v1_message(user_id=1002)
+        self.send_1v1_message(user_id=1003)
+
+        stats = self.get_global_user_stats(user_id=BaseTest.OTHER_USER_ID)
+        self.assertEqual(4, stats["one_to_one_amount"])
+        self.assertEqual(4, stats["unread_amount"])
+
+        self.update_hide_group_for(group_id=msg["group_id"], hide=True, user_id=BaseTest.OTHER_USER_ID)
+
+        stats = self.get_global_user_stats(user_id=BaseTest.OTHER_USER_ID)
+        self.assertEqual(3, stats["one_to_one_amount"])
+        self.assertEqual(3, stats["unread_amount"])
+
+    def test_total_unread_count_after_deleting_one_group(self):
+        msg = self.send_1v1_message(user_id=1000)
+        self.send_1v1_message(user_id=1001)
+        self.send_1v1_message(user_id=1002)
+        self.send_1v1_message(user_id=1003)
+
+        stats = self.get_global_user_stats(user_id=BaseTest.OTHER_USER_ID)
+        self.assertEqual(4, stats["one_to_one_amount"])
+        self.assertEqual(4, stats["unread_amount"])
+
+        self.update_delete_before(
+            group_id=msg["group_id"],
+            delete_before=arrow.utcnow().timestamp()+1,
+            user_id=BaseTest.OTHER_USER_ID
+        )
+
+        stats = self.get_global_user_stats(user_id=BaseTest.OTHER_USER_ID)
+        self.assertEqual(3, stats["one_to_one_amount"])
+        self.assertEqual(3, stats["unread_amount"])
+
+    def test_total_unread_count_after_bookmarking_one_group(self):
+        # send 3 msgs to this group, which we'll bookmark later
+        msg = self.send_1v1_message(user_id=1000)
+        self.send_1v1_message(user_id=1000)
+        self.send_1v1_message(user_id=1000)
+
+        group_id = msg["group_id"]
+
+        self.send_1v1_message(user_id=1001)
+        self.send_1v1_message(user_id=1002)
+        self.send_1v1_message(user_id=1003)
+
+        stats = self.get_global_user_stats(user_id=BaseTest.OTHER_USER_ID)
+        self.assertEqual(4, stats["one_to_one_amount"])
+        self.assertEqual(6, stats["unread_amount"])
+
+        # need to read a group before bookmarking it
+        self.update_last_read(group_id, user_id=BaseTest.OTHER_USER_ID)
+
+        # make sure the unread count was reduced by 3
+        stats = self.get_global_user_stats(user_id=BaseTest.OTHER_USER_ID)
+        self.assertEqual(4, stats["one_to_one_amount"])
+        self.assertEqual(3, stats["unread_amount"])
+
+        self.bookmark_group(
+            group_id=group_id,
+            bookmark=True,
+            user_id=BaseTest.OTHER_USER_ID
+        )
+
+        # bookmarking will increase unread count by 1 for the bookmarked group
+        stats = self.get_global_user_stats(user_id=BaseTest.OTHER_USER_ID)
+        self.assertEqual(4, stats["one_to_one_amount"])
+        self.assertEqual(4, stats["unread_amount"])
+
+        self.bookmark_group(
+            group_id=group_id,
+            bookmark=False,
+            user_id=BaseTest.OTHER_USER_ID
+        )
+
+        # removing the bookmarking reduces unread by 1
+        stats = self.get_global_user_stats(user_id=BaseTest.OTHER_USER_ID)
+        self.assertEqual(4, stats["one_to_one_amount"])
+        self.assertEqual(3, stats["unread_amount"])
