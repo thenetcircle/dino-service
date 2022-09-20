@@ -58,6 +58,12 @@ class EventType:
     delete_attachment = "delete_attachment"
 
 
+class HighlightStatus:
+    RECEIVER = 2
+    SENDER = 1
+    NONE = 0
+
+
 class NotificationQuery(AbstractQuery):
     group_id: str
     event_type: str  # previously an Enum, but dino doesn't need to validate it, so changed to string

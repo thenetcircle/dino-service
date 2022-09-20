@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from dinofw.endpoint import EventTypes
 from dinofw.rest.base import BaseResource
-from dinofw.rest.queries import NotificationQuery, EventType
+from dinofw.rest.queries import NotificationQuery, EventType, HighlightStatus
 from dinofw.utils.convert import stats_to_event_dict, to_int
 
 
@@ -22,12 +22,21 @@ class BroadcastResource(BaseResource):
             event["event_type"] = EventTypes.MESSAGE
             event["group_id"] = query.group_id
 
-            # FE needs to compare highlight time with current utc server time
-            event["published"] = to_int(arrow.utcnow().timestamp())
+            # FE js doesn't handle ms well, so we multiply by 1000 for them
+            now = to_int(arrow.utcnow().timestamp())
 
             for user_id in user_group.user_ids:
                 event_with_stats = event.copy()
                 event_with_stats["stats"] = user_id_to_stats.get(user_id, dict())
+
+                event_with_stats["stats"]["highlight_status"] = HighlightStatus.NONE
+
+                # both sender and receiver can't highlight the group at the same time
+                if event_with_stats["stats"].get("highlight_time", -1) > now:
+                    event_with_stats["stats"]["highlight_status"] = HighlightStatus.SENDER
+
+                elif event_with_stats["stats"].get("receiver_highlight_time", -1) > now:
+                    event_with_stats["stats"]["highlight_status"] = HighlightStatus.RECEIVER
 
                 self.env.client_publisher.send_to_one(user_id, event_with_stats)
 
