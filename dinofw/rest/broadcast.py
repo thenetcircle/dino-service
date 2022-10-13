@@ -38,7 +38,7 @@ class BroadcastResource(BaseResource):
                 else:
                     highlight_status = 0  # HIGHLIGHT_STATUS_NONE
 
-                event_with_stats["stats"]["highlight_status"] = highlight_status
+                event_with_stats["stats"]["highlight"] = highlight_status
                 self.env.client_publisher.send_to_one(user_id, event_with_stats)
 
     def send_other_event(self, query: NotificationQuery):
