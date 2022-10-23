@@ -1410,6 +1410,7 @@ class RelationalHandler:
 
         # have to reset the highlight time (if any) of the other users in the group as well
         if current_highlight_time > long_ago_ts:
+            # TODO: use update() instead of running multiple queries (select and update)
             other_user_stats = (
                 db.query(UserGroupStatsEntity)
                 .filter(UserGroupStatsEntity.user_id != user_id)
