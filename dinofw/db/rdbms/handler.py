@@ -47,7 +47,7 @@ class RelationalHandler:
 
         # used when no `hide_before` is specified in a query
         beginning_of_1995 = 789_000_000
-        self.long_ago = dt.utcfromtimestamp(beginning_of_1995)
+        self.long_ago = arrow.get(beginning_of_1995).datetime
 
     def get_users_in_group(
             self,
@@ -1378,6 +1378,7 @@ class RelationalHandler:
 
         # have to reset the highlight time (if any) of the other users in the group as well
         if current_highlight_time > long_ago_ts:
+            # TODO: use update() instead of running multiple queries (select and update)
             other_user_stats = (
                 db.query(UserGroupStatsEntity)
                 .filter(UserGroupStatsEntity.user_id != user_id)

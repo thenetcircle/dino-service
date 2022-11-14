@@ -47,7 +47,7 @@ class CassandraHandler:
 
         # used when no `hide_before` is specified in a query
         beginning_of_1995 = 789_000_000
-        self.long_ago = dt.utcfromtimestamp(beginning_of_1995)
+        self.long_ago = arrow.get(beginning_of_1995).datetime
 
     def setup_tables(self):
         key_space = self.env.config.get(ConfigKeys.KEY_SPACE, domain=ConfigKeys.STORAGE)
