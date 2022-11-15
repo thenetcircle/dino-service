@@ -16,7 +16,7 @@ class BroadcastResource(BaseResource):
 
     def send_message_event(self, query: NotificationQuery, db: Session):
         user_id_to_stats = self.get_stats_for(query.group_id, db)
-        now_int = to_int(arrow.utcnow().timestamp())
+        now_int = to_int(arrow.utcnow().int_timestamp)
 
         for user_group in query.notification:
             event = user_group.data.copy()
