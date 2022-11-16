@@ -125,17 +125,18 @@ class CacheRedis(ICache):
         p.set(key_count, unread_count)
         p.expire(key_count, ONE_DAY * 2)
 
-        key = RedisKeys.unread_groups(user_id)
+        if len(unread_groups):
+            key = RedisKeys.unread_groups(user_id)
 
-        # FakeRedis doesn't support multiple values for SADD
-        if self.testing:
-            for group_id in unread_groups:
-                p.sadd(key, group_id)
-        else:
-            p.sadd(key, *unread_groups)
+            # FakeRedis doesn't support multiple values for SADD
+            if self.testing:
+                for group_id in unread_groups:
+                    p.sadd(key, group_id)
+            else:
+                p.sadd(key, *unread_groups)
 
-        p.expire(key, ONE_DAY * 2)
-        p.execute()
+            p.expire(key, ONE_DAY * 2)
+            p.execute()
 
     def decrease_total_unread_message_count(self, user_id: int, amount: int):
         if amount == 0:
