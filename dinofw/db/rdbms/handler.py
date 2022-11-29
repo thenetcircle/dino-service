@@ -520,7 +520,7 @@ class RelationalHandler:
             # some room for unexpected extra chars
             group.last_message_overview = truncate_json_message(
                 message.message_payload,
-                limit=1000,
+                limit=950,
                 only_content=True  # for overview, we don't need anything except the content
             )
 
