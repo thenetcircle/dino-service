@@ -2,6 +2,7 @@ from sqlalchemy import Boolean
 from sqlalchemy import Column
 from sqlalchemy import DateTime
 from sqlalchemy import Integer
+from sqlalchemy import Text
 from sqlalchemy import String
 from sqlalchemy import UniqueConstraint
 
@@ -34,7 +35,7 @@ class GroupEntity(env.Base):
     last_message_user_id = Column(Integer, nullable=True)
     last_message_id = Column(String(36), nullable=True)
     last_message_type = Column(Integer, nullable=False, server_default="0")
-    last_message_overview = Column(String(1024), nullable=True)
+    last_message_overview = Column(Text(), nullable=True)
 
     meta = Column(Integer, nullable=True)
     description = Column(String(512), nullable=True)
