@@ -515,9 +515,12 @@ class RelationalHandler:
             group.last_message_id = message.message_id
             group.last_message_type = message.message_type
             group.last_message_user_id = message.user_id
+
+            # db limit is 1024; json keys adds another 15 chars; keep 1015 < 1024 with
+            # some room for unexpected extra chars
             group.last_message_overview = truncate_json_message(
                 message.message_payload,
-                limit=500,
+                limit=1000,
                 only_content=True  # for overview, we don't need anything except the content
             )
 

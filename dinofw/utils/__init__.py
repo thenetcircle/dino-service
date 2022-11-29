@@ -33,17 +33,17 @@ def truncate_json_message(msg, limit=100, only_content: bool = False):
         msg_json = {
             "content": msg_json["content"]
         }
-        msg = json.dumps(msg_json)
+        msg = json.dumps(msg_json, ensure_ascii=False)
 
-    n_chars_content = len(json.dumps(msg_json["content"]))
-
+    n_chars_content = len(json.dumps(msg_json["content"], ensure_ascii=False))
     if n_chars_content <= limit:
         return msg
 
-    # in case of emojis, dump the string to count real length, and strip end of potential backslashes
-    msg_json["content"] = json.dumps(msg_json["content"])[:limit]
+    # in case of emojis, strip end of potential backslashes
+    msg_json["content"] = msg_json["content"][:limit]
     msg_json["content"] = msg_json["content"].rstrip("\\")
-    return json.dumps(msg_json)
+
+    return json.dumps(msg_json, ensure_ascii=False)
 
 
 def utcnow_ts():

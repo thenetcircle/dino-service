@@ -2,10 +2,16 @@ from unittest import TestCase
 import json
 
 from dinofw.utils import truncate_json_message
-from dinofw.utils import unicode_len
 
 
 class TestUserResource(TestCase):
+    def test_non_ascii(self):
+        s = '{"content": "Ganz gut, selbst? dass kinto-gui.py in (/root/ auflöst ausführen), während die es ... ẞ ß"}'
+        self.assertEqual(
+            70,
+            len(truncate_json_message(s, limit=55))
+        )
+
     def test_truncate_none(self):
         self.assertIsNone(truncate_json_message(None, limit=10))
 
