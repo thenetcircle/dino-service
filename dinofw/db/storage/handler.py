@@ -249,7 +249,7 @@ class CassandraHandler:
             if since < user_stats.delete_before:
                 since = user_stats.delete_before
 
-            statement = statement.filter(MessageModel.created_at > since)
+            statement = statement.filter(MessageModel.created_at >= since)  # TODO: try >= to fix broken preview msgs
 
             # default ordering is descending, so change to ascending when using 'since'
             statement = statement.order_by('created_at')

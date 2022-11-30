@@ -316,7 +316,7 @@ class RelationalHandler:
                 .filter(
                     GroupEntity.group_id == UserGroupStatsEntity.group_id,
                     UserGroupStatsEntity.user_id == user_id,
-                    UserGroupStatsEntity.last_updated_time >= since,  # TODO: try >= in lab, fix for broken last msg
+                    UserGroupStatsEntity.last_updated_time > since,
                 )
             )
 
