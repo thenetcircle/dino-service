@@ -520,7 +520,7 @@ class RelationalHandler:
             group.last_message_overview = truncate_json_message(
                 message.message_payload,
                 limit=60_000,
-                only_content=True  # for overview, we don't need anything except the content
+                only_content=False  # column changed to text, can save everything
             )
 
         # always update this
