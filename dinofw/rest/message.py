@@ -13,7 +13,7 @@ from dinofw.rest.queries import MessageQuery
 from dinofw.rest.queries import SendMessageQuery
 from dinofw.utils import users_to_group_id
 from dinofw.utils import utcnow_ts
-from dinofw.utils.config import EventTypes
+from dinofw.utils.config import EventTypes, MessageTypes
 from dinofw.utils.convert import message_base_to_message
 from dinofw.utils.exceptions import NoSuchUserException
 from dinofw.utils.exceptions import QueryValidationError
@@ -30,7 +30,9 @@ class MessageResource(BaseResource):
             user_id=user_id,
             message=message,
             db=db,
-            should_increase_unread=True,
+            # don't increase unread if this is an unprocessed attachment, when the
+            # attachment has been processed, the unread count will be increased
+            should_increase_unread=query.message_type != MessageTypes.IMAGE,
             event_type=EventTypes.MESSAGE
         )
 
@@ -125,6 +127,8 @@ class MessageResource(BaseResource):
             user_id=user_id,
             message=attachment,
             db=db,
+            # when the attachment is first created (not yet processed), the unread
+            # count is NOT increased, so increase it now when processing has finished
             should_increase_unread=True,
             event_type=EventTypes.ATTACHMENT,
             update_last_message=update_last_message
