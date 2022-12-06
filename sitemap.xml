@@ -2,22 +2,22 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://thenetcircle.github.io/dino-service/</loc>
-         <lastmod>2021-09-29</lastmod>
+         <lastmod>2022-12-06</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://thenetcircle.github.io/dino-service/md/events/</loc>
-         <lastmod>2021-09-29</lastmod>
+         <lastmod>2022-12-06</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://thenetcircle.github.io/dino-service/md/rest_api/</loc>
-         <lastmod>2021-09-29</lastmod>
+         <lastmod>2022-12-06</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://thenetcircle.github.io/dino-service/md/usage/</loc>
-         <lastmod>2021-09-29</lastmod>
+         <lastmod>2022-12-06</lastmod>
          <changefreq>daily</changefreq>
     </url>
 </urlset>
