@@ -124,6 +124,7 @@ class ReceiverStatsQuery(AbstractQuery):
 
 class GroupQuery(PaginationQuery, UserStatsQuery, ReceiverStatsQuery):
     receiver_ids: Optional[List[int]]
+    group_type: Optional[int] = None
 
 
 class GroupUpdatesQuery(GroupQuery):

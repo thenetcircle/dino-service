@@ -178,7 +178,12 @@ class RelationalHandler:
 
             if query.hidden is not None:
                 statement = statement.filter(
-                    UserGroupStatsEntity.hide.is_(query.hidden),
+                    UserGroupStatsEntity.hide.is_(query.hidden)
+                )
+
+            if query.group_type is not None:
+                statement = statement.filter(
+                    GroupEntity.group_type == query.group_type
                 )
 
             if query.only_unread:
