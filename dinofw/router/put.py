@@ -1,5 +1,5 @@
 import sys
-from typing import Optional
+from typing import Optional, List
 
 from fastapi import APIRouter
 from fastapi import Depends
@@ -154,12 +154,12 @@ async def edit_group_information(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.put("/groups/{group_id}/join", response_model=Optional[Message])
+@router.put("/groups/{group_id}/join", response_model=Optional[List[Message]])
 @timeit(logger, "PUT", "/groups/{group_id}/join")
 @wrap_exception()
 async def join_group(
     group_id: str, query: JoinGroupQuery, db: Session = Depends(get_db)
-) -> Message:
+) -> List[Message]:
     """
     Join a group.
 
