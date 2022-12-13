@@ -154,12 +154,12 @@ async def edit_group_information(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.put("/groups/{group_id}/join")
+@router.put("/groups/{group_id}/join", response_model=Optional[Message])
 @timeit(logger, "PUT", "/groups/{group_id}/join")
 @wrap_exception()
 async def join_group(
     group_id: str, query: JoinGroupQuery, db: Session = Depends(get_db)
-) -> None:
+) -> Message:
     """
     Join a group.
 

@@ -285,7 +285,7 @@ class GroupResource(BaseResource):
         self.create_action_log(query.action_log, db, group_id=group_id)
         self.env.client_publisher.group_change(group, user_ids)
 
-    async def join_group(self, group_id: str, query: JoinGroupQuery, db: Session) -> None:
+    async def join_group(self, group_id: str, query: JoinGroupQuery, db: Session) -> Message:
         now = utcnow_dt()
         now_ts = to_ts(now)
 
@@ -299,19 +299,27 @@ class GroupResource(BaseResource):
             group_id, user_ids_and_last_read, now, db
         )
 
-        self.create_action_log(query.action_log, db, group_id=group_id)
+        return self.create_action_log(query.action_log, db, group_id=group_id)
 
-    def leave_groups(self, group_id_to_type: dict, user_id: int, query: CreateActionLogQuery, db: Session) -> None:
+    def leave_groups(
+            self, group_id_to_type: dict, user_id: int, query: CreateActionLogQuery, db: Session
+    ) -> List[Message]:
         group_ids = list(group_id_to_type.keys())
         now = utcnow_dt()
 
         self.env.db.remove_user_group_stats_for_user(group_ids, user_id, db)
         self.env.db.set_groups_updated_at(group_ids, now, db)
 
+        action_logs = list()
+
         for group_id, group_type in group_id_to_type.items():
             # no need for an action log in 1v1 groups, it's not going to be shown anyway
             if group_type == GroupTypes.GROUP:
-                self.create_action_log(query.action_log, db, user_id=user_id, group_id=group_id)
+                action_logs.append(
+                    self.create_action_log(query.action_log, db, user_id=user_id, group_id=group_id)
+                )
+
+        return action_logs
 
     def delete_attachments_in_group_for_user(
             self,
