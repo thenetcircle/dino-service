@@ -110,6 +110,6 @@ restorer = Restorer(environ.env)
 app = FastAPI()
 
 
-@app.delete("/v1/run")
+@app.post("/v1/run")
 def run_deletions():
     restorer.run()
