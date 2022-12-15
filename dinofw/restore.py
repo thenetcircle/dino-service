@@ -14,10 +14,12 @@ long_ago = arrow.get(beginning_of_1995).datetime
 class Restorer:
     def __init__(self, env):
         self.env = env
-
         logger.info("initializing Restorer...")
 
-    def run(self):
+    def dry_run(self):
+        self.run(dry=True)
+
+    def run(self, dry: bool = False):
         logger.info("fetching groups without users...")
         session = environ.env.SessionLocal()
 
@@ -39,7 +41,7 @@ class Restorer:
             return
 
         logger.info(f"about to create {len(stats_to_create)} stats")
-        self.env.db.create_stats_for(stats_to_create, session)
+        self.env.db.create_stats_for(stats_to_create, session, dry=dry)
 
     def get_groups_and_users_to_fix(self, groups: List[GroupBase], session) -> (List[GroupBase], Set[int]):
         unique_user_ids = set()
@@ -115,5 +117,10 @@ app = FastAPI()
 
 
 @app.post("/v1/run")
-def run_deletions():
+def run_restorer():
     restorer.run()
+
+
+@app.post("/v1/check")
+def dry_run():
+    restorer.dry_run()

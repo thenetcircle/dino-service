@@ -754,7 +754,7 @@ class RelationalHandler:
 
         return {user[0] for user in users}
 
-    def create_stats_for(self, stats: List[UserGroupStatsBase], db: Session) -> None:
+    def create_stats_for(self, stats: List[UserGroupStatsBase], db: Session, dry: bool) -> None:
         """
         used for restoring stats when they've been incorrectly deleted by users removing their profiles
         """
@@ -775,9 +775,12 @@ class RelationalHandler:
                 receiver_highlight_time=stat.receiver_highlight_time,
                 sent_message_count=stat.sent_message_count,
             )
-            db.add(stat_entity)
 
-        db.commit()
+            if not dry:
+                db.add(stat_entity)
+
+        if not dry:
+            db.commit()
 
     def get_oldest_last_read_in_group(self, group_id: str, db: Session) -> Optional[float]:
         last_read = self.env.cache.get_last_read_in_group_oldest(group_id)
