@@ -99,7 +99,7 @@ class Restorer:
                 highlight_time=long_ago,
                 last_updated_time=group.updated_at,
                 first_sent=None,
-                receiver_highlight_timep=long_ago,
+                receiver_highlight_time=long_ago,
                 sent_message_count=-1,
                 unread_count=0,
                 deleted=False,
@@ -109,8 +109,6 @@ class Restorer:
                 rating=None
             ))
 
-        for stat in stats_to_create:
-            logger.info(f"creating: {stat.__dict__}")
         return stats_to_create
 
 
