@@ -76,15 +76,13 @@ class Restorer:
 
         for group in groups_to_fix:
             user_to_fix = None
-            user_ids = map(int, map(float, group.name.split(",")))
+            user_ids = [int(float(user_id)) for user_id in group.name.split(",")]
 
             for user in user_ids:
                 if user in existing_user_ids:
                     user_to_fix = user
                     break
 
-            logger.info(f"user_ids: {user_ids}")
-            logger.info(f"user_to_fix: {user_to_fix}")
             if user_to_fix is None:
                 logger.info(f"not fixing group {group.group_id} ({group.name}), both users deleted their profile")
                 continue
