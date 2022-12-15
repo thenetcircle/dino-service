@@ -109,6 +109,8 @@ class Restorer:
                 rating=None
             ))
 
+        for stat in stats_to_create:
+            logger.info(f"creating: {stat.__dict__}")
         return stats_to_create
 
 

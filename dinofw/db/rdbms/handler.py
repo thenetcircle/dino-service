@@ -779,7 +779,6 @@ class RelationalHandler:
 
         db.commit()
 
-
     def get_oldest_last_read_in_group(self, group_id: str, db: Session) -> Optional[float]:
         last_read = self.env.cache.get_last_read_in_group_oldest(group_id)
         if last_read is not None:
