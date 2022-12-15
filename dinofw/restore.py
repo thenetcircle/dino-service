@@ -7,6 +7,9 @@ from loguru import logger
 from dinofw.db.rdbms.schemas import GroupBase, UserGroupStatsBase
 from dinofw.utils import environ
 
+beginning_of_1995 = 789_000_000
+long_ago = arrow.get(beginning_of_1995).datetime
+
 
 class Restorer:
     def __init__(self, env):
@@ -93,10 +96,10 @@ class Restorer:
                 last_sent=group.last_message_time,
                 delete_before=group.first_message_time,
                 join_time=group.first_message_time,
-                highlight_time=None,
+                highlight_time=long_ago,
                 last_updated_time=group.updated_at,
                 first_sent=None,
-                receiver_highlight_timep=None,
+                receiver_highlight_timep=long_ago,
                 sent_message_count=-1,
                 unread_count=0,
                 deleted=False,
