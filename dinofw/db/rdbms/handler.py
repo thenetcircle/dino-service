@@ -11,6 +11,7 @@ from loguru import logger
 from sqlalchemy import case
 from sqlalchemy import func
 from sqlalchemy import literal
+from sqlalchemy import distinct
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from sqlalchemy.orm import load_only
@@ -743,7 +744,7 @@ class RelationalHandler:
 
     def get_existing_user_ids_out_of(self, user_ids: List[int], db: Session):
         users = (
-            db.query(UserGroupStatsEntity)
+            db.query(distinct(UserGroupStatsEntity.user_id))
             .filter(UserGroupStatsEntity.user_id.in_(user_ids))
             .all()
         )
@@ -751,7 +752,7 @@ class RelationalHandler:
         if not users or not len(users):
             return list()
 
-        return [user.user_id for user in users]
+        return users
 
     def create_stats_for(self, stats: List[UserGroupStatsBase], db: Session) -> None:
         """
