@@ -758,6 +758,7 @@ class RelationalHandler:
         used for restoring stats when they've been incorrectly deleted by users removing their profiles
         """
         for stat in stats:
+            logger.info(f"restoring stats for group {stat.group_id} and user {stat.user_id}")
             stat_entity = UserGroupStatsEntity(
                 group_id=stat.group_id,
                 user_id=stat.user_id,
