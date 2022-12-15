@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Set
 
 import arrow
 from fastapi import FastAPI
@@ -38,7 +38,7 @@ class Restorer:
         logger.info(f"about to create {len(stats_to_create)} stats")
         self.env.db.create_stats_for(stats_to_create, session)
 
-    def  get_groups_and_users_to_fix(self, groups: List[GroupBase], session) -> (List[GroupBase], List[int]):
+    def get_groups_and_users_to_fix(self, groups: List[GroupBase], session) -> (List[GroupBase], Set[int]):
         unique_user_ids = set()
         groups_to_fix = list()
 
@@ -67,8 +67,7 @@ class Restorer:
 
         return groups_to_fix, self.env.db.get_existing_user_ids_out_of(unique_user_ids, session)
 
-    def get_stats_to_create(self, groups_to_fix: List[GroupBase], existing_user_ids: List[int]):
-        existing_user_ids = {user_id for user_id in existing_user_ids}
+    def get_stats_to_create(self, groups_to_fix: List[GroupBase], existing_user_ids: Set[int]):
         stats_to_create = list()
         now_dt = arrow.utcnow().datetime
 

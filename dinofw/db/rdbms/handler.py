@@ -752,7 +752,7 @@ class RelationalHandler:
         if not users or not len(users):
             return list()
 
-        return users
+        return {user[0] for user in users}
 
     def create_stats_for(self, stats: List[UserGroupStatsBase], db: Session) -> None:
         """
