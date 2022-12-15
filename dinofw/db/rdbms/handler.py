@@ -722,14 +722,61 @@ class RelationalHandler:
         )
         db.commit()
 
-    def get_last_reads_in_group_old(self, group_id: str, db: Session) -> Dict[int, float]:
-        # TODO: remove this, not needed anymore
+    def get_groups_without_users(self, db: Session) -> List[GroupBase]:
+        groups = (
+            db.query(GroupEntity)
+            .outerjoin(
+                UserGroupStatsEntity,
+                UserGroupStatsEntity.group_id == GroupEntity.group_id,
+            )
+            .filter(
+                GroupEntity.group_type == 1,
+                UserGroupStatsEntity.user_id.is_(None)
+            )
+            .all()
+        )
 
-        # TODO: rethink this; some cached some not? maybe we don't have to do this twice
-        #  already query once to get all user ids, why not just get the last_read_time from db too...
-        users = self.get_user_ids_and_join_time_in_group(group_id, db)
-        user_ids = list(users.keys())
-        return self.get_last_read_in_group_for_users(group_id, user_ids, db)
+        return [
+            GroupBase(**group_entity.__dict__)
+            for group_entity in groups
+        ]
+
+    def get_existing_user_ids_out_of(self, user_ids: List[int], db: Session):
+        users = (
+            db.query(UserGroupStatsEntity)
+            .filter(UserGroupStatsEntity.user_id.in_(user_ids))
+            .all()
+        )
+
+        if not users or not len(users):
+            return list()
+
+        return [user.user_id for user in users]
+
+    def create_stats_for(self, stats: List[UserGroupStatsBase], db: Session) -> None:
+        """
+        used for restoring stats when they've been incorrectly deleted by users removing their profiles
+        """
+        for stat in stats:
+            stat_entity = UserGroupStatsEntity(
+                group_id=stat.group_id,
+                user_id=stat.user_id,
+                last_read=stat.last_read,
+                delete_before=stat.delete_before,
+                last_sent=stat.last_sent,
+                join_time=stat.join_time,
+                last_updated_time=stat.last_updated_time,
+                hide=stat.hide,
+                pin=stat.pin,
+                deleted=stat.deleted,
+                highlight_time=stat.highlight_time,
+                receiver_highlight_time=stat.receiver_highlight_time,
+                sent_message_count=stat.sent_message_count,
+            )
+            db.add(stat_entity)
+
+        db.commit()
+
 
     def get_oldest_last_read_in_group(self, group_id: str, db: Session) -> Optional[float]:
         last_read = self.env.cache.get_last_read_in_group_oldest(group_id)
