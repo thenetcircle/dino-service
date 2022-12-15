@@ -73,7 +73,7 @@ class Restorer:
 
         for group in groups_to_fix:
             user_to_fix = None
-            user_ids = group.name.split(",")
+            user_ids = map(int, map(float, group.name.split(",")))
 
             for user in user_ids:
                 if user in existing_user_ids:
