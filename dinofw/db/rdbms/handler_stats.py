@@ -264,6 +264,9 @@ class UpdateUserGroupStatsHandler:
         if query.rating is not None:
             user_stats.rating = query.rating
 
+        if query.notifications is not None:
+            user_stats.notifications = query.notifications
+
         if last_read is not None:
             self._set_last_read(
                 group_id, user_id, last_read, unread_count_before_changing, group, user_stats, that_user_stats, db

@@ -171,6 +171,7 @@ class UpdateUserGroupStats(CreateActionLogQuery):
     bookmark: Optional[bool]
     pin: Optional[bool]
     rating: Optional[int]
+    notifications: Optional[bool]
 
 
 class EditMessageQuery(OneToOneQuery):

@@ -87,4 +87,7 @@ class UserGroupStatsEntity(env.Base):
     # a user can rate conversations
     rating = Column(Integer, nullable=True)
 
+    # users can disable notifications for a conversation/group, which will disable counting unread messages for it
+    notifications = Column(Boolean, default=True, nullable=False)
+
     UniqueConstraint('group_id', 'user_id')
