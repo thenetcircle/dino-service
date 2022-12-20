@@ -507,11 +507,12 @@ class RelationalHandler:
                     db.query(UserGroupStatsEntity)
                     .filter(
                         UserGroupStatsEntity.group_id == message.group_id,
+                        UserGroupStatsEntity.bookmark.is_(False),
                         UserGroupStatsEntity.user_id.in_(user_ids_with_notification_on)
                     )
                     .update({
                         UserGroupStatsEntity.unread_count: UserGroupStatsEntity.unread_count + 1
-                    })
+                    }, synchronize_session=False)
                 )
 
             with self.env.cache.pipeline() as p:
@@ -521,9 +522,6 @@ class RelationalHandler:
                     to_ts(sent_time),
                     pipeline=p
                 )
-
-                # don't increase unread for the sender
-                del user_ids[sender_user_id]
 
                 if len(user_to_hidden_stats):
                     for user_id in user_to_hidden_stats.keys():
