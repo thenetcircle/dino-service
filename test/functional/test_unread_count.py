@@ -17,6 +17,36 @@ from test.functional.base_functional import BaseServerRestApi
 
 class TestUnreadCount(BaseServerRestApi):
     @async_test
+    async def test_unread_count_not_updated_if_notifications_disabled(self):
+        session = self.env.session_maker()
+        send_query = SendMessageQuery(
+            receiver_id=BaseTest.OTHER_USER_ID,
+            message_type=MessageTypes.MESSAGE,
+            message_payload="some message"
+        )
+
+        message = await self.env.rest.message.send_message_to_user(BaseTest.USER_ID, send_query, session)
+        group_id = message.group_id
+        self.assert_unread_amount_and_groups(BaseDatabaseTest.OTHER_USER_ID, 1, 1, session)
+        self.assert_cached_unread_for_group(BaseDatabaseTest.OTHER_USER_ID, group_id, 1)
+
+        # disable notifications
+        await self.env.rest.group.update_user_group_stats(
+            group_id, BaseTest.OTHER_USER_ID, UpdateUserGroupStats(notifications=False), session
+        )
+        await self.env.rest.message.send_message_to_user(BaseTest.USER_ID, send_query, session)
+        self.assert_unread_amount_and_groups(BaseDatabaseTest.OTHER_USER_ID, 1, 1, session)
+        self.assert_cached_unread_for_group(BaseDatabaseTest.OTHER_USER_ID, group_id, 1)
+
+        # enable notifications again
+        await self.env.rest.group.update_user_group_stats(
+            group_id, BaseTest.OTHER_USER_ID, UpdateUserGroupStats(notifications=True), session
+        )
+        await self.env.rest.message.send_message_to_user(BaseTest.USER_ID, send_query, session)
+        self.assert_unread_amount_and_groups(BaseDatabaseTest.OTHER_USER_ID, 2, 1, session)
+        self.assert_cached_unread_for_group(BaseDatabaseTest.OTHER_USER_ID, group_id, 2)
+
+    @async_test
     async def test_unread_count_0_and_1(self):
         session = self.env.session_maker()
 

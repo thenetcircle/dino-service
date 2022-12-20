@@ -481,16 +481,38 @@ class RelationalHandler:
         if update_unread_count:
             # if a group is hidden, it might have unread messages when it was hidden, so we have
             # to query for it and restore the original amount plus one (this message)
-            hidden_groups = (
+            receivers_in_group = (
                 db.query(UserGroupStatsEntity)
                 .filter(
                     UserGroupStatsEntity.group_id == message.group_id,
-                    UserGroupStatsEntity.hide.is_(True),
                     UserGroupStatsEntity.user_id != sender_user_id
                 )
                 .all()
             )
-            user_to_hidden_stats = {user.user_id: user for user in hidden_groups}
+
+            user_to_hidden_stats = {
+                user.user_id: user
+                for user in receivers_in_group
+                if user.hide
+            }
+            user_ids_with_notification_on = {
+                user.user_id
+                for user in receivers_in_group
+                if user.notifications
+            }
+
+            # update unread count in db for those that have notifications enabled
+            if len(user_ids_with_notification_on):
+                _ = (
+                    db.query(UserGroupStatsEntity)
+                    .filter(
+                        UserGroupStatsEntity.group_id == message.group_id,
+                        UserGroupStatsEntity.user_id.in_(user_ids_with_notification_on)
+                    )
+                    .update({
+                        UserGroupStatsEntity.unread_count: UserGroupStatsEntity.unread_count + 1
+                    })
+                )
 
             with self.env.cache.pipeline() as p:
                 # for knowing if we need to send read-receipts when user opens a conversation
@@ -503,17 +525,21 @@ class RelationalHandler:
                 # don't increase unread for the sender
                 del user_ids[sender_user_id]
 
-                if len(hidden_groups):
-                    for user_id in user_ids:
-                        amount = 1
-                        if user_id in user_to_hidden_stats:
-                            amount = user_to_hidden_stats[user_id].unread_count + 1
+                if len(user_to_hidden_stats):
+                    for user_id in user_to_hidden_stats.keys():
+                        # if the group had unread and then notifications were disabled and
+                        # then was hidden, don't restore unread count on new message
+                        if user_id not in user_ids_with_notification_on:
+                            continue
+
+                        amount = user_to_hidden_stats[user_id].unread_count + 1
                         self.env.cache.increase_total_unread_message_count([user_id], amount, pipeline=p)
                 else:
-                    self.env.cache.increase_total_unread_message_count(user_ids, 1, pipeline=p)
+                    # update all that has notifications enabled
+                    self.env.cache.increase_total_unread_message_count(user_ids_with_notification_on, 1, pipeline=p)
 
-                self.env.cache.increase_unread_in_group_for(message.group_id, user_ids, pipeline=p)
-                self.env.cache.add_unread_group(user_ids, message.group_id, pipeline=p)
+                self.env.cache.increase_unread_in_group_for(message.group_id, user_ids_with_notification_on, pipeline=p)
+                self.env.cache.add_unread_group(user_ids_with_notification_on, message.group_id, pipeline=p)
 
         # some action logs don't need to update last message
         if update_last_message:
@@ -544,7 +570,6 @@ class RelationalHandler:
         if update_unread_count:
             statement.update({
                 UserGroupStatsEntity.last_updated_time: sent_time,
-                UserGroupStatsEntity.unread_count: UserGroupStatsEntity.unread_count + 1,
                 UserGroupStatsEntity.hide: False,
                 UserGroupStatsEntity.deleted: False
             })
