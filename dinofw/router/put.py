@@ -109,7 +109,8 @@ async def update_user_statistics_in_group(
     * `hide`: whether to hide/show a conversation,
     * `bookmark`: whether to bookmark a conversation or not,
     * `pin`: whether to pin a conversation or not,
-    * `rating`: a user can rate a conversation (1v1 usually).
+    * `rating`: a user can rate a conversation (1v1 usually),
+    * `notifications`: if True, unread count will increase for this user on new messages, if False the unread count will _not_ increase (works for both 1v1 and groups).
 
     When setting `bookmark` to false, it will set the unread count to 0,
     and `last_read_time` will be `last_message_time`.

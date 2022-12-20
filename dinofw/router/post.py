@@ -12,7 +12,7 @@ from starlette.responses import Response
 from starlette.status import HTTP_201_CREATED
 
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
-from dinofw.rest.models import Group, UserGroupList, LastReads
+from dinofw.rest.models import Group, LastReads
 from dinofw.rest.models import Histories
 from dinofw.rest.models import Message
 from dinofw.rest.models import MessageCount
