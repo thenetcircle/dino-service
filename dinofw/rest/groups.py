@@ -285,7 +285,7 @@ class GroupResource(BaseResource):
         self.create_action_log(query.action_log, db, group_id=group_id)
         self.env.client_publisher.group_change(group, user_ids)
 
-    async def join_group(self, group_id: str, query: JoinGroupQuery, db: Session) -> List[Message]:
+    async def join_group(self, group_id: str, query: JoinGroupQuery, db: Session) -> Message:
         now = utcnow_dt()
         now_ts = to_ts(now)
 
@@ -302,14 +302,7 @@ class GroupResource(BaseResource):
         if not query.action_log:
             return list()
 
-        action_logs = list()
-        for user_id in query.users:
-            query.action_log.user_id = user_id
-            log = self.create_action_log(query.action_log, db, group_id=group_id)
-            if log:
-                action_logs.append(log)
-
-        return action_logs
+        return self.create_action_log(query.action_log, db, group_id=group_id)
 
     def leave_groups(
             self, group_id_to_type: dict, user_id: int, query: CreateActionLogQuery, db: Session
