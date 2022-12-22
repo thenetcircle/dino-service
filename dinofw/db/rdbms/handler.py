@@ -525,8 +525,8 @@ class RelationalHandler:
             # db limit is 65k (text field); some messages could be ridiculously long
             group.last_message_overview = truncate_json_message(
                 message.message_payload,
-                limit=900,  # TODO: wait with changing field type to text, keep at 1024 limit varchar for now
-                only_content=False  # column changed to text, can save everything
+                limit=600,  # TODO: wait with changing field type to text, keep at 1024 limit varchar for now
+                only_content=True  # column changed to text, can save everything
             )
 
         # always update this
