@@ -142,16 +142,26 @@ class CacheRedis(ICache):
         if amount == 0:
             return
 
-        r = self.redis.pipeline()
-
         key = RedisKeys.total_unread_count(user_id)
+        current_amount = self.redis.get(key)
+
+        # not yet cached, ignore decreasing
+        if current_amount is None:
+            return
+
+        current_amount = int(float(current_amount))
+
+        # don't set negative unread amount
+        if amount > current_amount:
+            logger.warning(
+                f"after decreasing unread count it became negative for user {user_id}: {current_amount - amount}"
+            )
+            amount = current_amount
+
+        r = self.redis.pipeline()
         r.decr(key, amount)
         r.expire(key, ONE_DAY * 2)
-
-        new_count = r.execute()
-        if new_count[0] < 0:
-            logger.warning(f"after decreasing unread count it became negative for user {user_id}: {new_count}")
-            self.redis.set(key, 0)
+        r.execute()
 
     def increase_total_unread_message_count(self, user_ids: List[int], amount: int, pipeline=None):
         # use pipeline if provided
