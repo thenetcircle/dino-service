@@ -566,9 +566,9 @@ class CassandraHandler:
         now = utcnow_dt()
 
         # querying by exact datetime seems to be shifty in cassandra, so just
-        # filter by a minute before and after
-        approx_date_after = arrow.get(created_at).shift(minutes=-1).datetime
-        approx_date_before = arrow.get(created_at).shift(minutes=1).datetime
+        # filter by some minute before and after
+        approx_date_after = arrow.get(created_at).shift(minutes=-30).datetime
+        approx_date_before = arrow.get(created_at).shift(minutes=30).datetime
 
         message = (
             MessageModel.objects(
