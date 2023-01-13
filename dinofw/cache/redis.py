@@ -164,17 +164,17 @@ class CacheRedis(ICache):
         r.execute()
 
     def increase_total_unread_message_count(self, user_ids: List[int], amount: int, pipeline=None):
-        # use pipeline if provided
-        r = pipeline or self.redis.pipeline()
-
         for user_id in user_ids:
             key = RedisKeys.total_unread_count(user_id)
-            r.incrby(key, amount)
-            r.expire(key, ONE_DAY * 2)
+            current_cached_unread = self.redis.get(key)
 
-        # only execute if we weren't provided a pipeline
-        if pipeline is None:
-            r.execute()
+            # if not cached before, don't increase, make a total count next time it's
+            # requested, and then it will be cached correctly
+            if current_cached_unread is None:
+                continue
+
+            self.redis.incrby(key, amount)
+            self.redis.expire(key, ONE_DAY * 2)
 
     def add_unread_group(self, user_ids: List[int], group_id: str, pipeline=None) -> None:
         # use pipeline if provided
