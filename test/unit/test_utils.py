@@ -1,10 +1,68 @@
-from unittest import TestCase
 import json
+from unittest import TestCase
 
+import arrow
+
+from dinofw.utils import to_ts
 from dinofw.utils import truncate_json_message
 
 
 class TestUserResource(TestCase):
+    def test_to_ts_not_adding_1ms_if_round_adds_1ms(self):
+        to_convert = '1675148709.6019'
+        expected = '1675148709.602'
+        self.assertEqual(expected, str(to_ts(arrow.get(float(to_convert)))))
+
+    def test_to_ts_is_adding_1ms_if_round_does_not_add_1ms(self):
+        to_convert = '1675148709.6011'
+        expected = '1675148709.602'
+        self.assertEqual(expected, str(to_ts(arrow.get(float(to_convert)))))
+
+    def test_to_ts_is_not_adding_1ms_if_no_micros(self):
+        to_convert = '1675148709.601'
+        expected = '1675148709.601'
+        self.assertEqual(expected, str(to_ts(arrow.get(float(to_convert)))))
+
+    def test_to_ts_is_adding_1ms_if_1_micros(self):
+        to_convert = '1675148709.601001'
+        expected = '1675148709.602'
+        self.assertEqual(expected, str(to_ts(arrow.get(float(to_convert)))))
+
+    def test_to_ts_is_adding_1ms_if_999_micros(self):
+        to_convert = '1675148709.601999'
+        expected = '1675148709.602'
+        self.assertEqual(expected, str(to_ts(arrow.get(float(to_convert)))))
+
+    def test_to_ts_is_adding_1ms_if_500_micros(self):
+        to_convert = '1675148709.601500'
+        expected = '1675148709.602'
+        self.assertEqual(expected, str(to_ts(arrow.get(float(to_convert)))))
+
+    def test_to_ts_is_not_adding_1ms_if_no_millis(self):
+        to_convert = '1675148709.000000'
+        expected = '1675148709.0'
+        self.assertEqual(expected, str(to_ts(arrow.get(float(to_convert)))))
+
+    def test_to_ts_is_adding_1ms_if_only_micros(self):
+        to_convert = '1675148709.000001'
+        expected = '1675148709.001'
+        self.assertEqual(expected, str(to_ts(arrow.get(float(to_convert)))))
+
+    def test_to_ts_is_adding_1ms_if_will_round_1s(self):
+        to_convert = '1675148709.999999'
+        expected = '1675148710.0'
+        self.assertEqual(expected, str(to_ts(arrow.get(float(to_convert)))))
+
+    def test_to_ts_is_not_adding_1ms_if_999ms(self):
+        to_convert = '1675148709.999'
+        expected = '1675148709.999'
+        self.assertEqual(expected, str(to_ts(arrow.get(float(to_convert)))))
+
+    def test_to_ts_is_not_adding_1ms_if_999001_micros(self):
+        to_convert = '1675148709.999001'
+        expected = '1675148710.0'
+        self.assertEqual(expected, str(to_ts(arrow.get(float(to_convert)))))
+
     def test_non_ascii(self):
         s = '{"content": "Ganz gut, selbst? dass kinto-gui.py in (/root/ auflöst ausführen), während die es ... ẞ ß"}'
         self.assertEqual(

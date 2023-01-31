@@ -737,7 +737,7 @@ class TestServerRestApi(BaseServerRestApi):
         delete_before = groups[0]["stats"]["delete_before"]
         self.assertEqual(receiver_delete_before, delete_before)
 
-        delete_time = utcnow_ts()
+        delete_time = utcnow_ts(trim_micros=True)
         self.update_delete_before(group_message["group_id"], delete_time, user_id=BaseTest.OTHER_USER_ID)
 
         groups = self.groups_for_user()
@@ -864,7 +864,7 @@ class TestServerRestApi(BaseServerRestApi):
         self.assertNotEqual(join_time, delete_before_updated)
 
         # update it again so the next message resets it to join_time
-        now = utcnow_ts()
+        now = utcnow_ts(trim_micros=True)
         self.update_delete_before(group_message["group_id"], delete_before=now)
 
         # should not reset 'delete_before'

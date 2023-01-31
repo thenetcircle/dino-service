@@ -14,7 +14,7 @@ from dinofw.db.rdbms.schemas import UserGroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.schemas import MessageBase
 from dinofw.endpoint import IClientPublishHandler, IClientPublisher
-from dinofw.rest.queries import AbstractQuery, DeleteAttachmentQuery, EditMessageQuery
+from dinofw.rest.queries import DeleteAttachmentQuery, EditMessageQuery
 from dinofw.rest.queries import ActionLogQuery
 from dinofw.rest.queries import AttachmentQuery
 from dinofw.rest.queries import CreateAttachmentQuery
@@ -22,7 +22,7 @@ from dinofw.rest.queries import CreateGroupQuery
 from dinofw.rest.queries import GroupQuery
 from dinofw.rest.queries import MessageQuery
 from dinofw.rest.queries import SendMessageQuery
-from dinofw.utils import trim_micros, to_ts
+from dinofw.utils import to_ts
 from dinofw.utils import utcnow_dt
 from dinofw.utils.config import MessageTypes, PayloadStatus
 from dinofw.utils.exceptions import NoSuchAttachmentException
@@ -499,7 +499,7 @@ class FakeDatabase:
             stat.unread_count = 0
 
     def create_group(self, owner_id: int, query: CreateGroupQuery, now, _) -> GroupBase:
-        created_at = trim_micros(arrow.get(now).shift(seconds=-1).datetime)
+        created_at = arrow.get(now).shift(seconds=-1).datetime
 
         group = GroupBase(
             group_id=str(uuid()),
@@ -778,7 +778,7 @@ class FakePublisherHandler(IClientPublishHandler):
             if receiver not in self.sent_reads:
                 self.sent_reads[receiver] = list()
 
-            now_ts = to_ts(trim_micros(now))
+            now_ts = to_ts(now)
             self.sent_reads[receiver].append((group_id, user_id, now_ts))
 
     def group_change(self, group_base: GroupBase, user_ids: List[int]) -> None:

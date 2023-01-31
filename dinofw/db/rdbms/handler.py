@@ -31,7 +31,6 @@ from dinofw.rest.queries import UpdateUserGroupStats
 from dinofw.utils import group_id_to_users, to_dt, truncate_json_message
 from dinofw.utils import split_into_chunks
 from dinofw.utils import to_ts
-from dinofw.utils import trim_micros
 from dinofw.utils import users_to_group_id
 from dinofw.utils import utcnow_dt
 from dinofw.utils import utcnow_ts
@@ -149,7 +148,7 @@ class RelationalHandler:
         """
         @time_method(logger, "get_groups_for_user(): query groups")
         def query_groups():
-            until = to_dt(query.until)
+            until = to_dt(query.until, floor_millis=True)
 
             statement = (
                 db.query(
@@ -1512,7 +1511,7 @@ class RelationalHandler:
         # "delete_before = join_time = created_at"; if we set
         # last_message_time to this time as well the filter won't include
         # the group
-        created_at = trim_micros(arrow.get(utc_now).shift(seconds=-1).datetime)
+        created_at = arrow.get(utc_now).shift(seconds=-1).datetime
 
         if query.group_type == GroupTypes.ONE_TO_ONE:
             group_id = users_to_group_id(*query.users)
