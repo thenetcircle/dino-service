@@ -6,7 +6,6 @@ from dinofw.rest.queries import CreateActionLogQuery
 from dinofw.rest.queries import MessageQuery
 from dinofw.rest.queries import SendMessageQuery
 from dinofw.rest.queries import UpdateUserGroupStats
-from dinofw.rest.queries import UserStatsQuery
 from dinofw.utils.config import GroupTypes
 from dinofw.utils.config import MessageTypes
 
@@ -177,14 +176,6 @@ class TestUnreadCount(BaseServerRestApi):
             session
         )
 
-        # we don't increase cached about if it's already None in redis
-        cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
-        self.assertIsNone(cached_unread_count)
-        self.assertIsNone(cached_unread_groups)
-
-        # force a count to cache the real values
-        await self.env.rest.user.get_user_stats(BaseTest.USER_ID, UserStatsQuery(count_unread=True), session)
-
         cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
         self.assertEqual(1, cached_unread_count)
         self.assertEqual(1, cached_unread_groups)
@@ -207,14 +198,6 @@ class TestUnreadCount(BaseServerRestApi):
             session
         )
         group_id = message.group_id
-
-        # we don't increase cached about if it's already None in redis
-        cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
-        self.assertIsNone(cached_unread_count)
-        self.assertIsNone(cached_unread_groups)
-
-        # force a count to cache the real values
-        await self.env.rest.user.get_user_stats(BaseTest.USER_ID, UserStatsQuery(count_unread=True), session)
 
         cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
         self.assertEqual(1, cached_unread_count)
@@ -248,14 +231,6 @@ class TestUnreadCount(BaseServerRestApi):
         )
         group_id = message.group_id
 
-        # we don't increase cached about if it's already None in redis
-        cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
-        self.assertIsNone(cached_unread_count)
-        self.assertIsNone(cached_unread_groups)
-
-        # force a count to cache the real values
-        await self.env.rest.user.get_user_stats(BaseTest.USER_ID, UserStatsQuery(count_unread=True), session)
-
         cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
         self.assertEqual(1, cached_unread_count)
         self.assertEqual(1, cached_unread_groups)
@@ -287,14 +262,6 @@ class TestUnreadCount(BaseServerRestApi):
             session
         )
         group_id = message.group_id
-
-        # not increasing cached value by one if already None in cache
-        cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
-        self.assertIsNone(cached_unread_count)
-        self.assertIsNone(cached_unread_groups)
-
-        # force a count to cache the real values
-        await self.env.rest.user.get_user_stats(BaseTest.USER_ID, UserStatsQuery(count_unread=True), session)
 
         cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
         self.assertEqual(1, cached_unread_count)
@@ -344,14 +311,6 @@ class TestUnreadCount(BaseServerRestApi):
         )
         group_id = message.group_id
 
-        # we don't increase cached about if it's already None in redis
-        cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
-        self.assertIsNone(cached_unread_count)
-        self.assertIsNone(cached_unread_groups)
-
-        # force a count to cache the real values
-        await self.env.rest.user.get_user_stats(BaseTest.USER_ID, UserStatsQuery(count_unread=True), session)
-
         cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
         self.assertEqual(1, cached_unread_count)
         self.assertEqual(1, cached_unread_groups)
@@ -400,14 +359,6 @@ class TestUnreadCount(BaseServerRestApi):
         )
         group_id = message.group_id
 
-        # we don't increase cached about if it's already None in redis
-        cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
-        self.assertIsNone(cached_unread_count)
-        self.assertIsNone(cached_unread_groups)
-
-        # force a count to cache the real values
-        await self.env.rest.user.get_user_stats(BaseTest.USER_ID, UserStatsQuery(count_unread=True), session)
-
         cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
         self.assertEqual(1, cached_unread_count)
         self.assertEqual(1, cached_unread_groups)
@@ -455,14 +406,6 @@ class TestUnreadCount(BaseServerRestApi):
             session
         )
         group_id = message.group_id
-
-        # we don't increase cached about if it's already None in redis
-        cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
-        self.assertIsNone(cached_unread_count)
-        self.assertIsNone(cached_unread_groups)
-
-        # force a count to cache the real values
-        await self.env.rest.user.get_user_stats(BaseTest.USER_ID, UserStatsQuery(count_unread=True), session)
 
         cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
         self.assertEqual(1, cached_unread_count)
@@ -536,14 +479,6 @@ class TestUnreadCount(BaseServerRestApi):
         )
         group_id = message.group_id
 
-        # we don't increase cached about if it's already None in redis
-        cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
-        self.assertIsNone(cached_unread_count)
-        self.assertIsNone(cached_unread_groups)
-
-        # force a count to cache the real values
-        await self.env.rest.user.get_user_stats(BaseTest.USER_ID, UserStatsQuery(count_unread=True), session)
-
         cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
         self.assertEqual(1, cached_unread_count)
         self.assertEqual(1, cached_unread_groups)
@@ -585,13 +520,9 @@ class TestUnreadCount(BaseServerRestApi):
         )
         group_id = message.group_id
 
-        # we don't increase cached about if it's already None in redis
         cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
-        self.assertIsNone(cached_unread_count)
-        self.assertIsNone(cached_unread_groups)
-
-        # force a count to cache the real values
-        await self.env.rest.user.get_user_stats(BaseTest.USER_ID, UserStatsQuery(count_unread=True), session)
+        self.assertEqual(1, cached_unread_count)
+        self.assertEqual(1, cached_unread_groups)
 
         # hide the group, so should have 0 unread for this group, 1 unread in total
         await self.env.rest.group.update_user_group_stats(
@@ -635,14 +566,6 @@ class TestUnreadCount(BaseServerRestApi):
             session
         )
         group_id = message.group_id
-
-        # we don't increase cached about if it's already None in redis
-        cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
-        self.assertIsNone(cached_unread_count)
-        self.assertIsNone(cached_unread_groups)
-
-        # force a count to cache the real values
-        await self.env.rest.user.get_user_stats(BaseTest.USER_ID, UserStatsQuery(count_unread=True), session)
 
         cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
         self.assertEqual(1, cached_unread_count)

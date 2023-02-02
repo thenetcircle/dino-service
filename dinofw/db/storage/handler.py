@@ -33,7 +33,7 @@ from dinofw.rest.queries import CreateAttachmentQuery
 from dinofw.rest.queries import EditMessageQuery
 from dinofw.rest.queries import MessageQuery
 from dinofw.rest.queries import SendMessageQuery
-from dinofw.utils import utcnow_dt, to_dt
+from dinofw.utils import utcnow_dt, to_dt, to_ts
 from dinofw.utils.config import ConfigKeys, PayloadStatus
 from dinofw.utils.config import DefaultValues
 from dinofw.utils.config import MessageTypes
@@ -628,7 +628,6 @@ class CassandraHandler:
     def store_message(self, group_id: str, user_id: int, query: SendMessageQuery) -> MessageBase:
         created_at = utcnow_dt()
         message_id = uuid()
-        logger.info(f'creating message: created_at={created_at}, group_id={group_id}, user_id={user_id}')
 
         message = MessageModel.create(
             group_id=group_id,
