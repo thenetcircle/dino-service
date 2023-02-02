@@ -628,6 +628,7 @@ class CassandraHandler:
     def store_message(self, group_id: str, user_id: int, query: SendMessageQuery) -> MessageBase:
         created_at = utcnow_dt()
         message_id = uuid()
+        logger.info(f'creating message: created_at={created_at}, group_id={group_id}, user_id={user_id}')
 
         message = MessageModel.create(
             group_id=group_id,
