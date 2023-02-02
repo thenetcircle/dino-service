@@ -66,7 +66,7 @@ def utcnow_dt(ts: float = None, add_random_ms: bool = False):
         # if user is sending multiple images at the same time, there's a change different servers will
         # create them, causing potential primary key collision if the generated time has the exact same
         # milliseconds, so add a random amount to it
-        dt += timedelta(milliseconds=int(random() * 50))
+        dt += timedelta(milliseconds=int(random() * 500))
 
     return dt
 
