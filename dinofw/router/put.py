@@ -159,7 +159,7 @@ async def edit_group_information(
 @wrap_exception()
 async def join_group(
     group_id: str, query: JoinGroupQuery, db: Session = Depends(get_db)
-) -> Message:
+) -> Optional[Message]:
     """
     Join a group.
 
