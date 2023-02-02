@@ -626,14 +626,17 @@ class CassandraHandler:
 
     # noinspection PyMethodMayBeStatic
     def store_message(self, group_id: str, user_id: int, query: SendMessageQuery) -> MessageBase:
-        created_at = utcnow_dt()
-        message_id = uuid()
+        # if the user is sending multiple images at the same time it may happen different servers create them
+        # with the exact same milliseconds, which will cause primary key collision in cassandra (silently
+        # losing all but one of the messages with the same milliseconds), so add a small random amount of ms
+        is_image = query.message_type == MessageTypes.IMAGE
+        created_at = utcnow_dt(add_random_ms=is_image)
 
         message = MessageModel.create(
             group_id=group_id,
             user_id=user_id,
             created_at=created_at,
-            message_id=message_id,
+            message_id=uuid(),
             message_payload=query.message_payload,
             message_type=query.message_type,
             context=query.context,

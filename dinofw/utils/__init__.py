@@ -1,8 +1,9 @@
-from datetime import datetime
+import json
+from datetime import datetime, timedelta
+from random import random
 from typing import Optional
 
 import arrow
-import json
 
 
 def split_into_chunks(objects, n):
@@ -55,10 +56,19 @@ def utcnow_ts():
     return round(float(f"{seconds}.{ms}"), 3)
 
 
-def utcnow_dt(ts: float = None):
+def utcnow_dt(ts: float = None, add_random_ms: bool = False):
     if ts is None:
-        return arrow.get(utcnow_ts()).datetime
-    return arrow.get(ts).datetime
+        dt = arrow.get(utcnow_ts()).datetime
+    else:
+        dt = arrow.get(ts).datetime
+
+    if add_random_ms:
+        # if user is sending multiple images at the same time, there's a change different servers will
+        # create them, causing potential primary key collision if the generated time has the exact same
+        # milliseconds, so add a random amount to it
+        dt += timedelta(milliseconds=int(random() * 50))
+
+    return dt
 
 
 def trim_micros(dt: datetime, allow_none: bool = False) -> Optional[datetime]:
