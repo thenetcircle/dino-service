@@ -56,17 +56,18 @@ def utcnow_ts():
     return round(float(f"{seconds}.{ms}"), 3)
 
 
-def utcnow_dt(ts: float = None, add_random_ms: bool = False):
+def utcnow_dt(ts: float = None, image_index: int = 0):
     if ts is None:
         dt = arrow.get(utcnow_ts()).datetime
     else:
         dt = arrow.get(ts).datetime
 
-    if add_random_ms:
+    if image_index > 0:
         # if user is sending multiple images at the same time, there's a change different servers will
         # create them, causing potential primary key collision if the generated time has the exact same
-        # milliseconds, so add a random amount to it
-        dt += timedelta(milliseconds=int(random() * 500))
+        # milliseconds, so add index*50ms to each creation time; will also help keep the ordering the
+        # same as the user chose in the UI
+        dt += timedelta(milliseconds=image_index * 50)
 
     return dt
 

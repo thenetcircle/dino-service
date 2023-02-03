@@ -628,9 +628,8 @@ class CassandraHandler:
     def store_message(self, group_id: str, user_id: int, query: SendMessageQuery) -> MessageBase:
         # if the user is sending multiple images at the same time it may happen different servers create them
         # with the exact same milliseconds, which will cause primary key collision in cassandra (silently
-        # losing all but one of the messages with the same milliseconds), so add a small random amount of ms
-        is_image = query.message_type == MessageTypes.IMAGE
-        created_at = utcnow_dt(add_random_ms=is_image)
+        # losing all but one of the messages with the same milliseconds)
+        created_at = utcnow_dt(image_index=query.index)
 
         message = MessageModel.create(
             group_id=group_id,
