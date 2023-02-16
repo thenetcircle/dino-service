@@ -27,8 +27,8 @@ class BroadcastResource(BaseResource):
                 event_with_stats = event.copy()
                 event_with_stats["stats"] = user_id_to_stats.get(user_id, dict())
 
-                highlight_me = event_with_stats["stats"].get("highlight_time", self.long_ago)
-                highlight_receiver = event_with_stats["stats"].get("receiver_highlight_time", self.long_ago)
+                highlight_me = event_with_stats["stats"].get("highlight_time", self.long_ago.timestamp())
+                highlight_receiver = event_with_stats["stats"].get("receiver_highlight_time", self.long_ago.timestamp())
 
                 if highlight_me > now_int:
                     highlight_status = HighlightStatus.RECEIVER
