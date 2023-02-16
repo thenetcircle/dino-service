@@ -1,8 +1,11 @@
+import json
+import socket
 from datetime import datetime
+from datetime import timedelta
 from typing import Optional
 
 import arrow
-import json
+import psutil
 
 
 def split_into_chunks(objects, n):
@@ -55,10 +58,19 @@ def utcnow_ts():
     return round(float(f"{seconds}.{ms}"), 3)
 
 
-def utcnow_dt(ts: float = None):
+def utcnow_dt(ts: float = None, ms_to_add: int = 0):
     if ts is None:
-        return arrow.get(utcnow_ts()).datetime
-    return arrow.get(ts).datetime
+        dt = arrow.get(utcnow_ts()).datetime
+    else:
+        dt = arrow.get(ts).datetime
+
+    if ms_to_add > 0:
+        # if user is sending multiple images at the same time, there's a change different servers will
+        # create them, causing potential primary key collision if the generated time has the exact same
+        # milliseconds, so add some ms to each creation time
+        dt += timedelta(milliseconds=ms_to_add)
+
+    return dt
 
 
 def trim_micros(dt: datetime, allow_none: bool = False) -> Optional[datetime]:
@@ -67,6 +79,32 @@ def trim_micros(dt: datetime, allow_none: bool = False) -> Optional[datetime]:
 
     ts_millis = round(dt.timestamp(), 3)
     return datetime.fromtimestamp(ts_millis, tz=dt.tzinfo)
+
+
+def calculate_ms_to_add():
+    """
+    when uploading multiple images at the same time, add some ms to the creation
+    time to avoid cassandra primary key collision
+
+    primary key for messages is (group_id, user_id, created_at), so add a specific
+    amount depending on this worker instance (e.g. uvicorn --workers 6) and this
+    server instance (e.g. host1, host2, etc).
+    """
+    server_name = socket.gethostname().split(".")[0]
+    server_index = int(server_name[-1])
+
+    this_process = psutil.Process()
+    this_pid = this_process.pid
+
+    siblings = [
+        p.pid for p in
+        this_process.parent().children()
+    ]
+
+    siblings = sorted(siblings)
+    worker_index = siblings.index(this_pid)
+
+    return worker_index * 20 + (server_index - 1) * 150
 
 
 def users_to_group_id(user_a: int, user_b: int) -> str:
