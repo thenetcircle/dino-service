@@ -104,7 +104,7 @@ def calculate_ms_to_add():
     siblings = sorted(siblings)
     worker_index = siblings.index(this_pid)
 
-    return worker_index * 10 + (server_index - 1) * 100
+    return worker_index * 20 + (server_index - 1) * 150
 
 
 def users_to_group_id(user_a: int, user_b: int) -> str:
