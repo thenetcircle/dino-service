@@ -273,7 +273,7 @@ class GroupResource(BaseResource):
 
     async def update_group_information(
         self, group_id: str, query: UpdateGroupQuery, db: Session
-    ) -> None:
+    ) -> Message:
         group = self.env.db.update_group_information(group_id, query, db)
         self.env.db.set_last_updated_at_for_all_in_group(group_id, db)
 
@@ -282,8 +282,10 @@ class GroupResource(BaseResource):
         )
         user_ids = user_ids_and_join_times.keys()
 
-        self.create_action_log(query.action_log, db, group_id=group_id)
+        action_log = self.create_action_log(query.action_log, db, group_id=group_id)
         self.env.client_publisher.group_change(group, user_ids)
+
+        return action_log
 
     async def join_group(self, group_id: str, query: JoinGroupQuery, db: Session) -> Optional[Message]:
         now = utcnow_dt()
