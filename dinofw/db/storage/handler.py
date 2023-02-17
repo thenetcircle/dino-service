@@ -1,4 +1,5 @@
 import json
+import socket
 import sys
 from datetime import datetime as dt
 from datetime import timedelta
@@ -10,13 +11,13 @@ from typing import Tuple
 from uuid import uuid4 as uuid
 
 import arrow
+import psutil
 from cassandra.cluster import EXEC_PROFILE_DEFAULT
 from cassandra.cluster import ExecutionProfile
 from cassandra.cluster import PlainTextAuthProvider
 from cassandra.cluster import Session
 from cassandra.connection import ConsistencyLevel
 from cassandra.cqlengine import connection
-from cassandra.cqlengine.management import sync_table
 from cassandra.cqlengine.query import BatchQuery
 from cassandra.policies import DCAwareRoundRobinPolicy
 from cassandra.policies import RetryPolicy
@@ -27,16 +28,20 @@ from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.models import AttachmentModel
 from dinofw.db.storage.models import MessageModel
 from dinofw.db.storage.schemas import MessageBase
-from dinofw.rest.queries import ActionLogQuery, DeleteAttachmentQuery
+from dinofw.rest.queries import ActionLogQuery
 from dinofw.rest.queries import AttachmentQuery
 from dinofw.rest.queries import CreateAttachmentQuery
+from dinofw.rest.queries import DeleteAttachmentQuery
 from dinofw.rest.queries import EditMessageQuery
 from dinofw.rest.queries import MessageQuery
 from dinofw.rest.queries import SendMessageQuery
-from dinofw.utils import utcnow_dt, to_dt, to_ts
-from dinofw.utils.config import ConfigKeys, PayloadStatus
+from dinofw.utils import to_dt
+from dinofw.utils import utcnow_dt
+from dinofw.utils import calculate_ms_to_add
+from dinofw.utils.config import ConfigKeys
 from dinofw.utils.config import DefaultValues
 from dinofw.utils.config import MessageTypes
+from dinofw.utils.config import PayloadStatus
 from dinofw.utils.exceptions import NoSuchAttachmentException
 from dinofw.utils.exceptions import NoSuchMessageException
 
@@ -48,6 +53,7 @@ class CassandraHandler:
         # used when no `hide_before` is specified in a query
         beginning_of_1995 = 789_000_000
         self.long_ago = arrow.get(beginning_of_1995).datetime
+        self.ms_to_add_for_image_creation_time = calculate_ms_to_add()
 
     def setup_tables(self):
         key_space = self.env.config.get(ConfigKeys.KEY_SPACE, domain=ConfigKeys.STORAGE)
@@ -566,9 +572,9 @@ class CassandraHandler:
         now = utcnow_dt()
 
         # querying by exact datetime seems to be shifty in cassandra, so just
-        # filter by a minute before and after
-        approx_date_after = arrow.get(created_at).shift(minutes=-1).datetime
-        approx_date_before = arrow.get(created_at).shift(minutes=1).datetime
+        # filter by some minute before and after
+        approx_date_after = arrow.get(created_at).shift(minutes=-30).datetime
+        approx_date_before = arrow.get(created_at).shift(minutes=30).datetime
 
         message = (
             MessageModel.objects(
@@ -626,14 +632,19 @@ class CassandraHandler:
 
     # noinspection PyMethodMayBeStatic
     def store_message(self, group_id: str, user_id: int, query: SendMessageQuery) -> MessageBase:
-        created_at = utcnow_dt()
-        message_id = uuid()
+        # if the user is sending multiple images at the same time it may happen different servers create them
+        # with the exact same milliseconds, which will cause primary key collision in cassandra (silently
+        # losing all but one of the messages with the same milliseconds)
+        if query.message_type == MessageTypes.IMAGE:
+            created_at = utcnow_dt(ms_to_add=self.ms_to_add_for_image_creation_time)
+        else:
+            created_at = utcnow_dt()
 
         message = MessageModel.create(
             group_id=group_id,
             user_id=user_id,
             created_at=created_at,
-            message_id=message_id,
+            message_id=uuid(),
             message_payload=query.message_payload,
             message_type=query.message_type,
             context=query.context,

@@ -25,6 +25,7 @@ function initialize() {
     $("a#next").click(load_more_messages);
     $("input#send-msg").click(send_message);
     $("input#send-mqtt").click(send_mqtt);
+    $("input#send-mqtt-notification").click(send_notification);
     $("input#update-attachment").click(update_attachment);
     $("input#get-attachment").click(get_attachment);
 
@@ -37,7 +38,7 @@ function setup_mqtt() {
         clientId: `${user_id}_123412341243`,
         username: user_id,
         password: '5588',
-        clean: false,
+        clean: true,
         rejectUnauthorized: false,
         protocolVersion: 5,
         qos: 1,
@@ -77,6 +78,29 @@ function send_mqtt() {
             console.log('error:', err)
         }
     )
+}
+
+function send_notification() {
+    let receiver = parseInt($("input#mqtt_receiver_notification").val());
+    let message_payload = $("textarea#mqtt_payload_notification").val();
+    let group_id = $("input#mqtt_group_id_notification").val();
+
+    call({
+        url: `notification/send`,
+        data: JSON.stringify({
+            group_id: group_id,
+            event_type: 'message',
+            notification: [{
+                user_ids: [receiver],
+                data: {"payload": message_payload}
+            }]
+        }),
+        success: function(resp) {
+            $("input#mqtt_payload_notification").val('');
+            $("input#created_at").val(resp["created_at"]);
+            reset_file_id();
+        }
+    });
 }
 
 function on_mqtt_event(topic, message) {

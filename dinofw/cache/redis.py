@@ -136,35 +136,45 @@ class CacheRedis(ICache):
                 p.sadd(key, *unread_groups)
 
             p.expire(key, ONE_DAY * 2)
-            p.execute()
+        p.execute()
 
     def decrease_total_unread_message_count(self, user_id: int, amount: int):
         if amount == 0:
             return
 
-        r = self.redis.pipeline()
-
         key = RedisKeys.total_unread_count(user_id)
+        current_amount = self.redis.get(key)
+
+        # not yet cached, ignore decreasing
+        if current_amount is None:
+            return
+
+        current_amount = int(float(current_amount))
+
+        # don't set negative unread amount
+        if amount > current_amount:
+            logger.warning(
+                f"after decreasing unread count it became negative for user {user_id}: {current_amount - amount}"
+            )
+            amount = current_amount
+
+        r = self.redis.pipeline()
         r.decr(key, amount)
         r.expire(key, ONE_DAY * 2)
-
-        new_count = r.execute()
-        if new_count[0] < 0:
-            logger.warning(f"after decreasing unread count it became negative for user {user_id}: {new_count}")
-            self.redis.set(key, 0)
+        r.execute()
 
     def increase_total_unread_message_count(self, user_ids: List[int], amount: int, pipeline=None):
-        # use pipeline if provided
-        r = pipeline or self.redis.pipeline()
-
         for user_id in user_ids:
             key = RedisKeys.total_unread_count(user_id)
-            r.incrby(key, amount)
-            r.expire(key, ONE_DAY * 2)
+            current_cached_unread = self.redis.get(key)
 
-        # only execute if we weren't provided a pipeline
-        if pipeline is None:
-            r.execute()
+            # if not cached before, don't increase, make a total count next time it's
+            # requested, and then it will be cached correctly
+            if current_cached_unread is None:
+                continue
+
+            self.redis.incrby(key, amount)
+            self.redis.expire(key, ONE_DAY * 2)
 
     def add_unread_group(self, user_ids: List[int], group_id: str, pipeline=None) -> None:
         # use pipeline if provided

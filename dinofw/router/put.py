@@ -132,12 +132,12 @@ async def update_user_statistics_in_group(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.put("/groups/{group_id}")
+@router.put("/groups/{group_id}", response_model=Message)
 @timeit(logger, "PUT", "/groups/{group_id}")
 @wrap_exception()
 async def edit_group_information(
     group_id, query: UpdateGroupQuery, db: Session = Depends(get_db)
-) -> None:
+) -> Message:
     """
     Update group details.
 
@@ -146,7 +146,7 @@ async def edit_group_information(
     * `250`: if an unknown error occurred.
     """
     try:
-        await environ.env.rest.group.update_group_information(
+        return await environ.env.rest.group.update_group_information(
             group_id, query, db
         )
     except NoSuchGroupException as e:
@@ -160,7 +160,7 @@ async def edit_group_information(
 @wrap_exception()
 async def join_group(
     group_id: str, query: JoinGroupQuery, db: Session = Depends(get_db)
-) -> Message:
+) -> Optional[Message]:
     """
     Join a group.
 

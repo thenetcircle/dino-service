@@ -549,8 +549,8 @@ class RelationalHandler:
             # db limit is 65k (text field); some messages could be ridiculously long
             group.last_message_overview = truncate_json_message(
                 message.message_payload,
-                limit=900,  # TODO: wait with changing field type to text, keep at 1024 limit varchar for now
-                only_content=False  # column changed to text, can save everything
+                limit=600,  # TODO: wait with changing field type to text, keep at 1024 limit varchar for now
+                only_content=True  # column changed to text, can save everything
             )
 
         # always update this
@@ -1366,10 +1366,13 @@ class RelationalHandler:
                 if user_id in user_stats_dict:
                     user_stats = user_stats_dict[user_id]
                 else:
-                    logger.warning(f"user {user_id} is no longer in group {group_id}, ignoring stats")
+                    logger.warning(f"THIS user {user_id} is no longer in group {group_id}, ignoring stats")
                     user_stats = None
 
-                that_user_stats = user_stats_dict[that_user_id]
+                if that_user_id in user_stats_dict:
+                    that_user_stats = user_stats_dict[that_user_id]
+                else:
+                    logger.warning(f"THAT user {that_user_id} is no longer in group {group_id}, ignoring stats")
             else:
                 user_stats = filter_for_one()
         else:

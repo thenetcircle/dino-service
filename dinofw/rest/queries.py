@@ -94,6 +94,9 @@ class SendMessageQuery(OneToOneQuery):
     message_type: int
     context: Optional[str]
 
+    # to keep image order same as user chose, and to avoid primary key collision on created_at
+    index: Optional[int] = 0
+
 
 class LastReadQuery(AbstractQuery):
     user_id: Optional[int] = None
