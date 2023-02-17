@@ -131,7 +131,7 @@ async def update_user_statistics_in_group(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.put("/groups/{group_id}")
+@router.put("/groups/{group_id}", response_model=Message)
 @timeit(logger, "PUT", "/groups/{group_id}")
 @wrap_exception()
 async def edit_group_information(
