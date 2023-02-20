@@ -109,8 +109,8 @@ class CacheRedis(ICache):
         if current_idx == 0:
             current_idx = -1
 
-        # if we've reached the max 100 ids, reset the pool and restart from 0
-        elif current_idx >= 100:
+        # if we've reached the max 50 ids, reset the pool and restart from 0
+        elif current_idx >= 49:
             current_idx = -1
             self.redis.delete(key)
 

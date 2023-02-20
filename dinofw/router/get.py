@@ -28,7 +28,7 @@ router = APIRouter()
 @wrap_exception()
 async def get_all_users_statistics_in_group(domain: str, user_id: int) -> ClientID:
     """
-    Get the next available Client ID for a user and domain. Cycles from 0-100, with
+    Get the next available Client ID for a user and domain. Cycles from [0, 49], with
     a TTL of 6h (restart at 0 after 6h).
 
     **Potential error codes in response:**
