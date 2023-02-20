@@ -7,6 +7,7 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
+from uuid import UUID
 from uuid import uuid4 as uuid
 
 import arrow
@@ -664,7 +665,7 @@ class CassandraHandler:
                     "values (%s, %s, %s, %s, %s, %s, %s)" +
                     "if not exists;",
                     (
-                        group_id, created_at, user_id, message_id,
+                        UUID(group_id), created_at, user_id, message_id,
                         query.message_payload, query.message_type, query.context
                     ),
                     # this profile has serial consistency level set to 'serial', to make sure we don't do an UPSERT
