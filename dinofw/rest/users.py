@@ -21,6 +21,9 @@ from dinofw.utils.convert import to_user_group, to_last_reads
 
 
 class UserResource(BaseResource):
+    async def get_next_client_id(self, domain: str, user_id: int) -> str:
+        return self.env.cache.get_next_client_id(domain, user_id)
+
     async def get_groups_for_user(
         self, user_id: int, query: GroupQuery, db: Session
     ) -> List[UserGroup]:
