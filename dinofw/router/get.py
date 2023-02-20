@@ -34,7 +34,9 @@ async def get_all_users_statistics_in_group(domain: str, user_id: int) -> Client
     **Potential error codes in response:**
     * `250`: if an unknown error occurred.
     """
-    return await environ.env.rest.user.get_next_client_id(domain, user_id)
+    return ClientID(
+        client_id=await environ.env.rest.user.get_next_client_id(domain, user_id)
+    )
 
 
 @router.get("/groups/{group_id}/users", response_model=UsersGroup)
