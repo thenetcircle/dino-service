@@ -653,11 +653,11 @@ class CassandraHandler:
         # losing all but one of the messages with the same milliseconds)
         if query.message_type == MessageTypes.IMAGE:
             inserted = False
-            ms_to_add = 0
             message_id = uuid()
 
             while not inserted:
-                created_at = utcnow_dt(ms_to_add=ms_to_add)
+                # recreate creation time on each try, until we don't have primary key collision anymore
+                created_at = utcnow_dt()
 
                 # can't use "if not exists" or serial consistency when using the ORM, so use a raw query
                 results = self.session.execute(
@@ -678,7 +678,7 @@ class CassandraHandler:
                         f"found duplicate primary key when inserting image: " +
                         f"group_id={group_id}, user_id={user_id}, created_at={created_at}, message_id={message_id}"
                     )
-                    ms_to_add += 1
+                    # try again with a newly generated created_at
                     continue
 
                 # querying by exact datetime seems to be shifty in cassandra, so just
