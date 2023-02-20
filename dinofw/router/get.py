@@ -6,6 +6,7 @@ from fastapi import Depends
 from loguru import logger
 from sqlalchemy.orm import Session
 
+from dinofw.rest.models import ClientID
 from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UsersGroup
 from dinofw.rest.queries import GroupInfoQuery
@@ -20,6 +21,20 @@ from dinofw.utils.exceptions import UserNotInGroupException
 from dinofw.utils.perf import timeit
 
 router = APIRouter()
+
+
+@router.get("/clientid/{domain}/user/{user_id}", response_model=ClientID)
+@timeit(logger, "GET", "/clientid/{domain}/user/{user_id}")
+@wrap_exception()
+async def get_all_users_statistics_in_group(domain: str, user_id: int) -> ClientID:
+    """
+    Get the next available Client ID for a user and domain. Cycles from 0-100, with
+    a TTL of 6h (restart at 0 after 6h).
+
+    **Potential error codes in response:**
+    * `250`: if an unknown error occurred.
+    """
+    return await environ.env.rest.user.get_next_client_id(domain, user_id)
 
 
 @router.get("/groups/{group_id}/users", response_model=UsersGroup)

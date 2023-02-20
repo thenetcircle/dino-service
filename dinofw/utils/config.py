@@ -62,6 +62,11 @@ class RedisKeys:
     RKEY_DELETE_BEFORE: Final = "delete:before:user:{}:{}"  # delete:before:user:group_id:user_id
     RKEY_TOTAL_UNREAD_COUNT = "unread:msgs:{}"  # unread:msgs:user_id
     RKEY_UNREAD_GROUPS = "unread:groups:{}"  # unread:groups:user_id
+    RKEY_CLIENT_ID = "user:{}:{}:clientids"  # user:domain:user_id:clientids
+
+    @staticmethod
+    def client_id(domain: str, user_id: int) -> str:
+        return RedisKeys.RKEY_CLIENT_ID.format(domain, user_id)
 
     @staticmethod
     def total_unread_count(user_id: int) -> str:
