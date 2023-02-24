@@ -42,7 +42,7 @@ class AdminQuery(AbstractQuery):
 
 
 class NotificationGroup(AbstractQuery):
-    user_ids: List[int]
+    user_ids: Optional[List[int]]
     data: dict
 
 

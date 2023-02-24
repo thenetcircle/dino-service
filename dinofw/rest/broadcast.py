@@ -23,7 +23,13 @@ class BroadcastResource(BaseResource):
             event["event_type"] = EventTypes.MESSAGE
             event["group_id"] = query.group_id
 
-            for user_id in user_group.user_ids:
+            # for 1-to-1 groups, the caller specifies user_ids, for many-to-many groups,
+            # we send to all users in the group (unless user_ids is specified)
+            users_to_notify = user_group.user_ids
+            if not users_to_notify or not len(users_to_notify):
+                users_to_notify = list(user_id_to_stats.keys())
+
+            for user_id in users_to_notify:
                 event_with_stats = event.copy()
                 event_with_stats["stats"] = user_id_to_stats.get(user_id, dict())
 
