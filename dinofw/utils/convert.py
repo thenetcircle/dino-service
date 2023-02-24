@@ -179,6 +179,8 @@ def stats_to_event_dict(user_stats):
     del stats_dict["user_id"]
     del stats_dict["group_id"]
 
+    # TODO: add notification flag
+
     return stats_dict
 
 
