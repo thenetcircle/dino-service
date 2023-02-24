@@ -101,6 +101,27 @@ class CacheRedis(ICache):
             if p is not None:
                 p.execute()
 
+    def get_next_client_id(self, domain: str, user_id: int) -> str:
+        key = RedisKeys.client_id(domain, user_id)
+        current_idx = self.redis.llen(key)
+
+        # start from 0 if no pool found
+        if current_idx == 0:
+            current_idx = -1
+
+        # if we've reached the max 50 ids, reset the pool and restart from 0
+        elif current_idx >= 49:
+            current_idx = -1
+            self.redis.delete(key)
+
+        next_client_id = f"{user_id}_{domain}_{current_idx+1}"
+        self.redis.lpush(key, next_client_id)
+
+        # try to reuse lower ids by expiring the pool
+        self.redis.expire(key, 6 * ONE_HOUR)
+
+        return next_client_id
+
     def get_total_unread_count(self, user_id: int) -> (Optional[int], Optional[int]):
         p = self.redis.pipeline()
 
@@ -544,7 +565,7 @@ class CacheRedis(ICache):
         if count is None:
             return None
 
-        # TODO: log and check this, was blank in redis once
+        # TODO: log and check this, is blank in redis quite often
         if len(count) == 0 or "," not in count:
             logger.warning(f"group types was none in cache for key {key}")
             return None

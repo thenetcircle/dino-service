@@ -96,9 +96,6 @@ function send_notification() {
             }]
         }),
         success: function(resp) {
-            $("input#mqtt_payload_notification").val('');
-            $("input#created_at").val(resp["created_at"]);
-            reset_file_id();
         }
     });
 }
