@@ -154,7 +154,7 @@ def to_user_group(user_groups: List[UserGroupBase]):
     return groups
 
 
-def stats_to_event_dict(user_stats):
+def stats_to_event_dict(user_stats: UserGroupStatsBase):
     stats_dict = user_stats.dict()
 
     stats_dict["last_read"] = to_int(to_ts(stats_dict["last_read"]))
@@ -178,8 +178,6 @@ def stats_to_event_dict(user_stats):
     # not needed in the mqtt event
     del stats_dict["user_id"]
     del stats_dict["group_id"]
-
-    # TODO: add notification flag
 
     return stats_dict
 
