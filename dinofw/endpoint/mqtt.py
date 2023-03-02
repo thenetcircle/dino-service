@@ -191,7 +191,7 @@ class MqttPublisher(IClientPublisher):
         }
 
         # in case we got disconnected because an MQ node went down or was restarted
-        if not self.mqtt.is_connected():
+        if not self.mqtt.is_connected:
             try:
                 await self.setup()
             except Exception as e:
