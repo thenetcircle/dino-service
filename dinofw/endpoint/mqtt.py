@@ -1,7 +1,7 @@
+import asyncio
 import json
 import socket
 import sys
-from asyncio import sleep as async_sleep
 from datetime import datetime as dt
 from typing import List
 
@@ -165,6 +165,7 @@ class MqttPublisher(IClientPublisher):
         db.close()
 
     async def setup(self):
+        logger.debug(f"mqtt connecting to host {self.mqtt_host} port {self.mqtt_port}")
         await self.mqtt.connect(
             self.mqtt_host,
             port=self.mqtt_port,
@@ -219,7 +220,14 @@ class MqttPublishHandler(IClientPublishHandler):
             except Exception as e:
                 logger.error(f"could not connect to mqtt: {str(e)}")
                 logger.exception(e)
-                await async_sleep(5)
+
+                coro = asyncio.sleep(5)
+                task = asyncio.ensure_future(coro)
+
+                try:
+                    return await task
+                except asyncio.CancelledError:
+                    break
 
     async def stop(self):
         self.shutdown = True
