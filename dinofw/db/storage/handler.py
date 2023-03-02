@@ -37,6 +37,7 @@ from dinofw.rest.queries import MessageQuery
 from dinofw.rest.queries import SendMessageQuery
 from dinofw.utils import to_dt
 from dinofw.utils import utcnow_dt
+from dinofw.utils import calculate_ms_to_add
 from dinofw.utils.config import ConfigKeys
 from dinofw.utils.config import DefaultValues
 from dinofw.utils.config import MessageTypes
