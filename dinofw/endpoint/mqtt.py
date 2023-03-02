@@ -171,6 +171,7 @@ class MqttPublisher(IClientPublisher):
             port=self.mqtt_port,
             version=MQTTv50
         )
+        logger.debug("mqtt connected successfully!")
 
     async def stop(self):
         if self.mqtt is not None:
@@ -214,20 +215,19 @@ class MqttPublishHandler(IClientPublishHandler):
         self.shutdown = False
 
     async def setup(self):
-        while not self.shutdown:
+        try:
+            await self.publisher.setup()
+        except Exception as e:
+            logger.error(f"could not connect to mqtt: {str(e)}")
+            logger.exception(e)
+
+            coro = asyncio.sleep(5)
+            task = asyncio.ensure_future(coro)
+
             try:
-                await self.publisher.setup()
-            except Exception as e:
-                logger.error(f"could not connect to mqtt: {str(e)}")
-                logger.exception(e)
-
-                coro = asyncio.sleep(5)
-                task = asyncio.ensure_future(coro)
-
-                try:
-                    return await task
-                except asyncio.CancelledError:
-                    break
+                return await task
+            except asyncio.CancelledError:
+                pass
 
     async def stop(self):
         self.shutdown = True
