@@ -56,10 +56,11 @@ class MqttPublisher(IClientPublisher):
         worker_index = get_worker_index()
         hostname = socket.gethostname().split(".")[0]
         client_id = f"dinoms-{hostname}-{worker_index}"
+        logger.debug(f"using mqtt client id '{client_id}'")
 
         self.mqtt = MQTTClient(
             client_id=client_id,
-            session_expiry_interval=60,
+            session_expiry_interval=0,
             clean_session=True,
 
             # 'receive_maximum' is defined as: "The Client uses this value to limit the number
@@ -81,6 +82,7 @@ class MqttPublisher(IClientPublisher):
 
         # auth disabled
         if username == "" or auth_type == "disabled":
+            logger.debug("mqtt auth is disabled")
             return
 
         if auth_type == "redis":
@@ -139,6 +141,7 @@ class MqttPublisher(IClientPublisher):
         # need to set it every time, since it has to be unique and
         # pid will change for each worker on startup
         r_client.set(mqtt_key, mqtt_value)
+        logger.debug(f"set mqtt auth in redis to key {mqtt_key} and value {mqtt_value}")
 
     def set_auth_mysql(self, env, client_id, username, password):
         import MySQLdb
@@ -220,14 +223,6 @@ class MqttPublishHandler(IClientPublishHandler):
         except Exception as e:
             logger.error(f"could not connect to mqtt: {str(e)}")
             logger.exception(e)
-
-            coro = asyncio.sleep(5)
-            task = asyncio.ensure_future(coro)
-
-            try:
-                return await task
-            except asyncio.CancelledError:
-                pass
 
     async def stop(self):
         self.shutdown = True
