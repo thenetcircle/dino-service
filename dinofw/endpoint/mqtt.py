@@ -287,7 +287,7 @@ class MqttPublishHandler(IClientPublishHandler):
     def send(self, user_ids, data, qos: int = 1):
         for user_id in user_ids:
             try:
-                await self.publisher.send(user_id, data, qos)
+                self.publisher.send(user_id, data, qos)
             except Exception as e:
                 logger.error(f"could not handle message: {str(e)}")
                 logger.exception(e)
@@ -295,7 +295,7 @@ class MqttPublishHandler(IClientPublishHandler):
 
     def send_to_one(self, user_id: int, data, qos: int = 1):
         try:
-            await self.publisher.send(user_id, data, qos)
+            self.publisher.send(user_id, data, qos)
         except Exception as e:
             logger.error(f"could not handle message: {str(e)}")
             logger.exception(e)

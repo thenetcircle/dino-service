@@ -225,7 +225,7 @@ class UpdateUserGroupStatsHandler:
             self.env.cache.decrease_total_unread_message_count(user_id, 1)
             self.env.cache.remove_unread_group(user_id, group_id)
 
-    async def update(
+    def update(
             self,
             group_id: str,
             user_id: int,
@@ -265,7 +265,7 @@ class UpdateUserGroupStatsHandler:
             user_stats.rating = query.rating
 
         if last_read is not None:
-            await self._set_last_read(
+            self._set_last_read(
                 group_id, user_id, last_read, unread_count_before_changing, group, user_stats, that_user_stats, db
             )
 

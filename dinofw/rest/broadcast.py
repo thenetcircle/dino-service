@@ -8,13 +8,13 @@ from dinofw.utils.convert import stats_to_event_dict, to_int
 
 
 class BroadcastResource(BaseResource):
-    async def broadcast_event(self, query: NotificationQuery, db: Session) -> None:
+    def broadcast_event(self, query: NotificationQuery, db: Session) -> None:
         if query.event_type == EventType.message:
-            await self.send_message_event(query, db)
+            self.send_message_event(query, db)
         else:
-            await self.send_other_event(query)
+            self.send_other_event(query)
 
-    async def send_message_event(self, query: NotificationQuery, db: Session):
+    def send_message_event(self, query: NotificationQuery, db: Session):
         user_id_to_stats = self.get_stats_for(query.group_id, db)
         now_int = to_int(arrow.utcnow().int_timestamp)
 
@@ -38,15 +38,15 @@ class BroadcastResource(BaseResource):
                     highlight_status = HighlightStatus.NONE
 
                 event_with_stats["stats"]["highlight"] = highlight_status
-                await self.env.client_publisher.send_to_one(user_id, event_with_stats)
+                self.env.client_publisher.send_to_one(user_id, event_with_stats)
 
-    async def send_other_event(self, query: NotificationQuery):
+    def send_other_event(self, query: NotificationQuery):
         for user_group in query.notification:
             user_group.data["event_type"] = query.event_type
             user_group.data["group_id"] = query.group_id
 
             for user_id in user_group.user_ids:
-                await self.env.client_publisher.send_to_one(user_id, user_group.data)
+                self.env.client_publisher.send_to_one(user_id, user_group.data)
 
     def get_stats_for(self, group_id: str, db: Session):
         return {

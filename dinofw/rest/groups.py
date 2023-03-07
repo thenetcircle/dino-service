@@ -196,7 +196,7 @@ class GroupResource(BaseResource):
 
         # history api can be called by the admin interface, in which case we don't want to change read status
         if query.admin_id is None or query.admin_id == 0:
-            await self._user_opens_conversation(group_id, user_id, user_stats, db)
+            self._user_opens_conversation(group_id, user_id, user_stats, db)
 
         return Histories(
             messages=messages
@@ -243,7 +243,7 @@ class GroupResource(BaseResource):
     async def update_user_group_stats(
         self, group_id: str, user_id: int, query: UpdateUserGroupStats, db: Session
     ) -> None:
-        await self.env.db.update_user_group_stats(group_id, user_id, query, db)
+        self.env.db.update_user_group_stats(group_id, user_id, query, db)
         self.create_action_log(query.action_log, db, user_id=user_id, group_id=group_id)
 
     async def create_new_group(
