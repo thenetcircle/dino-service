@@ -181,6 +181,7 @@ class ConfigKeys:
     URI = "uri"
     DROPPED_EVENT_FILE = "dropped_log"
     TRACE_SAMPLE_RATE = "trace_sample_rate"
+    POOL_SIZE = "pool_size"
 
     # will be overwritten even if specified in config file
     ENVIRONMENT = "_environment"
