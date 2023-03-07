@@ -164,7 +164,7 @@ class UpdateUserGroupStatsHandler:
                     [user_id], unread_count_before_changing, pipeline=p
                 )
 
-    async def _set_last_read(
+    def _set_last_read(
             self,
             group_id: str,
             user_id: int,
@@ -181,7 +181,7 @@ class UpdateUserGroupStatsHandler:
             user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
 
             del user_ids[user_id]
-            await self.env.client_publisher.read(
+            self.env.client_publisher.read(
                 group_id, user_id, list(user_ids.keys()), last_read, bookmark=user_stats.bookmark
             )
 

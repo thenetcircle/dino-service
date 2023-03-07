@@ -60,7 +60,7 @@ class MqttPublisher(IClientPublisher):
 
         self.mqtt = MQTTClient(
             client_id=client_id,
-            session_expiry_interval=0,
+            session_expiry_interval=60,
             clean_session=True,
 
             # 'receive_maximum' is defined as: "The Client uses this value to limit the number
@@ -180,8 +180,9 @@ class MqttPublisher(IClientPublisher):
         if self.mqtt is not None:
             await self.mqtt.disconnect()
 
-    async def send(self, user_id: int, fields: dict, qos: int = 1) -> None:
+    def send(self, user_id: int, fields: dict, qos: int = 1) -> None:
         if self.mqtt is None:
+            logger.warning("mqtt instance is none!")
             return
 
         data = {
@@ -189,14 +190,6 @@ class MqttPublisher(IClientPublisher):
             for key, value in fields.items()
             if value is not None
         }
-
-        # in case we got disconnected because an MQ node went down or was restarted
-        if not self.mqtt.is_connected:
-            try:
-                await self.setup()
-            except Exception as e:
-                logger.error(f"could not connect to mqtt: '{str(e)}', dropping message: {json.dumps(data)}")
-                return
 
         logger.debug(f"sending mqtt event to user {user_id}: {json.dumps(data)}")
         try:
@@ -228,31 +221,31 @@ class MqttPublishHandler(IClientPublishHandler):
         self.shutdown = True
         await self.publisher.stop()
 
-    async def action_log(self, message: MessageBase, user_ids: List[int]) -> None:
+    def action_log(self, message: MessageBase, user_ids: List[int]) -> None:
         data = message_base_to_event(message, event_type=EventTypes.ACTION_LOG)
-        await self.send(user_ids, data)
+        self.send(user_ids, data)
 
-    async def attachment(self, attachment: MessageBase, user_ids: List[int], group: GroupBase) -> None:
+    def attachment(self, attachment: MessageBase, user_ids: List[int], group: GroupBase) -> None:
         data = message_base_to_event(
             attachment,
             event_type=EventTypes.ATTACHMENT,
             group=group
         )
-        await self.send(user_ids, data)
+        self.send(user_ids, data)
 
-    async def edit(self, message: MessageBase, user_ids: List[int]) -> None:
+    def edit(self, message: MessageBase, user_ids: List[int]) -> None:
         data = message_base_to_event(message, event_type=EventTypes.EDIT)
-        await self.send(user_ids, data)
+        self.send(user_ids, data)
 
-    async def read(self, group_id: str, user_id: int, user_ids: List[int], now: dt, bookmark: bool) -> None:
+    def read(self, group_id: str, user_id: int, user_ids: List[int], now: dt, bookmark: bool) -> None:
         # only send read receipt to 1v1 groups
         if len(user_ids) > 2:
             return
 
         data = read_to_event(group_id, user_id, now, bookmark)
-        await self.send(user_ids, data)
+        self.send(user_ids, data)
 
-    async def delete_attachments(
+    def delete_attachments(
         self,
         group_id: str,
         attachments: List[MessageBase],
@@ -277,21 +270,21 @@ class MqttPublishHandler(IClientPublishHandler):
         # us anyway as specified in the configuration:
         #
         #     upgrade_outgoing_qos = on
-        await self.send(user_ids, data, qos=0)
+        self.send(user_ids, data, qos=0)
 
-    async def group_change(self, group_base: GroupBase, user_ids: List[int]) -> None:
+    def group_change(self, group_base: GroupBase, user_ids: List[int]) -> None:
         data = group_base_to_event(group_base, user_ids)
-        await self.send(user_ids, data)
+        self.send(user_ids, data)
 
-    async def join(self, group_id: str, user_ids: List[int], joiner_ids: List[int], now: float) -> None:
+    def join(self, group_id: str, user_ids: List[int], joiner_ids: List[int], now: float) -> None:
         data = MqttPublishHandler.create_simple_event(EventTypes.JOIN, group_id, now, user_ids=joiner_ids)
-        await self.send(user_ids, data)
+        self.send(user_ids, data)
 
-    async def leave(self, group_id: str, user_ids: List[int], leaver_id: int, now: float) -> None:
+    def leave(self, group_id: str, user_ids: List[int], leaver_id: int, now: float) -> None:
         data = MqttPublishHandler.create_simple_event(EventTypes.LEAVE, group_id, now, user_id=leaver_id)
-        await self.send(user_ids, data)
+        self.send(user_ids, data)
 
-    async def send(self, user_ids, data, qos: int = 1):
+    def send(self, user_ids, data, qos: int = 1):
         for user_id in user_ids:
             try:
                 await self.publisher.send(user_id, data, qos)
@@ -300,7 +293,7 @@ class MqttPublishHandler(IClientPublishHandler):
                 logger.exception(e)
                 self.env.capture_exception(sys.exc_info())
 
-    async def send_to_one(self, user_id: int, data, qos: int = 1):
+    def send_to_one(self, user_id: int, data, qos: int = 1):
         try:
             await self.publisher.send(user_id, data, qos)
         except Exception as e:

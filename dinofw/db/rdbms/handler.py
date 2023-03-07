@@ -1357,11 +1357,11 @@ class RelationalHandler:
 
         return user_stats, that_user_stats, group
 
-    async def update_user_group_stats(
+    def update_user_group_stats(
         self, group_id: str, user_id: int, query: UpdateUserGroupStats, db: Session
     ) -> None:
         # delegate to separate handler, too much business logic
-        await self.stats_handler.update(group_id, user_id, query, db)
+        self.stats_handler.update(group_id, user_id, query, db)
 
     def get_delete_before(self, group_id: str, user_id: int, db: Session) -> dt:
         delete_before = self.env.cache.get_delete_before(group_id, user_id)
