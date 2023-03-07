@@ -26,7 +26,7 @@ router = APIRouter()
 @router.get("/clientid/{domain}/user/{user_id}", response_model=ClientID)
 @timeit(logger, "GET", "/clientid/{domain}/user/{user_id}")
 @wrap_exception()
-async def get_all_users_statistics_in_group(domain: str, user_id: int) -> ClientID:
+async def get_next_available_client_id(domain: str, user_id: int) -> ClientID:
     """
     Get the next available Client ID for a user and domain. Cycles from [0, 49], with
     a TTL of 6h (restart at 0 after 6h).
