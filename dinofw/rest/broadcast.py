@@ -8,7 +8,7 @@ from dinofw.utils.convert import stats_to_event_dict, to_int
 
 
 class BroadcastResource(BaseResource):
-    def broadcast_event(self, query: NotificationQuery, db: Session) -> None:
+    async def broadcast_event(self, query: NotificationQuery, db: Session) -> None:
         if query.event_type == EventType.message:
             self.send_message_event(query, db)
         else:

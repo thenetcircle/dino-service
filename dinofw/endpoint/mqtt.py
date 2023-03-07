@@ -208,7 +208,6 @@ class MqttPublishHandler(IClientPublishHandler):
     def __init__(self, env):
         self.env = env
         self.publisher = MqttPublisher(env)
-        self.shutdown = False
 
     async def setup(self):
         try:
@@ -218,7 +217,6 @@ class MqttPublishHandler(IClientPublishHandler):
             logger.exception(e)
 
     async def stop(self):
-        self.shutdown = True
         await self.publisher.stop()
 
     def action_log(self, message: MessageBase, user_ids: List[int]) -> None:
