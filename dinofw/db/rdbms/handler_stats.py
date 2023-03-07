@@ -164,7 +164,7 @@ class UpdateUserGroupStatsHandler:
                     [user_id], unread_count_before_changing, pipeline=p
                 )
 
-    def _set_last_read(
+    async def _set_last_read(
             self,
             group_id: str,
             user_id: int,
@@ -181,7 +181,7 @@ class UpdateUserGroupStatsHandler:
             user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
 
             del user_ids[user_id]
-            self.env.client_publisher.read(
+            await self.env.client_publisher.read(
                 group_id, user_id, list(user_ids.keys()), last_read, bookmark=user_stats.bookmark
             )
 
@@ -225,7 +225,7 @@ class UpdateUserGroupStatsHandler:
             self.env.cache.decrease_total_unread_message_count(user_id, 1)
             self.env.cache.remove_unread_group(user_id, group_id)
 
-    def update(
+    async def update(
             self,
             group_id: str,
             user_id: int,
@@ -265,7 +265,7 @@ class UpdateUserGroupStatsHandler:
             user_stats.rating = query.rating
 
         if last_read is not None:
-            self._set_last_read(
+            await self._set_last_read(
                 group_id, user_id, last_read, unread_count_before_changing, group, user_stats, that_user_stats, db
             )
 

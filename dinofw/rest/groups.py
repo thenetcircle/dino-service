@@ -83,7 +83,7 @@ class GroupResource(BaseResource):
             for attachment in attachments
         ]
 
-    def mark_all_as_read(self, user_id: int, db: Session) -> None:
+    async def mark_all_as_read(self, user_id: int, db: Session) -> None:
         group_ids_updated = self.env.db.mark_all_groups_as_read(user_id, db)
 
         group_to_user = self.env.db.get_user_ids_in_groups(group_ids_updated, db)
@@ -94,7 +94,7 @@ class GroupResource(BaseResource):
                 user_ids.remove(user_id)
 
             # marking a group as read sets bookmark=False
-            self.env.client_publisher.read(
+            await self.env.client_publisher.read(
                 group_id, user_id, user_ids, now_dt, bookmark=False
             )
 
@@ -196,7 +196,7 @@ class GroupResource(BaseResource):
 
         # history api can be called by the admin interface, in which case we don't want to change read status
         if query.admin_id is None or query.admin_id == 0:
-            self._user_opens_conversation(group_id, user_id, user_stats, db)
+            await self._user_opens_conversation(group_id, user_id, user_stats, db)
 
         return Histories(
             messages=messages
@@ -243,7 +243,7 @@ class GroupResource(BaseResource):
     async def update_user_group_stats(
         self, group_id: str, user_id: int, query: UpdateUserGroupStats, db: Session
     ) -> None:
-        self.env.db.update_user_group_stats(group_id, user_id, query, db)
+        await self.env.db.update_user_group_stats(group_id, user_id, query, db)
         self.create_action_log(query.action_log, db, user_id=user_id, group_id=group_id)
 
     async def create_new_group(

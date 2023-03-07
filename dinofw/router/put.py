@@ -73,7 +73,7 @@ async def mark_all_groups_as_read(
     """
 
     def set_read_time(user_id_, db_):
-        environ.env.rest.group.mark_all_as_read(user_id_, db_)
+        await environ.env.rest.group.mark_all_as_read(user_id_, db_)
 
     try:
         task = BackgroundTask(set_read_time, user_id_=user_id, db_=db)

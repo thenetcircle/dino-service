@@ -27,7 +27,7 @@ class BaseResource(ABC):
         beginning_of_1995 = 789_000_000
         self.long_ago = arrow.Arrow.utcfromtimestamp(beginning_of_1995).datetime
 
-    def _user_opens_conversation(self, group_id: str, user_id: int, user_stats: UserGroupStatsBase, db):
+    async def _user_opens_conversation(self, group_id: str, user_id: int, user_stats: UserGroupStatsBase, db):
         """
         update database and cache with everything related to opening a conversation (if needed)
         """
@@ -64,7 +64,7 @@ class BaseResource(ABC):
             user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
 
             del user_ids[user_id]
-            self.env.client_publisher.read(
+            await self.env.client_publisher.read(
                 group_id, user_id, user_ids, now_dt, bookmark=user_stats.bookmark
             )
 
