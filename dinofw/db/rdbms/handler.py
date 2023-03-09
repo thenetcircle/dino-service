@@ -13,6 +13,7 @@ from sqlalchemy import func
 from sqlalchemy import literal
 from sqlalchemy import distinct
 from sqlalchemy import or_
+from sqlalchemy import and_
 from sqlalchemy.orm import Session
 from sqlalchemy.orm import load_only
 
@@ -241,18 +242,30 @@ class RelationalHandler:
         postgres query:
 
             select
-                sum(unread_count) filter (where bookmark = false) +
-                count(1) filter (where bookmark = true) as unread_count,
+                coalesce(
+                    sum(unread_count)
+                    filter (where bookmark = false and notifications = true),
+                0) +
+                coalesce(
+                    sum(mentions)
+                    filter (where bookmark = false and notifications = false),
+                0) +
+                coalesce(
+                    count(1) filter (where bookmark = true),
+                0) as unread_count,
                 count(distinct group_id) as n_unread_groups
             from
                 user_group_stats
             where
-                user_id = 6510486 and
+                user_id = 8888 and
                 hide = false and
                 deleted = false and
-                (bookmark = true or unread_count > 0);
+                (
+                    bookmark = true or
+                    unread_count > 0 or
+                    mentions > 0
+                );
         """
-        # TODO: query for hidden?
         unread_count = (
             db.query(
                 func.coalesce(
@@ -292,9 +305,18 @@ class RelationalHandler:
                 UserGroupStatsEntity.hide.is_(False),
                 UserGroupStatsEntity.deleted.is_(False),
                 or_(
+                    # any bookmarked group counts as having unread messages
                     UserGroupStatsEntity.bookmark.is_(True),
-                    UserGroupStatsEntity.unread_count > 0,
-                    UserGroupStatsEntity.mentions > 0
+                    and_(
+                        # real unread count only counts as unread if notifications are enabled
+                        UserGroupStatsEntity.notifications.is_(True),
+                        UserGroupStatsEntity.unread_count > 0
+                    ),
+                    and_(
+                        # if they're not enabled, the user must have been mentioned to count as an unread group
+                        UserGroupStatsEntity.notifications.is_(False),
+                        UserGroupStatsEntity.mentions > 0
+                    )
                 )
             )
             .options(load_only("group_id"))
