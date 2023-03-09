@@ -194,7 +194,7 @@ class TestUnreadCount(BaseServerRestApi):
         self.assertEqual(unread_count, cached_unread_count)
         self.assertEqual(unread_groups, cached_unread_groups)
 
-    def test_count_total_unread_cached_is_none(self):
+    def test_count_total_unread_cached_is_set_to_zero(self):
         session = self.env.session_maker()
 
         cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
@@ -206,8 +206,8 @@ class TestUnreadCount(BaseServerRestApi):
         self.assertEqual(0, unread_groups)
 
         cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
-        self.assertIsNone(cached_unread_count)
-        self.assertIsNone(cached_unread_groups)
+        self.assertEqual(0, cached_unread_count)
+        self.assertEqual(0, cached_unread_groups)
 
     def test_count_total_unread_increase_cache(self):
         session = self.env.session_maker()

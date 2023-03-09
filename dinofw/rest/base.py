@@ -57,6 +57,7 @@ class BaseResource(ABC):
             if user_stats.bookmark:
                 decrease_by = 1
 
+            # TODO: this only works if we're resetting bookmark when opening a conversation
             self.env.cache.decrease_total_unread_message_count(user_id, decrease_by)
 
         # no point updating if already newer than last message (also skips
