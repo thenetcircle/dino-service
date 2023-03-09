@@ -201,7 +201,6 @@ class MqttPublisher(IClientPublisher):
             )
         except Exception as e:
             logger.error(f"could not publish to mqtt: {str(e)}")
-            logger.exception(e)
 
 
 class MqttPublishHandler(IClientPublishHandler):
