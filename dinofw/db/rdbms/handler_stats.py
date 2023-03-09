@@ -193,6 +193,9 @@ class UpdateUserGroupStatsHandler:
         self.env.cache.clear_unread_in_group_for_user(group_id, user_id)
         user_stats.unread_count = self.env.storage.get_unread_in_group(group_id, user_id, last_read)
 
+        # when updating last read, we reset the mention count to 0
+        user_stats.mentions = 0
+
         # updating unread removes bookmark, and bookmark always counts as 1 unread
         decrease_by = unread_count_before_changing
         if user_stats.bookmark:

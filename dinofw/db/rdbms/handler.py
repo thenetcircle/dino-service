@@ -462,11 +462,10 @@ class RelationalHandler:
         message: MessageBase,
         db: Session,
         sender_user_id: int,
-        user_ids: List[int],
         update_unread_count: bool = True,
-        update_last_message: bool = True
+        update_last_message: bool = True,
+        mentions: List[int] = None
     ) -> GroupBase:
-
         group = (
             db.query(GroupEntity)
             .filter(GroupEntity.group_id == message.group_id)
@@ -575,6 +574,18 @@ class RelationalHandler:
             statement.update({
                 UserGroupStatsEntity.last_updated_time: sent_time,
             })
+
+        # we have to count the number of mentions; is reset when user reads/opens conversation
+        if mentions and len(mentions):
+            _ = (
+                db.query(UserGroupStatsEntity)
+                .filter(
+                    UserGroupStatsEntity.user_id.in_(mentions)
+                )
+                .update({
+                    UserGroupStatsEntity.mentions: UserGroupStatsEntity.mentions + 1
+                }, synchronize_session=False)
+            )
 
         # update 'sent_message_count' in cache and db
         previous_sent_count = self._get_then_update_sent_count(message.group_id, sender_user_id, db)
@@ -1454,6 +1465,7 @@ class RelationalHandler:
         user_stats.receiver_highlight_time = self.long_ago
         user_stats.bookmark = False
         user_stats.hide = False
+        user_stats.mentions = 0
         user_stats.unread_count = 0
 
         # TODO: use pipeline
@@ -1676,4 +1688,5 @@ class RelationalHandler:
             receiver_highlight_time=self.long_ago,
             # for new groups, we can set this to 0 directly and start counting, instead of the default -1
             sent_message_count=0,
+            mentions=0
         )

@@ -1,4 +1,5 @@
 from abc import ABC
+from typing import List
 from typing import Union, Optional
 
 import arrow
@@ -10,6 +11,7 @@ from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.schemas import MessageBase
 from dinofw.rest.models import Message
 from dinofw.rest.queries import ActionLogQuery
+from dinofw.rest.queries import SendMessageQuery
 from dinofw.utils import need_to_update_stats_in_group
 from dinofw.utils import users_to_group_id
 from dinofw.utils import utcnow_dt
@@ -114,7 +116,8 @@ class BaseResource(ABC):
             db,
             should_increase_unread: bool,
             event_type: EventTypes,
-            update_last_message: bool = True
+            update_last_message: bool = True,
+            mentions: List[int] = None
     ) -> Optional[GroupBase]:
         """
         update database and cache with everything related to sending a message
@@ -125,9 +128,9 @@ class BaseResource(ABC):
             message,
             db,
             sender_user_id=user_id,
-            user_ids=user_ids.copy(),
             update_unread_count=should_increase_unread,
-            update_last_message=update_last_message
+            update_last_message=update_last_message,
+            mentions=mentions
         )
 
         # if all users left the group, this message is an action log, and there's nothing more to do

@@ -453,9 +453,9 @@ class FakeDatabase:
         message: MessageBase,
         db,
         sender_user_id: int,
-        user_ids: List[int],
         update_unread_count: bool = True,
-        update_last_message: bool = True
+        update_last_message: bool = True,
+        mentions: List[int] = None
     ):
         if message.group_id not in self.groups:
             return
@@ -465,7 +465,7 @@ class FakeDatabase:
         self.groups[message.group_id].last_message_type = message.message_type
         self.groups[message.group_id].last_message_id = message.message_id
 
-        for user_id in user_ids:
+        for user_id in self.stats.keys():
             for stat in self.stats[user_id]:
                 if stat.group_id != message.group_id:
                     continue
