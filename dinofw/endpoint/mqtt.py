@@ -1,11 +1,12 @@
+import asyncio
 import json
-import os
 import socket
 import sys
 from datetime import datetime as dt
 from typing import List
 
 import bcrypt
+import psutil
 import redis
 from gmqtt import Client as MQTTClient
 from gmqtt.mqtt.constants import MQTTv50
@@ -22,6 +23,24 @@ from dinofw.utils.convert import message_base_to_event
 from dinofw.utils.convert import read_to_event
 
 
+def get_worker_index():
+    """
+    to reuse client ids but still keep them unique among the workers/servers
+    """
+    this_process = psutil.Process()
+    this_pid = this_process.pid
+
+    siblings = [
+        p.pid for p in
+        this_process.parent().children()
+    ]
+
+    siblings = sorted(siblings)
+    worker_index = siblings.index(this_pid)
+
+    return worker_index
+
+
 class MqttPublisher(IClientPublisher):
     def __init__(self, env):
         self.env = env
@@ -34,13 +53,15 @@ class MqttPublisher(IClientPublisher):
             self.mqtt_host = self.mqtt_host.split(",")[0]
 
         # needs to be unique for each worker and node
-        pid = os.getpid()
-        client_id = socket.gethostname().split(".")[0]
-        client_id = f"dinoms-{client_id}-{pid}"
+        worker_index = get_worker_index()
+        hostname = socket.gethostname().split(".")[0]
+        client_id = f"dinoms-{hostname}-{worker_index}"
+        logger.debug(f"using mqtt client id '{client_id}'")
 
         self.mqtt = MQTTClient(
             client_id=client_id,
             session_expiry_interval=60,
+            clean_session=True,
 
             # 'receive_maximum' is defined as: "The Client uses this value to limit the number
             # of QoS 1 and QoS 2 publications that it is willing to process concurrently."
@@ -61,6 +82,7 @@ class MqttPublisher(IClientPublisher):
 
         # auth disabled
         if username == "" or auth_type == "disabled":
+            logger.debug("mqtt auth is disabled")
             return
 
         if auth_type == "redis":
@@ -119,6 +141,7 @@ class MqttPublisher(IClientPublisher):
         # need to set it every time, since it has to be unique and
         # pid will change for each worker on startup
         r_client.set(mqtt_key, mqtt_value)
+        logger.debug(f"set mqtt auth in redis to key {mqtt_key} and value {mqtt_value}")
 
     def set_auth_mysql(self, env, client_id, username, password):
         import MySQLdb
@@ -145,11 +168,13 @@ class MqttPublisher(IClientPublisher):
         db.close()
 
     async def setup(self):
+        logger.debug(f"mqtt connecting to host {self.mqtt_host} port {self.mqtt_port}")
         await self.mqtt.connect(
             self.mqtt_host,
             port=self.mqtt_port,
             version=MQTTv50
         )
+        logger.debug("mqtt connected successfully!")
 
     async def stop(self):
         if self.mqtt is not None:
@@ -157,6 +182,7 @@ class MqttPublisher(IClientPublisher):
 
     def send(self, user_id: int, fields: dict, qos: int = 1) -> None:
         if self.mqtt is None:
+            logger.warning("mqtt instance is none!")
             return
 
         data = {

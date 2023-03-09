@@ -1,5 +1,4 @@
 import json
-import socket
 import sys
 from datetime import datetime as dt
 from datetime import timedelta
@@ -8,10 +7,11 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
+from uuid import UUID
 from uuid import uuid4 as uuid
 
 import arrow
-import psutil
+from cassandra.cluster import Cluster
 from cassandra.cluster import EXEC_PROFILE_DEFAULT
 from cassandra.cluster import ExecutionProfile
 from cassandra.cluster import PlainTextAuthProvider
@@ -37,7 +37,6 @@ from dinofw.rest.queries import MessageQuery
 from dinofw.rest.queries import SendMessageQuery
 from dinofw.utils import to_dt
 from dinofw.utils import utcnow_dt
-from dinofw.utils import calculate_ms_to_add
 from dinofw.utils.config import ConfigKeys
 from dinofw.utils.config import DefaultValues
 from dinofw.utils.config import MessageTypes
@@ -50,10 +49,12 @@ class CassandraHandler:
     def __init__(self, env):
         self.env = env
 
+        # only used for transactions (LWT) when creating image messages
+        self.session = None
+
         # used when no `hide_before` is specified in a query
         beginning_of_1995 = 789_000_000
         self.long_ago = arrow.get(beginning_of_1995).datetime
-        self.ms_to_add_for_image_creation_time = calculate_ms_to_add()
 
     def setup_tables(self):
         key_space = self.env.config.get(ConfigKeys.KEY_SPACE, domain=ConfigKeys.STORAGE)
@@ -71,15 +72,18 @@ class CassandraHandler:
                 # should probably be changed to QUORUM when having more than 3 nodes in the cluster
                 consistency_level=ConsistencyLevel.LOCAL_ONE,
             ),
-            # TODO: there doesn't seem to be a way to specify execution profile when
-            #  using the library's object mapping approach, only when writing pure
-            #  cql queries:
-            #  https://docs.datastax.com/en/developer/python-driver/3.24/execution_profiles/
             # batch profile has longer timeout since they are run async anyway
             "batch": ExecutionProfile(
                 load_balancing_policy=TokenAwarePolicy(DCAwareRoundRobinPolicy()),
                 request_timeout=120.0,
                 consistency_level=ConsistencyLevel.LOCAL_ONE,
+            ),
+            "transaction": ExecutionProfile(
+                load_balancing_policy=TokenAwarePolicy(DCAwareRoundRobinPolicy()),
+                request_timeout=10.0,
+                consistency_level=ConsistencyLevel.QUORUM,
+                # https://docs.datastax.com/en/developer/python-driver/3.25/api/cassandra/query/#cassandra.query.Statement.serial_consistency_level
+                serial_consistency_level=ConsistencyLevel.LOCAL_SERIAL
             )
         }
 
@@ -101,6 +105,16 @@ class CassandraHandler:
             kwargs["auth_provider"] = auth_provider
 
         connection.setup(hosts, **kwargs)
+
+        cluster = Cluster(
+            contact_points=hosts,
+            protocol_version=3,
+            execution_profiles=profiles,
+            auth_provider=kwargs["auth_provider"]
+        )
+
+        # used for serial consistency level when inserting images with "if not exists"
+        self.session = cluster.connect(key_space)
 
         # sync_table(MessageModel)
         # sync_table(AttachmentModel)
@@ -632,23 +646,82 @@ class CassandraHandler:
 
     # noinspection PyMethodMayBeStatic
     def store_message(self, group_id: str, user_id: int, query: SendMessageQuery) -> MessageBase:
+        message = None
+
         # if the user is sending multiple images at the same time it may happen different servers create them
         # with the exact same milliseconds, which will cause primary key collision in cassandra (silently
         # losing all but one of the messages with the same milliseconds)
         if query.message_type == MessageTypes.IMAGE:
-            created_at = utcnow_dt(ms_to_add=self.ms_to_add_for_image_creation_time)
+            inserted = False
+            message_id = uuid()
+
+            while not inserted:
+                # recreate creation time on each try, until we don't have primary key collision anymore
+                created_at = utcnow_dt()
+
+                # can't use "if not exists" or serial consistency when using the ORM, so use a raw query
+                results = self.session.execute(
+                    "insert into messages (group_id, created_at, user_id, message_id, message_payload, message_type, context)" +
+                    "values (%s, %s, %s, %s, %s, %s, %s)" +
+                    "if not exists;",
+                    (
+                        UUID(group_id), created_at, user_id, message_id,
+                        query.message_payload, query.message_type, query.context
+                    ),
+                    # this profile has serial consistency level set to 'serial', to make sure we don't do an UPSERT
+                    execution_profile='transaction'
+                ).all()
+
+                inserted = results[0].applied
+                if not inserted:
+                    logger.warning(
+                        f"found duplicate primary key when inserting image: " +
+                        f"group_id={group_id}, user_id={user_id}, created_at={created_at}, message_id={message_id}"
+                    )
+                    # try again with a newly generated created_at
+                    continue
+
+                # querying by exact datetime seems to be shifty in cassandra, so just
+                # filter by a minute before and after
+                approx_date_after = arrow.get(created_at).shift(seconds=-1).datetime
+                approx_date_before = arrow.get(created_at).shift(seconds=1).datetime
+
+                # when using 'if not exists', the inserted row will not be returned,
+                # so we have to query for it after insertion
+                message = (
+                    MessageModel.objects(
+                        MessageModel.group_id == group_id,
+                        MessageModel.user_id == user_id,
+                        MessageModel.created_at > approx_date_after,
+                        MessageModel.created_at < approx_date_before,
+                        MessageModel.message_id == message_id,
+                    )
+                    .allow_filtering()
+                    .first()
+                )
+
+                """
+                message = MessageModel.create(
+                    group_id=group_id,
+                    user_id=user_id,
+                    created_at=created_at,
+                    message_id=uuid(),
+                    message_payload=query.message_payload,
+                    message_type=query.message_type,
+                    context=query.context,
+                )
+                """
         else:
             created_at = utcnow_dt()
-
-        message = MessageModel.create(
-            group_id=group_id,
-            user_id=user_id,
-            created_at=created_at,
-            message_id=uuid(),
-            message_payload=query.message_payload,
-            message_type=query.message_type,
-            context=query.context,
-        )
+            message = MessageModel.create(
+                group_id=group_id,
+                user_id=user_id,
+                created_at=created_at,
+                message_id=uuid(),
+                message_payload=query.message_payload,
+                message_type=query.message_type,
+                context=query.context,
+            )
 
         return CassandraHandler.message_base_from_entity(message)
 

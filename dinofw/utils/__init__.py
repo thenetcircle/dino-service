@@ -81,32 +81,6 @@ def trim_micros(dt: datetime, allow_none: bool = False) -> Optional[datetime]:
     return datetime.fromtimestamp(ts_millis, tz=dt.tzinfo)
 
 
-def calculate_ms_to_add():
-    """
-    when uploading multiple images at the same time, add some ms to the creation
-    time to avoid cassandra primary key collision
-
-    primary key for messages is (group_id, user_id, created_at), so add a specific
-    amount depending on this worker instance (e.g. uvicorn --workers 6) and this
-    server instance (e.g. host1, host2, etc).
-    """
-    server_name = socket.gethostname().split(".")[0]
-    server_index = int(server_name[-1])
-
-    this_process = psutil.Process()
-    this_pid = this_process.pid
-
-    siblings = [
-        p.pid for p in
-        this_process.parent().children()
-    ]
-
-    siblings = sorted(siblings)
-    worker_index = siblings.index(this_pid)
-
-    return worker_index * 20 + (server_index - 1) * 150
-
-
 def users_to_group_id(user_a: int, user_b: int) -> str:
     # convert integer ids to hex; need to be sorted
     users = map(hex, sorted([user_a, user_b]))
