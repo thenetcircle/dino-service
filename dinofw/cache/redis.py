@@ -184,6 +184,10 @@ class CacheRedis(ICache):
         r.expire(key, ONE_DAY * 2)
         r.execute()
 
+    def reset_total_unread_message_count(self, user_id: int):
+        key = RedisKeys.total_unread_count(user_id)
+        self.redis.delete(key)
+
     def increase_total_unread_message_count(self, user_ids: List[int], amount: int, pipeline=None):
         for user_id in user_ids:
             key = RedisKeys.total_unread_count(user_id)

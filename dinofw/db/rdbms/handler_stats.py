@@ -270,6 +270,9 @@ class UpdateUserGroupStatsHandler:
         if query.notifications is not None:
             user_stats.notifications = query.notifications
 
+            # force a recount of total unreads, since previously only mentions were cached for this group
+            self.env.cache.reset_total_unread_message_count(user_id)
+
         if last_read is not None:
             self._set_last_read(
                 group_id, user_id, last_read, unread_count_before_changing, group, user_stats, that_user_stats, db

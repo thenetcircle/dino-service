@@ -17,7 +17,7 @@ from test.functional.base_functional import BaseServerRestApi
 
 class TestUnreadCount(BaseServerRestApi):
     @async_test
-    async def test_unread_count_not_updated_if_notifications_disabled(self):
+    async def test_total_unread_count_only_counts_mentions_if_notifications_are_disabled(self):
         session = self.env.session_maker()
         send_query = SendMessageQuery(
             receiver_id=BaseTest.OTHER_USER_ID,
@@ -30,21 +30,33 @@ class TestUnreadCount(BaseServerRestApi):
         self.assert_unread_amount_and_groups(BaseDatabaseTest.OTHER_USER_ID, 1, 1, session)
         self.assert_cached_unread_for_group(BaseDatabaseTest.OTHER_USER_ID, group_id, 1)
 
-        # disable notifications
+        # disable notifications, since the user hasn't been mentioned, total unread should now be 0
         await self.env.rest.group.update_user_group_stats(
             group_id, BaseTest.OTHER_USER_ID, UpdateUserGroupStats(notifications=False), session
         )
         await self.env.rest.message.send_message_to_user(BaseTest.USER_ID, send_query, session)
-        self.assert_unread_amount_and_groups(BaseDatabaseTest.OTHER_USER_ID, 1, 1, session)
-        self.assert_cached_unread_for_group(BaseDatabaseTest.OTHER_USER_ID, group_id, 1)
+        self.assert_unread_amount_and_groups(BaseDatabaseTest.OTHER_USER_ID, 0, 1, session)
+        self.assert_cached_unread_for_group(BaseDatabaseTest.OTHER_USER_ID, group_id, 2)
 
-        # enable notifications again
+        # mention the user, now it should update to one more unread
+        send_query.mention_user_ids = [BaseTest.OTHER_USER_ID]
+        await self.env.rest.message.send_message_to_user(BaseTest.USER_ID, send_query, session)
+        self.assert_unread_amount_and_groups(BaseDatabaseTest.OTHER_USER_ID, 1, 1, session)
+        self.assert_cached_unread_for_group(BaseDatabaseTest.OTHER_USER_ID, group_id, 3)
+
+        # don't mention the user, total unread should now be the same as before
+        send_query.mention_user_ids = None
+        await self.env.rest.message.send_message_to_user(BaseTest.USER_ID, send_query, session)
+        self.assert_unread_amount_and_groups(BaseDatabaseTest.OTHER_USER_ID, 1, 1, session)
+        self.assert_cached_unread_for_group(BaseDatabaseTest.OTHER_USER_ID, group_id, 4)
+
+        # enable notifications again and send yet another message
         await self.env.rest.group.update_user_group_stats(
             group_id, BaseTest.OTHER_USER_ID, UpdateUserGroupStats(notifications=True), session
         )
         await self.env.rest.message.send_message_to_user(BaseTest.USER_ID, send_query, session)
-        self.assert_unread_amount_and_groups(BaseDatabaseTest.OTHER_USER_ID, 2, 1, session)
-        self.assert_cached_unread_for_group(BaseDatabaseTest.OTHER_USER_ID, group_id, 2)
+        self.assert_unread_amount_and_groups(BaseDatabaseTest.OTHER_USER_ID, 5, 1, session)
+        self.assert_cached_unread_for_group(BaseDatabaseTest.OTHER_USER_ID, group_id, 5)
 
     @async_test
     async def test_unread_count_0_and_1(self):
