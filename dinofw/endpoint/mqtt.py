@@ -1,12 +1,11 @@
-import asyncio
 import json
+import os
 import socket
 import sys
 from datetime import datetime as dt
 from typing import List
 
 import bcrypt
-import psutil
 import redis
 from gmqtt import Client as MQTTClient
 from gmqtt.mqtt.constants import MQTTv50
@@ -53,9 +52,10 @@ class MqttPublisher(IClientPublisher):
             self.mqtt_host = self.mqtt_host.split(",")[0]
 
         # needs to be unique for each worker and node
-        worker_index = get_worker_index()
+        # worker_index = get_worker_index()
+        pid = os.getpid()
         hostname = socket.gethostname().split(".")[0]
-        client_id = f"dinoms-{hostname}-{worker_index}"
+        client_id = f"dinoms-{hostname}-{pid}"
         logger.debug(f"using mqtt client id '{client_id}'")
 
         self.mqtt = MQTTClient(
@@ -73,6 +73,7 @@ class MqttPublisher(IClientPublisher):
             #   struct.error: 'H' format requires 0 <= number <= 65535
             receive_maximum=2 ** 16 - 1,
         )
+        self.mqtt.set_config({'reconnect_retries': -1, 'reconnect_delay': 5})
         self.set_auth_credentials(env, client_id)
 
     def set_auth_credentials(self, env, client_id: str) -> None:
@@ -180,7 +181,7 @@ class MqttPublisher(IClientPublisher):
         if self.mqtt is not None:
             await self.mqtt.disconnect()
 
-    def send(self, user_id: int, fields: dict, qos: int = 1) -> None:
+    def send(self, user_id: int, fields: dict, qos: int = 0) -> None:
         if self.mqtt is None:
             logger.warning("mqtt instance is none!")
             return
@@ -282,7 +283,7 @@ class MqttPublishHandler(IClientPublishHandler):
         data = MqttPublishHandler.create_simple_event(EventTypes.LEAVE, group_id, now, user_id=leaver_id)
         self.send(user_ids, data)
 
-    def send(self, user_ids, data, qos: int = 1):
+    def send(self, user_ids, data, qos: int = 0):
         for user_id in user_ids:
             try:
                 self.publisher.send(user_id, data, qos)
@@ -291,7 +292,7 @@ class MqttPublishHandler(IClientPublishHandler):
                 logger.exception(e)
                 self.env.capture_exception(sys.exc_info())
 
-    def send_to_one(self, user_id: int, data, qos: int = 1):
+    def send_to_one(self, user_id: int, data, qos: int = 0):
         try:
             self.publisher.send(user_id, data, qos)
         except Exception as e:
