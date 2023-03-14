@@ -45,6 +45,8 @@ class BaseTest(TestCase):
                 bookmark=False,
                 deleted=False,
                 unread_count=0,
+                mentions=0,
+                notifications=True,
                 sent_message_count=-1
             )
         ]

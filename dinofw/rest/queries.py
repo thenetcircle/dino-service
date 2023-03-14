@@ -92,6 +92,7 @@ class MessageQuery(PaginationQuery, AdminQuery, OnlySenderQuery):
 class SendMessageQuery(OneToOneQuery):
     message_payload: Optional[str]
     message_type: int
+    mention_user_ids: Optional[List[int]] = []
     context: Optional[str]
 
     # to keep image order same as user chose, and to avoid primary key collision on created_at

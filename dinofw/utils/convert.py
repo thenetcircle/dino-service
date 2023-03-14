@@ -57,6 +57,8 @@ def to_user_group_stats(user_stats: UserGroupStatsBase) -> UserGroupStats:
         highlight_time=highlight_time,
         hide=user_stats.hide,
         pin=user_stats.pin,
+        mentions=user_stats.mentions,
+        notifications=user_stats.notifications,
         deleted=user_stats.deleted,
         bookmark=user_stats.bookmark,
         last_updated_time=last_updated_time,

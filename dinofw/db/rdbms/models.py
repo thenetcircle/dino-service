@@ -84,8 +84,8 @@ class UserGroupStatsEntity(env.Base):
     # a user can bookmark a group, which makes it count as "one unread message in this group" (only for this user)
     bookmark = Column(Boolean, default=False, nullable=False)
 
-    # when mentioned in a many-to-many group, the UI needs to show it until the user has opened/read the conversation
-    mentioned_at = Column(DateTime(timezone=True))
+    # count the number of mentions in a m2m group; reset when the user opens/reads the group chat
+    mentions = Column(Integer, default=0, nullable=False, server_default="0")
 
     # a user can rate conversations
     rating = Column(Integer, nullable=True)

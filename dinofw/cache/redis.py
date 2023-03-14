@@ -144,7 +144,7 @@ class CacheRedis(ICache):
 
         key_count = RedisKeys.total_unread_count(user_id)
         p.set(key_count, unread_count)
-        p.expire(key_count, ONE_DAY * 2)
+        p.expire(key_count, ONE_HOUR)
 
         if len(unread_groups):
             key = RedisKeys.unread_groups(user_id)
@@ -156,7 +156,7 @@ class CacheRedis(ICache):
             else:
                 p.sadd(key, *unread_groups)
 
-            p.expire(key, ONE_DAY * 2)
+            p.expire(key, ONE_HOUR)
         p.execute()
 
     def decrease_total_unread_message_count(self, user_id: int, amount: int):
@@ -181,8 +181,12 @@ class CacheRedis(ICache):
 
         r = self.redis.pipeline()
         r.decr(key, amount)
-        r.expire(key, ONE_DAY * 2)
+        r.expire(key, ONE_HOUR)
         r.execute()
+
+    def reset_total_unread_message_count(self, user_id: int):
+        key = RedisKeys.total_unread_count(user_id)
+        self.redis.delete(key)
 
     def increase_total_unread_message_count(self, user_ids: List[int], amount: int, pipeline=None):
         for user_id in user_ids:
@@ -195,7 +199,7 @@ class CacheRedis(ICache):
                 continue
 
             self.redis.incrby(key, amount)
-            self.redis.expire(key, ONE_DAY * 2)
+            self.redis.expire(key, ONE_HOUR)
 
     def add_unread_group(self, user_ids: List[int], group_id: str, pipeline=None) -> None:
         # use pipeline if provided
@@ -204,7 +208,7 @@ class CacheRedis(ICache):
         for user_id in user_ids:
             key = RedisKeys.unread_groups(user_id)
             r.sadd(key, group_id)
-            r.expire(key, ONE_DAY * 2)
+            r.expire(key, ONE_HOUR)
 
         # only execute if we weren't provided a pipeline
         if pipeline is None:
@@ -216,7 +220,7 @@ class CacheRedis(ICache):
 
         key = RedisKeys.unread_groups(user_id)
         r.srem(key, group_id)
-        r.expire(key, ONE_DAY * 2)
+        r.expire(key, ONE_HOUR)
 
         # only execute if we weren't provided a pipeline
         if pipeline is None:
@@ -233,7 +237,7 @@ class CacheRedis(ICache):
         for group_id in group_ids:
             p.sadd(key, group_id)
 
-        p.expire(key, ONE_DAY * 2)
+        p.expire(key, ONE_HOUR)
         p.execute()
 
     """
@@ -242,7 +246,7 @@ class CacheRedis(ICache):
 
         p = self.redis.pipeline()
         p.incr(key_group)
-        p.expire(key_group, ONE_DAY * 2)
+        p.expire(key_group, ONE_HOUR)
         p.execute()
     """
 
