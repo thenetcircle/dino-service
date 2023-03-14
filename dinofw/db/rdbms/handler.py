@@ -241,13 +241,13 @@ class RelationalHandler:
         postgres query:
 
             select
-                sum(unread_count) filter (where bookmark = false) +
-                count(1) filter (where bookmark = true) as unread_count,
+                coalesce(sum(unread_count) filter (where bookmark = false), 0) +
+                coalesce(count(1) filter (where bookmark = true), 0) as unread_count,
                 count(distinct group_id) as n_unread_groups
             from
                 user_group_stats
             where
-                user_id = 6510486 and
+                user_id = 406586 and
                 hide = false and
                 deleted = false and
                 (bookmark = true or unread_count > 0);
