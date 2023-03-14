@@ -180,7 +180,7 @@ class MqttPublisher(IClientPublisher):
         if self.mqtt is not None:
             await self.mqtt.disconnect()
 
-    def send(self, user_id: int, fields: dict, qos: int = 1) -> None:
+    def send(self, user_id: int, fields: dict, qos: int = 0) -> None:
         if self.mqtt is None:
             logger.warning("mqtt instance is none!")
             return
@@ -282,7 +282,7 @@ class MqttPublishHandler(IClientPublishHandler):
         data = MqttPublishHandler.create_simple_event(EventTypes.LEAVE, group_id, now, user_id=leaver_id)
         self.send(user_ids, data)
 
-    def send(self, user_ids, data, qos: int = 1):
+    def send(self, user_ids, data, qos: int = 0):
         for user_id in user_ids:
             try:
                 self.publisher.send(user_id, data, qos)
@@ -291,7 +291,7 @@ class MqttPublishHandler(IClientPublishHandler):
                 logger.exception(e)
                 self.env.capture_exception(sys.exc_info())
 
-    def send_to_one(self, user_id: int, data, qos: int = 1):
+    def send_to_one(self, user_id: int, data, qos: int = 0):
         try:
             self.publisher.send(user_id, data, qos)
         except Exception as e:
