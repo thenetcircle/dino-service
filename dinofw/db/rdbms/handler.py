@@ -255,8 +255,12 @@ class RelationalHandler:
         # TODO: query for hidden?
         unread_count = (
             db.query(
-                func.sum(UserGroupStatsEntity.unread_count).filter(UserGroupStatsEntity.bookmark.is_(False)) +
-                func.count(1).filter(UserGroupStatsEntity.bookmark.is_(True))
+                func.coalesce(
+                    func.sum(UserGroupStatsEntity.unread_count).filter(UserGroupStatsEntity.bookmark.is_(False)), 0
+                ) +
+                func.coalesce(
+                    func.count(1).filter(UserGroupStatsEntity.bookmark.is_(True)), 0
+                )
             )
             .filter(
                 UserGroupStatsEntity.user_id == user_id,
