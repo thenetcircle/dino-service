@@ -1193,6 +1193,8 @@ class RelationalHandler:
             .all()
         )
 
+        self.env.cache.reset_total_unread_message_count(user_id)
+
         # sqlalchemy returns a list of tuples: [(group_id1,), (group_id2,), ...]
         group_ids = [group_id[0] for group_id in group_ids]
 
@@ -1201,6 +1203,7 @@ class RelationalHandler:
         # some users have >10k conversations; split into chunks to not overload the db
         for group_id_chunk in split_into_chunks(group_ids, 500):
             self.env.cache.reset_unread_in_groups(user_id, group_id_chunk)
+            self.env.cache.set_last_read_in_groups_for_user(group_ids, user_id, to_ts(now))
 
             _ = (
                 db.query(UserGroupStatsEntity)
@@ -1237,8 +1240,6 @@ class RelationalHandler:
             )
 
         db.commit()
-        self.env.cache.set_last_read_in_groups_for_user(group_ids, user_id, to_ts(now))
-        self.env.cache.reset_unread_in_groups(user_id, group_ids)
 
         return group_ids
 
