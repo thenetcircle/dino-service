@@ -205,3 +205,4 @@ class ErrorCodes(object):
     NO_SUCH_ATTACHMENT = 603
     NO_SUCH_USER = 604
     WRONG_PARAMETERS = 605
+    USER_IS_KICKED = 606

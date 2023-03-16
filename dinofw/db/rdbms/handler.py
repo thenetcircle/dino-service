@@ -533,7 +533,8 @@ class RelationalHandler:
                 db.query(UserGroupStatsEntity)
                 .filter(
                     UserGroupStatsEntity.group_id == message.group_id,
-                    UserGroupStatsEntity.user_id != sender_user_id
+                    UserGroupStatsEntity.user_id != sender_user_id,
+                    UserGroupStatsEntity.kicked.is_(False)
                 )
                 .all()
             )
@@ -607,7 +608,8 @@ class RelationalHandler:
                 db.query(UserGroupStatsEntity)
                 .filter(
                     UserGroupStatsEntity.group_id == group.group_id,
-                    UserGroupStatsEntity.user_id.in_(mentions)
+                    UserGroupStatsEntity.user_id.in_(mentions),
+                    UserGroupStatsEntity.kicked.is_(False)
                 )
                 .update({
                     UserGroupStatsEntity.mentions: UserGroupStatsEntity.mentions + 1
@@ -618,7 +620,8 @@ class RelationalHandler:
             db.query(UserGroupStatsEntity)
             .filter(
                 UserGroupStatsEntity.group_id == group.group_id,
-                UserGroupStatsEntity.user_id != sender_user_id
+                UserGroupStatsEntity.user_id != sender_user_id,
+                UserGroupStatsEntity.kicked.is_(False)
             )
         )
 
@@ -1015,7 +1018,10 @@ class RelationalHandler:
                 UserGroupStatsEntity.user_id,
                 UserGroupStatsEntity.join_time,
             )
-            .filter(UserGroupStatsEntity.group_id.in_(remaining_group_ids))
+            .filter(
+                UserGroupStatsEntity.group_id.in_(remaining_group_ids),
+                UserGroupStatsEntity.kicked.is_(False)
+            )
             .all()
         )
 
@@ -1041,7 +1047,10 @@ class RelationalHandler:
                 UserGroupStatsEntity.user_id,
                 UserGroupStatsEntity.join_time,
             )
-            .filter(UserGroupStatsEntity.group_id == group_id)
+            .filter(
+                UserGroupStatsEntity.group_id == group_id,
+                UserGroupStatsEntity.kicked.is_(False)
+            )
             .all()
         )
 
@@ -1101,8 +1110,16 @@ class RelationalHandler:
                     group_id, user_id, now
                 )
 
+            if user_ids_to_stats[user_id].kicked:
+                logger.warning(f"user {user_id} tried to join kicked-from group {group_id}")
+                del user_ids_to_stats[user_id]
+                continue
+
             user_ids_to_stats[user_id].last_read = now
             db.add(user_ids_to_stats[user_id])
+
+        if not len(user_ids_to_stats):
+            return
 
         db.commit()
 

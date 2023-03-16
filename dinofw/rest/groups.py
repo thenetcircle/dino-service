@@ -31,6 +31,7 @@ from dinofw.utils.convert import group_base_to_group
 from dinofw.utils.convert import message_base_to_message
 from dinofw.utils.convert import to_user_group_stats
 from dinofw.utils.exceptions import InvalidRangeException
+from dinofw.utils.exceptions import UserIsKickedException
 
 
 class GroupResource(BaseResource):
@@ -192,6 +193,9 @@ class GroupResource(BaseResource):
             raise InvalidRangeException("only one of parameters 'since' and 'until' can be used at the same time")
 
         user_stats = get_user_stats()
+        if user_stats.kicked:
+            raise UserIsKickedException(group_id, user_id)
+
         messages = get_messages()
 
         # history api can be called by the admin interface, in which case we don't want to change read status

@@ -57,6 +57,10 @@ class UserGroupStatsEntity(env.Base):
     join_time = Column(DateTime(timezone=True))
     first_sent = Column(DateTime(timezone=True))
 
+    # if a user has been removed from a group by the owner or a moderator, keep in the user's
+    # list of conversations but don't let the user get history or other users to see this user
+    kicked = Column(Boolean, default=False, nullable=False)
+
     # increase by one on new message, set to 0 on updating 'last_read'
     unread_count = Column(Integer, nullable=False, server_default="0")
 

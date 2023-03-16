@@ -20,6 +20,7 @@ from dinofw.utils.api import log_error_and_raise_unknown
 from dinofw.utils.config import ErrorCodes
 from dinofw.utils.decorators import wrap_exception
 from dinofw.utils.exceptions import NoSuchGroupException, NoSuchMessageException
+from dinofw.utils.exceptions import UserIsKickedException
 from dinofw.utils.exceptions import UserNotInGroupException
 from dinofw.utils.perf import timeit
 
