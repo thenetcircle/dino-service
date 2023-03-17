@@ -613,3 +613,14 @@ class BaseServerRestApi(BaseDatabaseTest):
                 break
 
         self.assertEqual(new_payload, message_payload)
+
+    def assert_unread_amount_and_groups(self, user_id, unread_amount, unread_groups, session):
+        n_unread_amount, n_unread_groups = self.env.rest.user.count_unread(
+            user_id, session
+        )
+        self.assertEqual(n_unread_amount, unread_amount)
+        self.assertEqual(n_unread_groups, unread_groups)
+
+    def assert_cached_unread_for_group(self, user_id, group_id, amount):
+        cache_unread = self.env.cache.get_unread_in_group(group_id, user_id)
+        self.assertEqual(cache_unread, amount)

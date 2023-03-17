@@ -131,6 +131,9 @@ def need_to_update_stats_in_group(user_stats, last_message_time: datetime):
     if user_stats.bookmark:
         return True
 
+    if user_stats.mentions > 0:
+        return True
+
     if user_stats.highlight_time > last_message_time:
         return True
 
