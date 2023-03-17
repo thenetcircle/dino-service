@@ -17,7 +17,7 @@ class GroupEntity(env.Base):
     group_id = Column(String(36), index=True, unique=True)
     name = Column(String(128))
 
-    owner_id = Column(Integer)
+    owner_id = Column(Integer, nullable=True)
     status = Column(Integer, nullable=True)
     group_type = Column(Integer, server_default="0")
     created_at = Column(DateTime(timezone=True))

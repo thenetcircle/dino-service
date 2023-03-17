@@ -798,6 +798,7 @@ class RelationalHandler:
             self.env.cache.remove_join_time_in_group_for_user(group_ids, user_id, pipeline=p)
             self.env.cache.remove_user_id_and_join_time_in_groups_for_user(group_ids, user_id, pipeline=p)
 
+        # delete the stats for this user in these groups
         _ = (
             db.query(UserGroupStatsEntity)
             .filter(
@@ -806,6 +807,20 @@ class RelationalHandler:
             )
             .delete(synchronize_session=False)
         )
+
+        # reset owner if the user is one
+        _ = (
+            db.query(GroupEntity)
+            .filter(
+                GroupEntity.group_id.in_(group_ids),
+                GroupEntity.user_id == user_id,
+                GroupEntity.owner_id == user_id
+            )
+            .update({
+                GroupEntity.owner_id: None
+            }, synchronize_session=False)
+        )
+
         db.commit()
 
     def get_groups_without_users(self, db: Session) -> List[GroupBase]:
