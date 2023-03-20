@@ -443,30 +443,9 @@ class RelationalHandler:
                     logger.warning(e_msg)
 
             if query.count_unread:
-                _unread_count = 0
-
-                # notifications disabled means don't count regular messages, only bookmark plus mentions
-                if not _stats.notifications:
-                    if _stats.mentions > 0:
-                        _unread_count = _stats.mentions
-
-                    # unread is mentions + bookmark (1 or 0)
-                    if _stats.bookmark:
-                        _unread_count += 1
-                else:
-                    # TODO: use unread_count in postgres? storage will check redis first, maybe enough
-                    """
-                    _unread_count = self.env.storage.get_unread_in_group(
-                        group_id=_group.group_id,
-                        user_id=user_id,
-                        last_read=_stats.last_read,
-                    )
-                    """
-
-                    # TODO: test just using this instead, much better than manually counting in cassandra
-                    _unread_count = _stats.unread_count
-                    if _stats.bookmark:
-                        _unread_count = +1
+                _unread_count = _stats.unread_count
+                if _stats.bookmark:
+                    _unread_count = +1
 
             return _unread_count, _receiver_unread_count
 
