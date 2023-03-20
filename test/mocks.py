@@ -656,7 +656,8 @@ class FakeDatabase:
             unread_count=0,
             mentions=0,
             notifications=True,
-            sent_message_count=-1
+            sent_message_count=-1,
+            kicked=False,
         )
 
         if user_id in self.stats:
