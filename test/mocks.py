@@ -742,6 +742,7 @@ class FakePublisherHandler(IClientPublishHandler):
         self.sent_attachments = dict()
         self.sent_deletions = dict()
         self.sent_reads = dict()
+        self.sent_per_user = dict()
 
     async def stop(self):
         pass
@@ -798,6 +799,12 @@ class FakePublisherHandler(IClientPublishHandler):
 
     def action_log(self, message: MessageBase, user_ids: List[int]) -> None:
         pass
+
+    def send_to_one(self, user_id: int, data, qos: int = 0):
+        if user_id not in self.sent_per_user:
+            self.sent_per_user[user_id] = list()
+
+        self.sent_per_user[user_id].append(data)
 
 
 class FakeEnv:

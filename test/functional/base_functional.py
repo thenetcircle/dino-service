@@ -221,6 +221,12 @@ class BaseServerRestApi(BaseDatabaseTest):
         )
         self.assertEqual(raw_response.status_code, 200)
 
+    def update_kick_for_user(self, group_id: str, kicked: bool, user_id: int = BaseTest.USER_ID):
+        raw_response = self.client.put(
+            f"/v1/groups/{group_id}/user/{user_id}/update", json={"kicked": kicked},
+        )
+        self.assertEqual(raw_response.status_code, 200)
+
     def update_user_stats_to_now(self, group_id: str, user_id: int = BaseTest.USER_ID):
         now = arrow.utcnow().datetime
         now_ts = to_ts(now)
@@ -570,6 +576,13 @@ class BaseServerRestApi(BaseDatabaseTest):
         self.assertEqual(raw_response.status_code, 200)
         self.assertEqual(amount, len(raw_response.json()["messages"]))
 
+    def assert_kicked_for_user(
+        self, kicked: bool, group_id: str, user_id: int = BaseTest.USER_ID
+    ) -> None:
+        raw_response = self.client.get(f"/v1/groups/{group_id}/user/{user_id}",)
+        self.assertEqual(raw_response.status_code, 200)
+        self.assertEqual(kicked, raw_response.json()["stats"]["kicked"])
+
     def assert_hidden_for_user(
         self, hidden: bool, group_id: str, user_id: int = BaseTest.USER_ID
     ) -> None:
@@ -585,6 +598,13 @@ class BaseServerRestApi(BaseDatabaseTest):
     def assert_groups_for_user(self, amount_of_groups, user_id: int = BaseTest.USER_ID, until: float = None) -> None:
         response = self.groups_for_user(user_id, until=until)
         self.assertEqual(amount_of_groups, len(response))
+
+    def assert_total_mqtt_sent_to(self, user_id: int, n_messages: int):
+        total_sent = 0
+        if user_id in self.env.client_publisher.sent_per_user:
+            total_sent = self.env.client_publisher.sent_per_user[user_id]
+
+        self.assertEqual(n_messages, total_sent)
 
     def assert_total_unread_count(self, user_id: int, unread_count: int):
         raw_response = self.client.post(f"/v1/userstats/{user_id}", json={})
