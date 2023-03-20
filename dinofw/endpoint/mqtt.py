@@ -22,24 +22,6 @@ from dinofw.utils.convert import message_base_to_event
 from dinofw.utils.convert import read_to_event
 
 
-def get_worker_index():
-    """
-    to reuse client ids but still keep them unique among the workers/servers
-    """
-    this_process = psutil.Process()
-    this_pid = this_process.pid
-
-    siblings = [
-        p.pid for p in
-        this_process.parent().children()
-    ]
-
-    siblings = sorted(siblings)
-    worker_index = siblings.index(this_pid)
-
-    return worker_index
-
-
 class MqttPublisher(IClientPublisher):
     def __init__(self, env):
         self.env = env
@@ -52,7 +34,6 @@ class MqttPublisher(IClientPublisher):
             self.mqtt_host = self.mqtt_host.split(",")[0]
 
         # needs to be unique for each worker and node
-        # worker_index = get_worker_index()
         pid = os.getpid()
         hostname = socket.gethostname().split(".")[0]
         client_id = f"dinoms-{hostname}-{pid}"

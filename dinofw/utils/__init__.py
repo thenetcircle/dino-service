@@ -5,7 +5,6 @@ from datetime import timedelta
 from typing import Optional
 
 import arrow
-import psutil
 
 
 def split_into_chunks(objects, n):
