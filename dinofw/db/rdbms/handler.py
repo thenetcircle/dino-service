@@ -449,8 +449,6 @@ class RelationalHandler:
 
             return _unread_count, _receiver_unread_count
 
-        groups = list()
-
         receivers = dict()
         for stat in receiver_stats:
             receivers[stat.group_id] = UserGroupStatsBase(**stat.__dict__)
@@ -461,6 +459,7 @@ class RelationalHandler:
             db
         )
 
+        groups = list()
         for group_entity, user_group_stats_entity in results:
             group = GroupBase(**group_entity.__dict__)
             user_group_stats = UserGroupStatsBase(**user_group_stats_entity.__dict__)
