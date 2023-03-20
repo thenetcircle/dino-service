@@ -8,6 +8,11 @@ class InvalidRangeException(Exception):
         self.message = message
 
 
+class UserIsKickedException(Exception):
+    def __init__(self, group_id: str, user_id: int):
+        self.message = f"user {user_id} has been kicked from group {group_id}"
+
+
 class NoSuchGroupException(Exception):
     def __init__(self, message):
         self.message = f"no such group: {message}"

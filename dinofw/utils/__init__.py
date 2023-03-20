@@ -5,7 +5,6 @@ from datetime import timedelta
 from typing import Optional
 
 import arrow
-import psutil
 
 
 def split_into_chunks(objects, n):
@@ -129,6 +128,9 @@ def to_ts(ds, allow_none: bool = False) -> Optional[float]:
 
 def need_to_update_stats_in_group(user_stats, last_message_time: datetime):
     if user_stats.bookmark:
+        return True
+
+    if user_stats.mentions > 0:
         return True
 
     if user_stats.highlight_time > last_message_time:

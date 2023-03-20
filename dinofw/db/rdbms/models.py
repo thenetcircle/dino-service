@@ -17,7 +17,7 @@ class GroupEntity(env.Base):
     group_id = Column(String(36), index=True, unique=True)
     name = Column(String(128))
 
-    owner_id = Column(Integer)
+    owner_id = Column(Integer, nullable=True)
     status = Column(Integer, nullable=True)
     group_type = Column(Integer, server_default="0")
     created_at = Column(DateTime(timezone=True))
@@ -57,6 +57,10 @@ class UserGroupStatsEntity(env.Base):
     join_time = Column(DateTime(timezone=True))
     first_sent = Column(DateTime(timezone=True))
 
+    # if a user has been removed from a group by the owner or a moderator, keep in the user's
+    # list of conversations but don't let the user get history or other users to see this user
+    kicked = Column(Boolean, default=False, nullable=False)
+
     # increase by one on new message, set to 0 on updating 'last_read'
     unread_count = Column(Integer, nullable=False, server_default="0")
 
@@ -84,7 +88,13 @@ class UserGroupStatsEntity(env.Base):
     # a user can bookmark a group, which makes it count as "one unread message in this group" (only for this user)
     bookmark = Column(Boolean, default=False, nullable=False)
 
+    # count the number of mentions in a m2m group; reset when the user opens/reads the group chat
+    mentions = Column(Integer, default=0, nullable=False, server_default="0")
+
     # a user can rate conversations
     rating = Column(Integer, nullable=True)
+
+    # users can disable notifications for a conversation/group, which will disable counting unread messages for it
+    notifications = Column(Boolean, default=True, nullable=False)
 
     UniqueConstraint('group_id', 'user_id')
