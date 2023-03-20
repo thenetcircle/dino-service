@@ -433,13 +433,9 @@ class RelationalHandler:
                 )
 
                 if _group.group_id in receivers:
-                    _receiver_unread_count = self.env.storage.get_unread_in_group(
-                        group_id=_group.group_id,
-                        user_id=user_to_count_for,
-                        last_read=receivers[_group.group_id].last_read,
-                    )
+                    _receiver_unread_count = receivers[_group.group_id].unread_count
                 else:
-                    e_msg = f"no receiver stats in db for user {user_to_count_for} in group {_group.group_id}, could be a deleted profile"
+                    e_msg = f"no receiver stats user {user_to_count_for} group {_group.group_id}, deleted profile?"
                     logger.warning(e_msg)
 
             if query.count_unread:
