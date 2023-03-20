@@ -14,6 +14,7 @@ from dinofw.db.rdbms.schemas import UserGroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.schemas import MessageBase
 from dinofw.endpoint import IClientPublishHandler, IClientPublisher
+from dinofw.rest.broadcast import BroadcastResource
 from dinofw.rest.queries import AbstractQuery, DeleteAttachmentQuery, EditMessageQuery
 from dinofw.rest.queries import ActionLogQuery
 from dinofw.rest.queries import AttachmentQuery
@@ -849,11 +850,13 @@ class FakeEnv:
             group: GroupResource
             user: UserResource
             message: MessageResource
+            broadcast: BroadcastResource
 
         self.rest = RestResources()
         self.rest.group = GroupResource(self)
         self.rest.user = UserResource(self)
         self.rest.message = MessageResource(self)
+        self.rest.broadcast = BroadcastResource(self)
 
     def capture_exception(self, _):
         pass

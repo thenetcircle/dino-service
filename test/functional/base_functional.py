@@ -111,6 +111,15 @@ class BaseServerRestApi(BaseDatabaseTest):
         self.assertEqual(raw_response.status_code, expected_response_code)
         return raw_response.json()
 
+    def send_notification(self, group_id: str) -> None:
+        raw_response = self.client.post(
+            f"/v1/notification/send",
+            json={"group_id": group_id, "event_type": "message", "notification": [{
+                "data": {"test": "data"}
+            }]},
+        )
+        self.assertEqual(raw_response.status_code, 200)
+
     def send_message_to_group_from(
         self, group_id: str, user_id: int = BaseTest.USER_ID, amount: int = 1, delay: int = 10
     ) -> list:
@@ -602,7 +611,7 @@ class BaseServerRestApi(BaseDatabaseTest):
     def assert_total_mqtt_sent_to(self, user_id: int, n_messages: int):
         total_sent = 0
         if user_id in self.env.client_publisher.sent_per_user:
-            total_sent = self.env.client_publisher.sent_per_user[user_id]
+            total_sent = len(self.env.client_publisher.sent_per_user[user_id])
 
         self.assertEqual(n_messages, total_sent)
 

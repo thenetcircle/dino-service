@@ -1331,14 +1331,14 @@ class RelationalHandler:
 
     # noinspection PyMethodMayBeStatic
     def get_all_user_stats_in_group(
-            self, group_id: str, db: Session, included_kicked: bool = True
+            self, group_id: str, db: Session, include_kicked: bool = True
     ) -> List[UserGroupStatsBase]:
         statement = (
             db.query(UserGroupStatsEntity)
             .filter(UserGroupStatsEntity.group_id == group_id)
         )
 
-        if not included_kicked:
+        if not include_kicked:
             statement = statement.filter(
                 UserGroupStatsEntity.kicked.is_(False)
             )
@@ -1346,7 +1346,7 @@ class RelationalHandler:
         user_stats = statement.all()
 
         if user_stats is None:
-            raise NoSuchGroupException(f"no users in group {group_id} (include_kicked? {included_kicked})")
+            raise NoSuchGroupException(f"no users in group {group_id} (include_kicked? {include_kicked})")
 
         return [
             UserGroupStatsBase(**user_stat.__dict__)

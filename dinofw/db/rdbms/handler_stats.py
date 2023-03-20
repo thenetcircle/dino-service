@@ -255,6 +255,7 @@ class UpdateUserGroupStatsHandler:
 
         if query.kicked is not None:
             user_stats.kicked = query.kicked
+            self.env.cache.remove_user_id_and_join_time_in_groups_for_user([group_id], user_id)
 
         if query.bookmark is not None:
             self._set_bookmark(group_id, user_id, user_stats, query)

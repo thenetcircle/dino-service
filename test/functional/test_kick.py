@@ -40,7 +40,7 @@ class TestKickFromGroup(BaseServerRestApi):
         self.assert_total_mqtt_sent_to(user_id=BaseTest.OTHER_USER_ID, n_messages=0)
         self.assert_total_mqtt_sent_to(user_id=BaseTest.THIRD_USER_ID, n_messages=0)
 
-        self.send_message_to_group_from(group_id=group_id, user_id=BaseTest.USER_ID)
+        self.send_notification(group_id)
 
         self.assert_total_mqtt_sent_to(user_id=BaseTest.USER_ID, n_messages=1)        # sender should receive it
         self.assert_total_mqtt_sent_to(user_id=BaseTest.OTHER_USER_ID, n_messages=1)  # normal user receives it
