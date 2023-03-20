@@ -19,8 +19,8 @@ class GroupBase(BaseModel):
     last_message_user_id: Optional[int]
 
     status: Optional[int]
-    group_type: Optional[int]
-    owner_id: int
+    group_type: int
+    owner_id: Optional[int]
     meta: Optional[int]
 
 

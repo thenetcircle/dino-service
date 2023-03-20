@@ -15,7 +15,7 @@ class GroupJoinTime(BaseModel):
 
 class GroupUsers(BaseModel):
     group_id: str
-    owner_id: int
+    owner_id: Optional[int]
     user_count: int
     users: List[GroupJoinTime]
 
@@ -93,7 +93,7 @@ class Group(BaseModel):
     group_type: int
     created_at: float
     updated_at: Optional[float]
-    owner_id: int
+    owner_id: Optional[int]
     meta: Optional[int]
     first_message_time: float  # TODO: this is probably not needed for the rest api, just internal to track deletions
     last_message_time: float
