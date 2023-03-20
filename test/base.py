@@ -20,6 +20,7 @@ class BaseTest(TestCase):
     GROUP_ID = "8888-7777-6666"
     USER_ID = 1234
     OTHER_USER_ID = 8888
+    THIRD_USER_ID = 4321
     MESSAGE_PAYLOAD = "test message"
     FILE_ID = str(uuid()).replace("-", "")
     FILE_STATUS = 1
