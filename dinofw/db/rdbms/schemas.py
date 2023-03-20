@@ -19,7 +19,7 @@ class GroupBase(BaseModel):
     last_message_user_id: Optional[int]
 
     status: Optional[int]
-    group_type: int
+    group_type: Optional[int]
     owner_id: int
     meta: Optional[int]
 
