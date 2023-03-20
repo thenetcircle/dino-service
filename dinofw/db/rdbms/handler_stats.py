@@ -253,6 +253,9 @@ class UpdateUserGroupStatsHandler:
         # used by apps to sync changes
         user_stats.last_updated_time = now
 
+        if query.kicked is not None:
+            user_stats.kicked = query.kicked
+
         if query.bookmark is not None:
             self._set_bookmark(group_id, user_id, user_stats, query)
 

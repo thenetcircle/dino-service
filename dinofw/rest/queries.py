@@ -176,6 +176,7 @@ class UpdateUserGroupStats(CreateActionLogQuery):
     pin: Optional[bool]
     rating: Optional[int]
     notifications: Optional[bool]
+    kicked: Optional[bool]
 
 
 class EditMessageQuery(OneToOneQuery):
