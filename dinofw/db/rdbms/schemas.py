@@ -45,6 +45,7 @@ class UserGroupStatsBase(BaseModel):
     bookmark: bool
     mentions: int
     notifications: bool
+    kicked: bool
     rating: Optional[int]
 
 

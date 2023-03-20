@@ -62,6 +62,7 @@ def to_user_group_stats(user_stats: UserGroupStatsBase) -> UserGroupStats:
         deleted=user_stats.deleted,
         bookmark=user_stats.bookmark,
         last_updated_time=last_updated_time,
+        kicked=user_stats.kicked
     )
 
 
