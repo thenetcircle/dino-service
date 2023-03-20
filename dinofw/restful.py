@@ -5,12 +5,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
 
-from dinofw.utils.custom_logging import CustomizeLogger
 from dinofw.router import delete
 from dinofw.router import get
 from dinofw.router import post
 from dinofw.router import put
 from dinofw.utils import environ
+from dinofw.utils.custom_logging import CustomizeLogger
 
 API_VERSION: Final = "v1"
 
