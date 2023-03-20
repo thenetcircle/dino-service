@@ -20,7 +20,7 @@ depends_on = None
 def upgrade():
     op.add_column(
         table_name="user_group_stats",
-        column=Column("kicked", Boolean(), nullable=False, server_default="true", default=True)
+        column=Column("kicked", Boolean(), nullable=False, server_default="false", default=False)
     )
 
 
