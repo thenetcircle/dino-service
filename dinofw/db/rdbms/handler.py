@@ -1344,14 +1344,20 @@ class RelationalHandler:
     def get_all_user_stats_in_group(
             self, group_id: str, db: Session, included_kicked: bool = True
     ) -> List[UserGroupStatsBase]:
-        user_stats = (
+        statement = (
             db.query(UserGroupStatsEntity)
             .filter(UserGroupStatsEntity.group_id == group_id)
-            .all()
         )
 
+        if not included_kicked:
+            statement = statement.filter(
+                UserGroupStatsEntity.kicked.is_(False)
+            )
+
+        user_stats = statement.all()
+
         if user_stats is None:
-            raise NoSuchGroupException(f"no user stats is not in group {group_id}")
+            raise NoSuchGroupException(f"no users in group {group_id} (include_kicked? {included_kicked})")
 
         return [
             UserGroupStatsBase(**user_stat.__dict__)
