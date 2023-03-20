@@ -787,7 +787,6 @@ class RelationalHandler:
             db.query(GroupEntity)
             .filter(
                 GroupEntity.group_id.in_(group_ids),
-                GroupEntity.user_id == user_id,
                 GroupEntity.owner_id == user_id
             )
             .update({
