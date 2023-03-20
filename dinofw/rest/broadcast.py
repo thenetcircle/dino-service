@@ -57,5 +57,5 @@ class BroadcastResource(BaseResource):
     def get_stats_for(self, group_id: str, db: Session):
         return {
             stat.user_id: stats_to_event_dict(stat)
-            for stat in self.env.db.get_all_user_stats_in_group(group_id, db)
+            for stat in self.env.db.get_all_user_stats_in_group(group_id, db, include_kicked=False)
         }

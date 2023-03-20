@@ -1341,7 +1341,9 @@ class RelationalHandler:
         return group_ids
 
     # noinspection PyMethodMayBeStatic
-    def get_all_user_stats_in_group(self, group_id: str, db: Session) -> List[UserGroupStatsBase]:
+    def get_all_user_stats_in_group(
+            self, group_id: str, db: Session, included_kicked: bool = True
+    ) -> List[UserGroupStatsBase]:
         user_stats = (
             db.query(UserGroupStatsEntity)
             .filter(UserGroupStatsEntity.group_id == group_id)
