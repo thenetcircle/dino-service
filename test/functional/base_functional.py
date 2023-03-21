@@ -263,9 +263,9 @@ class BaseServerRestApi(BaseDatabaseTest):
 
         return raw_response.json()
 
-    def get_user_stats(self, group_id: str, user_id: int = BaseTest.USER_ID):
+    def get_user_stats(self, group_id: str, user_id: int = BaseTest.USER_ID, status_code: int = 200):
         raw_response = self.client.get(f"/v1/groups/{group_id}/user/{user_id}")
-        self.assertEqual(raw_response.status_code, 200)
+        self.assertEqual(raw_response.status_code, status_code)
 
         return raw_response.json()
 
