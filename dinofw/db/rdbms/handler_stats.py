@@ -253,9 +253,21 @@ class UpdateUserGroupStatsHandler:
         # used by apps to sync changes
         user_stats.last_updated_time = now
 
+        # handle kick first, might be updating bookmark/etc. after in the same request for some reason
         if query.kicked is not None:
+            # only reset if this is the first kick
+            if not user_stats.kicked and query.kicked:
+                self.env.cache.remove_user_id_and_join_time_in_groups_for_user([group_id], user_id)
+                if user_stats.unread_count > 0:
+                    self.env.cache.decrease_total_unread_message_count(user_id, user_stats.unread_count)
+
+                user_stats.mentions = 0
+                user_stats.unread_count = 0
+                user_stats.bookmark = False
+                user_stats.pin = False
+
+            # set the new value, whether true or false
             user_stats.kicked = query.kicked
-            self.env.cache.remove_user_id_and_join_time_in_groups_for_user([group_id], user_id)
 
         if query.bookmark is not None:
             self._set_bookmark(group_id, user_id, user_stats, query)

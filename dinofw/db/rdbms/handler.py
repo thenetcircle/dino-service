@@ -1098,10 +1098,9 @@ class RelationalHandler:
                     group_id, user_id, now
                 )
 
+            # reset the kicked variable when joining a group
             if user_ids_to_stats[user_id].kicked:
-                logger.warning(f"user {user_id} tried to join kicked-from group {group_id}")
-                del user_ids_to_stats[user_id]
-                continue
+                user_ids_to_stats[user_id].kicked = False
 
             user_ids_to_stats[user_id].last_read = now
             db.add(user_ids_to_stats[user_id])
