@@ -182,7 +182,6 @@ class ConfigKeys:
     DROPPED_EVENT_FILE = "dropped_log"
     TRACE_SAMPLE_RATE = "trace_sample_rate"
     POOL_SIZE = "pool_size"
-    MAX_CLIENT_IDS = "max_client_ids"
 
     # will be overwritten even if specified in config file
     ENVIRONMENT = "_environment"
