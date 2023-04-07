@@ -48,6 +48,7 @@ class NotificationGroup(AbstractQuery):
 
 # only used for matching in BroadcastResource, some types need extra info
 class EventType:
+    group = "group"
     message = "message"
     recall = "recall"
     read = "read"
