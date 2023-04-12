@@ -271,7 +271,7 @@ class GroupResource(BaseResource):
         )
 
         # notify users they're in a new group
-        self.env.client_publisher.group_change(group_base, list(users.keys()))
+        # self.env.client_publisher.group_change(group_base, list(users.keys()))
 
         return group
 
@@ -287,7 +287,7 @@ class GroupResource(BaseResource):
         user_ids = user_ids_and_join_times.keys()
 
         action_log = self.create_action_log(query.action_log, db, group_id=group_id)
-        self.env.client_publisher.group_change(group, user_ids)
+        # self.env.client_publisher.group_change(group, user_ids)
 
         return action_log
 
