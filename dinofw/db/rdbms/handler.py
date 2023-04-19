@@ -1239,6 +1239,9 @@ class RelationalHandler:
         if query.owner is not None:
             group_entity.owner_id = query.owner
 
+        if query.status is not None:
+            group_entity.status = query.status
+
         group_entity.updated_at = now
 
         base = GroupBase(**group_entity.__dict__)
