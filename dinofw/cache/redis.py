@@ -271,6 +271,20 @@ class CacheRedis(ICache):
 
         return int(float(count))
 
+    def get_group_status(self, group_id: str) -> Optional[int]:
+        key = RedisKeys.group_status(group_id)
+        status = self.redis.get(key)
+
+        if status is None:
+            return None
+
+        return int(float(status))
+
+    def set_group_status(self, group_id: str, status: int) -> None:
+        key = RedisKeys.group_status(group_id)
+        self.redis.set(key, status)
+        self.redis.expire(key, ONE_HOUR)
+
     def set_sent_message_count_in_group_for_user(self, group_id: str, user_id: int, count: int) -> None:
         key = RedisKeys.sent_message_count_in_group(group_id)
         self.redis.hset(key, str(user_id), count)

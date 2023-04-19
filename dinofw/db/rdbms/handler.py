@@ -1241,6 +1241,7 @@ class RelationalHandler:
 
         if query.status is not None:
             group_entity.status = query.status
+            self.env.cache.set_group_status(group_id, query.status)
 
         group_entity.updated_at = now
 
@@ -1383,6 +1384,24 @@ class RelationalHandler:
         )
 
         db.commit()
+
+    def is_group_frozen(self, group_id: str, db: Session) -> Optional[bool]:
+        group_status = self.env.cache.get_group_status(group_id)
+        if group_status is not None:
+            return group_status == -1
+
+        group = (
+            db.query(GroupEntity)
+            .filter(GroupEntity.group_id == group_id)
+            .first()
+        )
+
+        # group doesn't exist (yet)
+        if group is None:
+            return None
+
+        self.env.cache.set_group_status(group_id, group.status)
+        return group.status == -1
 
     # noinspection PyMethodMayBeStatic
     def get_user_stats_in_group(

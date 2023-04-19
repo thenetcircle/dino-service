@@ -33,6 +33,11 @@ class NoSuchUserException(Exception):
         self.message = f"no such user: {message}"
 
 
+class GroupIsFrozenException(Exception):
+    def __init__(self, message):
+        self.message = f"group is frozen: {message}"
+
+
 class QueryValidationError(Exception):
     def __init__(self, message):
         self.message = f"query validation error: {message}"
