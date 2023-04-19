@@ -1400,7 +1400,11 @@ class RelationalHandler:
         if group is None:
             return None
 
-        self.env.cache.set_group_status(group_id, group.status)
+        status = group.status
+        if status is None:
+            status = 0
+
+        self.env.cache.set_group_status(group_id, status)
         return group.status == -1
 
     # noinspection PyMethodMayBeStatic
