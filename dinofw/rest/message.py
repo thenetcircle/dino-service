@@ -24,7 +24,7 @@ class MessageResource(BaseResource):
     async def send_message_to_group(
         self, group_id: str, user_id: int, query: SendMessageQuery, db: Session
     ) -> Message:
-        if self.env.db.is_group_frozen(group_id):
+        if self.env.db.is_group_frozen(group_id, db):
             raise GroupIsFrozenException(group_id)
 
         message = self.env.storage.store_message(group_id, user_id, query)
@@ -50,7 +50,7 @@ class MessageResource(BaseResource):
             raise NoSuchUserException(query.receiver_id)
 
         group_id = users_to_group_id(user_id, query.receiver_id)
-        group_is_frozen = self.env.db.is_group_frozen(group_id)
+        group_is_frozen = self.env.db.is_group_frozen(group_id, db)
 
         # can be None if the group doesn't exist yet
         if group_is_frozen is not None and group_is_frozen:
