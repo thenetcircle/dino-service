@@ -85,6 +85,9 @@ class CacheRedis(ICache):
             self.listen_port = args[bind_arg_pos + 1].split(":")[1]
 
         self.listen_host = socket.gethostname().split(".")[0]
+        self.max_client_ids = int(float(
+            env.config.get(ConfigKeys.MAX_CLIENT_IDS, domain=ConfigKeys.CACHE_SERVICE, default=10)
+        ))
 
     @contextmanager
     def pipeline(self):
@@ -110,7 +113,7 @@ class CacheRedis(ICache):
             current_idx = -1
 
         # if we've reached the max 50 ids, reset the pool and restart from 0
-        elif current_idx >= 49:
+        elif current_idx >= self.max_client_ids - 1:
             current_idx = -1
             self.redis.delete(key)
 
