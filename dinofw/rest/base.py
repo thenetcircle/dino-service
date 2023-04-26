@@ -104,6 +104,7 @@ class BaseResource(ABC):
             db=db,
             should_increase_unread=query.update_unread_count,
             update_last_message=query.update_last_message,
+            update_last_message_time=query.update_last_message_time,
             event_type=EventTypes.ACTION_LOG
         )
 
@@ -118,6 +119,7 @@ class BaseResource(ABC):
             should_increase_unread: bool,
             event_type: EventTypes,
             update_last_message: bool = True,
+            update_last_message_time: bool = True,
             mentions: List[int] = None
     ) -> Optional[GroupBase]:
         """
@@ -131,6 +133,7 @@ class BaseResource(ABC):
             sender_user_id=user_id,
             update_unread_count=should_increase_unread,
             update_last_message=update_last_message,
+            update_last_message_time=update_last_message_time,
             mentions=mentions
         )
 

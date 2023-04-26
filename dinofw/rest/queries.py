@@ -1,4 +1,3 @@
-from enum import Enum
 from typing import List
 from typing import Optional
 
@@ -17,6 +16,9 @@ class ActionLogQuery(BaseModel):
 
     # in some cases the 'last message preview' on the group should not be updated
     update_last_message: Optional[bool] = True
+
+    # sometimes, the preview should update, but not the time (i.e. keep ordering of conversations)
+    update_last_message_time: Optional[bool] = True
 
     # in some cases the api route doesn't include the user id, e.g.
     # join/kick/etc., but should be recorded on the action log

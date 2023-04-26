@@ -131,8 +131,11 @@ class MessageResource(BaseResource):
         )
 
         update_last_message = True
+        update_last_message_time = True
+
         if query.action_log is not None:
             update_last_message = query.action_log.update_last_message
+            update_last_message_time = query.action_log.update_last_message_time
 
         self._user_sends_a_message(
             group_id,
@@ -143,7 +146,8 @@ class MessageResource(BaseResource):
             # count is NOT increased, so increase it now when processing has finished
             should_increase_unread=True,
             event_type=EventTypes.ATTACHMENT,
-            update_last_message=update_last_message
+            update_last_message=update_last_message,
+            update_last_message_time=update_last_message_time
         )
 
         return message_base_to_message(attachment)

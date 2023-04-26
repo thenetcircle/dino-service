@@ -456,15 +456,19 @@ class FakeDatabase:
         sender_user_id: int,
         update_unread_count: bool = True,
         update_last_message: bool = True,
+        update_last_message_time: bool = True,
         mentions: List[int] = None
     ):
         if message.group_id not in self.groups:
             return
 
-        self.groups[message.group_id].last_message_time = message.created_at
-        self.groups[message.group_id].last_message_overview = message.message_payload
-        self.groups[message.group_id].last_message_type = message.message_type
-        self.groups[message.group_id].last_message_id = message.message_id
+        if update_last_message:
+            if update_last_message_time:
+                self.groups[message.group_id].last_message_time = message.created_at
+
+            self.groups[message.group_id].last_message_overview = message.message_payload
+            self.groups[message.group_id].last_message_type = message.message_type
+            self.groups[message.group_id].last_message_id = message.message_id
 
         for user_id in self.stats.keys():
             for stat in self.stats[user_id]:

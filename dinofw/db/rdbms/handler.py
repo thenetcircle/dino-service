@@ -487,6 +487,7 @@ class RelationalHandler:
         sender_user_id: int,
         update_unread_count: bool = True,
         update_last_message: bool = True,
+        update_last_message_time: bool = True,
         mentions: List[int] = None
     ) -> GroupBase:
         group = (
@@ -561,7 +562,10 @@ class RelationalHandler:
 
         # some action logs don't need to update last message
         if update_last_message:
-            group.last_message_time = sent_time
+            # sometimes we don't want to change the order of conversations on action log creation
+            if update_last_message_time:
+                group.last_message_time = sent_time
+
             group.last_message_id = message.message_id
             group.last_message_type = message.message_type
             group.last_message_user_id = message.user_id
