@@ -1501,6 +1501,11 @@ class RelationalHandler:
         user_stats.last_sent_group_id = group_id
         user_stats.last_updated_time = the_time
 
+        # if the user is sending a message without opening the conversation, we have to make sure the group
+        # is not deleted or hidden after (opening a conversation would set these two to False as well)
+        user_stats.deleted = False
+        user_stats.hide = False
+
         if user_stats.first_sent is None:
             user_stats.first_sent = the_time
 
