@@ -453,9 +453,9 @@ class FakeDatabase:
         message: MessageBase,
         db,
         sender_user_id: int,
+        user_ids: List[int],
         update_unread_count: bool = True,
-        update_last_message: bool = True,
-        mentions: List[int] = None
+        update_last_message: bool = True
     ):
         if message.group_id not in self.groups:
             return
@@ -465,7 +465,7 @@ class FakeDatabase:
         self.groups[message.group_id].last_message_type = message.message_type
         self.groups[message.group_id].last_message_id = message.message_id
 
-        for user_id in self.stats.keys():
+        for user_id in user_ids:
             for stat in self.stats[user_id]:
                 if stat.group_id != message.group_id:
                     continue
@@ -653,8 +653,6 @@ class FakeDatabase:
             bookmark=False,
             deleted=False,
             unread_count=0,
-            mentions=0,
-            notifications=True,
             sent_message_count=-1
         )
 
@@ -742,7 +740,6 @@ class FakePublisherHandler(IClientPublishHandler):
         self.sent_attachments = dict()
         self.sent_deletions = dict()
         self.sent_reads = dict()
-        self.sent_per_user = dict()
 
     async def stop(self):
         pass
@@ -799,12 +796,6 @@ class FakePublisherHandler(IClientPublishHandler):
 
     def action_log(self, message: MessageBase, user_ids: List[int]) -> None:
         pass
-
-    def send_to_one(self, user_id: int, data, qos: int = 0):
-        if user_id not in self.sent_per_user:
-            self.sent_per_user[user_id] = list()
-
-        self.sent_per_user[user_id].append(data)
 
 
 class FakeEnv:
