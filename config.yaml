@@ -2,6 +2,7 @@ cache:
     type: "redis"
     host: "$DINO_REDIS_HOST"
     db: $DINO_REDIS_DB
+    max_client_ids: $DINO_MAX_CLIENT_IDS
 
 db:
     uri: "$DINO_DB_URI"
