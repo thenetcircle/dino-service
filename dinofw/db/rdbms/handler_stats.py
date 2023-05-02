@@ -118,7 +118,8 @@ class UpdateUserGroupStatsHandler:
         # set to 0 and not -1, since we know there's actually 0 sent
         # messages from this user after he deletes a conversation,
         # so there's no need to count from cassandra from now on
-        self.env.db.set_sent_message_count(group_id, user_id, 0, db)
+        user_stats.sent_message_count = 0
+        self.env.cache.set_sent_message_count_in_group_for_user(group_id, user_id, 0)
 
         # no pipeline for these two, might have to run multiple queries to correct negative value
         self.env.cache.decrease_total_unread_message_count(user_id, unread_count_before_changing)

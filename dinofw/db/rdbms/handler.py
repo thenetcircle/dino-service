@@ -616,7 +616,7 @@ class RelationalHandler:
                 UserGroupStatsEntity.last_updated_time: sent_time,
             })
 
-        # update 'sent_message_count' in cache and db
+        # update 'sent_message_count' in cache
         previous_sent_count = self._get_then_update_sent_count(message.group_id, sender_user_id, db)
 
         # previously we increase unread for all; now set to 0 for the sender, since
