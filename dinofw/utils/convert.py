@@ -1,5 +1,5 @@
 from datetime import datetime as dt
-from typing import Dict, Tuple
+from typing import Dict
 from typing import List
 from typing import Union
 
@@ -57,9 +57,12 @@ def to_user_group_stats(user_stats: UserGroupStatsBase) -> UserGroupStats:
         highlight_time=highlight_time,
         hide=user_stats.hide,
         pin=user_stats.pin,
+        mentions=user_stats.mentions,
+        notifications=user_stats.notifications,
         deleted=user_stats.deleted,
         bookmark=user_stats.bookmark,
         last_updated_time=last_updated_time,
+        kicked=user_stats.kicked
     )
 
 
@@ -154,7 +157,7 @@ def to_user_group(user_groups: List[UserGroupBase]):
     return groups
 
 
-def stats_to_event_dict(user_stats):
+def stats_to_event_dict(user_stats: UserGroupStatsBase):
     stats_dict = user_stats.dict()
 
     stats_dict["last_read"] = to_int(to_ts(stats_dict["last_read"]))

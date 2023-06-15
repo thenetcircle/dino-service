@@ -44,7 +44,7 @@ class AdminQuery(AbstractQuery):
 
 
 class NotificationGroup(AbstractQuery):
-    user_ids: List[int]
+    user_ids: Optional[List[int]]
     data: dict
 
 
@@ -95,6 +95,7 @@ class MessageQuery(PaginationQuery, AdminQuery, OnlySenderQuery):
 class SendMessageQuery(OneToOneQuery):
     message_payload: Optional[str]
     message_type: int
+    mention_user_ids: Optional[List[int]] = []
     context: Optional[str]
 
     # to keep image order same as user chose, and to avoid primary key collision on created_at
@@ -177,6 +178,8 @@ class UpdateUserGroupStats(CreateActionLogQuery):
     bookmark: Optional[bool]
     pin: Optional[bool]
     rating: Optional[int]
+    notifications: Optional[bool]
+    kicked: Optional[bool]
 
 
 class EditMessageQuery(OneToOneQuery):

@@ -1,4 +1,3 @@
-from datetime import datetime as dt
 from typing import List
 
 from sqlalchemy.orm import Session
@@ -37,7 +36,8 @@ class MessageResource(BaseResource):
             # don't increase unread if this is an unprocessed attachment, when the
             # attachment has been processed, the unread count will be increased
             should_increase_unread=query.message_type != MessageTypes.IMAGE,
-            event_type=EventTypes.MESSAGE
+            event_type=EventTypes.MESSAGE,
+            mentions=query.mention_user_ids
         )
 
         return message_base_to_message(message)

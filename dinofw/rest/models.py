@@ -56,6 +56,9 @@ class UserGroupStats(BaseModel):
     deleted: Optional[bool]
     bookmark: Optional[bool]
     rating: Optional[int]
+    notifications: bool
+    mentions: int
+    kicked: bool
 
     receiver_highlight_time: Optional[float]
     receiver_last_read_time: Optional[float]

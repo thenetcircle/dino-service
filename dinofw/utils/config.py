@@ -212,3 +212,4 @@ class ErrorCodes(object):
     NO_SUCH_USER = 604
     WRONG_PARAMETERS = 605
     USER_IS_KICKED = 606
+    GROUP_IS_FROZEN = 607

@@ -12,7 +12,7 @@ from starlette.responses import Response
 from starlette.status import HTTP_201_CREATED
 
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
-from dinofw.rest.models import Group, UserGroupList, LastReads
+from dinofw.rest.models import Group, LastReads
 from dinofw.rest.models import Histories
 from dinofw.rest.models import Message
 from dinofw.rest.models import MessageCount
@@ -47,6 +47,7 @@ from dinofw.utils.exceptions import NoSuchGroupException
 from dinofw.utils.exceptions import NoSuchMessageException
 from dinofw.utils.exceptions import NoSuchUserException
 from dinofw.utils.exceptions import QueryValidationError
+from dinofw.utils.exceptions import UserIsKickedException
 from dinofw.utils.exceptions import UserNotInGroupException
 from dinofw.utils.perf import timeit
 
@@ -67,7 +68,7 @@ async def notify_users(query: NotificationQuery, db: Session = Depends(get_db)) 
 @timeit(logger, "POST", "/users/{user_id}/send")
 @wrap_exception()
 async def send_message_to_user(
-    user_id: int, query: SendMessageQuery, db: Session = Depends(get_db)
+        user_id: int, query: SendMessageQuery, db: Session = Depends(get_db)
 ) -> Message:
     """
     User sends a message in a **1-to-1** conversation. It is not always known on client side if a
@@ -105,7 +106,7 @@ async def send_message_to_user(
 @timeit(logger, "POST", "/users/{user_id}/message/{message_id}/info")
 @wrap_exception()
 async def get_message_info(
-    user_id: int, message_id: str, query: MessageInfoQuery
+        user_id: int, message_id: str, query: MessageInfoQuery
 ) -> Message:
     """
     Get details about a message. The `created_at` field on the query is
@@ -128,7 +129,7 @@ async def get_message_info(
 @timeit(logger, "POST", "/groups/{group_id}/user/{user_id}/histories")
 @wrap_exception()
 async def get_group_history_for_user(
-    group_id: str, user_id: int, query: MessageQuery, db: Session = Depends(get_db)
+        group_id: str, user_id: int, query: MessageQuery, db: Session = Depends(get_db)
 ) -> Histories:
     """
     Get user visible history in a group for a user. Sorted by creation time in descendent.
@@ -155,10 +156,13 @@ async def get_group_history_for_user(
     * `600`: if the user is not in the group,
     * `601`: if the group does not exist,
     * `605`: if the since/until parameters are not valid,
+    * `606`: if the user has been kicked from this group he/she is not allowed to get the history,
     * `250`: if an unknown error occurred.
     """
     try:
         return await environ.env.rest.group.histories(group_id, user_id, query, db)
+    except UserIsKickedException as e:
+        log_error_and_raise_known(ErrorCodes.USER_IS_KICKED, sys.exc_info(), e)
     except NoSuchGroupException as e:
         log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
     except UserNotInGroupException as e:
@@ -173,7 +177,7 @@ async def get_group_history_for_user(
 @timeit(logger, "POST", "/users/{user_id}/groups")
 @wrap_exception()
 async def get_groups_for_user(
-    user_id: int, query: GroupQuery, db: Session = Depends(get_db)
+        user_id: int, query: GroupQuery, db: Session = Depends(get_db)
 ) -> List[UserGroup]:
     """
     Get a list of groups for this user, sorted by last message sent. For paying users,
@@ -214,7 +218,7 @@ async def get_groups_for_user(
 @timeit(logger, "POST", "/users/{user_id}/groups/updates")
 @wrap_exception()
 async def get_groups_updated_since(
-    user_id: int, query: GroupUpdatesQuery, db: Session = Depends(get_db)
+        user_id: int, query: GroupUpdatesQuery, db: Session = Depends(get_db)
 ) -> List[UserGroup]:
     """
     Get a list of groups for this user that has changed since a certain time, sorted
@@ -252,7 +256,7 @@ async def get_groups_updated_since(
 @timeit(logger, "POST", "/userstats/{user_id}")
 @wrap_exception()
 async def get_user_statistics(
-    user_id: int, query: UserStatsQuery, db: Session = Depends(get_db)
+        user_id: int, query: UserStatsQuery, db: Session = Depends(get_db)
 ) -> UserStats:
     """
     Get a user's statistics globally (not only for one group).
@@ -287,7 +291,7 @@ async def get_user_statistics(
 @timeit(logger, "POST", "/groups/{group_id}")
 @wrap_exception()
 async def get_group_information(
-    group_id: str, query: GroupInfoQuery, db: Session = Depends(get_db)
+        group_id: str, query: GroupInfoQuery, db: Session = Depends(get_db)
 ) -> Group:
     """
     Get details about one group.
@@ -312,7 +316,7 @@ async def get_group_information(
 @timeit(logger, "POST", "/groups/{group_id}/user/{user_id}/send")
 @wrap_exception()
 async def send_message_to_group(
-    group_id: str, user_id: int, query: SendMessageQuery, db: Session = Depends(get_db)
+        group_id: str, user_id: int, query: SendMessageQuery, db: Session = Depends(get_db)
 ) -> Message:
     """
     User sends a message in a group. This API should also be used for **1-to-1** conversations
@@ -343,7 +347,7 @@ async def send_message_to_group(
 @timeit(logger, "POST", "/users/{user_id}/group")
 @wrap_exception()
 async def get_one_to_one_information(
-    user_id: int, query: OneToOneQuery, db: Session = Depends(get_db)
+        user_id: int, query: OneToOneQuery, db: Session = Depends(get_db)
 ) -> OneToOneStats:
     """
     Get details about a 1v1 group.
@@ -367,10 +371,10 @@ async def get_one_to_one_information(
 @timeit(logger, "POST", "/users/{user_id}/message/{message_id}/attachment")
 @wrap_exception()
 async def create_an_attachment(
-    user_id: int,
-    message_id: str,
-    query: CreateAttachmentQuery,
-    db: Session = Depends(get_db),
+        user_id: int,
+        message_id: str,
+        query: CreateAttachmentQuery,
+        db: Session = Depends(get_db),
 ) -> Message:
     """
     Create an attachment.
@@ -408,7 +412,7 @@ async def create_an_attachment(
 @timeit(logger, "POST", "/groups/{group_id}/attachment")
 @wrap_exception()
 async def get_attachment_info_from_file_id(
-    group_id: str, query: AttachmentQuery, db: Session = Depends(get_db)
+        group_id: str, query: AttachmentQuery, db: Session = Depends(get_db)
 ) -> Message:
     """
     Get attachment info from `file_id`.
@@ -434,7 +438,7 @@ async def get_attachment_info_from_file_id(
 @timeit(logger, "POST", "/groups/{group_id}/user/{user_id}/attachments")
 @wrap_exception()
 async def get_attachments_in_group_for_user(
-    group_id: str, user_id: int, query: MessageQuery, db: Session = Depends(get_db)
+        group_id: str, user_id: int, query: MessageQuery, db: Session = Depends(get_db)
 ) -> List[Message]:
     """
     Get all attachments in this group for this user.
@@ -463,7 +467,7 @@ async def get_attachments_in_group_for_user(
 @timeit(logger, "POST", "/users/{user_id}/actions")
 @wrap_exception()
 async def create_action_log(
-    user_id: int, query: ActionLogQuery, db: Session = Depends(get_db)
+        user_id: int, query: ActionLogQuery, db: Session = Depends(get_db)
 ) -> None:
     """
     Create an action log in a group.
@@ -490,7 +494,7 @@ async def create_action_log(
 @timeit(logger, "POST", "/users/{user_id}/groups/actions")
 @wrap_exception()
 async def create_action_log_in_all_groups_for_user(
-    user_id: int, query: ActionLogQuery, db: Session = Depends(get_db)
+        user_id: int, query: ActionLogQuery, db: Session = Depends(get_db)
 ) -> Response:
     """
     Create an action log in all groups this user has joined.
@@ -521,7 +525,7 @@ async def create_action_log_in_all_groups_for_user(
 @timeit(logger, "POST", "/users/{user_id}/groups/create")
 @wrap_exception()
 async def create_a_new_group(
-    user_id: int, query: CreateGroupQuery, db: Session = Depends(get_db)
+        user_id: int, query: CreateGroupQuery, db: Session = Depends(get_db)
 ) -> Group:
     """
     Create a new group. A list of user IDs can be specified to make them auto-join
@@ -540,7 +544,7 @@ async def create_a_new_group(
 @timeit(logger, "POST", "/groups/{group_id}/user/{user_id}/count")
 @wrap_exception()
 async def get_message_count_for_user_in_group(
-    group_id: str, user_id: int, query: Optional[CountMessageQuery] = None, db: Session = Depends(get_db)
+        group_id: str, user_id: int, query: Optional[CountMessageQuery] = None, db: Session = Depends(get_db)
 ) -> MessageCount:
     """
     Count the number of messages in a group since a user's `delete_before`.
@@ -629,7 +633,7 @@ async def get_message_count_for_user_in_group(
 @timeit(logger, "GET", "/groups/{group_id}/lastread")
 @wrap_exception()
 async def get_last_read_in_group(
-    group_id: str, query: Optional[LastReadQuery] = None, db: Session = Depends(get_db)
+        group_id: str, query: Optional[LastReadQuery] = None, db: Session = Depends(get_db)
 ) -> LastReads:
     """
     Get the `last_read_time` for either one user in a group, or for all users in a group.
