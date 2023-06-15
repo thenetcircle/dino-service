@@ -118,7 +118,8 @@ class UpdateUserGroupStatsHandler:
         # set to 0 and not -1, since we know there's actually 0 sent
         # messages from this user after he deletes a conversation,
         # so there's no need to count from cassandra from now on
-        self.env.db.set_sent_message_count(group_id, user_id, 0, db)
+        user_stats.sent_message_count = 0
+        self.env.cache.set_sent_message_count_in_group_for_user(group_id, user_id, 0)
 
         # no pipeline for these two, might have to run multiple queries to correct negative value
         self.env.cache.decrease_total_unread_message_count(user_id, unread_count_before_changing)
@@ -193,6 +194,9 @@ class UpdateUserGroupStatsHandler:
         self.env.cache.clear_unread_in_group_for_user(group_id, user_id)
         user_stats.unread_count = self.env.storage.get_unread_in_group(group_id, user_id, last_read)
 
+        # when updating last read, we reset the mention count to 0
+        user_stats.mentions = 0
+
         # updating unread removes bookmark, and bookmark always counts as 1 unread
         decrease_by = unread_count_before_changing
         if user_stats.bookmark:
@@ -250,6 +254,22 @@ class UpdateUserGroupStatsHandler:
         # used by apps to sync changes
         user_stats.last_updated_time = now
 
+        # handle kick first, might be updating bookmark/etc. after in the same request for some reason
+        if query.kicked is not None:
+            # only reset if this is the first kick
+            if not user_stats.kicked and query.kicked:
+                self.env.cache.remove_user_id_and_join_time_in_groups_for_user([group_id], user_id)
+                if user_stats.unread_count > 0:
+                    self.env.cache.decrease_total_unread_message_count(user_id, user_stats.unread_count)
+
+                user_stats.mentions = 0
+                user_stats.unread_count = 0
+                user_stats.bookmark = False
+                user_stats.pin = False
+
+            # set the new value, whether true or false
+            user_stats.kicked = query.kicked
+
         if query.bookmark is not None:
             self._set_bookmark(group_id, user_id, user_stats, query)
 
@@ -263,6 +283,12 @@ class UpdateUserGroupStatsHandler:
 
         if query.rating is not None:
             user_stats.rating = query.rating
+
+        if query.notifications is not None:
+            user_stats.notifications = query.notifications
+
+            # force a recount of total unreads, since previously only mentions were cached for this group
+            self.env.cache.reset_total_unread_message_count(user_id)
 
         if last_read is not None:
             self._set_last_read(

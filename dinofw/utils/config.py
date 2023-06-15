@@ -63,6 +63,11 @@ class RedisKeys:
     RKEY_TOTAL_UNREAD_COUNT = "unread:msgs:{}"  # unread:msgs:user_id
     RKEY_UNREAD_GROUPS = "unread:groups:{}"  # unread:groups:user_id
     RKEY_CLIENT_ID = "user:{}:{}:clientids"  # user:domain:user_id:clientids
+    RKEY_GROUP_STATUS = "group:status:{}"  # group:status:group_id
+
+    @staticmethod
+    def group_status(group_id: str) -> str:
+        return RedisKeys.RKEY_GROUP_STATUS.format(group_id)
 
     @staticmethod
     def client_id(domain: str, user_id: int) -> str:
@@ -206,3 +211,4 @@ class ErrorCodes(object):
     NO_SUCH_ATTACHMENT = 603
     NO_SUCH_USER = 604
     WRONG_PARAMETERS = 605
+    USER_IS_KICKED = 606

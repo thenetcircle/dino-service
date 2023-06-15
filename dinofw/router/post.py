@@ -40,6 +40,7 @@ from dinofw.utils.api import log_error_and_raise_known
 from dinofw.utils.api import log_error_and_raise_unknown
 from dinofw.utils.config import ErrorCodes
 from dinofw.utils.decorators import wrap_exception
+from dinofw.utils.exceptions import GroupIsFrozenException
 from dinofw.utils.exceptions import InvalidRangeException
 from dinofw.utils.exceptions import NoSuchAttachmentException
 from dinofw.utils.exceptions import NoSuchGroupException
@@ -87,12 +88,15 @@ async def send_message_to_user(
 
     **Potential error codes in response:**
     * `604`: if the user does not exist,
+    * `607`: group is frozen and no message can be sent,
     * `250`: if an unknown error occurred.
     """
     try:
         return await environ.env.rest.message.send_message_to_user(user_id, query, db)
     except NoSuchUserException as e:
         log_error_and_raise_known(ErrorCodes.NO_SUCH_USER, sys.exc_info(), e)
+    except GroupIsFrozenException as e:
+        log_error_and_raise_known(ErrorCodes.GROUP_IS_FROZEN, sys.exc_info(), e)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 
@@ -318,6 +322,7 @@ async def send_message_to_group(
     **Potential error codes in response:**
     * `600`: if the user is not in the group,
     * `601`: if the group does not exist,
+    * `607`: group is frozen and no message can be sent,
     * `250`: if an unknown error occurred.
     """
     try:
@@ -328,6 +333,8 @@ async def send_message_to_group(
         log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
     except UserNotInGroupException as e:
         log_error_and_raise_known(ErrorCodes.USER_NOT_IN_GROUP, sys.exc_info(), e)
+    except GroupIsFrozenException as e:
+        log_error_and_raise_known(ErrorCodes.GROUP_IS_FROZEN, sys.exc_info(), e)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 

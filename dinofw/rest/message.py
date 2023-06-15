@@ -16,6 +16,7 @@ from dinofw.utils import utcnow_ts
 from dinofw.utils.config import EventTypes, MessageTypes
 from dinofw.utils.convert import message_base_to_message
 from dinofw.utils.exceptions import NoSuchUserException
+from dinofw.utils.exceptions import GroupIsFrozenException
 from dinofw.utils.exceptions import QueryValidationError
 
 
@@ -23,6 +24,9 @@ class MessageResource(BaseResource):
     async def send_message_to_group(
         self, group_id: str, user_id: int, query: SendMessageQuery, db: Session
     ) -> Message:
+        if self.env.db.is_group_frozen(group_id, db):
+            raise GroupIsFrozenException(group_id)
+
         message = self.env.storage.store_message(group_id, user_id, query)
 
         self._user_sends_a_message(
@@ -43,6 +47,13 @@ class MessageResource(BaseResource):
     ) -> Message:
         if query.receiver_id < 1:
             raise NoSuchUserException(query.receiver_id)
+
+        group_id = users_to_group_id(user_id, query.receiver_id)
+        group_is_frozen = self.env.db.is_group_frozen(group_id, db)
+
+        # can be None if the group doesn't exist yet
+        if group_is_frozen is not None and group_is_frozen:
+            raise GroupIsFrozenException(group_id)
 
         group_id = self._get_or_create_group_for_1v1(user_id, query.receiver_id, db)
         return await self.send_message_to_group(group_id, user_id, query, db)
@@ -119,8 +130,11 @@ class MessageResource(BaseResource):
         )
 
         update_last_message = True
+        update_last_message_time = True
+
         if query.action_log is not None:
             update_last_message = query.action_log.update_last_message
+            update_last_message_time = query.action_log.update_last_message_time
 
         self._user_sends_a_message(
             group_id,
@@ -131,7 +145,8 @@ class MessageResource(BaseResource):
             # count is NOT increased, so increase it now when processing has finished
             should_increase_unread=True,
             event_type=EventTypes.ATTACHMENT,
-            update_last_message=update_last_message
+            update_last_message=update_last_message,
+            update_last_message_time=update_last_message_time
         )
 
         return message_base_to_message(attachment)

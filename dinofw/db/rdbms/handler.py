@@ -13,6 +13,7 @@ from sqlalchemy import func
 from sqlalchemy import literal
 from sqlalchemy import distinct
 from sqlalchemy import or_
+from sqlalchemy import and_
 from sqlalchemy.orm import Session
 from sqlalchemy.orm import load_only
 
@@ -241,22 +242,42 @@ class RelationalHandler:
         postgres query:
 
             select
-                coalesce(sum(unread_count) filter (where bookmark = false), 0) +
-                coalesce(count(1) filter (where bookmark = true), 0) as unread_count,
+                coalesce(
+                    sum(unread_count)
+                    filter (where bookmark = false and notifications = true),
+                0) +
+                coalesce(
+                    sum(mentions)
+                    filter (where bookmark = false and notifications = false),
+                0) +
+                coalesce(
+                    count(1) filter (where bookmark = true),
+                0) as unread_count,
                 count(distinct group_id) as n_unread_groups
             from
                 user_group_stats
             where
-                user_id = 406586 and
+                user_id = 8888 and
                 hide = false and
                 deleted = false and
-                (bookmark = true or unread_count > 0);
+                (
+                    bookmark = true or
+                    unread_count > 0 or
+                    mentions > 0
+                );
         """
-        # TODO: query for hidden?
         unread_count = (
             db.query(
                 func.coalesce(
-                    func.sum(UserGroupStatsEntity.unread_count).filter(UserGroupStatsEntity.bookmark.is_(False)), 0
+                    func.sum(UserGroupStatsEntity.unread_count).filter(
+                        UserGroupStatsEntity.bookmark.is_(False),
+                        UserGroupStatsEntity.notifications.is_(True)
+                    ), 0
+                ) +
+                func.coalesce(
+                    func.sum(UserGroupStatsEntity.mentions).filter(
+                        UserGroupStatsEntity.notifications.is_(False)
+                    ), 0
                 ) +
                 func.coalesce(
                     func.count(1).filter(UserGroupStatsEntity.bookmark.is_(True)), 0
@@ -268,7 +289,8 @@ class RelationalHandler:
                 UserGroupStatsEntity.deleted.is_(False),
                 or_(
                     UserGroupStatsEntity.bookmark.is_(True),
-                    UserGroupStatsEntity.unread_count > 0
+                    UserGroupStatsEntity.unread_count > 0,
+                    UserGroupStatsEntity.mentions > 0
                 )
             )
             .first()
@@ -283,8 +305,18 @@ class RelationalHandler:
                 UserGroupStatsEntity.hide.is_(False),
                 UserGroupStatsEntity.deleted.is_(False),
                 or_(
+                    # any bookmarked group counts as having unread messages
                     UserGroupStatsEntity.bookmark.is_(True),
-                    UserGroupStatsEntity.unread_count > 0
+                    and_(
+                        # real unread count only counts as unread if notifications are enabled
+                        UserGroupStatsEntity.notifications.is_(True),
+                        UserGroupStatsEntity.unread_count > 0
+                    ),
+                    and_(
+                        # if they're not enabled, the user must have been mentioned to count as an unread group
+                        UserGroupStatsEntity.notifications.is_(False),
+                        UserGroupStatsEntity.mentions > 0
+                    )
                 )
             )
             .options(load_only("group_id"))
@@ -401,31 +433,17 @@ class RelationalHandler:
                 )
 
                 if _group.group_id in receivers:
-                    _receiver_unread_count = self.env.storage.get_unread_in_group(
-                        group_id=_group.group_id,
-                        user_id=user_to_count_for,
-                        last_read=receivers[_group.group_id].last_read,
-                    )
+                    _receiver_unread_count = receivers[_group.group_id].unread_count
                 else:
-                    e_msg = f"no receiver stats in db for user {user_to_count_for} in group {_group.group_id}, could be a deleted profile"
+                    e_msg = f"no receiver stats user {user_to_count_for} group {_group.group_id}, deleted profile?"
                     logger.warning(e_msg)
 
             if query.count_unread:
-                # TODO: use unread_count in postgres? storage will check redis first, maybe enough
-                _unread_count = self.env.storage.get_unread_in_group(
-                    group_id=_group.group_id,
-                    user_id=user_id,
-                    last_read=user_group_stats.last_read,
-                )
-
-                # bookmarked groups counts as 1 unread message only if they
-                # don't already have unread messages
-                if _unread_count == 0 and _stats.bookmark:
-                    _unread_count = 1
+                _unread_count = _stats.unread_count
+                if _stats.bookmark:
+                    _unread_count = +1
 
             return _unread_count, _receiver_unread_count
-
-        groups = list()
 
         receivers = dict()
         for stat in receiver_stats:
@@ -437,6 +455,7 @@ class RelationalHandler:
             db
         )
 
+        groups = list()
         for group_entity, user_group_stats_entity in results:
             group = GroupBase(**group_entity.__dict__)
             user_group_stats = UserGroupStatsBase(**user_group_stats_entity.__dict__)
@@ -466,11 +485,11 @@ class RelationalHandler:
         message: MessageBase,
         db: Session,
         sender_user_id: int,
-        user_ids: List[int],
         update_unread_count: bool = True,
-        update_last_message: bool = True
+        update_last_message: bool = True,
+        update_last_message_time: bool = True,
+        mentions: List[int] = None
     ) -> GroupBase:
-
         group = (
             db.query(GroupEntity)
             .filter(GroupEntity.group_id == message.group_id)
@@ -485,16 +504,30 @@ class RelationalHandler:
         if update_unread_count:
             # if a group is hidden, it might have unread messages when it was hidden, so we have
             # to query for it and restore the original amount plus one (this message)
-            hidden_groups = (
+            receivers_in_group = (
                 db.query(UserGroupStatsEntity)
                 .filter(
                     UserGroupStatsEntity.group_id == message.group_id,
-                    UserGroupStatsEntity.hide.is_(True),
-                    UserGroupStatsEntity.user_id != sender_user_id
+                    UserGroupStatsEntity.user_id != sender_user_id,
+                    UserGroupStatsEntity.kicked.is_(False)
                 )
                 .all()
             )
-            user_to_hidden_stats = {user.user_id: user for user in hidden_groups}
+
+            non_sender_user_ids = [
+                user.user_id
+                for user in receivers_in_group
+            ]
+            user_to_hidden_stats = {
+                user.user_id: user
+                for user in receivers_in_group
+                if user.hide
+            }
+            user_ids_with_notification_on = {
+                user.user_id
+                for user in receivers_in_group
+                if user.notifications
+            }
 
             with self.env.cache.pipeline() as p:
                 # for knowing if we need to send read-receipts when user opens a conversation
@@ -504,24 +537,35 @@ class RelationalHandler:
                     pipeline=p
                 )
 
-                # don't increase unread for the sender
-                del user_ids[sender_user_id]
+                if len(user_to_hidden_stats):
+                    for user_id in user_to_hidden_stats.keys():
+                        # if the group had unread and then notifications were disabled and
+                        # then was hidden, don't restore unread count on new message
+                        if user_id not in user_ids_with_notification_on:
+                            continue
 
-                if len(hidden_groups):
-                    for user_id in user_ids:
-                        amount = 1
-                        if user_id in user_to_hidden_stats:
-                            amount = user_to_hidden_stats[user_id].unread_count + 1
+                        amount = user_to_hidden_stats[user_id].unread_count + 1
                         self.env.cache.increase_total_unread_message_count([user_id], amount, pipeline=p)
                 else:
-                    self.env.cache.increase_total_unread_message_count(user_ids, 1, pipeline=p)
+                    # update total unread count for all users that have notifications enabled
+                    self.env.cache.increase_total_unread_message_count(user_ids_with_notification_on, 1, pipeline=p)
 
-                self.env.cache.increase_unread_in_group_for(message.group_id, user_ids, pipeline=p)
-                self.env.cache.add_unread_group(user_ids, message.group_id, pipeline=p)
+                # unread in THIS group should increase whether notifications are on or off
+                self.env.cache.increase_unread_in_group_for(message.group_id, non_sender_user_ids, pipeline=p)
+                self.env.cache.add_unread_group(non_sender_user_ids, message.group_id, pipeline=p)
+
+                # if notifications are disabled BUT the user was mentioned, increase the total unread count anyway
+                if mentions and len(mentions):
+                    for mention_user_id in mentions:
+                        if mention_user_id not in user_ids_with_notification_on:
+                            self.env.cache.increase_total_unread_message_count([mention_user_id], 1, pipeline=p)
 
         # some action logs don't need to update last message
         if update_last_message:
-            group.last_message_time = sent_time
+            # sometimes we don't want to change the order of conversations on action log creation
+            if update_last_message_time:
+                group.last_message_time = sent_time
+
             group.last_message_id = message.message_id
             group.last_message_type = message.message_type
             group.last_message_user_id = message.user_id
@@ -536,11 +580,26 @@ class RelationalHandler:
         # always update this
         group.updated_at = sent_time
 
+        # we have to count the number of mentions; it's reset when the user reads/opens the conversation
+        if mentions and len(mentions):
+            _ = (
+                db.query(UserGroupStatsEntity)
+                .filter(
+                    UserGroupStatsEntity.group_id == group.group_id,
+                    UserGroupStatsEntity.user_id.in_(mentions),
+                    UserGroupStatsEntity.kicked.is_(False)
+                )
+                .update({
+                    UserGroupStatsEntity.mentions: UserGroupStatsEntity.mentions + 1
+                }, synchronize_session=False)
+            )
+
         statement = (
             db.query(UserGroupStatsEntity)
             .filter(
-                UserGroupStatsEntity.group_id == message.group_id,
-                UserGroupStatsEntity.user_id != sender_user_id
+                UserGroupStatsEntity.group_id == group.group_id,
+                UserGroupStatsEntity.user_id != sender_user_id,
+                UserGroupStatsEntity.kicked.is_(False)
             )
         )
 
@@ -557,7 +616,7 @@ class RelationalHandler:
                 UserGroupStatsEntity.last_updated_time: sent_time,
             })
 
-        # update 'sent_message_count' in cache and db
+        # update 'sent_message_count' in cache
         previous_sent_count = self._get_then_update_sent_count(message.group_id, sender_user_id, db)
 
         # previously we increase unread for all; now set to 0 for the sender, since
@@ -717,6 +776,7 @@ class RelationalHandler:
             self.env.cache.remove_join_time_in_group_for_user(group_ids, user_id, pipeline=p)
             self.env.cache.remove_user_id_and_join_time_in_groups_for_user(group_ids, user_id, pipeline=p)
 
+        # delete the stats for this user in these groups
         _ = (
             db.query(UserGroupStatsEntity)
             .filter(
@@ -725,6 +785,19 @@ class RelationalHandler:
             )
             .delete(synchronize_session=False)
         )
+
+        # reset owner if the user is one
+        _ = (
+            db.query(GroupEntity)
+            .filter(
+                GroupEntity.group_id.in_(group_ids),
+                GroupEntity.owner_id == user_id
+            )
+            .update({
+                GroupEntity.owner_id: None
+            }, synchronize_session=False)
+        )
+
         db.commit()
 
     def get_groups_without_users(self, db: Session) -> List[GroupBase]:
@@ -937,7 +1010,10 @@ class RelationalHandler:
                 UserGroupStatsEntity.user_id,
                 UserGroupStatsEntity.join_time,
             )
-            .filter(UserGroupStatsEntity.group_id.in_(remaining_group_ids))
+            .filter(
+                UserGroupStatsEntity.group_id.in_(remaining_group_ids),
+                UserGroupStatsEntity.kicked.is_(False)
+            )
             .all()
         )
 
@@ -963,7 +1039,10 @@ class RelationalHandler:
                 UserGroupStatsEntity.user_id,
                 UserGroupStatsEntity.join_time,
             )
-            .filter(UserGroupStatsEntity.group_id == group_id)
+            .filter(
+                UserGroupStatsEntity.group_id == group_id,
+                UserGroupStatsEntity.kicked.is_(False)
+            )
             .all()
         )
 
@@ -1023,8 +1102,15 @@ class RelationalHandler:
                     group_id, user_id, now
                 )
 
+            # reset the kicked variable when joining a group
+            if user_ids_to_stats[user_id].kicked:
+                user_ids_to_stats[user_id].kicked = False
+
             user_ids_to_stats[user_id].last_read = now
             db.add(user_ids_to_stats[user_id])
+
+        if not len(user_ids_to_stats):
+            return
 
         db.commit()
 
@@ -1157,6 +1243,10 @@ class RelationalHandler:
         if query.owner is not None:
             group_entity.owner_id = query.owner
 
+        if query.status is not None:
+            group_entity.status = query.status
+            self.env.cache.set_group_status(group_id, query.status)
+
         group_entity.updated_at = now
 
         base = GroupBase(**group_entity.__dict__)
@@ -1188,6 +1278,7 @@ class RelationalHandler:
                     UserGroupStatsEntity.last_read < GroupEntity.last_message_time,
                     UserGroupStatsEntity.bookmark.is_(True),
                     UserGroupStatsEntity.unread_count > 0,
+                    UserGroupStatsEntity.mentions > 0
                 )
             )
             .all()
@@ -1216,6 +1307,7 @@ class RelationalHandler:
                         UserGroupStatsEntity.last_updated_time: now,
                         UserGroupStatsEntity.last_read: now,
                         UserGroupStatsEntity.unread_count: 0,
+                        UserGroupStatsEntity.mentions: 0,
                         UserGroupStatsEntity.bookmark: False,
                         UserGroupStatsEntity.highlight_time: self.long_ago
                     },
@@ -1244,15 +1336,23 @@ class RelationalHandler:
         return group_ids
 
     # noinspection PyMethodMayBeStatic
-    def get_all_user_stats_in_group(self, group_id: str, db: Session) -> List[UserGroupStatsBase]:
-        user_stats = (
+    def get_all_user_stats_in_group(
+            self, group_id: str, db: Session, include_kicked: bool = True
+    ) -> List[UserGroupStatsBase]:
+        statement = (
             db.query(UserGroupStatsEntity)
             .filter(UserGroupStatsEntity.group_id == group_id)
-            .all()
         )
 
+        if not include_kicked:
+            statement = statement.filter(
+                UserGroupStatsEntity.kicked.is_(False)
+            )
+
+        user_stats = statement.all()
+
         if user_stats is None:
-            raise NoSuchGroupException(f"no user stats is not in group {group_id}")
+            raise NoSuchGroupException(f"no users in group {group_id} (include_kicked? {include_kicked})")
 
         return [
             UserGroupStatsBase(**user_stat.__dict__)
@@ -1288,6 +1388,28 @@ class RelationalHandler:
         )
 
         db.commit()
+
+    def is_group_frozen(self, group_id: str, db: Session) -> Optional[bool]:
+        group_status = self.env.cache.get_group_status(group_id)
+        if group_status is not None:
+            return group_status == -1
+
+        group = (
+            db.query(GroupEntity)
+            .filter(GroupEntity.group_id == group_id)
+            .first()
+        )
+
+        # group doesn't exist (yet)
+        if group is None:
+            return None
+
+        status = group.status
+        if status is None:
+            status = 0
+
+        self.env.cache.set_group_status(group_id, status)
+        return group.status == -1
 
     # noinspection PyMethodMayBeStatic
     def get_user_stats_in_group(
@@ -1436,6 +1558,7 @@ class RelationalHandler:
         user_stats.receiver_highlight_time = self.long_ago
         user_stats.bookmark = False
         user_stats.hide = False
+        user_stats.mentions = 0
         user_stats.unread_count = 0
 
         # TODO: use pipeline
@@ -1500,11 +1623,6 @@ class RelationalHandler:
         user_stats.last_sent = the_time
         user_stats.last_sent_group_id = group_id
         user_stats.last_updated_time = the_time
-
-        # if the user is sending a message without opening the conversation, we have to make sure the group
-        # is not deleted or hidden after (opening a conversation would set these two to False as well)
-        user_stats.deleted = False
-        user_stats.hide = False
 
         if user_stats.first_sent is None:
             user_stats.first_sent = the_time
@@ -1663,4 +1781,5 @@ class RelationalHandler:
             receiver_highlight_time=self.long_ago,
             # for new groups, we can set this to 0 directly and start counting, instead of the default -1
             sent_message_count=0,
+            mentions=0
         )

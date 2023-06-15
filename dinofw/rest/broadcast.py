@@ -1,7 +1,6 @@
 import arrow
 from sqlalchemy.orm import Session
 
-from dinofw.endpoint import EventTypes
 from dinofw.rest.base import BaseResource
 from dinofw.rest.queries import NotificationQuery, EventType, HighlightStatus
 from dinofw.utils.convert import stats_to_event_dict, to_int
@@ -9,18 +8,18 @@ from dinofw.utils.convert import stats_to_event_dict, to_int
 
 class BroadcastResource(BaseResource):
     async def broadcast_event(self, query: NotificationQuery, db: Session) -> None:
-        if query.event_type == EventType.message:
-            self.send_message_event(query, db)
+        if query.event_type in {EventType.message, EventType.group}:
+            self.send_event_with_stats(query, db)
         else:
             self.send_other_event(query)
 
-    def send_message_event(self, query: NotificationQuery, db: Session):
+    def send_event_with_stats(self, query: NotificationQuery, db: Session):
         user_id_to_stats = self.get_stats_for(query.group_id, db)
         now_int = to_int(arrow.utcnow().int_timestamp)
 
         for user_group in query.notification:
             event = user_group.data.copy()
-            event["event_type"] = EventTypes.MESSAGE
+            event["event_type"] = query.event_type
             event["group_id"] = query.group_id
 
             for user_id in user_group.user_ids:

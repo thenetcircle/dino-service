@@ -14,6 +14,7 @@ from dinofw.db.rdbms.schemas import UserGroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.schemas import MessageBase
 from dinofw.endpoint import IClientPublishHandler, IClientPublisher
+from dinofw.rest.broadcast import BroadcastResource
 from dinofw.rest.queries import AbstractQuery, DeleteAttachmentQuery, EditMessageQuery
 from dinofw.rest.queries import ActionLogQuery
 from dinofw.rest.queries import AttachmentQuery
@@ -453,19 +454,23 @@ class FakeDatabase:
         message: MessageBase,
         db,
         sender_user_id: int,
-        user_ids: List[int],
         update_unread_count: bool = True,
-        update_last_message: bool = True
+        update_last_message: bool = True,
+        update_last_message_time: bool = True,
+        mentions: List[int] = None
     ):
         if message.group_id not in self.groups:
             return
 
-        self.groups[message.group_id].last_message_time = message.created_at
-        self.groups[message.group_id].last_message_overview = message.message_payload
-        self.groups[message.group_id].last_message_type = message.message_type
-        self.groups[message.group_id].last_message_id = message.message_id
+        if update_last_message:
+            if update_last_message_time:
+                self.groups[message.group_id].last_message_time = message.created_at
 
-        for user_id in user_ids:
+            self.groups[message.group_id].last_message_overview = message.message_payload
+            self.groups[message.group_id].last_message_type = message.message_type
+            self.groups[message.group_id].last_message_id = message.message_id
+
+        for user_id in self.stats.keys():
             for stat in self.stats[user_id]:
                 if stat.group_id != message.group_id:
                     continue
@@ -653,7 +658,10 @@ class FakeDatabase:
             bookmark=False,
             deleted=False,
             unread_count=0,
-            sent_message_count=-1
+            mentions=0,
+            notifications=True,
+            sent_message_count=-1,
+            kicked=False,
         )
 
         if user_id in self.stats:
@@ -740,6 +748,7 @@ class FakePublisherHandler(IClientPublishHandler):
         self.sent_attachments = dict()
         self.sent_deletions = dict()
         self.sent_reads = dict()
+        self.sent_per_user = dict()
 
     async def stop(self):
         pass
@@ -797,6 +806,12 @@ class FakePublisherHandler(IClientPublishHandler):
     def action_log(self, message: MessageBase, user_ids: List[int]) -> None:
         pass
 
+    def send_to_one(self, user_id: int, data, qos: int = 0):
+        if user_id not in self.sent_per_user:
+            self.sent_per_user[user_id] = list()
+
+        self.sent_per_user[user_id].append(data)
+
 
 class FakeEnv:
     class Config:
@@ -840,11 +855,13 @@ class FakeEnv:
             group: GroupResource
             user: UserResource
             message: MessageResource
+            broadcast: BroadcastResource
 
         self.rest = RestResources()
         self.rest.group = GroupResource(self)
         self.rest.user = UserResource(self)
         self.rest.message = MessageResource(self)
+        self.rest.broadcast = BroadcastResource(self)
 
     def capture_exception(self, _):
         pass

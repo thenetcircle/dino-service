@@ -20,7 +20,7 @@ class GroupBase(BaseModel):
 
     status: Optional[int]
     group_type: int
-    owner_id: int
+    owner_id: Optional[int]
     meta: Optional[int]
 
 
