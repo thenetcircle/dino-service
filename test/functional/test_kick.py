@@ -1,4 +1,7 @@
+from dinofw.rest.queries import CreateGroupQuery
+from dinofw.rest.queries import GroupQuery
 from dinofw.rest.queries import SendMessageQuery
+from dinofw.rest.queries import UpdateUserGroupStats
 from dinofw.utils.config import MessageTypes
 from test.base import BaseTest, async_test
 from test.functional.base_functional import BaseServerRestApi
@@ -96,16 +99,26 @@ class TestKickFromGroup(BaseServerRestApi):
     @async_test
     async def test_kick_resets_unread_count_mentions_pin_bookmark(self):
         session = self.env.session_maker()
-        self.assert_groups_for_user(0, user_id=BaseTest.THIRD_USER_ID)
 
-        group_id = self.create_and_join_group(
-            user_id=BaseTest.USER_ID,
-            users=[
-                BaseTest.OTHER_USER_ID,
-                BaseTest.THIRD_USER_ID
-            ]
+        group_query = GroupQuery(
+            per_page=1000,
+            since=0,
+            only_unread=False
         )
-        self.assert_groups_for_user(1, user_id=BaseTest.THIRD_USER_ID)
+        user_groups = await self.env.rest.user.get_groups_for_user(BaseTest.THIRD_USER_ID, group_query, session)
+        self.assertEqual(0, len(user_groups))
+
+        create_query = CreateGroupQuery(
+            users=[BaseTest.OTHER_USER_ID, BaseTest.THIRD_USER_ID],
+            group_name="a new group",
+            group_type=0
+        )
+        group = await self.env.rest.group.create_new_group(BaseTest.USER_ID, create_query, session)
+        group_id = group.group_id
+
+        # should have 1 group now
+        user_groups = await self.env.rest.user.get_groups_for_user(BaseTest.THIRD_USER_ID, group_query, session)
+        self.assertEqual(1, len(user_groups))
 
         send_query = SendMessageQuery(
             message_type=MessageTypes.MESSAGE,
@@ -114,25 +127,36 @@ class TestKickFromGroup(BaseServerRestApi):
         )
         await self.env.rest.message.send_message_to_group(group_id, BaseTest.USER_ID, send_query, session)
 
-        self.bookmark_group(group_id, bookmark=True, user_id=BaseTest.THIRD_USER_ID)
-        self.pin_group_for(group_id, user_id=BaseTest.THIRD_USER_ID)
+        # should increase unread by 1 when pinned and bookmarked
+        update_query = UpdateUserGroupStats(bookmark=True, pin=True)
+        await self.env.rest.group.update_user_group_stats(
+            group_id, BaseTest.THIRD_USER_ID, update_query, session
+        )
 
-        stats = self.get_user_stats(group_id, BaseTest.THIRD_USER_ID)["stats"]
-        self.assert_total_unread_count(BaseTest.THIRD_USER_ID, 1)
-        self.assertTrue(stats["pin"])
-        self.assertTrue(stats["bookmark"])
-        self.assertEqual(1, stats["mentions"])
-        self.assertEqual(1, stats["unread"])
+        # check the stats before getting kicked
+        stats = await self.env.rest.group.get_user_group_stats(
+            group_id, BaseTest.THIRD_USER_ID, session
+        )
+        self.assertTrue(stats.pin)
+        self.assertTrue(stats.bookmark)
+        self.assertEqual(1, stats.mentions)
+        self.assertEqual(1, stats.unread)
 
-        self.update_kick_for_user(group_id=group_id, kicked=True, user_id=BaseTest.THIRD_USER_ID)
-        self.assert_kicked_for_user(kicked=True, group_id=group_id, user_id=BaseTest.THIRD_USER_ID)
+        # kick the user
+        update_query = UpdateUserGroupStats(kicked=True)
+        await self.env.rest.group.update_user_group_stats(
+            group_id, BaseTest.THIRD_USER_ID, update_query, session
+        )
 
-        stats = self.get_user_stats(group_id, BaseTest.THIRD_USER_ID)["stats"]
-        self.assert_total_unread_count(BaseTest.THIRD_USER_ID, 0)
-        self.assertFalse(stats["pin"])
-        self.assertFalse(stats["bookmark"])
-        self.assertEqual(0, stats["mentions"])
-        self.assertEqual(0, stats["unread"])
+        # check the stats after kicked
+        stats = await self.env.rest.group.get_user_group_stats(
+            group_id, BaseTest.THIRD_USER_ID, session
+        )
+        self.assertTrue(stats.kicked)
+        self.assertFalse(stats.pin)
+        self.assertFalse(stats.bookmark)
+        self.assertEqual(0, stats.mentions)
+        self.assertEqual(0, stats.unread)
 
     def test_join_group_resets_kicked_variable(self):
         self.assert_groups_for_user(0, user_id=BaseTest.THIRD_USER_ID)

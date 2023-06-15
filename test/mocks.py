@@ -426,6 +426,9 @@ class FakeDatabase:
                 if user_id in self.last_read[group_id]:
                     del self.last_read[group_id][user_id]
 
+    def is_group_frozen(self, _: str, __):
+        return False
+
     def get_oldest_last_read_in_group(self, group_id: str, _) -> Optional[float]:
         last_read = self.env.cache.get_last_read_in_group_oldest(group_id)
         if last_read is not None:
@@ -824,6 +827,9 @@ class FakeEnv:
                 "kafka": {
                     "topic": "test",
                     "host": "localhost"
+                },
+                "cache": {
+                    "max_client_ids": 10
                 }
             }
 
