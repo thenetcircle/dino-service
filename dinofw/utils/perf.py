@@ -7,7 +7,7 @@ from dinofw.utils import environ
 
 
 # used for non-async methods
-def time_method(_logger, prefix: str, threshold_ms: int = 10):
+def time_method(_logger, prefix: str, threshold_ms: int = 100):
     def factory(view_func):
         @wraps(view_func)
         def decorator(*args, **kwargs):
@@ -22,7 +22,7 @@ def time_method(_logger, prefix: str, threshold_ms: int = 10):
     return factory
 
 
-def timeit(_logger, method: str, tag: str = None, threshold_ms: int = 10, only_log: bool = False):
+def timeit(_logger, method: str, tag: str = None, threshold_ms: int = 100, only_log: bool = False):
     def factory(view_func):
         @wraps(view_func)
         async def decorator(*args, **kwargs):
