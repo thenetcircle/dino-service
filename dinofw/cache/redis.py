@@ -188,8 +188,8 @@ class CacheRedis(ICache):
         r.execute()
 
     def reset_total_unread_message_count(self, user_id: int):
-        key = RedisKeys.total_unread_count(user_id)
-        self.redis.delete(key)
+        self.redis.delete(RedisKeys.total_unread_count(user_id))
+        self.redis.delete(RedisKeys.unread_groups(user_id))
 
     def increase_total_unread_message_count(self, user_ids: List[int], amount: int, pipeline=None):
         for user_id in user_ids:
