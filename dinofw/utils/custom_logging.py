@@ -1,8 +1,11 @@
 import logging
+import os
 import sys
 from pathlib import Path
 from loguru import logger
 import json
+
+from dinofw.utils.config import ConfigKeys
 
 
 class InterceptHandler(logging.Handler):
@@ -38,9 +41,10 @@ class CustomizeLogger:
     def make_logger(cls, config_path: Path):
         config = cls.load_logging_config(config_path)
         logging_config = config.get('logger')
+        env_name = os.environ.get(ConfigKeys.ENVIRONMENT, "unknown")
 
         custom_logger = cls.customize_logging(
-            logging_config.get('path'),
+            logging_config.get('path').format(env_name),
             level=logging_config.get('level'),
             retention=logging_config.get('retention'),
             rotation=logging_config.get('rotation'),

@@ -1,6 +1,6 @@
 {
   "logger": {
-    "path": "/var/log/dino/dinoms.log",
+    "path": "/var/log/dino/dinoms-{}.log",
     "filename": "dinoms.log",
     "level": "warning",
     "rotation": "7 days",
