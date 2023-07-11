@@ -1668,7 +1668,7 @@ class RelationalHandler:
         delete_before = created_at - datetime.timedelta(seconds=1)
 
         for user_id in user_ids:
-            self.env.cache.reset_count_group_types_for_user(user_id)
+            self.env.cache.increase_count_group_types_for_user(user_id, query.group_type)
             user_stats = self._create_user_stats(
                 group_entity.group_id, user_id, created_at, delete_before=delete_before
             )

@@ -147,7 +147,7 @@ class CacheRedis(ICache):
 
         key_count = RedisKeys.total_unread_count(user_id)
         p.set(key_count, unread_count)
-        p.expire(key_count, ONE_HOUR)
+        p.expire(key_count, ONE_HOUR * 12)
 
         if len(unread_groups):
             key = RedisKeys.unread_groups(user_id)
@@ -159,7 +159,7 @@ class CacheRedis(ICache):
             else:
                 p.sadd(key, *unread_groups)
 
-            p.expire(key, ONE_HOUR)
+            p.expire(key, ONE_HOUR * 12)
         p.execute()
 
     def decrease_total_unread_message_count(self, user_id: int, amount: int):
@@ -480,6 +480,21 @@ class CacheRedis(ICache):
 
         return float(last_message_time)
 
+    def increase_count_group_types_for_user(self, user_id: int, group_type: int) -> None:
+        for is_hidden in {True, False}:
+            current_group_types = self.get_count_group_types_for_user(user_id, hidden=is_hidden)
+            if current_group_types is None:
+                continue
+
+            new_group_types = list()
+            for current_group_type, the_count in current_group_types:
+                if current_group_type == group_type:
+                    the_count += 1
+
+                new_group_types.append((current_group_type, the_count))
+
+            self.set_count_group_types_for_user(user_id, new_group_types, is_hidden)
+
     def reset_count_group_types_for_user(self, user_id: int) -> None:
         key = RedisKeys.count_group_types_including_hidden(user_id)
         self.redis.delete(key)
@@ -571,7 +586,7 @@ class CacheRedis(ICache):
         types = ",".join([":".join(map(str, values)) for values in counts])
 
         self.redis.set(key, types)
-        self.redis.expire(key, ONE_DAY * 2)
+        self.redis.expire(key, ONE_DAY * 5)
 
     def get_count_group_types_for_user(self, user_id: int, hidden: bool) -> Optional[List[Tuple[int, int]]]:
         if hidden is None:
@@ -586,8 +601,7 @@ class CacheRedis(ICache):
         if count is None:
             return None
 
-        # TODO: log and check this, is blank in redis quite often
-        if len(count) == 0 or "," not in count:
+        if len(count) == 0:
             logger.warning(f"group types was none in cache for key {key}")
             return None
 
