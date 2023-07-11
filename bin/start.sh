@@ -51,4 +51,4 @@ if ! conda activate ${CONDA_ENV}; then
     exit 1
 fi
 
-ENVIRONMENT=${DINO_ENV} uvicorn --host 0.0.0.0 --port ${PORT} --workers=${N_WORKERS} server:app
+LOGURU_LEVEL=WARNING ENVIRONMENT=${DINO_ENV} uvicorn --host 0.0.0.0 --port ${PORT} --workers=${N_WORKERS} server:app

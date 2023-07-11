@@ -2,7 +2,7 @@
   "logger": {
     "path": "/var/log/dino/dinoms.log",
     "filename": "dinoms.log",
-    "level": "info",
+    "level": "warning",
     "rotation": "7 days",
     "retention": "1 months",
     "format": "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> - <level>{level: <8}</level> - <cyan>{function: <30}</cyan> - <level>{message}</level>"

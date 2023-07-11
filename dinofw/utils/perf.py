@@ -17,7 +17,7 @@ def time_method(_logger, prefix: str, threshold_ms: int = 100):
             finally:
                 the_time = (time.time() - before) * 1000
                 if the_time > threshold_ms:
-                    _logger.debug(f"{prefix} took {the_time:.2f}ms")
+                    _logger.warning(f"{prefix} took {the_time:.2f}ms")
         return decorator
     return factory
 
@@ -47,7 +47,7 @@ def timeit(_logger, method: str, tag: str = None, threshold_ms: int = 100, only_
                             key, value in kwargs.items()
                             if kwargs is not None and key not in {"db"}
                         }
-                        _logger.info(f"{method} {tag or ''}... {the_time:.2f}ms {relevant_args}")
+                        _logger.warning(f"{method} {tag or ''}... {the_time:.2f}ms {relevant_args}")
 
                     # don't always need to send telemetry to upstreams stats collector
                     if only_log:
