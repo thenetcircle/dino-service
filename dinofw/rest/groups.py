@@ -317,6 +317,7 @@ class GroupResource(BaseResource):
 
         self.env.db.remove_user_group_stats_for_user(group_ids, user_id, db)
         self.env.db.set_groups_updated_at(group_ids, now, db)
+        self.env.cache.reset_count_group_types_for_user(user_id)
 
         action_logs = list()
 

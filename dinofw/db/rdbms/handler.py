@@ -1095,7 +1095,7 @@ class RelationalHandler:
 
         for user_id in user_ids:
             if user_id not in user_ids_to_stats:
-                self.env.cache.reset_count_group_types_for_user(user_id)
+                self.env.cache.increase_count_group_types_for_user(user_id, GroupTypes.GROUP)
 
                 user_ids_for_cache.add(user_id)
                 user_ids_to_stats[user_id] = self._create_user_stats(
@@ -1159,6 +1159,18 @@ class RelationalHandler:
             )
             .all()
         )
+
+        types_dict = dict()
+        for the_type, the_count in types:
+            types_dict[the_type] = the_count
+
+        # make sure we have the cached amount for all possible group
+        # types even if the user is not part of all group types
+        for group_type in {GroupTypes.GROUP, GroupTypes.ONE_TO_ONE}:
+            if group_type not in types_dict:
+                types_dict[group_type] = 0
+
+        types = list(types_dict.items())
 
         # if hidden is None, we're counting for both types
         if query.hidden is not None:
