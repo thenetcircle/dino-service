@@ -9,12 +9,13 @@ from uuid import uuid4 as uuid
 import arrow
 
 from dinofw.cache.redis import CacheRedis
-from dinofw.db.rdbms.schemas import GroupBase
+from dinofw.db.rdbms.schemas import GroupBase, DeletedStatsBase
 from dinofw.db.rdbms.schemas import UserGroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.schemas import MessageBase
 from dinofw.endpoint import IClientPublishHandler, IClientPublisher
 from dinofw.rest.broadcast import BroadcastResource
+from dinofw.rest.models import DeletedStats
 from dinofw.rest.queries import AbstractQuery, DeleteAttachmentQuery, EditMessageQuery
 from dinofw.rest.queries import ActionLogQuery
 from dinofw.rest.queries import AttachmentQuery
@@ -405,6 +406,7 @@ class FakeDatabase:
         self.env = env
         self.groups = dict()
         self.stats = dict()
+        self.deleted_stats = dict()
         self.last_sent = dict()
         self.last_read = dict()
 
@@ -414,6 +416,28 @@ class FakeDatabase:
     def count_total_unread(self, user_id, _):
         # TODO: mock this as needed
         return 0, []
+
+    def get_deleted_groups_for_user(self, user_id: int, _) -> List[DeletedStatsBase]:
+        return self.deleted_stats.get(user_id, list())
+
+    def copy_to_deleted_groups_table(
+        self, group_id_to_type: Dict[str, int], user_id: int, _
+    ) -> None:
+        if user_id not in self.deleted_stats:
+            self.deleted_stats[user_id] = list()
+
+        delete_time = utcnow_dt()
+        for stat in self.stats[user_id]:
+            if stat.group_id not in group_id_to_type:
+                continue
+
+            self.deleted_stats[user_id].append(DeletedStatsBase(
+                group_id=stat.group_id,
+                user_id=stat.user_id,
+                group_type=group_id_to_type[stat.group_id],
+                join_time=stat.join_time,
+                delete_time=delete_time
+            ))
 
     def remove_user_group_stats_for_user(self, group_ids: List[str], user_id: int, _):
         if user_id in self.stats:
