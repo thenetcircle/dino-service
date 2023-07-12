@@ -5,9 +5,9 @@ from typing import List, Tuple
 from loguru import logger
 from sqlalchemy.orm import Session
 
-from dinofw.db.rdbms.schemas import UserGroupBase
+from dinofw.db.rdbms.schemas import UserGroupBase, DeletedStatsBase
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import UserGroup, LastReads
+from dinofw.rest.models import UserGroup, LastReads, DeletedStats
 from dinofw.rest.models import UserStats
 from dinofw.rest.queries import ActionLogQuery, LastReadQuery
 from dinofw.rest.queries import DeleteAttachmentQuery
@@ -17,12 +17,16 @@ from dinofw.rest.queries import UserStatsQuery
 from dinofw.utils import to_ts
 from dinofw.utils import utcnow_ts
 from dinofw.utils.config import GroupTypes
-from dinofw.utils.convert import to_user_group, to_last_reads
+from dinofw.utils.convert import to_user_group, to_last_reads, to_deleted_stats
 
 
 class UserResource(BaseResource):
     async def get_next_client_id(self, domain: str, user_id: int) -> str:
         return self.env.cache.get_next_client_id(domain, user_id)
+
+    async def get_deleted_groups(self, user_id: int, db: Session) -> List[DeletedStats]:
+        deleted_groups: List[DeletedStatsBase] = self.env.db.get_deleted_groups_for_user(user_id, db)
+        return to_deleted_stats(deleted_groups)
 
     async def get_groups_for_user(
         self, user_id: int, query: GroupQuery, db: Session

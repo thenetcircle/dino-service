@@ -73,6 +73,7 @@ class BaseDatabaseTest(BaseTest):
                 db = TestingSessionLocal()
                 db.query(models.GroupEntity).delete()
                 db.query(models.UserGroupStatsEntity).delete()
+                db.query(models.DeletedStatsEntity).delete()
                 db.commit()
             finally:
                 if db is not None:

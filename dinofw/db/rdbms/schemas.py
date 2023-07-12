@@ -49,6 +49,15 @@ class UserGroupStatsBase(BaseModel):
     rating: Optional[int]
 
 
+class DeletedStatsBase(BaseModel):
+    group_id: str
+    user_id: int
+    group_type: int
+
+    join_time: datetime
+    delete_time: datetime
+
+
 class Group(GroupBase):
     id: int
 

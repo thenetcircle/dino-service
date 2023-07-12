@@ -64,3 +64,23 @@ class TestLeaveGroup(BaseServerRestApi):
 
         group_info = self.get_group_info(group_id, count_messages=False)
         self.assertIsNone(group_info["owner_id"])
+
+    def test_leave_group_creates_deleted_copy(self):
+        self.assert_deleted_groups_for_user(0)
+        self.assert_groups_for_user(0)
+
+        group_id = self.create_and_join_group(
+            user_id=BaseTest.USER_ID,
+            users=[
+                BaseTest.OTHER_USER_ID,
+                BaseTest.THIRD_USER_ID
+            ]
+        )
+
+        self.assert_deleted_groups_for_user(0)
+        self.assert_groups_for_user(1)
+
+        self.user_leaves_group(group_id)
+
+        self.assert_deleted_groups_for_user(1)
+        self.assert_groups_for_user(0)

@@ -98,3 +98,16 @@ class UserGroupStatsEntity(env.Base):
     notifications = Column(Boolean, default=True, nullable=False)
 
     UniqueConstraint('group_id', 'user_id')
+
+
+class DeletedStatsEntity(env.Base):
+    __tablename__ = "deleted_stats"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    group_id = Column(String(36), index=True)
+    user_id = Column(Integer, index=True)
+    group_type = Column(Integer)
+
+    join_time = Column(DateTime(timezone=True))
+    delete_time = Column(DateTime(timezone=True))

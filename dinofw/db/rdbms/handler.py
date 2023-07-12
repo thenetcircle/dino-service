@@ -18,9 +18,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy.orm import load_only
 
 from dinofw.db.rdbms.handler_stats import UpdateUserGroupStatsHandler
-from dinofw.db.rdbms.models import GroupEntity
+from dinofw.db.rdbms.models import GroupEntity, DeletedStatsEntity
 from dinofw.db.rdbms.models import UserGroupStatsEntity
-from dinofw.db.rdbms.schemas import GroupBase
+from dinofw.db.rdbms.schemas import GroupBase, DeletedStatsBase
 from dinofw.db.rdbms.schemas import UserGroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.schemas import MessageBase
@@ -733,6 +733,52 @@ class RelationalHandler:
         self.env.cache.set_last_read_in_group_for_users(group_id, user_ids_last_read)
 
         return user_ids_last_read
+
+    def get_deleted_groups_for_user(self, user_id: int, db: Session) -> List[DeletedStatsBase]:
+        deleted_stats = (
+            db.query(
+                DeletedStatsEntity
+            )
+            .filter(
+                DeletedStatsEntity.user_id == user_id
+            )
+            .all()
+        )
+
+        return [
+            DeletedStatsBase(**deleted_stats_entity.__dict__)
+            for deleted_stats_entity in deleted_stats
+        ]
+
+    def copy_to_deleted_groups_table(
+        self, group_id_to_type: Dict[str, int], user_id: int, db: Session
+    ) -> None:
+        groups_to_copy = (
+            db.query(
+                UserGroupStatsEntity.group_id,
+                UserGroupStatsEntity.join_time
+            )
+            .filter(
+                UserGroupStatsEntity.group_id.in_(group_id_to_type.keys()),
+                UserGroupStatsEntity.user_id == user_id
+            )
+            .all()
+        )
+
+        delete_time = utcnow_dt()
+        for group_id, join_time in groups_to_copy:
+            # save a copy of the entry to be deleted; sometimes we have to be
+            # able to access message history of deleted users, for legal cases
+            deleted_entity = DeletedStatsEntity(
+                user_id=user_id,
+                group_id=group_id,
+                join_time=join_time,
+                delete_time=delete_time,
+                group_type=group_id_to_type.get(group_id)
+            )
+            db.add(deleted_entity)
+
+        db.commit()
 
     def remove_user_group_stats_for_user(
         self, group_ids: List[str], user_id: int, db: Session

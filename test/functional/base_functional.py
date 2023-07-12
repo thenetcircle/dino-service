@@ -278,6 +278,17 @@ class BaseServerRestApi(BaseDatabaseTest):
 
         return raw_response.json()
 
+    def get_deleted_groups_for_user(
+            self,
+            user_id: int = BaseTest.USER_ID
+    ):
+        raw_response = self.client.get(
+            f"/v1/deleted/{user_id}/groups"
+        )
+        self.assertEqual(raw_response.status_code, 200)
+
+        return raw_response.json()
+
     def groups_for_user(
             self,
             user_id: int = BaseTest.USER_ID,
@@ -607,6 +618,10 @@ class BaseServerRestApi(BaseDatabaseTest):
     def assert_groups_for_user(self, amount_of_groups, user_id: int = BaseTest.USER_ID, until: float = None) -> None:
         response = self.groups_for_user(user_id, until=until)
         self.assertEqual(amount_of_groups, len(response))
+
+    def assert_deleted_groups_for_user(self, amount_of_groups, user_id: int = BaseTest.USER_ID) -> None:
+        response = self.get_deleted_groups_for_user(user_id)
+        self.assertEqual(amount_of_groups, len(response["stats"]))
 
     def assert_total_mqtt_sent_to(self, user_id: int, n_messages: int):
         total_sent = 0

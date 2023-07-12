@@ -315,6 +315,7 @@ class GroupResource(BaseResource):
         group_ids = list(group_id_to_type.keys())
         now = utcnow_dt()
 
+        self.env.db.copy_to_deleted_groups_table(group_id_to_type, user_id, db)
         self.env.db.remove_user_group_stats_for_user(group_ids, user_id, db)
         self.env.db.set_groups_updated_at(group_ids, now, db)
         self.env.cache.reset_count_group_types_for_user(user_id)

@@ -6,7 +6,7 @@ from fastapi import Depends
 from loguru import logger
 from sqlalchemy.orm import Session
 
-from dinofw.rest.models import ClientID
+from dinofw.rest.models import ClientID, AllDeletedStats
 from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UsersGroup
 from dinofw.rest.queries import GroupInfoQuery
@@ -36,6 +36,21 @@ async def get_next_available_client_id(domain: str, user_id: int) -> ClientID:
     """
     return ClientID(
         client_id=await environ.env.rest.user.get_next_client_id(domain, user_id)
+    )
+
+
+@router.get("/deleted/{user_id}/groups", response_model=AllDeletedStats)
+@timeit(logger, "GET", "/deleted/{user_id}/groups")
+@wrap_exception()
+async def get_deleted_groups_for_user(user_id: int, db: Session = Depends(get_db)) -> AllDeletedStats:
+    """
+    Get the deletion log of a user.
+
+    **Potential error codes in response:**
+    * `250`: if an unknown error occurred.
+    """
+    return AllDeletedStats(
+        stats=await environ.env.rest.user.get_deleted_groups(user_id, db)
     )
 
 
