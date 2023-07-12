@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from dinofw.db.rdbms.schemas import UserGroupBase, DeletedStatsBase
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import UserGroup, LastReads, DeletedStats
+from dinofw.rest.models import UserGroup, LastReads, DeletedStats, Histories
 from dinofw.rest.models import UserStats
 from dinofw.rest.queries import ActionLogQuery, LastReadQuery
 from dinofw.rest.queries import DeleteAttachmentQuery

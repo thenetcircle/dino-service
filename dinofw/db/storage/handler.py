@@ -243,6 +243,13 @@ class CassandraHandler:
         messages = self._try_parse_messages(raw_messages)
         return messages[:query_limit]
 
+    def get_all_messages_in_group(self, group_id: str) -> List[MessageBase]:
+        """
+        internal api to get all history in a group for legal purposes
+        """
+        raw_messages = MessageModel.objects.filter(MessageModel.group_id == group_id).all()
+        return self._try_parse_messages(raw_messages)
+
     # noinspection PyMethodMayBeStatic
     def get_messages_in_group_for_user(
             self,

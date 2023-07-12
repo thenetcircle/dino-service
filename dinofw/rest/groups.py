@@ -164,6 +164,14 @@ class GroupResource(BaseResource):
 
         return the_count
 
+    async def all_history_in_group(self, group_id: str) -> Histories:
+        return Histories(
+            messages=[
+                message_base_to_message(message)
+                for message in self.env.storage.get_all_messages_in_group(group_id)
+            ]
+        )
+
     async def histories(
         self, group_id: str, user_id: int, query: MessageQuery, db: Session
     ) -> Histories:

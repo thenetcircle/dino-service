@@ -60,6 +60,12 @@ class FakeStorage:
         msg_to_edit.message_payload = query.message_payload or msg_to_edit.message_payload
         msg_to_edit.context = query.message_payload or msg_to_edit.context
 
+    def get_all_messages_in_group(self, group_id: str):
+        if group_id not in self.messages_by_group:
+            return list()
+
+        return self.messages_by_group[group_id]
+
     def count_attachments_in_group_since(self, group_id: str, since: dt) -> int:
         if group_id not in self.attachments_by_group:
             return 0

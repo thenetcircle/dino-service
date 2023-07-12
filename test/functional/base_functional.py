@@ -278,6 +278,17 @@ class BaseServerRestApi(BaseDatabaseTest):
 
         return raw_response.json()
 
+    def get_all_history(
+            self,
+            group_id: int
+    ):
+        raw_response = self.client.get(
+            f"/v1/history/{group_id}"
+        )
+        self.assertEqual(raw_response.status_code, 200)
+
+        return raw_response.json()
+
     def get_deleted_groups_for_user(
             self,
             user_id: int = BaseTest.USER_ID
@@ -614,6 +625,10 @@ class BaseServerRestApi(BaseDatabaseTest):
         raw_response = self.client.get(f"/v1/groups/{group_id}/user/{user_id}",)
         self.assertEqual(raw_response.status_code, 200)
         self.assertEqual(bookmark, raw_response.json()["stats"]["bookmark"])
+
+    def assert_all_history(self, group_id: str, amount: int) -> None:
+        response = self.get_all_history(group_id)
+        self.assertEqual(amount, len(response["messages"]))
 
     def assert_groups_for_user(self, amount_of_groups, user_id: int = BaseTest.USER_ID, until: float = None) -> None:
         response = self.groups_for_user(user_id, until=until)
