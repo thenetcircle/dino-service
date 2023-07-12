@@ -1,5 +1,3 @@
-from dinofw.utils.config import ErrorCodes
-from test.base import BaseTest
 from test.functional.base_functional import BaseServerRestApi
 
 
