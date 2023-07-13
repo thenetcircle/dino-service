@@ -41,3 +41,8 @@ class GroupIsFrozenException(Exception):
 class QueryValidationError(Exception):
     def __init__(self, message):
         self.message = f"query validation error: {message}"
+
+
+class UserStatsOrGroupAlreadyCreated(Exception):
+    def __init__(self, message):
+        self.message = message

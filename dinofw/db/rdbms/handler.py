@@ -14,6 +14,7 @@ from sqlalchemy import literal
 from sqlalchemy import distinct
 from sqlalchemy import or_
 from sqlalchemy import and_
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy.orm import load_only
 
@@ -37,7 +38,7 @@ from dinofw.utils import users_to_group_id
 from dinofw.utils import utcnow_dt
 from dinofw.utils import utcnow_ts
 from dinofw.utils.config import GroupTypes
-from dinofw.utils.exceptions import NoSuchGroupException, NoSuchUserException
+from dinofw.utils.exceptions import NoSuchGroupException, NoSuchUserException, UserStatsOrGroupAlreadyCreated
 from dinofw.utils.exceptions import UserNotInGroupException
 from dinofw.utils.perf import time_method
 
@@ -1705,6 +1706,10 @@ class RelationalHandler:
         else:
             group_id = str(uuid())
 
+        # cache the existence of the group before creating it, to try to avoid race
+        # conditions when sending multiple fist messages at the same time
+        self.env.cache.set_group_exists(group_id, True)
+
         group_entity = GroupEntity(
             group_id=group_id,
             name=query.group_name,
@@ -1735,7 +1740,26 @@ class RelationalHandler:
         base = GroupBase(**group_entity.__dict__)
 
         db.add(group_entity)
-        db.commit()
+
+        try:
+            db.commit()
+        except IntegrityError:
+            try:
+                # have to manually roll back this transaction, since we'll keep
+                # using the session after this method returns
+                db.rollback()
+            except Exception as e:
+                logger.error(f"could not rollback: {str(e)}")
+                logger.exception(e)
+
+            # can happen when multiple messages are sent simultaneously as a first
+            # contact, e.g. if the first contact is 9 images, one of those api calls
+            # maybe have created the group/stats first, but when the other calls
+            # checked, it hadn't yet been saved; in this case, the calling method has
+            # to catch this exception and ignore it
+            raise UserStatsOrGroupAlreadyCreated(
+                "user stats or group exists, multiple api calls tried to create them at the same time"
+            )
 
         return base
 

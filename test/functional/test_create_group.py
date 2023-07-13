@@ -1,0 +1,79 @@
+import arrow
+import datetime
+
+from dinofw.rest.queries import CreateGroupQuery
+from dinofw.utils import utcnow_dt, users_to_group_id, trim_micros
+from dinofw.utils.config import GroupTypes
+from dinofw.utils.exceptions import UserStatsOrGroupAlreadyCreated, NoSuchGroupException
+from test.base import BaseTest
+from test.functional.base_functional import BaseServerRestApi
+
+
+class TestCreateGroup(BaseServerRestApi):
+    def test_create_group_that_exists(self):
+        session = self.env.session_maker()
+
+        self.send_1v1_message(
+            user_id=BaseTest.USER_ID,
+            receiver_id=BaseTest.OTHER_USER_ID
+        )
+
+        query = CreateGroupQuery(
+            group_name="some name",
+            group_type=GroupTypes.ONE_TO_ONE,
+            users=[BaseTest.USER_ID, BaseTest.OTHER_USER_ID]
+        )
+
+        with self.assertRaises(UserStatsOrGroupAlreadyCreated):
+            self.env.db.create_group(
+                owner_id=BaseTest.USER_ID,
+                query=query,
+                utc_now=utcnow_dt(),
+                db=session
+            )
+
+    def test_create_with_users_that_exists(self):
+        session = self.env.session_maker()
+
+        utc_now = utcnow_dt()
+        group_id = users_to_group_id(BaseTest.USER_ID, BaseTest.OTHER_USER_ID)
+        created_at = trim_micros(arrow.get(utc_now).shift(seconds=-1).datetime)
+        delete_before = created_at - datetime.timedelta(seconds=1)
+
+        session.add(self.env.db._create_user_stats(group_id, BaseTest.USER_ID, created_at, delete_before))
+        session.add(self.env.db._create_user_stats(group_id, BaseTest.OTHER_USER_ID, created_at, delete_before))
+        session.commit()
+
+        query = CreateGroupQuery(
+            group_name="some name",
+            group_type=GroupTypes.ONE_TO_ONE,
+            users=[BaseTest.USER_ID, BaseTest.OTHER_USER_ID]
+        )
+
+        with self.assertRaises(UserStatsOrGroupAlreadyCreated):
+            self.env.db.create_group(
+                owner_id=BaseTest.USER_ID,
+                query=query,
+                utc_now=utcnow_dt(),
+                db=session
+            )
+
+
+    def test_get_group_fails_not_create_user_fails(self):
+        session = self.env.session_maker()
+
+        utc_now = utcnow_dt()
+        group_id = users_to_group_id(BaseTest.USER_ID, BaseTest.OTHER_USER_ID)
+        created_at = trim_micros(arrow.get(utc_now).shift(seconds=-1).datetime)
+        delete_before = created_at - datetime.timedelta(seconds=1)
+
+        session.add(self.env.db._create_user_stats(group_id, BaseTest.USER_ID, created_at, delete_before))
+        session.add(self.env.db._create_user_stats(group_id, BaseTest.OTHER_USER_ID, created_at, delete_before))
+        session.commit()
+
+        with self.assertRaises(NoSuchGroupException):
+            self.env.rest.message._get_or_create_group_for_1v1(
+                BaseTest.USER_ID,
+                BaseTest.OTHER_USER_ID,
+                session
+            )

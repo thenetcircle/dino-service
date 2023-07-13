@@ -18,7 +18,7 @@ from dinofw.utils import utcnow_dt
 from dinofw.utils import utcnow_ts
 from dinofw.utils.config import EventTypes
 from dinofw.utils.convert import message_base_to_message
-from dinofw.utils.exceptions import NoSuchGroupException
+from dinofw.utils.exceptions import NoSuchGroupException, UserStatsOrGroupAlreadyCreated
 
 
 class BaseResource(ABC):
@@ -176,7 +176,12 @@ class BaseResource(ABC):
         try:
             group = self.env.db.get_group_for_1to1(user_id, receiver_id, db)
         except NoSuchGroupException:
-            group = self.env.db.create_group_for_1to1(user_id, receiver_id, db)
+            try:
+                group = self.env.db.create_group_for_1to1(user_id, receiver_id, db)
+            except UserStatsOrGroupAlreadyCreated:
+                # another api call created it after we checked but before we finished creating it,
+                # so we should now be able to just fetch the one created by the other call
+                group = self.env.db.get_group_for_1to1(user_id, receiver_id, db)
 
         group_id = group.group_id
         self.env.cache.set_group_exists(group_id, True)
