@@ -41,7 +41,7 @@ class CustomizeLogger:
     def make_logger(cls, config_path: Path):
         config = cls.load_logging_config(config_path)
         logging_config = config.get('logger')
-        env_name = os.environ.get(ConfigKeys.ENVIRONMENT, "unknown")
+        env_name = os.environ.get("ENVIRONMENT", "unknown")
 
         custom_logger = cls.customize_logging(
             logging_config.get('path').format(env_name),
