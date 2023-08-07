@@ -163,6 +163,8 @@ class CassandraHandler:
         until = to_dt(query.until, allow_none=True)
         since = to_dt(query.since, allow_none=True)
 
+        # TODO: don't include audio messages; we keep them in the attachment table, but they're
+        #  not included in the attachment list shown to the user
         statement = AttachmentModel.objects.filter(
             AttachmentModel.group_id == group_id
         )
