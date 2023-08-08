@@ -1,3 +1,4 @@
+import copy
 import json
 from datetime import datetime as dt
 from typing import Dict
@@ -15,12 +16,11 @@ from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.schemas import MessageBase
 from dinofw.endpoint import IClientPublishHandler, IClientPublisher
 from dinofw.rest.broadcast import BroadcastResource
-from dinofw.rest.models import DeletedStats
-from dinofw.rest.queries import AbstractQuery, DeleteAttachmentQuery, EditMessageQuery
 from dinofw.rest.queries import ActionLogQuery
 from dinofw.rest.queries import AttachmentQuery
 from dinofw.rest.queries import CreateAttachmentQuery
 from dinofw.rest.queries import CreateGroupQuery
+from dinofw.rest.queries import DeleteAttachmentQuery, EditMessageQuery
 from dinofw.rest.queries import GroupQuery
 from dinofw.rest.queries import MessageQuery
 from dinofw.rest.queries import SendMessageQuery
@@ -157,7 +157,7 @@ class FakeStorage:
             to_keep = list()
 
             for att in self.attachments_by_group[group_id]:
-                if att.user_id == user_id:
+                if att.user_id == user_id and att.message_type != MessageTypes.AUDIO:
                     attachments.append(att.copy())
                 else:
                     to_keep.append(att)
@@ -166,9 +166,23 @@ class FakeStorage:
 
         to_keep = dict()
         for message, att in self.attachments_by_message.items():
-            if att.user_id != user_id:
+            if att.user_id != user_id or att.message_type == MessageTypes.AUDIO:
                 to_keep[message] = att
         self.attachments_by_message = to_keep
+
+        to_remove = {att.message_id for att in attachments}
+        new_messages_by_group = dict()
+        for group_id, messages in self.messages_by_group.items():
+            for message in messages:
+                if message.message_id in to_remove:
+                    continue
+
+                if group_id not in new_messages_by_group:
+                    new_messages_by_group[group_id] = list()
+
+                new_messages_by_group[group_id].append(message)
+
+        self.messages_by_group = new_messages_by_group
 
         return attachments
 
@@ -316,6 +330,9 @@ class FakeStorage:
         attachments = list()
 
         for attachment in self.attachments_by_group[group_id]:
+            if attachment.message_type == MessageTypes.AUDIO:
+                continue
+
             if attachment.created_at > user_stats.delete_before:
                 attachments.append(attachment)
 

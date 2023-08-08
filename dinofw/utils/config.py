@@ -14,7 +14,12 @@ class MessageTypes:
     GREETER_MEETER_AUTO: Final = 4
     GREETER_MEETER_MANUAL: Final = 5
 
+    VIDEO: Final = 9
+    AUDIO: Final = 10
+
     ACTION: Final = 100
+
+    attachment_types = {IMAGE, VIDEO, AUDIO}
 
 
 class PayloadStatus:

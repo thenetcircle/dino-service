@@ -33,9 +33,9 @@ class MessageResource(BaseResource):
             user_id=user_id,
             message=message,
             db=db,
-            # don't increase unread if this is an unprocessed attachment, when the
+            # don't increase unread if this is an unprocessed attachments, when the
             # attachment has been processed, the unread count will be increased
-            should_increase_unread=query.message_type != MessageTypes.IMAGE,
+            should_increase_unread=query.message_type not in MessageTypes.attachment_types,
             event_type=EventTypes.MESSAGE,
             mentions=query.mention_user_ids
         )

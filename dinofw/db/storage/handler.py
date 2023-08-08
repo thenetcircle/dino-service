@@ -163,10 +163,10 @@ class CassandraHandler:
         until = to_dt(query.until, allow_none=True)
         since = to_dt(query.since, allow_none=True)
 
-        # TODO: don't include audio messages; we keep them in the attachment table, but they're
-        #  not included in the attachment list shown to the user
         statement = AttachmentModel.objects.filter(
-            AttachmentModel.group_id == group_id
+            AttachmentModel.group_id == group_id,
+            # audio messages are attachments, but we don't show them in the attachments list on the client side
+            AttachmentModel.message_type != MessageTypes.AUDIO
         )
 
         if until is not None:
@@ -457,7 +457,7 @@ class CassandraHandler:
                 MessageModel.group_id == group_id,
                 MessageModel.created_at > group_created_at,
                 MessageModel.user_id == user_id,
-                MessageModel.message_type == MessageTypes.IMAGE,
+                MessageModel.message_type__in(MessageTypes.attachment_types),  # noqa: type hinting don't support __in
             )
             .allow_filtering()
             .all()
@@ -660,7 +660,7 @@ class CassandraHandler:
         # if the user is sending multiple images at the same time it may happen different servers create them
         # with the exact same milliseconds, which will cause primary key collision in cassandra (silently
         # losing all but one of the messages with the same milliseconds)
-        if query.message_type == MessageTypes.IMAGE:
+        if query.message_type in MessageTypes.attachment_types:
             inserted = False
             message_id = uuid()
 
@@ -708,18 +708,6 @@ class CassandraHandler:
                     .allow_filtering()
                     .first()
                 )
-
-                """
-                message = MessageModel.create(
-                    group_id=group_id,
-                    user_id=user_id,
-                    created_at=created_at,
-                    message_id=uuid(),
-                    message_payload=query.message_payload,
-                    message_type=query.message_type,
-                    context=query.context,
-                )
-                """
         else:
             created_at = utcnow_dt()
             message = MessageModel.create(
