@@ -164,9 +164,7 @@ class CassandraHandler:
         since = to_dt(query.since, allow_none=True)
 
         statement = AttachmentModel.objects.filter(
-            AttachmentModel.group_id == group_id,
-            # audio messages are attachments, but we don't show them in the attachments list on the client side
-            AttachmentModel.message_type__in([MessageTypes.VIDEO, MessageTypes.IMAGE])  # noqa: type hinting not supported
+            AttachmentModel.group_id == group_id
         )
 
         if until is not None:
@@ -187,7 +185,12 @@ class CassandraHandler:
             statement = statement.order_by('created_at')
 
         messages = statement.limit(query.per_page or DefaultValues.PER_PAGE).all()
-        messages = [CassandraHandler.message_base_from_entity(message) for message in messages]
+        messages = [
+            CassandraHandler.message_base_from_entity(message)
+            for message in messages
+            # can't do "!=" in cassandra, so filter out audio messages here
+            if message.message_type != MessageTypes.AUDIO
+        ]
 
         if since is None:
             return messages
