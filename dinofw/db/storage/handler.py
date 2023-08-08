@@ -166,7 +166,7 @@ class CassandraHandler:
         statement = AttachmentModel.objects.filter(
             AttachmentModel.group_id == group_id,
             # audio messages are attachments, but we don't show them in the attachments list on the client side
-            AttachmentModel.message_type != MessageTypes.AUDIO
+            AttachmentModel.message_type__in([MessageTypes.VIDEO, MessageTypes.IMAGE])  # noqa: type hinting not supported
         )
 
         if until is not None:
