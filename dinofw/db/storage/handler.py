@@ -455,20 +455,25 @@ class CassandraHandler:
         if not len(attachment_msg_ids):
             return list()
 
-        messages_all = (
-            MessageModel.objects(
-                MessageModel.group_id == group_id,
-                MessageModel.created_at > group_created_at,
-                MessageModel.user_id == user_id,
-                MessageModel.message_type__in(MessageTypes.attachment_types),  # noqa: type hinting don't support __in
+        messages = list()
+
+        for attachment_type in MessageTypes.attachment_types:
+            messages_all = (
+                # can't restrict user_id here, since it's a primary key and we filter on a "non-EQ relation" created_at
+                # using greater-than... so filter on user_id in python instead
+                MessageModel.objects(
+                    MessageModel.group_id == group_id,
+                    MessageModel.created_at > group_created_at,
+                    # no support for "IN" in cassandra orm, so run multiple queries
+                    MessageModel.message_type == attachment_type
+                )
+                .allow_filtering()
+                .all()
             )
-            .allow_filtering()
-            .all()
-        )
-        messages = [
-            message for message in messages_all
-            if message.message_id in attachment_msg_ids
-        ]
+
+            for message in messages_all:
+                if message.user_id == user_id and message.message_id in attachment_msg_ids:
+                    messages.append(message)
 
         payload_status = query.status
         if payload_status is None:
