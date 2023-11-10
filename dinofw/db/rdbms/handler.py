@@ -821,7 +821,7 @@ class RelationalHandler:
             for group_id in group_ids:
                 self.env.cache.remove_unread_group(user_id, group_id, pipeline=p)
 
-            self.env.cache.reset_total_unread_message_count(user_id, pipelien=p)  # TODO: decreasing seems buggy, sometimes gets negative, so just reset instead
+            self.env.cache.reset_total_unread_message_count(user_id, pipeline=p)  # TODO: decreasing seems buggy, sometimes gets negative, so just reset instead
             self.env.cache.remove_last_read_in_group_for_user(group_ids, user_id, pipeline=p)
             self.env.cache.remove_join_time_in_group_for_user(group_ids, user_id, pipeline=p)
             self.env.cache.remove_user_id_and_join_time_in_groups_for_user(group_ids, user_id, pipeline=p)

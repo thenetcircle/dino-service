@@ -122,7 +122,8 @@ class UpdateUserGroupStatsHandler:
         self.env.cache.set_sent_message_count_in_group_for_user(group_id, user_id, 0)
 
         # no pipeline for these two, might have to run multiple queries to correct negative value
-        self.env.cache.decrease_total_unread_message_count(user_id, unread_count_before_changing)
+        # self.env.cache.decrease_total_unread_message_count(user_id, unread_count_before_changing)
+        self.env.cache.reset_total_unread_message_count(user_id)
         self.env.cache.remove_unread_group(user_id, group_id)
 
         with self.env.cache.pipeline() as p:
@@ -146,24 +147,31 @@ class UpdateUserGroupStatsHandler:
             query: UpdateUserGroupStats
     ) -> None:
         user_stats.hide = query.hide
-        self.env.cache.set_hide_group(group_id, query.hide, [user_id])
 
-        if query.hide:
-            # no pipline for removing, might have to run multiple queries
-            self.env.cache.remove_unread_group(user_id, group_id)
+        with self.env.cache.pipeline() as p:
+            self.env.cache.set_hide_group(group_id, query.hide, [user_id], pipeline=p)
 
-            # bookmark AND hide makes it a bit tricky
-            change_by = unread_count_before_changing
-            if user_stats.bookmark:
-                change_by = 1
+            # TODO: there's a somewhere that's using decrease_total_unread_message_count(),
+            #  the cached count sometimes becomes the wrong value, so reset() instead for now
+            self.env.cache.reset_total_unread_message_count(user_id, pipeline=p)
 
-            self.env.cache.decrease_total_unread_message_count(user_id, change_by)
-        else:
-            with self.env.cache.pipeline() as p:
+            if query.hide:
+                # no pipline for removing, might have to run multiple queries
+                self.env.cache.remove_unread_group(user_id, group_id, pipeline=p)
+
+                """
+                # bookmark AND hide makes it a bit tricky
+                change_by = unread_count_before_changing
+                if user_stats.bookmark:
+                    change_by = 1
+    
+                self.env.cache.decrease_total_unread_message_count(user_id, change_by)
+                """
+            else:
                 self.env.cache.add_unread_group([user_id], group_id, pipeline=p)
-                self.env.cache.increase_total_unread_message_count(
-                    [user_id], unread_count_before_changing, pipeline=p
-                )
+                # self.env.cache.increase_total_unread_message_count(
+                #     [user_id], unread_count_before_changing, pipeline=p
+                # )
 
     def _set_last_read(
             self,
@@ -197,13 +205,18 @@ class UpdateUserGroupStatsHandler:
         # when updating last read, we reset the mention count to 0
         user_stats.mentions = 0
 
+        # TODO: there's a somewhere that's using decrease_total_unread_message_count(),
+        #  the cached count sometimes becomes the wrong value, so reset() instead for now
+        """
         # updating unread removes bookmark, and bookmark always counts as 1 unread
         decrease_by = unread_count_before_changing
         if user_stats.bookmark:
             decrease_by = 1
+        self.env.cache.decrease_total_unread_message_count(user_id, decrease_by)
+        """
 
         self.env.cache.remove_unread_group(user_id, group_id)
-        self.env.cache.decrease_total_unread_message_count(user_id, decrease_by)
+        self.env.cache.reset_total_unread_message_count(user_id)
 
         # highlight time is removed if a user reads a conversation
         user_stats.highlight_time = self.handler.long_ago
@@ -226,7 +239,8 @@ class UpdateUserGroupStatsHandler:
         # doesn't work well with pipeline
         else:
             # bookmark always counts as 1 unread, so just decrease by 1
-            self.env.cache.decrease_total_unread_message_count(user_id, 1)
+            # self.env.cache.decrease_total_unread_message_count(user_id, 1)
+            self.env.cache.reset_total_unread_message_count(user_id)
             self.env.cache.remove_unread_group(user_id, group_id)
 
     def update(
@@ -260,7 +274,8 @@ class UpdateUserGroupStatsHandler:
             if not user_stats.kicked and query.kicked:
                 self.env.cache.remove_user_id_and_join_time_in_groups_for_user([group_id], user_id)
                 if user_stats.unread_count > 0:
-                    self.env.cache.decrease_total_unread_message_count(user_id, user_stats.unread_count)
+                    # self.env.cache.decrease_total_unread_message_count(user_id, user_stats.unread_count)
+                    self.env.cache.reset_total_unread_message_count(user_id)
 
                 user_stats.mentions = 0
                 user_stats.unread_count = 0
