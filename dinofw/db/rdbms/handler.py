@@ -787,6 +787,7 @@ class RelationalHandler:
         """
         called when a user leaves a group
         """
+        """
         # need to count how much to decrease the cached total unread count with
         unread_count = (
             db.query(
@@ -814,11 +815,13 @@ class RelationalHandler:
         # no pipeline for this one since we might have to run another query to adjust negative values
         if unread_count > 0:
             self.env.cache.decrease_total_unread_message_count(user_id, unread_count)
+        """
 
         with self.env.cache.pipeline() as p:
             for group_id in group_ids:
                 self.env.cache.remove_unread_group(user_id, group_id, pipeline=p)
 
+            self.env.cache.reset_total_unread_message_count(user_id, pipelien=p)  # TODO: decreasing seems buggy, sometimes gets negative, so just reset instead
             self.env.cache.remove_last_read_in_group_for_user(group_ids, user_id, pipeline=p)
             self.env.cache.remove_join_time_in_group_for_user(group_ids, user_id, pipeline=p)
             self.env.cache.remove_user_id_and_join_time_in_groups_for_user(group_ids, user_id, pipeline=p)
@@ -1673,7 +1676,7 @@ class RelationalHandler:
 
             # if the user sends a message while having unread messages in the group (maybe can happen on the app?)
             if current_unread_count is not None and current_unread_count > 0:
-                self.env.cache.decrease_total_unread_message_count(user_id, current_unread_count)
+                self.env.cache.reset_total_unread_message_count(user_id)
 
         if user_stats is None:
             raise UserNotInGroupException(f"user {user_id} is not in group {group_id}")

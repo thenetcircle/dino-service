@@ -187,9 +187,16 @@ class CacheRedis(ICache):
         r.expire(key, ONE_HOUR)
         r.execute()
 
-    def reset_total_unread_message_count(self, user_id: int):
-        self.redis.delete(RedisKeys.total_unread_count(user_id))
-        self.redis.delete(RedisKeys.unread_groups(user_id))
+    def reset_total_unread_message_count(self, user_id: int, pipeline=None):
+        # use pipeline if provided
+        r = pipeline or self.redis.pipeline()
+
+        r.delete(RedisKeys.total_unread_count(user_id))
+        r.delete(RedisKeys.unread_groups(user_id))
+
+        # only execute if we weren't provided a pipeline
+        if pipeline is None:
+            r.execute()
 
     def increase_total_unread_message_count(self, user_ids: List[int], amount: int, pipeline=None):
         for user_id in user_ids:
