@@ -287,8 +287,6 @@ class CassandraHandler:
             )
 
             if since is not None:
-                # default ordering is descending, so change to ascending when using 'since' and `until`
-                statement = statement.order_by('created_at')
                 keep_order = False
 
         elif since is not None:
