@@ -274,16 +274,21 @@ class CassandraHandler:
                 MessageModel.created_at < until
             )
 
-            since = max_one_year_ago(user_stats.delete_before, self.long_ago)
+            # only admins can see deleted messages
+            if query and is_non_zero(query.admin_id) and query.include_deleted:
+                # limit to max 1 year ago for GDPR, scheduler will delete periodically, but don't show them here
+                since = max_one_year_ago(user_stats.delete_before, self.long_ago)
+            else:
+                since = user_stats.delete_before
 
             statement = statement.filter(
-                MessageModel.created_at > user_stats.delete_before
+                MessageModel.created_at > since
             )
 
         elif since is not None:
             # only admins can see deleted messages
             if since < user_stats.delete_before:
-                if is_non_zero(query.admin_id) and query.include_deleted:
+                if query and is_non_zero(query.admin_id) and query.include_deleted:
                     # limit to max 1 year ago for GDPR, scheduler will delete periodically, but don't show them here
                     since = max_one_year_ago(user_stats.deleted, since)
                 else:
