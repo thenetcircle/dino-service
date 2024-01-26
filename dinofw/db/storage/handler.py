@@ -268,6 +268,7 @@ class CassandraHandler:
         statement = MessageModel.objects.filter(
             MessageModel.group_id == group_id
         )
+        keep_order = True
 
         if until is not None:
             statement = statement.filter(
@@ -288,6 +289,7 @@ class CassandraHandler:
             if since is not None:
                 # default ordering is descending, so change to ascending when using 'since' and `until`
                 statement = statement.order_by('created_at')
+                keep_order = False
 
         elif since is not None:
             # only admins can see deleted messages
@@ -302,11 +304,13 @@ class CassandraHandler:
 
             # default ordering is descending, so change to ascending when using 'since'
             statement = statement.order_by('created_at')
+            keep_order = False
 
         raw_messages = statement.limit(query.per_page or DefaultValues.PER_PAGE).all()
         messages = self._try_parse_messages(raw_messages)
 
-        if since is None:
+        # if since is None:
+        if keep_order:
             return messages
 
         # since we need ascending order on cassandra query if we use 'since', reverse the results here
