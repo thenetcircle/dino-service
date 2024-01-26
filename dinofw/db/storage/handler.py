@@ -273,6 +273,9 @@ class CassandraHandler:
             statement = statement.filter(
                 MessageModel.created_at < until
             )
+
+            since = max_one_year_ago(user_stats.deleted, self.long_ago)
+
             statement = statement.filter(
                 MessageModel.created_at > user_stats.delete_before
             )
@@ -303,7 +306,7 @@ class CassandraHandler:
     # noinspection PyMethodMayBeStatic
     def count_messages_in_group_since(self, group_id: str, since: dt, query: AdminQuery = None) -> int:
         if query and is_non_zero(query.admin_id) and query.include_deleted:
-            since = max_one_year_ago(0, since)
+            since = max_one_year_ago(self.long_ago, since)
 
         return (
             MessageModel.objects(
@@ -368,7 +371,13 @@ class CassandraHandler:
         return messages_from_user
 
     # noinspection PyMethodMayBeStatic
-    def count_messages_in_group_from_user_since(self, group_id: str, user_id: int, until: dt, since: dt) -> int:
+    def count_messages_in_group_from_user_since(
+            self, group_id: str, user_id: int, until: dt, since: dt, query: AdminQuery = None
+    ) -> int:
+        if query and is_non_zero(query.admin_id) and query.include_deleted:
+            # limit to max 1 year ago for GDPR, scheduler will delete periodically, but don't show them here
+            since = max_one_year_ago(since, self.long_ago)
+
         # the user hasn't sent any message in this group yet
         if until is None:
             return 0

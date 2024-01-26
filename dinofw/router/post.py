@@ -589,29 +589,20 @@ async def get_message_count_for_user_in_group(
             until = group_info.last_sent
             until += timedelta(seconds=1)
 
-            if is_non_zero(query.admin_id) and query.include_deleted:
-                # limit to max 1 year ago for GDPR, scheduler will delete periodically, but don't show them here
-                since = max_one_year_ago(group_info.delete_before, 0)
+            # can return both None and -1; -1 means we've checked the db before, but it has not
+            # yet been counted, to avoid checking the db every time a new message is sent
+            message_count = environ.env.db.get_sent_message_count(group_id, user_id, db)
+
+            # if it hasn't been counted before, count from cassandra in batches (could be slow)
+            if message_count is None or message_count == -1:
                 message_count = environ.env.storage.count_messages_in_group_from_user_since(
                     group_id,
                     user_id,
                     until=until,
-                    since=since
+                    since=group_info.delete_before,
+                    query=query
                 )
-            else:
-                # can return both None and -1; -1 means we've checked the db before, but it has not
-                # yet been counted, to avoid checking the db every time a new message is sent
-                message_count = environ.env.db.get_sent_message_count(group_id, user_id, db)
-
-                # if it hasn't been counted before, count from cassandra in batches (could be slow)
-                if message_count is None or message_count == -1:
-                    message_count = environ.env.storage.count_messages_in_group_from_user_since(
-                        group_id,
-                        user_id,
-                        until=until,
-                        since=group_info.delete_before
-                    )
-                    environ.env.db.set_sent_message_count(group_id, user_id, message_count, db)
+                environ.env.db.set_sent_message_count(group_id, user_id, message_count, db)
 
         else:
             message_count = environ.env.storage.count_messages_in_group_since(
