@@ -314,7 +314,7 @@ class CassandraHandler:
     # noinspection PyMethodMayBeStatic
     def count_messages_in_group_since(self, group_id: str, since: dt, query: AdminQuery = None) -> int:
         if query and is_non_zero(query.admin_id) and query.include_deleted:
-            since = max_one_year_ago(self.long_ago, since)
+            since = max_one_year_ago(since, self.long_ago)
 
         return (
             MessageModel.objects(
