@@ -41,6 +41,7 @@ class PaginationQuery(AbstractQuery):
 
 class AdminQuery(AbstractQuery):
     admin_id: Optional[int]
+    include_deleted: Optional[bool] = False
 
 
 class NotificationGroup(AbstractQuery):
@@ -76,7 +77,7 @@ class NotificationQuery(AbstractQuery):
         use_enum_values = True
 
 
-class OneToOneQuery(AbstractQuery):
+class OneToOneQuery(AdminQuery):
     receiver_id: Optional[int]
 
 
@@ -84,7 +85,7 @@ class OnlySenderQuery(AbstractQuery):
     only_sender: Optional[bool] = False
 
 
-class CountMessageQuery(OnlySenderQuery):
+class CountMessageQuery(OnlySenderQuery, AdminQuery):
     only_attachments: Optional[bool] = False
 
 

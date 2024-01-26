@@ -47,6 +47,34 @@ def truncate_json_message(msg, limit=100, only_content: bool = False):
     return json.dumps(msg_json, ensure_ascii=False)
 
 
+def is_none_or_zero(number):
+    if number is None:
+        return True
+
+    try:
+        int_value = int(number)
+    except ValueError:
+        return True
+
+    return int_value == 0
+
+
+def is_non_zero(number):
+    if number is None:
+        return False
+
+    try:
+        int_value = int(number)
+    except ValueError:
+        return False
+
+    return int_value > 0
+
+
+def max_one_year_ago(delete_before, since):
+    return max(delete_before - timedelta(days=365), since)
+
+
 def utcnow_ts():
     # force the use of milliseconds instead microseconds
     now = arrow.utcnow()

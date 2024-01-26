@@ -14,14 +14,14 @@ from dinofw.rest.models import Histories
 from dinofw.rest.models import Message
 from dinofw.rest.models import OneToOneStats
 from dinofw.rest.models import UserGroupStats
-from dinofw.rest.queries import CreateActionLogQuery, DeleteAttachmentQuery
+from dinofw.rest.queries import CreateActionLogQuery, DeleteAttachmentQuery, AdminQuery
 from dinofw.rest.queries import CreateGroupQuery
 from dinofw.rest.queries import GroupInfoQuery
 from dinofw.rest.queries import JoinGroupQuery
 from dinofw.rest.queries import MessageQuery
 from dinofw.rest.queries import UpdateGroupQuery
 from dinofw.rest.queries import UpdateUserGroupStats
-from dinofw.utils import to_dt
+from dinofw.utils import to_dt, is_non_zero
 from dinofw.utils import to_ts
 from dinofw.utils import utcnow_dt
 from dinofw.utils import utcnow_ts
@@ -99,13 +99,13 @@ class GroupResource(BaseResource):
             )
 
     async def get_1v1_info(
-        self, user_id_a: int, user_id_b: int, db: Session
+        self, user_id_a: int, user_id_b: int, query: AdminQuery, db: Session
     ) -> OneToOneStats:
         users = sorted([user_id_a, user_id_b])
         group = self.env.db.get_group_for_1to1(users[0], users[1], db)
 
         group_id = group.group_id
-        message_amount = await self.count_messages_in_group(group_id)
+        message_amount = await self.count_messages_in_group(group_id, query)
 
         users_and_join_time = self.env.db.get_user_ids_and_join_time_in_group(
             group_id, db
@@ -213,7 +213,10 @@ class GroupResource(BaseResource):
             messages=messages
         )
 
-    async def count_messages_in_group(self, group_id: str) -> int:
+    async def count_messages_in_group(self, group_id: str, query: AdminQuery = None) -> int:
+        if query and is_non_zero(query.admin_id) and query.include_deleted:
+            return self.env.storage.count_messages_in_group_since(group_id, self.long_ago)
+
         n_messages, until = self.env.cache.get_messages_in_group(group_id)
 
         if until is None:

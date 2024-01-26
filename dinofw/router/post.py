@@ -33,7 +33,7 @@ from dinofw.rest.queries import NotificationQuery
 from dinofw.rest.queries import OneToOneQuery
 from dinofw.rest.queries import SendMessageQuery
 from dinofw.rest.queries import UserStatsQuery
-from dinofw.utils import environ
+from dinofw.utils import environ, max_one_year_ago, is_non_zero
 from dinofw.utils import to_ts
 from dinofw.utils.api import get_db
 from dinofw.utils.api import log_error_and_raise_known
@@ -151,6 +151,9 @@ async def get_group_history_for_user(
 
     If `admin_id` is set, and is greater than `0`, the read status will not be updated. Useful
     for getting history in admin UI without updating `last_read_time` of the user.
+
+    If `admin_id>0` and `include_deleted=true`, the result will also include messages that have been deleted by the
+    users (up to max one year ago before deletion date). Default value is `false`. Useful for the admin UI.
 
     **Potential error codes in response:**
     * `600`: if the user is not in the group,
@@ -355,12 +358,15 @@ async def get_one_to_one_information(
     * `message_amount` is NOT per user, it's the total amount of messages since the creation of the group,
     * `attachment_amount` IS per user, counted since the user's `delete_before`.
 
+    If `admin_id>0` and `include_deleted=true`, message amount will also count messages that have been deleted by the
+    users (up to max one year ago before deletion date). Default value is `false`. Useful for the admin UI.
+
     **Potential error codes in response:**
     * `601`: if the group does not exist,
     * `250`: if an unknown error occurred.
     """
     try:
-        return await environ.env.rest.group.get_1v1_info(user_id, query.receiver_id, db)
+        return await environ.env.rest.group.get_1v1_info(user_id, query.receiver_id, query, db)
     except NoSuchGroupException as e:
         log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
     except Exception as e:
@@ -559,10 +565,13 @@ async def get_message_count_for_user_in_group(
     messages send by this user _after_ his/her `delete_before` and _before_
     his/her `last_sent_time` will be counted.
 
+    If `admin_id>0` and `include_deleted=true`, message amount will also count messages that have been deleted by the
+    users (up to max one year ago before deletion date). Default value is `false`. Useful for the admin UI.
+
     Note: setting `only_sender=true` is slow. Around 2 seconds for a group
     of 6k messages. This is because we can not filter by `user_id` in
     Cassandra, and have to instead batch query for all messages in the group
-    and filter out and count afterwards.
+    and filter out and count afterward.
 
     **Potential error codes in response:**
     * `600`: if the user is not in the group,
@@ -576,27 +585,37 @@ async def get_message_count_for_user_in_group(
         if query and query.only_sender:
             group_info: UserGroupStatsBase = environ.env.db.get_user_stats_in_group(group_id, user_id, db)
 
-            # can return both None and -1; -1 means we've checked the db before, but it has not
-            # yet been counted, to avoid checking the db every time a new message is sent
-            message_count = environ.env.db.get_sent_message_count(group_id, user_id, db)
+            # until isn't inclusive, so the last message sent won't be counted otherwise;
+            until = group_info.last_sent
+            until += timedelta(seconds=1)
 
-            # if it hasn't been counted before, count from cassandra in batches (could be slow)
-            if message_count is None or message_count == -1:
-                # until isn't inclusive, so the last message sent won't be counted otherwise;
-                until = group_info.last_sent
-                until += timedelta(seconds=1)
-
+            if is_non_zero(query.admin_id) and query.include_deleted:
+                # limit to max 1 year ago for GDPR, scheduler will delete periodically, but don't show them here
+                since = max_one_year_ago(group_info.delete_before, 0)
                 message_count = environ.env.storage.count_messages_in_group_from_user_since(
                     group_id,
                     user_id,
                     until=until,
-                    since=group_info.delete_before
+                    since=since
                 )
-                environ.env.db.set_sent_message_count(group_id, user_id, message_count, db)
+            else:
+                # can return both None and -1; -1 means we've checked the db before, but it has not
+                # yet been counted, to avoid checking the db every time a new message is sent
+                message_count = environ.env.db.get_sent_message_count(group_id, user_id, db)
+
+                # if it hasn't been counted before, count from cassandra in batches (could be slow)
+                if message_count is None or message_count == -1:
+                    message_count = environ.env.storage.count_messages_in_group_from_user_since(
+                        group_id,
+                        user_id,
+                        until=until,
+                        since=group_info.delete_before
+                    )
+                    environ.env.db.set_sent_message_count(group_id, user_id, message_count, db)
 
         else:
             message_count = environ.env.storage.count_messages_in_group_since(
-                group_id, delete_before
+                group_id, delete_before, query
             )
 
         return message_count

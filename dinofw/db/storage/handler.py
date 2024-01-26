@@ -28,14 +28,14 @@ from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.models import AttachmentModel
 from dinofw.db.storage.models import MessageModel
 from dinofw.db.storage.schemas import MessageBase
-from dinofw.rest.queries import ActionLogQuery
+from dinofw.rest.queries import ActionLogQuery, AdminQuery
 from dinofw.rest.queries import AttachmentQuery
 from dinofw.rest.queries import CreateAttachmentQuery
 from dinofw.rest.queries import DeleteAttachmentQuery
 from dinofw.rest.queries import EditMessageQuery
 from dinofw.rest.queries import MessageQuery
 from dinofw.rest.queries import SendMessageQuery
-from dinofw.utils import to_dt
+from dinofw.utils import to_dt, is_non_zero, is_none_or_zero, max_one_year_ago
 from dinofw.utils import utcnow_dt
 from dinofw.utils.config import ConfigKeys
 from dinofw.utils.config import DefaultValues
@@ -278,10 +278,15 @@ class CassandraHandler:
             )
 
         elif since is not None:
+            # only admins can see deleted messages
             if since < user_stats.delete_before:
-                since = user_stats.delete_before
+                if is_non_zero(query.admin_id) and query.include_deleted:
+                    # limit to max 1 year ago for GDPR, scheduler will delete periodically, but don't show them here
+                    since = max_one_year_ago(user_stats.deleted, since)
+                else:
+                    since = user_stats.delete_before
 
-            statement = statement.filter(MessageModel.created_at >= since)  # TODO: try >= to fix broken preview msgs
+            statement = statement.filter(MessageModel.created_at >= since)
 
             # default ordering is descending, so change to ascending when using 'since'
             statement = statement.order_by('created_at')
@@ -296,7 +301,10 @@ class CassandraHandler:
         return list(reversed(messages))
 
     # noinspection PyMethodMayBeStatic
-    def count_messages_in_group_since(self, group_id: str, since: dt) -> int:
+    def count_messages_in_group_since(self, group_id: str, since: dt, query: AdminQuery = None) -> int:
+        if query and is_non_zero(query.admin_id) and query.include_deleted:
+            since = max_one_year_ago(0, since)
+
         return (
             MessageModel.objects(
                 MessageModel.group_id == group_id,
