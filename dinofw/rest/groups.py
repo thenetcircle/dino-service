@@ -195,9 +195,10 @@ class GroupResource(BaseResource):
             ]
 
         if query.since is None and query.until is None:
-            raise InvalidRangeException("both 'since' and 'until' was empty, need one")
-        if query.since is not None and query.until is not None:
-            raise InvalidRangeException("only one of parameters 'since' and 'until' can be used at the same time")
+            raise InvalidRangeException("both 'since' and 'until' was empty, need at least one")
+
+        # if query.since is not None and query.until is not None:
+        #     raise InvalidRangeException("only one of parameters 'since' and 'until' can be used at the same time")
 
         user_stats = get_user_stats()
         if user_stats.kicked:
