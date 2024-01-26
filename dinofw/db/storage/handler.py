@@ -274,7 +274,7 @@ class CassandraHandler:
                 MessageModel.created_at < until
             )
 
-            since = max_one_year_ago(user_stats.deleted, self.long_ago)
+            since = max_one_year_ago(user_stats.delete_before, self.long_ago)
 
             statement = statement.filter(
                 MessageModel.created_at > user_stats.delete_before
