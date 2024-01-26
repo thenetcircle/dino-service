@@ -286,9 +286,6 @@ class CassandraHandler:
                 MessageModel.created_at > creation_limit
             )
 
-            if since is not None:
-                keep_order = False
-
         elif since is not None:
             # only admins can see deleted messages
             if since < user_stats.delete_before:
