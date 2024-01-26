@@ -2,7 +2,7 @@
 
 Backend service for distributed notifications using MQTT over websockets or TCP streams.
 
-![Sending a message](docs/images/send-to-group.jpg)
+![Sending a message](docs/images/send-to-group.png)
 
 1. User sends a message in a group chat,
 2. Community checks business logic and rules, then calls Dino Server REST API to save and broadcast a new message,
@@ -70,5 +70,3 @@ Event when a new message is sent to a group you're part of:
     "created_at": 1597877384.794828
 }
 ```
-
-test
