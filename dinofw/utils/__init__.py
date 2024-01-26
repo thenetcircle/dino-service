@@ -72,7 +72,13 @@ def is_non_zero(number):
 
 
 def max_one_year_ago(delete_before, since):
-    return max(delete_before - timedelta(days=365), since)
+    a_year_ago = delete_before - timedelta(days=365)
+    print(f"delete_before: {delete_before}, since: {since}, a_year_ago: {a_year_ago}")
+    print(f'max: {max(delete_before - timedelta(days=365), since)}')
+
+    if a_year_ago > since:
+        return a_year_ago
+    return since
 
 
 def utcnow_ts():
