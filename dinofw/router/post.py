@@ -153,7 +153,8 @@ async def get_group_history_for_user(
     for getting history in admin UI without updating `last_read_time` of the user.
 
     If `admin_id>0` and `include_deleted=true`, the result will also include messages that have been deleted by the
-    users (up to max one year ago before deletion date). Default value is `false`. Useful for the admin UI.
+    users (up to max one year ago before deletion date). Default value is `false`. Useful for the admin UI. Can be
+    combined with `only_sender=true`.
 
     **Potential error codes in response:**
     * `600`: if the user is not in the group,
@@ -566,7 +567,8 @@ async def get_message_count_for_user_in_group(
     his/her `last_sent_time` will be counted.
 
     If `admin_id>0` and `include_deleted=true`, message amount will also count messages that have been deleted by the
-    users (up to max one year ago before deletion date). Default value is `false`. Useful for the admin UI.
+    users (up to max one year ago before deletion date). Default value is `false`. Useful for the admin UI. Can be
+    combined with `only_sender=true` and/or `only_attachments=true`.
 
     Note: setting `only_sender=true` is slow. Around 2 seconds for a group
     of 6k messages. This is because we can not filter by `user_id` in
