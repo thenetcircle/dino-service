@@ -35,7 +35,7 @@ from dinofw.rest.queries import DeleteAttachmentQuery
 from dinofw.rest.queries import EditMessageQuery
 from dinofw.rest.queries import MessageQuery
 from dinofw.rest.queries import SendMessageQuery
-from dinofw.utils import to_dt, is_non_zero, is_none_or_zero, max_one_year_ago
+from dinofw.utils import to_dt, is_non_zero, is_none_or_zero, max_one_year_ago, one_year_ago
 from dinofw.utils import utcnow_dt
 from dinofw.utils.config import ConfigKeys
 from dinofw.utils.config import DefaultValues
@@ -229,6 +229,9 @@ class CassandraHandler:
 
         if since is None:
             since = user_stats.delete_before
+            if is_non_zero(query.admin_id) and query.include_deleted:
+                # limit to max 1 year ago for GDPR, scheduler will delete periodically, but don't show them here
+                since = one_year_ago(since)
 
         # if not specified, use the last sent time (e.g. to get for first page results)
         if until is None:
@@ -275,12 +278,12 @@ class CassandraHandler:
                 MessageModel.created_at < until
             )
 
+            creation_limit = user_stats.delete_before
+
             # only admins can see deleted messages
             if query and is_non_zero(query.admin_id) and query.include_deleted:
                 # limit to max 1 year ago for GDPR, scheduler will delete periodically, but don't show them here
-                creation_limit = max_one_year_ago(user_stats.delete_before, self.long_ago)
-            else:
-                creation_limit = user_stats.delete_before
+                creation_limit = one_year_ago(creation_limit)
 
             statement = statement.filter(
                 MessageModel.created_at > creation_limit
@@ -289,11 +292,11 @@ class CassandraHandler:
         elif since is not None:
             # only admins can see deleted messages
             if since < user_stats.delete_before:
+                since = user_stats.delete_before
+
                 if query and is_non_zero(query.admin_id) and query.include_deleted:
                     # limit to max 1 year ago for GDPR, scheduler will delete periodically, but don't show them here
-                    since = max_one_year_ago(user_stats.delete_before, since)
-                else:
-                    since = user_stats.delete_before
+                    since = one_year_ago(since)
 
             statement = statement.filter(MessageModel.created_at >= since)
 
@@ -314,7 +317,7 @@ class CassandraHandler:
     # noinspection PyMethodMayBeStatic
     def count_messages_in_group_since(self, group_id: str, since: dt, query: AdminQuery = None) -> int:
         if query and is_non_zero(query.admin_id) and query.include_deleted:
-            since = max_one_year_ago(since, self.long_ago)
+            since = one_year_ago(since)
 
         return (
             MessageModel.objects(
@@ -328,7 +331,20 @@ class CassandraHandler:
         )
 
     # noinspection PyMethodMayBeStatic
-    def count_attachments_in_group_since(self, group_id: str, since: dt) -> int:
+    def count_attachments_in_group_since(self, group_id: str, since: dt, sender_id: int = -1) -> int:
+        if sender_id > 0:
+            return (
+                AttachmentModel.objects(
+                    AttachmentModel.group_id == group_id,
+                    AttachmentModel.user_id == sender_id,
+                )
+                .filter(
+                    AttachmentModel.created_at > since,
+                )
+                .limit(None)
+                .count()
+            )
+
         return (
             AttachmentModel.objects(
                 AttachmentModel.group_id == group_id,
@@ -357,7 +373,6 @@ class CassandraHandler:
             logger.info(messages)
 
             for message in messages:
-                logger.info(message)
                 if message.user_id == user_id:
                     messages_from_user.append(message)
 
@@ -384,7 +399,7 @@ class CassandraHandler:
     ) -> int:
         if query and is_non_zero(query.admin_id) and query.include_deleted:
             # limit to max 1 year ago for GDPR, scheduler will delete periodically, but don't show them here
-            since = max_one_year_ago(since, self.long_ago)
+            since = one_year_ago(since)
 
         # the user hasn't sent any message in this group yet
         if until is None:

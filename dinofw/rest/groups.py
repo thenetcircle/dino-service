@@ -14,14 +14,14 @@ from dinofw.rest.models import Histories
 from dinofw.rest.models import Message
 from dinofw.rest.models import OneToOneStats
 from dinofw.rest.models import UserGroupStats
-from dinofw.rest.queries import CreateActionLogQuery, DeleteAttachmentQuery, AdminQuery
+from dinofw.rest.queries import CreateActionLogQuery, DeleteAttachmentQuery, AdminQuery, CountMessageQuery
 from dinofw.rest.queries import CreateGroupQuery
 from dinofw.rest.queries import GroupInfoQuery
 from dinofw.rest.queries import JoinGroupQuery
 from dinofw.rest.queries import MessageQuery
 from dinofw.rest.queries import UpdateGroupQuery
 from dinofw.rest.queries import UpdateUserGroupStats
-from dinofw.utils import to_dt, is_non_zero
+from dinofw.utils import to_dt, is_non_zero, one_year_ago
 from dinofw.utils import to_ts
 from dinofw.utils import utcnow_dt
 from dinofw.utils import utcnow_ts
@@ -154,13 +154,24 @@ class GroupResource(BaseResource):
     def set_last_updated_at_on_all_stats_related_to_user(self, user_id: int, db: Session) -> None:
         self.env.db.set_last_updated_at_on_all_stats_related_to_user(user_id, db)
 
-    async def count_attachments_in_group_for_user(self, group_id: str, user_id: int, since: dt) -> int:
-        the_count = self.env.cache.get_attachment_count_in_group_for_user(group_id, user_id)
-        if the_count is not None:
-            return the_count
+    async def count_attachments_in_group_for_user(self, group_id: str, user_id: int, since: dt, query: CountMessageQuery = None) -> int:
+        include_deleted = query is not None and query.include_deleted and is_non_zero(query.admin_id)
 
-        the_count = self.env.storage.count_attachments_in_group_since(group_id, since)
-        self.env.cache.set_attachment_count_in_group_for_user(group_id, user_id, the_count)
+        if include_deleted:
+            since = one_year_ago(since)
+        else:
+            the_count = self.env.cache.get_attachment_count_in_group_for_user(group_id, user_id)
+            if the_count is not None:
+                return the_count
+
+        if query and query.only_sender:
+            the_count = self.env.storage.count_attachments_in_group_since(group_id, since, sender_id=user_id)
+        else:
+            the_count = self.env.storage.count_attachments_in_group_since(group_id, since)
+
+        if not include_deleted:
+            # don't cache the value if we're including deleted messages
+            self.env.cache.set_attachment_count_in_group_for_user(group_id, user_id, the_count)
 
         return the_count
 

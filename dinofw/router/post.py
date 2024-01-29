@@ -33,7 +33,7 @@ from dinofw.rest.queries import NotificationQuery
 from dinofw.rest.queries import OneToOneQuery
 from dinofw.rest.queries import SendMessageQuery
 from dinofw.rest.queries import UserStatsQuery
-from dinofw.utils import environ
+from dinofw.utils import environ, is_non_zero, one_year_ago
 from dinofw.utils import to_ts
 from dinofw.utils.api import get_db
 from dinofw.utils.api import log_error_and_raise_known
@@ -588,10 +588,14 @@ async def get_message_count_for_user_in_group(
             # until isn't inclusive, so the last message sent won't be counted otherwise;
             until = group_info.last_sent
             until += timedelta(seconds=1)
+            since = group_info.delete_before
 
-            # can return both None and -1; -1 means we've checked the db before, but it has not
-            # yet been counted, to avoid checking the db every time a new message is sent
-            message_count = environ.env.db.get_sent_message_count(group_id, user_id, db)
+            if is_non_zero(query.admin_id) and query.include_deleted:
+                message_count = None
+            else:
+                # can return both None and -1; -1 means we've checked the db before, but it has not
+                # yet been counted, to avoid checking the db every time a new message is sent
+                message_count = environ.env.db.get_sent_message_count(group_id, user_id, db)
 
             # if it hasn't been counted before, count from cassandra in batches (could be slow)
             if message_count is None or message_count == -1:
@@ -599,10 +603,13 @@ async def get_message_count_for_user_in_group(
                     group_id,
                     user_id,
                     until=until,
-                    since=group_info.delete_before,
+                    since=since,
                     query=query
                 )
-                environ.env.db.set_sent_message_count(group_id, user_id, message_count, db)
+
+                # don't cache counts when including deleted messages, it's only used by admins
+                if not query.include_deleted:
+                    environ.env.db.set_sent_message_count(group_id, user_id, message_count, db)
 
         else:
             message_count = environ.env.storage.count_messages_in_group_since(
@@ -613,7 +620,7 @@ async def get_message_count_for_user_in_group(
 
     async def count_attachments():
         return await environ.env.rest.group.count_attachments_in_group_for_user(
-            group_id, user_id, delete_before
+            group_id, user_id, delete_before, query
         )
 
     try:
