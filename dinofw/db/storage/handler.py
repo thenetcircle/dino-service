@@ -333,17 +333,19 @@ class CassandraHandler:
     # noinspection PyMethodMayBeStatic
     def count_attachments_in_group_since(self, group_id: str, since: dt, sender_id: int = -1) -> int:
         if sender_id > 0:
-            return (
+            attachments = (
                 AttachmentModel.objects(
-                    AttachmentModel.group_id == group_id,
-                    AttachmentModel.user_id == sender_id,
+                    AttachmentModel.group_id == group_id
                 )
                 .filter(
                     AttachmentModel.created_at > since,
                 )
                 .limit(None)
-                .count()
+                .all()
             )
+
+            # can't filter on user_id above, since created_at is suing non-EQ relation
+            return sum([1 for att in attachments if att.user_id == sender_id])
 
         return (
             AttachmentModel.objects(
