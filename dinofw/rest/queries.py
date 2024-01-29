@@ -77,7 +77,7 @@ class NotificationQuery(AbstractQuery):
         use_enum_values = True
 
 
-class OneToOneQuery(AdminQuery):
+class OneToOneQuery(AbstractQuery):
     receiver_id: Optional[int]
 
 

@@ -360,7 +360,7 @@ class FakeStorage:
         messages = list()
 
         for message in self.messages_by_group[group_id]:
-            if message.created_at > user_stats.delete_before:
+            if message.created_at > user_stats.delete_before or (query.include_deleted and query.admin_id is not None and query.admin_id > 0):
                 messages.append(message)
 
             if len(messages) > query.per_page:

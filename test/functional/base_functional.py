@@ -173,9 +173,23 @@ class BaseServerRestApi(BaseDatabaseTest):
         # async api
         time.sleep(0.5)
 
-    def histories_for(self, group_id: str, user_id: int = BaseTest.USER_ID, assert_response: bool = True):
+    def histories_for(
+            self,
+            group_id: str,
+            user_id: int = BaseTest.USER_ID,
+            admin: bool = False,
+            include_deleted: bool = False,
+            assert_response: bool = True
+    ):
+        json_data = {"per_page": "10", "since": 0}
+
+        if admin:
+            json_data["admin_id"] = 1971
+        if include_deleted:
+            json_data["include_deleted"] = True
+
         raw_response = self.client.post(
-            f"/v1/groups/{group_id}/user/{user_id}/histories", json={"per_page": "10", "since": 0},
+            f"/v1/groups/{group_id}/user/{user_id}/histories", json=json_data,
         )
 
         if assert_response:

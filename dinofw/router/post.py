@@ -33,7 +33,7 @@ from dinofw.rest.queries import NotificationQuery
 from dinofw.rest.queries import OneToOneQuery
 from dinofw.rest.queries import SendMessageQuery
 from dinofw.rest.queries import UserStatsQuery
-from dinofw.utils import environ, max_one_year_ago, is_non_zero
+from dinofw.utils import environ
 from dinofw.utils import to_ts
 from dinofw.utils.api import get_db
 from dinofw.utils.api import log_error_and_raise_known
@@ -366,7 +366,7 @@ async def get_one_to_one_information(
     * `250`: if an unknown error occurred.
     """
     try:
-        return await environ.env.rest.group.get_1v1_info(user_id, query.receiver_id, query, db)
+        return await environ.env.rest.group.get_1v1_info(user_id, query.receiver_id, db)
     except NoSuchGroupException as e:
         log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
     except Exception as e:
