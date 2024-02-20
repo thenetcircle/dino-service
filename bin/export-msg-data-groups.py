@@ -47,8 +47,8 @@ def other_user(group_id_, sender_id_):
     return user_a
 
 
-GROUP_IDS = sys.argv[2]
-OUTPUT_FILE = sys.argv[3]
+GROUP_IDS = sys.argv[1]
+OUTPUT_FILE = sys.argv[2]
 BIN = os.environ.get("BIN", "cqlsh")
 OPTIONS = ["--request-timeout=3600", "casd1", "-k", "dinoms_popp_prod", "--execute"]
 QUERY = "select group_id, created_at, user_id, message_payload from messages where group_id = {} order by created_at asc;"
