@@ -19,11 +19,11 @@ def users_to_group_id(user_a: int, user_b: int) -> str:
     return f"{u[:8]}-{u[8:12]}-{u[12:16]}-{u[16:20]}-{u[20:]}"
 
 
-def group_id_to_users(group_id: str) -> (int, int):
+def group_id_to_users(group_id: str) -> (str, str):
     group_id = group_id.replace("-", "")
     user_a = int(group_id[:16].lstrip("0"), 16)
     user_b = int(group_id[16:].lstrip("0"), 16)
-    return sorted([user_a, user_b])
+    return str(user_a), str(user_b)
 
 
 def query_db(group_id_):
