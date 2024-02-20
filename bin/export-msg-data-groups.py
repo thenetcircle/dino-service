@@ -37,6 +37,9 @@ def query_db(group_id_):
 
 
 def other_user(group_id_, sender_id_):
+    if not group_id_.startswith('00000'):
+        return group_id_
+
     user_a, user_b = group_id_to_users(group_id_)
 
     if user_a == sender_id_:
