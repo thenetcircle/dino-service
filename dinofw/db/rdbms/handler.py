@@ -751,6 +751,21 @@ class RelationalHandler:
             for deleted_stats_entity in deleted_stats
         ]
 
+    def get_group_types(self, group_ids: List[str], db: Session) -> Dict[str, int]:
+        group_types = (
+            db.query(
+                GroupEntity.group_id,
+                GroupEntity.group_type
+            )
+            .filter(GroupEntity.group_id.in_(group_ids))
+            .all()
+        )
+
+        return {
+            group_id: group_type
+            for group_id, group_type in group_types
+        }
+
     def copy_to_deleted_groups_table(
         self, group_id_to_type: Dict[str, int], user_id: int, db: Session
     ) -> None:
@@ -1216,7 +1231,7 @@ class RelationalHandler:
 
         # make sure we have the cached amount for all possible group
         # types even if the user is not part of all group types
-        for group_type in {GroupTypes.GROUP, GroupTypes.ONE_TO_ONE}:
+        for group_type in {GroupTypes.GROUP, GroupTypes.ONE_TO_ONE, GroupTypes.PUBLIC_GROUP}:
             if group_type not in types_dict:
                 types_dict[group_type] = 0
 

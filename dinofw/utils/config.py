@@ -4,6 +4,7 @@ from typing import Final
 class GroupTypes:
     GROUP: Final = 0
     ONE_TO_ONE: Final = 1
+    PUBLIC_GROUP: Final = 2
 
 
 class MessageTypes:

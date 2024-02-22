@@ -330,10 +330,11 @@ class GroupResource(BaseResource):
         return self.create_action_log(query.action_log, db, group_id=group_id)
 
     def leave_groups(
-            self, group_id_to_type: dict, user_id: int, query: CreateActionLogQuery, db: Session
+            self, group_ids: List[str], user_id: int, query: CreateActionLogQuery, db: Session
     ) -> List[Message]:
-        group_ids = list(group_id_to_type.keys())
         now = utcnow_dt()
+
+        group_id_to_type = self.env.db.get_group_types(group_ids, db)
 
         self.env.db.copy_to_deleted_groups_table(group_id_to_type, user_id, db)
         self.env.db.remove_user_group_stats_for_user(group_ids, user_id, db)
@@ -344,7 +345,7 @@ class GroupResource(BaseResource):
 
         for group_id, group_type in group_id_to_type.items():
             # no need for an action log in 1v1 groups, it's not going to be shown anyway
-            if group_type == GroupTypes.GROUP:
+            if group_type in {GroupTypes.GROUP, GroupTypes.PUBLIC_GROUP}:
                 action_logs.append(
                     self.create_action_log(query.action_log, db, user_id=user_id, group_id=group_id)
                 )

@@ -437,6 +437,17 @@ class FakeDatabase:
     def get_deleted_groups_for_user(self, user_id: int, _) -> List[DeletedStatsBase]:
         return self.deleted_stats.get(user_id, list())
 
+    def get_group_types(self, group_ids: List[str], _) -> Dict[str, int]:
+        response = dict()
+
+        for group_id in group_ids:
+            if group_id not in self.groups:
+                continue
+
+            response[group_id] = self.groups[group_id].group_type
+
+        return response
+
     def copy_to_deleted_groups_table(
         self, group_id_to_type: Dict[str, int], user_id: int, _
     ) -> None:

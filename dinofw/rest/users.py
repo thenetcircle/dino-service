@@ -135,7 +135,7 @@ class UserResource(BaseResource):
             user_id=user_id,
             unread_amount=unread_amount,
             unread_groups_amount=n_unread_groups,
-            group_amount=group_amounts.get(GroupTypes.GROUP, 0),
+            group_amount=group_amounts.get(GroupTypes.GROUP, 0) + group_amounts.get(GroupTypes.PUBLIC_GROUP, 0),
             one_to_one_amount=group_amounts.get(GroupTypes.ONE_TO_ONE, 0),
             last_sent_time=last_sent_time_ts,
             last_sent_group_id=last_sent_group_id,
