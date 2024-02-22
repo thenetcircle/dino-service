@@ -769,13 +769,19 @@ class RelationalHandler:
     def copy_to_deleted_groups_table(
         self, group_id_to_type: Dict[str, int], user_id: int, db: Session
     ) -> None:
+        # don't create deletion records for public groups, users will join and leave them all the time
+        group_ids = [
+            group_id for group_id, group_type in group_id_to_type.items()
+            if group_type != GroupTypes.PUBLIC_GROUP
+        ]
+
         groups_to_copy = (
             db.query(
                 UserGroupStatsEntity.group_id,
                 UserGroupStatsEntity.join_time
             )
             .filter(
-                UserGroupStatsEntity.group_id.in_(group_id_to_type.keys()),
+                UserGroupStatsEntity.group_id.in_(group_ids),
                 UserGroupStatsEntity.user_id == user_id
             )
             .all()

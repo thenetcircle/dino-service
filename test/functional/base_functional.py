@@ -141,13 +141,13 @@ class BaseServerRestApi(BaseDatabaseTest):
 
         return messages
 
-    def create_and_join_group(self, user_id: int = BaseTest.USER_ID, users: list = None) -> str:
+    def create_and_join_group(self, user_id: int = BaseTest.USER_ID, users: list = None, group_type: int = 0) -> str:
         if users is None:
             users = [user_id]
 
         raw_response = self.client.post(
             f"/v1/users/{user_id}/groups/create",
-            json={"group_name": "a new group", "group_type": 0, "users": users},
+            json={"group_name": "a new group", "group_type": group_type, "users": users},
         )
         self.assertEqual(raw_response.status_code, 200)
         time.sleep(0.01)
