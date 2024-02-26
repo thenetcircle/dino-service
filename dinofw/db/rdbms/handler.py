@@ -52,6 +52,39 @@ class RelationalHandler:
         beginning_of_1995 = 789_000_000
         self.long_ago = arrow.get(beginning_of_1995).datetime
 
+    def get_public_group_ids(self, db: Session) -> List[str]:
+        groups = (
+            db.query(GroupEntity.group_id)
+            .filter(
+                GroupEntity.group_type == GroupTypes.PUBLIC_GROUP
+            )
+            .all()
+        )
+
+        return [group[0] for group in groups]
+
+    def get_public_groups(self, db: Session) -> List[GroupBase]:
+        public_group_ids = self.env.cache.get_public_group_ids()
+        if public_group_ids is None or not len(public_group_ids):
+            group_ids = self.get_public_group_ids(db)
+
+            if len(group_ids):
+                self.env.cache.add_public_group_ids(group_ids)
+
+        group_entities = (
+            db.query(GroupEntity)
+            .filter(
+                GroupEntity.group_id.in_(public_group_ids),
+                GroupEntity.archived.is_(False)
+            )
+            .all()
+        )
+
+        return [
+            GroupBase(**group_entity.__dict__)
+            for group_entity in group_entities
+        ]
+
     def get_users_in_group(
             self,
             group_id: str,
@@ -164,6 +197,7 @@ class RelationalHandler:
                 )
                 .filter(
                     GroupEntity.last_message_time < until,
+                    GroupEntity.archived.is_(False),
                     UserGroupStatsEntity.deleted.is_(False),
                     UserGroupStatsEntity.user_id == user_id,
 
@@ -1739,6 +1773,9 @@ class RelationalHandler:
         # conditions when sending multiple fist messages at the same time
         self.env.cache.set_group_exists(group_id, True)
 
+        if query.group_type == GroupTypes.PUBLIC_GROUP:
+            self.env.cache.add_public_group_ids([group_id])
+
         group_entity = GroupEntity(
             group_id=group_id,
             name=query.group_name,
@@ -1750,6 +1787,7 @@ class RelationalHandler:
             owner_id=owner_id,
             meta=query.meta,
             description=query.description,
+            archived=False
         )
 
         user_ids = {owner_id}

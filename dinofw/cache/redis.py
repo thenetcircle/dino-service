@@ -575,6 +575,13 @@ class CacheRedis(ICache):
 
         r.set(key, f"{group_id}:{last_time}")
 
+    def get_public_group_ids(self) -> Optional[set]:
+        return self.redis.smembers(RedisKeys.public_group_ids())
+
+    def add_public_group_ids(self, group_ids: List[str]) -> None:
+        key = RedisKeys.public_group_ids()
+        self.redis.sadd(key, *group_ids)
+
     def get_last_sent_for_user(self, user_id: int) -> (str, float):
         key = RedisKeys.last_sent_time_user(user_id)
         values = self.redis.get(key)

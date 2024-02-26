@@ -11,6 +11,9 @@ class GroupBase(BaseModel):
     created_at: datetime
     updated_at: Optional[datetime]
 
+    archived: bool
+    archived_at: Optional[datetime]
+
     first_message_time: datetime
     last_message_time: datetime
     last_message_id: Optional[str]

@@ -197,6 +197,14 @@ class BaseServerRestApi(BaseDatabaseTest):
 
         return raw_response.json()
 
+    def get_public_groups(self):
+        raw_response = self.client.get(
+            f"/v1/groups/public"
+        )
+        self.assertEqual(raw_response.status_code, 200)
+
+        return raw_response.json()
+
     def user_leaves_group(self, group_id: str, user_id: int = BaseTest.USER_ID) -> None:
         raw_response = self.client.delete(
             f"/v1/groups/{group_id}/user/{user_id}/join",

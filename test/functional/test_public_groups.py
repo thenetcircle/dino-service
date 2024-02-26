@@ -97,3 +97,28 @@ class TestLeaveGroup(BaseServerRestApi):
 
         self.user_leaves_group(group_id_public)
         self.assert_unread_amount_and_groups(BaseTest.USER_ID, 0, 0, session)
+
+    def test_get_public_groups(self):
+        self.create_and_join_group(
+            user_id=BaseTest.USER_ID,
+            users=[
+                BaseTest.OTHER_USER_ID,
+                BaseTest.THIRD_USER_ID
+            ],
+            group_type=GroupTypes.GROUP
+        )
+        group_id_public = self.create_and_join_group(
+            user_id=BaseTest.USER_ID,
+            users=[
+                BaseTest.OTHER_USER_ID,
+                BaseTest.THIRD_USER_ID
+            ],
+            group_type=GroupTypes.PUBLIC_GROUP
+        )
+
+        groups = self.get_public_groups()
+        self.assertEqual(1, len(groups))
+
+        for group in groups:
+            self.assertEqual(GroupTypes.PUBLIC_GROUP, group["group_type"])
+            self.assertEqual(group_id_public, group["group_id"])

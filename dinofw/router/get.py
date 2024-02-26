@@ -1,12 +1,12 @@
 import sys
-from typing import Optional
+from typing import Optional, List
 
 from fastapi import APIRouter
 from fastapi import Depends
 from loguru import logger
 from sqlalchemy.orm import Session
 
-from dinofw.rest.models import ClientID, AllDeletedStats, Histories
+from dinofw.rest.models import ClientID, AllDeletedStats, Histories, Group
 from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UsersGroup
 from dinofw.rest.queries import GroupInfoQuery
@@ -65,6 +65,25 @@ async def get_all_history_in_group(group_id: str) -> Histories:
     * `250`: if an unknown error occurred.
     """
     return await environ.env.rest.group.all_history_in_group(group_id)
+
+
+@router.get("/groups/public", response_model=Optional[List[Group]])
+@timeit(logger, "GET", "/groups/{group_id}/users")
+@wrap_exception()
+async def get_public_groups(db: Session = Depends(get_db)) -> List[Group]:
+    """
+    Get all public groups, including the user amount and a list of user ids in the group, sorted by their join time.
+
+    **Potential error codes in response:**
+    * `601`: if the group does not exist,
+    * `250`: if an unknown error occurred.
+    """
+    try:
+        return await environ.env.rest.group.get_all_public_groups(db)
+    except NoSuchGroupException as e:
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
+    except Exception as e:
+        log_error_and_raise_unknown(sys.exc_info(), e)
 
 
 @router.get("/groups/{group_id}/users", response_model=UsersGroup)

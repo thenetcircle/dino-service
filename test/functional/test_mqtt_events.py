@@ -73,7 +73,8 @@ class TestMqttEvents(BaseServerRestApi):
             status=1,
             group_type=1,
             owner_id=1,
-            meta=1
+            meta=1,
+            archived=False
         )
 
         event = convert.group_base_to_event(group)

@@ -102,6 +102,8 @@ class Group(BaseModel):
     name: str
     description: Optional[str]
     status: Optional[int]
+    archived: bool
+    archived_at: Optional[float]
     group_type: int
     created_at: float
     updated_at: Optional[float]

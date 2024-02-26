@@ -70,6 +70,11 @@ class RedisKeys:
     RKEY_UNREAD_GROUPS = "unread:groups:{}"  # unread:groups:user_id
     RKEY_CLIENT_ID = "user:{}:{}:clientids"  # user:domain:user_id:clientids
     RKEY_GROUP_STATUS = "group:status:{}"  # group:status:group_id
+    RKEY_PUBLIC_GROUP_IDS = "groups:public"
+
+    @staticmethod
+    def public_group_ids() -> str:
+        return RedisKeys.RKEY_PUBLIC_GROUP_IDS
 
     @staticmethod
     def group_status(group_id: str) -> str:

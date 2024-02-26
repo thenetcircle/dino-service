@@ -51,6 +51,22 @@ class GroupResource(BaseResource):
             group_id=group_id, owner_id=group.owner_id, user_count=n_users, users=users,
         )
 
+    async def get_all_public_groups(self, db: Session) -> List[Group]:
+        group_bases = self.env.db.get_public_groups(db)
+        groups = list()
+
+        for group in group_bases:
+            _, first_users, n_users = self.env.db.get_users_in_group(group.group_id, db)
+            groups.append(
+                group_base_to_group(
+                    group,
+                    users=first_users,
+                    user_count=n_users
+                )
+            )
+
+        return groups
+
     async def get_group(
             self,
             group_id: str,
