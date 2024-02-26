@@ -4,5 +4,6 @@ nav:
     - Home: index.md
     - Usage: md/usage.md
     - Events: md/events.md
+    - Public Groups: md/public.md
     - REST API: md/rest_api.md
 theme: readthedocs

@@ -12,8 +12,9 @@ All timestamps are UTC timestamps with milliseconds, but multiplied by 1000 beca
 
 ### `group_type`
 
-* `0`: multi-user group,
-* `1`: 1-to-1.
+* `0`: multi-user private group,
+* `1`: 1-to-1 group,
+* `2`: multi-user public group.
 
 ### `message_type`
 
