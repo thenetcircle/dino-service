@@ -39,7 +39,7 @@ class TestLeaveGroup(BaseServerRestApi):
                 BaseTest.OTHER_USER_ID,
                 BaseTest.THIRD_USER_ID
             ],
-            group_type=GroupTypes.GROUP
+            group_type=GroupTypes.PRIVATE_GROUP
         )
         group_id_public = self.create_and_join_group(
             user_id=BaseTest.USER_ID,
@@ -70,7 +70,7 @@ class TestLeaveGroup(BaseServerRestApi):
                 BaseTest.OTHER_USER_ID,
                 BaseTest.THIRD_USER_ID
             ],
-            group_type=GroupTypes.GROUP
+            group_type=GroupTypes.PRIVATE_GROUP
         )
         group_id_public = self.create_and_join_group(
             user_id=BaseTest.USER_ID,
@@ -105,7 +105,7 @@ class TestLeaveGroup(BaseServerRestApi):
                 BaseTest.OTHER_USER_ID,
                 BaseTest.THIRD_USER_ID
             ],
-            group_type=GroupTypes.GROUP
+            group_type=GroupTypes.PRIVATE_GROUP
         )
         group_id_public = self.create_and_join_group(
             user_id=BaseTest.USER_ID,

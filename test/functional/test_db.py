@@ -61,7 +61,7 @@ class TestDatabaseQueries(BaseDatabaseTest):
             query = CreateGroupQuery(
                 users=users,
                 group_name=f"test group {i}",
-                group_type=GroupTypes.GROUP,
+                group_type=GroupTypes.PRIVATE_GROUP,
             )
 
             now = utcnow_dt()

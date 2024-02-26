@@ -1200,7 +1200,7 @@ class RelationalHandler:
 
         for user_id in user_ids:
             if user_id not in user_ids_to_stats:
-                self.env.cache.increase_count_group_types_for_user(user_id, GroupTypes.GROUP)
+                self.env.cache.increase_count_group_types_for_user(user_id, GroupTypes.PRIVATE_GROUP)
 
                 user_ids_for_cache.add(user_id)
                 user_ids_to_stats[user_id] = self._create_user_stats(
@@ -1271,7 +1271,7 @@ class RelationalHandler:
 
         # make sure we have the cached amount for all possible group
         # types even if the user is not part of all group types
-        for group_type in {GroupTypes.GROUP, GroupTypes.ONE_TO_ONE, GroupTypes.PUBLIC_GROUP}:
+        for group_type in {GroupTypes.PRIVATE_GROUP, GroupTypes.ONE_TO_ONE, GroupTypes.PUBLIC_GROUP}:
             if group_type not in types_dict:
                 types_dict[group_type] = 0
 
