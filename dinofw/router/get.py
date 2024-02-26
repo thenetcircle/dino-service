@@ -75,13 +75,10 @@ async def get_public_groups(db: Session = Depends(get_db)) -> List[Group]:
     Get all public groups, including the user amount and a list of user ids in the group, sorted by their join time.
 
     **Potential error codes in response:**
-    * `601`: if the group does not exist,
     * `250`: if an unknown error occurred.
     """
     try:
         return await environ.env.rest.group.get_all_public_groups(db)
-    except NoSuchGroupException as e:
-        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 

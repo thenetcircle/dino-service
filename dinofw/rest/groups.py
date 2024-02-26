@@ -56,7 +56,7 @@ class GroupResource(BaseResource):
         groups = list()
 
         for group in group_bases:
-            _, first_users, n_users = self.env.db.get_users_in_group(group.group_id, db)
+            _, first_users, n_users = self.env.db.get_users_in_group(group.group_id, db, include_group=False)
             groups.append(
                 group_base_to_group(
                     group,
