@@ -15,7 +15,7 @@ from dinofw.utils import utcnow_ts
 from dinofw.utils.config import EventTypes, MessageTypes
 from dinofw.utils.convert import message_base_to_message
 from dinofw.utils.exceptions import NoSuchUserException
-from dinofw.utils.exceptions import GroupIsFrozenException
+from dinofw.utils.exceptions import GroupIsFrozenOrArchivedException
 from dinofw.utils.exceptions import QueryValidationError
 
 
@@ -23,8 +23,8 @@ class MessageResource(BaseResource):
     async def send_message_to_group(
         self, group_id: str, user_id: int, query: SendMessageQuery, db: Session
     ) -> Message:
-        if self.env.db.is_group_frozen(group_id, db):
-            raise GroupIsFrozenException(group_id)
+        if self.env.db.is_group_frozen_or_archived(group_id, db):
+            raise GroupIsFrozenOrArchivedException(group_id)
 
         message = self.env.storage.store_message(group_id, user_id, query)
 
@@ -49,11 +49,11 @@ class MessageResource(BaseResource):
             raise NoSuchUserException(query.receiver_id)
 
         group_id = users_to_group_id(user_id, query.receiver_id)
-        group_is_frozen = self.env.db.is_group_frozen(group_id, db)
+        group_is_frozen = self.env.db.is_group_frozen_or_archived(group_id, db)
 
         # can be None if the group doesn't exist yet
         if group_is_frozen is not None and group_is_frozen:
-            raise GroupIsFrozenException(group_id)
+            raise GroupIsFrozenOrArchivedException(group_id)
 
         group_id = self._get_or_create_group_for_1v1(user_id, query.receiver_id, db)
         return await self.send_message_to_group(group_id, user_id, query, db)

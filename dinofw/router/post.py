@@ -19,7 +19,7 @@ from dinofw.rest.models import MessageCount
 from dinofw.rest.models import OneToOneStats
 from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UserStats
-from dinofw.rest.queries import ActionLogQuery, LastReadQuery
+from dinofw.rest.queries import ActionLogQuery, LastReadQuery, PublicGroupQuery
 from dinofw.rest.queries import AttachmentQuery
 from dinofw.rest.queries import CountMessageQuery
 from dinofw.rest.queries import CreateAttachmentQuery
@@ -40,7 +40,7 @@ from dinofw.utils.api import log_error_and_raise_known
 from dinofw.utils.api import log_error_and_raise_unknown
 from dinofw.utils.config import ErrorCodes
 from dinofw.utils.decorators import wrap_exception
-from dinofw.utils.exceptions import GroupIsFrozenException
+from dinofw.utils.exceptions import GroupIsFrozenOrArchivedException
 from dinofw.utils.exceptions import InvalidRangeException
 from dinofw.utils.exceptions import NoSuchAttachmentException
 from dinofw.utils.exceptions import NoSuchGroupException
@@ -89,15 +89,35 @@ async def send_message_to_user(
 
     **Potential error codes in response:**
     * `604`: if the user does not exist,
-    * `607`: group is frozen and no message can be sent,
+    * `607`: group is frozen or archived and no message can be sent,
     * `250`: if an unknown error occurred.
     """
     try:
         return await environ.env.rest.message.send_message_to_user(user_id, query, db)
     except NoSuchUserException as e:
         log_error_and_raise_known(ErrorCodes.NO_SUCH_USER, sys.exc_info(), e)
-    except GroupIsFrozenException as e:
-        log_error_and_raise_known(ErrorCodes.GROUP_IS_FROZEN, sys.exc_info(), e)
+    except GroupIsFrozenOrArchivedException as e:
+        log_error_and_raise_known(ErrorCodes.GROUP_IS_FROZEN_OR_ARCHIVED, sys.exc_info(), e)
+    except Exception as e:
+        log_error_and_raise_unknown(sys.exc_info(), e)
+
+
+@router.post("/groups/public", response_model=Optional[List[Group]])
+@timeit(logger, "GET", "/groups/{group_id}/users")
+@wrap_exception()
+async def get_public_groups(query: PublicGroupQuery, db: Session = Depends(get_db)) -> List[Group]:
+    """
+    Get all public groups, including the user amount and a list of user ids in the group, sorted by their join time.
+
+    If `admin_id` is set, and `include_archived=true`, then archived groups are included as well, for admin backend use.
+
+    This api ignores the value of `include_deleted`.
+
+    **Potential error codes in response:**
+    * `250`: if an unknown error occurred.
+    """
+    try:
+        return await environ.env.rest.group.get_all_public_groups(query, db)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 
@@ -341,8 +361,8 @@ async def send_message_to_group(
         log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
     except UserNotInGroupException as e:
         log_error_and_raise_known(ErrorCodes.USER_NOT_IN_GROUP, sys.exc_info(), e)
-    except GroupIsFrozenException as e:
-        log_error_and_raise_known(ErrorCodes.GROUP_IS_FROZEN, sys.exc_info(), e)
+    except GroupIsFrozenOrArchivedException as e:
+        log_error_and_raise_known(ErrorCodes.GROUP_IS_FROZEN_OR_ARCHIVED, sys.exc_info(), e)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 

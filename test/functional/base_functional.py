@@ -121,7 +121,8 @@ class BaseServerRestApi(BaseDatabaseTest):
         self.assertEqual(raw_response.status_code, 200)
 
     def send_message_to_group_from(
-        self, group_id: str, user_id: int = BaseTest.USER_ID, amount: int = 1, delay: int = 10
+        self, group_id: str, user_id: int = BaseTest.USER_ID,
+        amount: int = 1, delay: int = 10, expected_error_code: int = 200
     ) -> list:
         messages = list()
 
@@ -133,8 +134,15 @@ class BaseServerRestApi(BaseDatabaseTest):
                     "message_type": MessageTypes.MESSAGE,
                 },
             )
-            self.assertEqual(raw_response.status_code, 200)
-            messages.append(raw_response.json())
+
+            if expected_error_code == 200:
+                self.assertEqual(raw_response.status_code, 200)
+                response_json = raw_response.json()
+            else:
+                response_json = raw_response.json()
+                self.assertEqual(response_json['code'], expected_error_code)
+
+            messages.append(response_json)
 
             if delay > 0:
                 time.sleep(delay / 1000)
@@ -197,9 +205,14 @@ class BaseServerRestApi(BaseDatabaseTest):
 
         return raw_response.json()
 
-    def get_public_groups(self):
-        raw_response = self.client.get(
-            f"/v1/groups/public"
+    def get_public_groups(self, include_archived: bool = False, admin_id: int = None):
+        data = {
+            "include_archived": include_archived,
+            "admin_id": admin_id
+        }
+
+        raw_response = self.client.post(
+            f"/v1/groups/public", json=data
         )
         self.assertEqual(raw_response.status_code, 200)
 
@@ -249,6 +262,14 @@ class BaseServerRestApi(BaseDatabaseTest):
     def update_hide_group_for(self, group_id: str, hide: bool, user_id: int = BaseTest.USER_ID):
         raw_response = self.client.put(
             f"/v1/groups/{group_id}/user/{user_id}/update", json={"hide": hide},
+        )
+        self.assertEqual(raw_response.status_code, 200)
+
+    def update_group_archived(self, group_id: str, archived: bool):
+        raw_response = self.client.put(
+            f"/v1/groups/{group_id}", json={
+                "archived": archived
+            },
         )
         self.assertEqual(raw_response.status_code, 200)
 

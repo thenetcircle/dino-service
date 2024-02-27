@@ -67,22 +67,6 @@ async def get_all_history_in_group(group_id: str) -> Histories:
     return await environ.env.rest.group.all_history_in_group(group_id)
 
 
-@router.get("/groups/public", response_model=Optional[List[Group]])
-@timeit(logger, "GET", "/groups/{group_id}/users")
-@wrap_exception()
-async def get_public_groups(db: Session = Depends(get_db)) -> List[Group]:
-    """
-    Get all public groups, including the user amount and a list of user ids in the group, sorted by their join time.
-
-    **Potential error codes in response:**
-    * `250`: if an unknown error occurred.
-    """
-    try:
-        return await environ.env.rest.group.get_all_public_groups(db)
-    except Exception as e:
-        log_error_and_raise_unknown(sys.exc_info(), e)
-
-
 @router.get("/groups/{group_id}/users", response_model=UsersGroup)
 @timeit(logger, "GET", "/groups/{group_id}/users")
 @wrap_exception()

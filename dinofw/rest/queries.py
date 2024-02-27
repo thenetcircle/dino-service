@@ -153,10 +153,15 @@ class DeleteAttachmentQuery(CreateActionLogQuery):
 
 
 class UpdateGroupQuery(CreateActionLogQuery):
+    archived: Optional[bool]
     status: Optional[int]
     owner: Optional[int]
     group_name: Optional[str]
     description: Optional[str]
+
+
+class PublicGroupQuery(AdminQuery):
+    include_archived: Optional[bool] = False
 
 
 class MessageInfoQuery(AbstractQuery):

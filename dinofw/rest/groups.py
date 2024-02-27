@@ -14,7 +14,8 @@ from dinofw.rest.models import Histories
 from dinofw.rest.models import Message
 from dinofw.rest.models import OneToOneStats
 from dinofw.rest.models import UserGroupStats
-from dinofw.rest.queries import CreateActionLogQuery, DeleteAttachmentQuery, AdminQuery, CountMessageQuery
+from dinofw.rest.queries import CreateActionLogQuery, DeleteAttachmentQuery, AdminQuery, CountMessageQuery, \
+    PublicGroupQuery
 from dinofw.rest.queries import CreateGroupQuery
 from dinofw.rest.queries import GroupInfoQuery
 from dinofw.rest.queries import JoinGroupQuery
@@ -51,8 +52,8 @@ class GroupResource(BaseResource):
             group_id=group_id, owner_id=group.owner_id, user_count=n_users, users=users,
         )
 
-    async def get_all_public_groups(self, db: Session) -> List[Group]:
-        group_bases = self.env.db.get_public_groups(db)
+    async def get_all_public_groups(self, query: PublicGroupQuery, db: Session) -> List[Group]:
+        group_bases = self.env.db.get_public_groups(query, db)
         groups = list()
 
         for group in group_bases:
@@ -313,16 +314,18 @@ class GroupResource(BaseResource):
     async def update_group_information(
         self, group_id: str, query: UpdateGroupQuery, db: Session
     ) -> Message:
-        group = self.env.db.update_group_information(group_id, query, db)
+        self.env.db.update_group_information(group_id, query, db)
         self.env.db.set_last_updated_at_for_all_in_group(group_id, db)
 
+        action_log = self.create_action_log(query.action_log, db, group_id=group_id)
+
+        """
         user_ids_and_join_times = self.env.db.get_user_ids_and_join_time_in_group(
             group.group_id, db
         )
         user_ids = user_ids_and_join_times.keys()
-
-        action_log = self.create_action_log(query.action_log, db, group_id=group_id)
-        # self.env.client_publisher.group_change(group, user_ids)
+        self.env.client_publisher.group_change(group, user_ids)
+        """
 
         return action_log
 

@@ -292,6 +292,20 @@ class CacheRedis(ICache):
         self.redis.set(key, status)
         self.redis.expire(key, ONE_HOUR)
 
+    def get_group_archived(self, group_id: str) -> Optional[bool]:
+        key = RedisKeys.group_archived(group_id)
+        archived = self.redis.get(key)
+
+        if archived is None:
+            return None
+
+        return archived == '1'
+
+    def set_group_archived(self, group_id: str, archived: bool) -> None:
+        key = RedisKeys.group_archived(group_id)
+        self.redis.set(key, '1' if archived else '0')
+        self.redis.expire(key, ONE_HOUR)
+
     def set_sent_message_count_in_group_for_user(self, group_id: str, user_id: int, count: int) -> None:
         key = RedisKeys.sent_message_count_in_group(group_id)
         self.redis.hset(key, str(user_id), count)

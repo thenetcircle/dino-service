@@ -3,7 +3,7 @@ from test.base import BaseTest
 from test.functional.base_functional import BaseServerRestApi
 
 
-class TestLeaveGroup(BaseServerRestApi):
+class TestPublicGroups(BaseServerRestApi):
     def test_leave_group_creates_deleted_copy(self):
         self.assert_deleted_groups_for_user(0)
         self.assert_groups_for_user(0)
@@ -122,3 +122,105 @@ class TestLeaveGroup(BaseServerRestApi):
         for group in groups:
             self.assertEqual(GroupTypes.PUBLIC_GROUP, group["group_type"])
             self.assertEqual(group_id_public, group["group_id"])
+
+    def test_can_archive_groups(self):
+        group_id = self.create_and_join_group(
+            user_id=BaseTest.USER_ID,
+            users=[
+                BaseTest.OTHER_USER_ID,
+                BaseTest.THIRD_USER_ID
+            ],
+            group_type=GroupTypes.PUBLIC_GROUP
+        )
+
+        group = self.get_group_info(group_id, count_messages=False)
+        self.assertEqual(False, group["archived"])
+        self.assertIsNone(group["archived_at"])
+
+        self.update_group_archived(group_id, archived=True)
+
+        group = self.get_group_info(group_id, count_messages=False)
+        self.assertEqual(True, group["archived"])
+        self.assertIsNotNone(group["archived_at"])
+
+    def test_can_un_archive_groups(self):
+        group_id = self.create_and_join_group(
+            user_id=BaseTest.USER_ID,
+            users=[
+                BaseTest.OTHER_USER_ID,
+                BaseTest.THIRD_USER_ID
+            ],
+            group_type=GroupTypes.PUBLIC_GROUP
+        )
+
+        self.update_group_archived(group_id, archived=True)
+
+        group = self.get_group_info(group_id, count_messages=False)
+        self.assertEqual(True, group["archived"])
+        self.assertIsNotNone(group["archived_at"])
+
+        self.update_group_archived(group_id, archived=False)
+
+        group = self.get_group_info(group_id, count_messages=False)
+        self.assertEqual(False, group["archived"])
+        self.assertIsNone(group["archived_at"])
+
+    def test_can_not_send_to_archived_groups(self):
+        group_id = self.create_and_join_group(
+            user_id=BaseTest.USER_ID,
+            users=[
+                BaseTest.OTHER_USER_ID,
+                BaseTest.THIRD_USER_ID
+            ],
+            group_type=GroupTypes.PUBLIC_GROUP
+        )
+
+        self.update_group_archived(group_id, archived=True)
+
+        group = self.get_group_info(group_id, count_messages=False)
+        self.assertEqual(True, group["archived"])
+        self.assertIsNotNone(group["archived_at"])
+
+        self.send_message_to_group_from(group_id, BaseTest.OTHER_USER_ID, expected_error_code=607)
+
+    def test_only_admins_can_list_archived_groups(self):
+        group_id = self.create_and_join_group(
+            user_id=BaseTest.USER_ID,
+            users=[
+                BaseTest.OTHER_USER_ID,
+                BaseTest.THIRD_USER_ID
+            ],
+            group_type=GroupTypes.PUBLIC_GROUP
+        )
+
+        groups = self.get_public_groups()
+        self.assertEqual(1, len(groups))
+
+        self.update_group_archived(group_id, archived=True)
+
+        groups = self.get_public_groups()
+        self.assertEqual(0, len(groups))
+
+        groups = self.get_public_groups(include_archived=True, admin_id=1971)
+        self.assertEqual(1, len(groups))
+
+    def test_no_archived_groups_listed_without_admin_id(self):
+        group_id = self.create_and_join_group(
+            user_id=BaseTest.USER_ID,
+            users=[
+                BaseTest.OTHER_USER_ID,
+                BaseTest.THIRD_USER_ID
+            ],
+            group_type=GroupTypes.PUBLIC_GROUP
+        )
+
+        groups = self.get_public_groups()
+        self.assertEqual(1, len(groups))
+
+        self.update_group_archived(group_id, archived=True)
+
+        groups = self.get_public_groups(include_archived=True, admin_id=None)
+        self.assertEqual(0, len(groups))
+
+        groups = self.get_public_groups(include_archived=False, admin_id=1971)
+        self.assertEqual(0, len(groups))

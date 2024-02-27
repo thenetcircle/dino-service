@@ -141,7 +141,7 @@ async def edit_group_information(
     group_id, query: UpdateGroupQuery, db: Session = Depends(get_db)
 ) -> Message:
     """
-    Update group details.
+    Update group details, such as the group name, owner, or whether to archive the group.
 
     **Potential error codes in response:**
     * `601`: if the group does not exist,

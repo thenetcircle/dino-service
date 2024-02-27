@@ -25,12 +25,12 @@ from dinofw.db.rdbms.schemas import GroupBase, DeletedStatsBase
 from dinofw.db.rdbms.schemas import UserGroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.schemas import MessageBase
-from dinofw.rest.queries import CreateGroupQuery
+from dinofw.rest.queries import CreateGroupQuery, PublicGroupQuery
 from dinofw.rest.queries import GroupQuery
 from dinofw.rest.queries import GroupUpdatesQuery
 from dinofw.rest.queries import UpdateGroupQuery
 from dinofw.rest.queries import UpdateUserGroupStats
-from dinofw.utils import group_id_to_users, to_dt, truncate_json_message
+from dinofw.utils import group_id_to_users, to_dt, truncate_json_message, is_none_or_zero, is_non_zero
 from dinofw.utils import split_into_chunks
 from dinofw.utils import to_ts
 from dinofw.utils import trim_micros
@@ -63,7 +63,7 @@ class RelationalHandler:
 
         return [group[0] for group in groups]
 
-    def get_public_groups(self, db: Session) -> List[GroupBase]:
+    def get_public_groups(self, query: PublicGroupQuery, db: Session) -> List[GroupBase]:
         public_group_ids = self.env.cache.get_public_group_ids()
         if public_group_ids is None or not len(public_group_ids):
             group_ids = self.get_public_group_ids(db)
@@ -71,14 +71,23 @@ class RelationalHandler:
             if len(group_ids):
                 self.env.cache.add_public_group_ids(group_ids)
 
-        group_entities = (
+        statement = (
             db.query(GroupEntity)
             .filter(
-                GroupEntity.group_id.in_(public_group_ids),
+                GroupEntity.group_id.in_(public_group_ids)
+            )
+        )
+
+        if query.include_archived and is_non_zero(query.admin_id):
+            # include both archived and non-archived groups
+            pass
+        else:
+            # otherwise only non-archived groups
+            statement = statement.filter(
                 GroupEntity.archived.is_(False)
             )
-            .all()
-        )
+
+        group_entities = statement.all()
 
         return [
             GroupBase(**group_entity.__dict__)
@@ -1351,6 +1360,14 @@ class RelationalHandler:
 
         now = utcnow_dt()
 
+        if query.archived is not None:
+            group_entity.archived = query.archived
+
+            if query.archived:
+                group_entity.archived_at = utcnow_dt()
+            else:
+                group_entity.archived_at = None
+
         if query.group_name is not None:
             group_entity.name = query.group_name
 
@@ -1506,10 +1523,14 @@ class RelationalHandler:
 
         db.commit()
 
-    def is_group_frozen(self, group_id: str, db: Session) -> Optional[bool]:
+    def is_group_frozen_or_archived(self, group_id: str, db: Session) -> Optional[bool]:
         group_status = self.env.cache.get_group_status(group_id)
         if group_status is not None:
             return group_status == -1
+
+        group_is_archived = self.env.cache.get_group_archived(group_id)
+        if group_status is not None:
+            return group_is_archived
 
         group = (
             db.query(GroupEntity)
@@ -1526,7 +1547,9 @@ class RelationalHandler:
             status = 0
 
         self.env.cache.set_group_status(group_id, status)
-        return group.status == -1
+        self.env.cache.set_group_archived(group_id, group.archived)
+
+        return group.status == -1 or group.archived
 
     # noinspection PyMethodMayBeStatic
     def get_user_stats_in_group(
