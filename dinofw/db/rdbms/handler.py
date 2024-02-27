@@ -79,8 +79,12 @@ class RelationalHandler:
         )
 
         if query.spoken_languages is not None and len(query.spoken_languages):
+            spoken_languages = [
+                lang.lower() for lang in query.spoken_languages
+                if type(lang) is str and len(lang) == 2 and lang.isascii()
+            ]
             statement = statement.filter(
-                GroupEntity.spoken_languages.in_(query.spoken_languages)
+                GroupEntity.language.in_(spoken_languages)
             )
 
         if query.include_archived and is_non_zero(query.admin_id):

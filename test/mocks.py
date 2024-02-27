@@ -579,6 +579,7 @@ class FakeDatabase:
             meta=query.meta,
             description=query.description,
             archived=False,
+            language=query.language,
         )
 
         self.groups[group.group_id] = group

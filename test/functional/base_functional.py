@@ -1,5 +1,6 @@
 import json
 import time
+from typing import List
 
 import arrow
 
@@ -158,7 +159,7 @@ class BaseServerRestApi(BaseDatabaseTest):
         data = {"group_name": "a new group", "group_type": group_type, "users": users}
 
         if language is not None:
-            data['langauge'] = language
+            data['language'] = language
 
         raw_response = self.client.post(
             f"/v1/users/{user_id}/groups/create",
@@ -212,11 +213,13 @@ class BaseServerRestApi(BaseDatabaseTest):
 
         return raw_response.json()
 
-    def get_public_groups(self, include_archived: bool = False, admin_id: int = None):
+    def get_public_groups(self, include_archived: bool = False, admin_id: int = None, spoken_languages: List[str] = None):
         data = {
             "include_archived": include_archived,
             "admin_id": admin_id
         }
+        if spoken_languages and len(spoken_languages):
+            data["spoken_languages"] = spoken_languages
 
         raw_response = self.client.post(
             f"/v1/groups/public", json=data

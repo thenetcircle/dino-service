@@ -1,7 +1,7 @@
 from typing import List
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ClientID(BaseModel):
@@ -105,7 +105,9 @@ class Group(BaseModel):
 
     archived: bool
     archived_at: Optional[float]
-    language: Optional[str]
+    language: Optional[str] = Field(
+        description='ISO 639-1 language code. E.g. "en" for English, "de" for German, "ja" for Japanese.'
+    )
 
     group_type: int
     created_at: float

@@ -1,7 +1,7 @@
 from typing import List
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class AbstractQuery(BaseModel):
@@ -163,7 +163,10 @@ class UpdateGroupQuery(CreateActionLogQuery):
 
 class PublicGroupQuery(AdminQuery):
     include_archived: Optional[bool] = False
-    spoken_languages: Optional[List[str]] = None
+    spoken_languages: Optional[List[str]] = Field(
+        description='List of ISO 639-1 language codes. E.g. "en" for English, "de" for German, "ja" for Japanese.',
+        default=None
+    )
 
 
 class MessageInfoQuery(AbstractQuery):

@@ -240,6 +240,10 @@ class TestPublicGroups(BaseServerRestApi):
         self.assertEqual(1, len(groups))
         self.assertEqual('de', groups[0]['language'])
 
+        groups = self.groups_for_user()
+        self.assertEqual(1, len(groups))
+        self.assertEqual('de', groups[0]['group']['language'])
+
     def test_private_groups_can_not_have_language(self):
         self.create_and_join_group(
             user_id=BaseTest.USER_ID,
@@ -251,6 +255,41 @@ class TestPublicGroups(BaseServerRestApi):
             language='de'
         )
 
-        groups = self.get_public_groups()
+        groups = self.groups_for_user(BaseTest.USER_ID)
         self.assertEqual(1, len(groups))
-        self.assertIsNone(groups[0]['language'])
+        self.assertIsNone(groups[0]['group']['language'])
+
+    def test_get_private_groups_for_spoken_languages(self):
+        self.create_and_join_group(
+            user_id=BaseTest.USER_ID,
+            users=[
+                BaseTest.OTHER_USER_ID,
+                BaseTest.THIRD_USER_ID
+            ],
+            group_type=GroupTypes.PUBLIC_GROUP,
+            language='de'
+        )
+        self.create_and_join_group(
+            user_id=BaseTest.USER_ID,
+            users=[
+                BaseTest.OTHER_USER_ID,
+                BaseTest.THIRD_USER_ID
+            ],
+            group_type=GroupTypes.PUBLIC_GROUP,
+            language='jp'
+        )
+
+        groups = self.get_public_groups(spoken_languages=None)
+        self.assertEqual(2, len(groups))
+
+        groups = self.get_public_groups(spoken_languages=['sv'])
+        self.assertEqual(0, len(groups))
+
+        groups = self.get_public_groups(spoken_languages=['de'])
+        self.assertEqual(1, len(groups))
+
+        groups = self.get_public_groups(spoken_languages=['de', 'jp'])
+        self.assertEqual(2, len(groups))
+
+        groups = self.get_public_groups(spoken_languages=['sv', 'jp'])
+        self.assertEqual(1, len(groups))
