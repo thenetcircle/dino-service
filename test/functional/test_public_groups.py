@@ -224,3 +224,33 @@ class TestPublicGroups(BaseServerRestApi):
 
         groups = self.get_public_groups(include_archived=False, admin_id=1971)
         self.assertEqual(0, len(groups))
+
+    def test_public_groups_can_have_language(self):
+        self.create_and_join_group(
+            user_id=BaseTest.USER_ID,
+            users=[
+                BaseTest.OTHER_USER_ID,
+                BaseTest.THIRD_USER_ID
+            ],
+            group_type=GroupTypes.PUBLIC_GROUP,
+            language='de'
+        )
+
+        groups = self.get_public_groups()
+        self.assertEqual(1, len(groups))
+        self.assertEqual('de', groups[0]['language'])
+
+    def test_private_groups_can_not_have_language(self):
+        self.create_and_join_group(
+            user_id=BaseTest.USER_ID,
+            users=[
+                BaseTest.OTHER_USER_ID,
+                BaseTest.THIRD_USER_ID
+            ],
+            group_type=GroupTypes.PRIVATE_GROUP,
+            language='de'
+        )
+
+        groups = self.get_public_groups()
+        self.assertEqual(1, len(groups))
+        self.assertIsNone(groups[0]['language'])

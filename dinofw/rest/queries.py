@@ -110,6 +110,7 @@ class LastReadQuery(AbstractQuery):
 class CreateGroupQuery(AbstractQuery):
     users: List[int]
 
+    language: Optional[str]
     group_name: str
     group_type: int
     description: Optional[str]
@@ -162,6 +163,7 @@ class UpdateGroupQuery(CreateActionLogQuery):
 
 class PublicGroupQuery(AdminQuery):
     include_archived: Optional[bool] = False
+    spoken_languages: Optional[List[str]] = None
 
 
 class MessageInfoQuery(AbstractQuery):

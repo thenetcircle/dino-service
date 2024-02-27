@@ -222,6 +222,8 @@ class GroupResource(BaseResource):
                 for message in _messages
             ]
 
+        # TODO: don't return history for archived groups unless admin
+
         if query.since is None and query.until is None:
             raise InvalidRangeException("both 'since' and 'until' was empty, need at least one")
 

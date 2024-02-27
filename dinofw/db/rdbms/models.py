@@ -25,6 +25,8 @@ class GroupEntity(env.Base):
     archived = Column(Boolean, default=False, nullable=False)
     archived_at = Column(DateTime(timezone=True), nullable=True)
 
+    language = Column(String(2), nullable=True)
+
     # used to schedule batch deletions; if every user in a group has delete_before
     # after this time, we remove messages up to the older delete_before, and set
     # this field to the time of the new first message

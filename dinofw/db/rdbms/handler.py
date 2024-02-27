@@ -78,6 +78,11 @@ class RelationalHandler:
             )
         )
 
+        if query.spoken_languages is not None and len(query.spoken_languages):
+            statement = statement.filter(
+                GroupEntity.spoken_languages.in_(query.spoken_languages)
+            )
+
         if query.include_archived and is_non_zero(query.admin_id):
             # include both archived and non-archived groups
             pass
@@ -181,6 +186,7 @@ class RelationalHandler:
             g.group_id = '00000000-005f-c238-0000-000000635796' and
             u.hide = false and
             u.deleted = false and
+            g.archived = false and
             u.delete_before < g.updated_at and
             g.last_message_time < now()
         order by
@@ -1796,8 +1802,13 @@ class RelationalHandler:
         # conditions when sending multiple fist messages at the same time
         self.env.cache.set_group_exists(group_id, True)
 
+        language = None
         if query.group_type == GroupTypes.PUBLIC_GROUP:
             self.env.cache.add_public_group_ids([group_id])
+
+            # only public groups can be for a specific language
+            if query.language is not None and len(query.language) == 2:
+                language = query.language
 
         group_entity = GroupEntity(
             group_id=group_id,
@@ -1810,7 +1821,8 @@ class RelationalHandler:
             owner_id=owner_id,
             meta=query.meta,
             description=query.description,
-            archived=False
+            archived=False,
+            language=language
         )
 
         user_ids = {owner_id}
