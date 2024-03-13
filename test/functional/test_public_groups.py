@@ -14,7 +14,7 @@ class TestPublicGroups(BaseServerRestApi):
                 BaseTest.OTHER_USER_ID,
                 BaseTest.THIRD_USER_ID
             ],
-            group_type=GroupTypes.PUBLIC_GROUP
+            group_type=GroupTypes.PUBLIC_ROOM
         )
 
         self.assert_deleted_groups_for_user(0)
@@ -47,7 +47,7 @@ class TestPublicGroups(BaseServerRestApi):
                 BaseTest.OTHER_USER_ID,
                 BaseTest.THIRD_USER_ID
             ],
-            group_type=GroupTypes.PUBLIC_GROUP
+            group_type=GroupTypes.PUBLIC_ROOM
         )
 
         self.assert_groups_for_user(2)
@@ -78,7 +78,7 @@ class TestPublicGroups(BaseServerRestApi):
                 BaseTest.OTHER_USER_ID,
                 BaseTest.THIRD_USER_ID
             ],
-            group_type=GroupTypes.PUBLIC_GROUP
+            group_type=GroupTypes.PUBLIC_ROOM
         )
 
         self.assert_groups_for_user(2)
@@ -113,14 +113,14 @@ class TestPublicGroups(BaseServerRestApi):
                 BaseTest.OTHER_USER_ID,
                 BaseTest.THIRD_USER_ID
             ],
-            group_type=GroupTypes.PUBLIC_GROUP
+            group_type=GroupTypes.PUBLIC_ROOM
         )
 
         groups = self.get_public_groups()
         self.assertEqual(1, len(groups))
 
         for group in groups:
-            self.assertEqual(GroupTypes.PUBLIC_GROUP, group["group_type"])
+            self.assertEqual(GroupTypes.PUBLIC_ROOM, group["group_type"])
             self.assertEqual(group_id_public, group["group_id"])
 
     def test_can_archive_groups(self):
@@ -130,7 +130,7 @@ class TestPublicGroups(BaseServerRestApi):
                 BaseTest.OTHER_USER_ID,
                 BaseTest.THIRD_USER_ID
             ],
-            group_type=GroupTypes.PUBLIC_GROUP
+            group_type=GroupTypes.PUBLIC_ROOM
         )
 
         group = self.get_group_info(group_id, count_messages=False)
@@ -150,7 +150,7 @@ class TestPublicGroups(BaseServerRestApi):
                 BaseTest.OTHER_USER_ID,
                 BaseTest.THIRD_USER_ID
             ],
-            group_type=GroupTypes.PUBLIC_GROUP
+            group_type=GroupTypes.PUBLIC_ROOM
         )
 
         self.update_group_archived(group_id, archived=True)
@@ -172,7 +172,7 @@ class TestPublicGroups(BaseServerRestApi):
                 BaseTest.OTHER_USER_ID,
                 BaseTest.THIRD_USER_ID
             ],
-            group_type=GroupTypes.PUBLIC_GROUP
+            group_type=GroupTypes.PUBLIC_ROOM
         )
 
         self.update_group_archived(group_id, archived=True)
@@ -190,7 +190,7 @@ class TestPublicGroups(BaseServerRestApi):
                 BaseTest.OTHER_USER_ID,
                 BaseTest.THIRD_USER_ID
             ],
-            group_type=GroupTypes.PUBLIC_GROUP
+            group_type=GroupTypes.PUBLIC_ROOM
         )
 
         groups = self.get_public_groups()
@@ -211,7 +211,7 @@ class TestPublicGroups(BaseServerRestApi):
                 BaseTest.OTHER_USER_ID,
                 BaseTest.THIRD_USER_ID
             ],
-            group_type=GroupTypes.PUBLIC_GROUP
+            group_type=GroupTypes.PUBLIC_ROOM
         )
 
         groups = self.get_public_groups()
@@ -232,7 +232,7 @@ class TestPublicGroups(BaseServerRestApi):
                 BaseTest.OTHER_USER_ID,
                 BaseTest.THIRD_USER_ID
             ],
-            group_type=GroupTypes.PUBLIC_GROUP,
+            group_type=GroupTypes.PUBLIC_ROOM,
             language='de'
         )
 
@@ -266,7 +266,7 @@ class TestPublicGroups(BaseServerRestApi):
                 BaseTest.OTHER_USER_ID,
                 BaseTest.THIRD_USER_ID
             ],
-            group_type=GroupTypes.PUBLIC_GROUP,
+            group_type=GroupTypes.PUBLIC_ROOM,
             language='de'
         )
         self.create_and_join_group(
@@ -275,7 +275,7 @@ class TestPublicGroups(BaseServerRestApi):
                 BaseTest.OTHER_USER_ID,
                 BaseTest.THIRD_USER_ID
             ],
-            group_type=GroupTypes.PUBLIC_GROUP,
+            group_type=GroupTypes.PUBLIC_ROOM,
             language='jp'
         )
 

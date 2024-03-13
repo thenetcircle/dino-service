@@ -4,7 +4,8 @@ from typing import Final
 class GroupTypes:
     PRIVATE_GROUP: Final = 0
     ONE_TO_ONE: Final = 1
-    PUBLIC_GROUP: Final = 2
+    PUBLIC_ROOM: Final = 2
+    PRIVATE_ROOM: Final = 3
 
 
 class MessageTypes:

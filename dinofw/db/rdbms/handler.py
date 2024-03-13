@@ -56,7 +56,7 @@ class RelationalHandler:
         groups = (
             db.query(GroupEntity.group_id)
             .filter(
-                GroupEntity.group_type == GroupTypes.PUBLIC_GROUP
+                GroupEntity.group_type == GroupTypes.PUBLIC_ROOM
             )
             .all()
         )
@@ -243,7 +243,7 @@ class RelationalHandler:
                 )
             else:
                 statement = statement.filter(
-                    GroupEntity.group_type != GroupTypes.PUBLIC_GROUP
+                    GroupEntity.group_type != GroupTypes.PUBLIC_ROOM
                 )
 
             if query.only_unread:
@@ -829,7 +829,7 @@ class RelationalHandler:
         # don't create deletion records for public groups, users will join and leave them all the time
         group_ids = [
             group_id for group_id, group_type in group_id_to_type.items()
-            if group_type != GroupTypes.PUBLIC_GROUP
+            if group_type != GroupTypes.PUBLIC_ROOM
         ]
 
         groups_to_copy = (
@@ -1294,7 +1294,7 @@ class RelationalHandler:
 
         # make sure we have the cached amount for all possible group
         # types even if the user is not part of all group types
-        for group_type in {GroupTypes.PRIVATE_GROUP, GroupTypes.ONE_TO_ONE, GroupTypes.PUBLIC_GROUP}:
+        for group_type in {GroupTypes.PRIVATE_GROUP, GroupTypes.ONE_TO_ONE, GroupTypes.PUBLIC_ROOM}:
             if group_type not in types_dict:
                 types_dict[group_type] = 0
 
@@ -1811,7 +1811,7 @@ class RelationalHandler:
         self.env.cache.set_group_exists(group_id, True)
 
         language = None
-        if query.group_type == GroupTypes.PUBLIC_GROUP:
+        if query.group_type == GroupTypes.PUBLIC_ROOM:
             self.env.cache.add_public_group_ids([group_id])
 
             # only public groups can be for a specific language

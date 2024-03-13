@@ -366,7 +366,7 @@ class GroupResource(BaseResource):
 
         for group_id, group_type in group_id_to_type.items():
             # no need for an action log in 1v1 groups, it's not going to be shown anyway
-            if group_type in {GroupTypes.PRIVATE_GROUP, GroupTypes.PUBLIC_GROUP}:
+            if group_type in {GroupTypes.PRIVATE_GROUP, GroupTypes.PUBLIC_ROOM}:
                 action_logs.append(
                     self.create_action_log(query.action_log, db, user_id=user_id, group_id=group_id)
                 )
