@@ -241,6 +241,10 @@ class RelationalHandler:
                 statement = statement.filter(
                     GroupEntity.group_type == query.group_type
                 )
+            else:
+                statement = statement.filter(
+                    GroupEntity.group_type != GroupTypes.PUBLIC_GROUP
+                )
 
             if query.only_unread:
                 statement = statement.filter(
