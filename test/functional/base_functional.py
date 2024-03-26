@@ -96,6 +96,12 @@ class BaseServerRestApi(BaseDatabaseTest):
         )
         self.assertEqual(raw_response.status_code, 200)
 
+    def get_undeleted_groups_for_user(self, user_id: int = BaseTest.USER_ID):
+        raw_response = self.client.get(f"/v1/undeleted/{user_id}/groups")
+        self.assertEqual(raw_response.status_code, 200)
+
+        return raw_response.json()
+
     def get_message_info(
         self, user_id: int, message_id: str, group_id: str, created_at: float, expected_response_code: int = 200
     ):
