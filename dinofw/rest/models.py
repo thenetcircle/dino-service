@@ -75,8 +75,18 @@ class DeletedStats(BaseModel):
     delete_time: float
 
 
+class UnDeletedGroup(BaseModel):
+    group_id: str
+    group_type: int
+    join_time: float
+
+
 class AllDeletedStats(BaseModel):
     stats: List[DeletedStats]
+
+
+class AllUnDeletedGroups(BaseModel):
+    stats: List[UnDeletedGroup]
 
 
 class Message(BaseModel):

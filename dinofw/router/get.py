@@ -6,7 +6,11 @@ from fastapi import Depends
 from loguru import logger
 from sqlalchemy.orm import Session
 
+<<<<<<< HEAD
 from dinofw.rest.models import ClientID, AllDeletedStats, Histories, Group
+=======
+from dinofw.rest.models import ClientID, AllDeletedStats, Histories, AllUnDeletedGroups
+>>>>>>> master
 from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UsersGroup
 from dinofw.rest.queries import GroupInfoQuery
@@ -52,6 +56,27 @@ async def get_deleted_groups_for_user(user_id: int, db: Session = Depends(get_db
     return AllDeletedStats(
         stats=await environ.env.rest.user.get_deleted_groups(user_id, db)
     )
+
+
+@router.get("/undeleted/{user_id}/groups", response_model=Optional[AllUnDeletedGroups])
+@timeit(logger, "GET", "/undeleted/{user_id}/groups")
+@wrap_exception()
+async def get_undeleted_groups_for_user(user_id: int, db: Session = Depends(get_db)) -> AllUnDeletedGroups:
+    """
+    Get all user statistics for a user id that has not been deleted (not in deletion log).
+
+    **Potential error codes in response:**
+    * `250`: if an unknown error occurred.
+    """
+    try:
+        return AllUnDeletedGroups(
+            stats=await environ.env.rest.user.get_all_user_stats_for_user(user_id, db)
+        )
+
+    except NoSuchGroupException as e:
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
+    except Exception as e:
+        log_error_and_raise_unknown(sys.exc_info(), e)
 
 
 @router.get("/history/{group_id}", response_model=Histories)

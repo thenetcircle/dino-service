@@ -1,5 +1,5 @@
 from datetime import datetime as dt
-from typing import Dict
+from typing import Dict, Tuple
 from typing import List
 from typing import Union
 
@@ -7,7 +7,7 @@ from dinofw.db.rdbms.schemas import GroupBase, DeletedStatsBase
 from dinofw.db.rdbms.schemas import UserGroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.schemas import MessageBase
-from dinofw.rest.models import Group, LastReads, LastRead, DeletedStats
+from dinofw.rest.models import Group, LastReads, LastRead, DeletedStats, UnDeletedGroup
 from dinofw.rest.models import GroupJoinTime
 from dinofw.rest.models import Message
 from dinofw.rest.models import UserGroup
@@ -137,6 +137,22 @@ def to_last_reads(group_id: str, last_reads: Dict[int, float]) -> LastReads:
             for user_id, last_read_time in last_reads.items()
         ]
     )
+
+
+def to_undeleted_stats(undeleted_groups: List[Tuple[str, int, dt]]) -> List[UnDeletedGroup]:
+    groups: List[UnDeletedGroup] = list()
+
+    for group_id, group_type, join_time in undeleted_groups:
+        join_time = to_ts(join_time, allow_none=True)
+
+        group = UnDeletedGroup(
+            group_id=group_id,
+            group_type=group_type,
+            join_time=join_time,
+        )
+        groups.append(group)
+
+    return groups
 
 
 def to_deleted_stats(deleted_stats: List[DeletedStatsBase]) -> List[DeletedStats]:

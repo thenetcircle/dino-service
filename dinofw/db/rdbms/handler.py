@@ -154,6 +154,29 @@ class RelationalHandler:
         return group_id, last_sent
 
     # noinspection PyMethodMayBeStatic
+    def get_group_id_type_join_time_for_user(self, user_id: int, db: Session) -> List[Tuple[str, int, dt]]:
+        """
+        No restrictions. Used for data exports. Only called internally.
+        """
+        groups = (
+            db.query(
+                GroupEntity.group_id,
+                GroupEntity.group_type,
+                UserGroupStatsEntity.join_time
+            )
+            .join(
+                UserGroupStatsEntity,
+                UserGroupStatsEntity.group_id == GroupEntity.group_id,
+            )
+            .filter(
+                UserGroupStatsEntity.user_id == user_id
+            )
+            .all()
+        )
+
+        return groups
+
+    # noinspection PyMethodMayBeStatic
     def get_group_ids_and_created_at_for_user(self, user_id: int, db: Session) -> List[Tuple[str, dt]]:
         groups = (
             db.query(
