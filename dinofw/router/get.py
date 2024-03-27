@@ -6,11 +6,7 @@ from fastapi import Depends
 from loguru import logger
 from sqlalchemy.orm import Session
 
-<<<<<<< HEAD
-from dinofw.rest.models import ClientID, AllDeletedStats, Histories, Group
-=======
 from dinofw.rest.models import ClientID, AllDeletedStats, Histories, AllUnDeletedGroups
->>>>>>> master
 from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UsersGroup
 from dinofw.rest.queries import GroupInfoQuery
