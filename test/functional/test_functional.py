@@ -1051,8 +1051,10 @@ class TestServerRestApi(BaseServerRestApi):
         self.assertEqual(1, stats["one_to_one_amount"])
         stats = self.get_global_user_stats(hidden=True)
         self.assertEqual(2, stats["one_to_one_amount"])
+
+        # None means both visible and hidden
         stats = self.get_global_user_stats(hidden=None)
-        self.assertEqual(1, stats["one_to_one_amount"])
+        self.assertEqual(3, stats["one_to_one_amount"])
 
     def test_until_param_excluded_matching_group_in_list(self):
         self.send_1v1_message(receiver_id=22)
