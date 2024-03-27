@@ -117,7 +117,7 @@ class CreateGroupQuery(AbstractQuery):
 
 
 class UserStatsQuery(AbstractQuery):
-    hidden: Optional[bool] = False
+    hidden: Optional[bool] = None  # None means both
     count_unread: Optional[bool] = True
     only_unread: Optional[bool] = True
 

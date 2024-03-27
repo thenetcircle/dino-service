@@ -192,7 +192,8 @@ async def get_groups_for_user(
     the value `-1`.
 
     If `hidden` is set to True in the query, only hidden groups will be returned.
-    Defaults value is False.
+    If False, only visible groups are returned. If not specified or set to null,
+    both hidden and visible groups are returned.
 
     If `receiver_stats` is True, the following fields will be set:
 
