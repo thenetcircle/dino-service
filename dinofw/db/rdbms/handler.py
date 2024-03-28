@@ -465,7 +465,7 @@ class RelationalHandler:
             if query.count_unread:
                 _unread_count = _stats.unread_count
                 if _stats.bookmark:
-                    _unread_count = +1
+                    _unread_count += 1
 
             return _unread_count, _receiver_unread_count
 
