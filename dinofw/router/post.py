@@ -277,6 +277,24 @@ async def get_groups_updated_since(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
+@router.post("/users/{user_id}/groups/updates/public", response_model=Optional[List[UserGroup]])
+@timeit(logger, "POST", "/users/{user_id}/groups/updates/public")
+@wrap_exception()
+async def get_public_groups_updated_since(
+        user_id: int, query: GroupUpdatesQuery, db: Session = Depends(get_db)
+) -> List[UserGroup]:
+    """
+    Exactly the same as `/v1/users/{user_id}/groups/updates/public`, but only for public groups.
+
+    **Potential error codes in response:**
+    * `250`: if an unknown error occurred.
+    """
+    try:
+        return await environ.env.rest.user.get_public_groups_updated_since(user_id, query, db)
+    except Exception as e:
+        log_error_and_raise_unknown(sys.exc_info(), e)
+
+
 @router.post("/userstats/{user_id}", response_model=Optional[UserStats])
 @timeit(logger, "POST", "/userstats/{user_id}")
 @wrap_exception()

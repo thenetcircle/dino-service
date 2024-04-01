@@ -87,6 +87,15 @@ class UserResource(BaseResource):
 
         return to_user_group(user_groups)
 
+    def get_public_groups_updated_since(
+        self, user_id: int, query: GroupUpdatesQuery, db: Session
+    ) -> List[UserGroup]:
+        user_groups: List[UserGroupBase] = self.env.db.get_groups_updated_since(
+            user_id, query, db, public_only=True
+        )
+
+        return to_user_group(user_groups)
+
     async def get_last_read(self, group_id: str, query: LastReadQuery, db: Session) -> LastReads:
         if query.user_id is None:
             last_reads = self.env.db.get_last_reads_in_group(group_id, db)

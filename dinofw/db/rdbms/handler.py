@@ -64,6 +64,7 @@ class RelationalHandler:
         return [group[0] for group in groups]
 
     def get_public_groups(self, query: PublicGroupQuery, db: Session) -> List[GroupBase]:
+        # TODO: check this, why cache group ids and do IN query? just use group types?
         public_group_ids = self.env.cache.get_public_group_ids()
         if public_group_ids is None or not len(public_group_ids):
             group_ids = self.get_public_group_ids(db)
@@ -418,7 +419,8 @@ class RelationalHandler:
         self,
         user_id: int,
         query: GroupUpdatesQuery,
-        db: Session
+        db: Session,
+        public_only: bool = False
     ):
         """
         the only difference between get_groups_for_user() and get_groups_updated_since() is
@@ -446,6 +448,14 @@ class RelationalHandler:
             if until is not None:
                 statement = statement.filter(
                     UserGroupStatsEntity.last_updated_time <= until
+                )
+
+            if public_only:
+                statement = statement.filter(
+                    GroupEntity.group_type.in_([
+                        GroupTypes.PUBLIC_ROOM,
+                        GroupTypes.PRIVATE_ROOM
+                    ])
                 )
 
             return (
