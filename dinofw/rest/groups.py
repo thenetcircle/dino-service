@@ -56,6 +56,7 @@ class GroupResource(BaseResource):
         group_bases = self.env.db.get_public_groups(query, db)
         groups = list()
 
+        # TODO: skip users if only checking rooms for user ids
         for group in group_bases:
             _, first_users, n_users = self.env.db.get_users_in_group(group.group_id, db, include_group=False)
             groups.append(

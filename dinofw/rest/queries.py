@@ -162,6 +162,10 @@ class UpdateGroupQuery(CreateActionLogQuery):
 
 
 class PublicGroupQuery(AdminQuery):
+    users: Optional[List[int]] = Field(
+        description='List of user ids to get public rooms for. If not provided, will return all public groups.',
+        default=None
+    )
     include_archived: Optional[bool] = False
     spoken_languages: Optional[List[str]] = Field(
         description='List of ISO 639-1 language codes. E.g. "en" for English, "de" for German, "ja" for Japanese.',

@@ -79,6 +79,15 @@ class RelationalHandler:
             )
         )
 
+        # "rooms by friends are in"
+        if query.users:
+            statement = statement.join(
+                UserGroupStatsEntity,
+                UserGroupStatsEntity.group_id == GroupEntity.group_id,
+            ).filter(
+                UserGroupStatsEntity.user_id.in_(query.users)
+            ).distinct()  # TODO: test distinct
+
         if query.spoken_languages is not None and len(query.spoken_languages):
             spoken_languages = [
                 lang.lower() for lang in query.spoken_languages
