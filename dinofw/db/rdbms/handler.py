@@ -79,7 +79,7 @@ class RelationalHandler:
             )
         )
 
-        # "rooms by friends are in"
+        # "rooms my friends are in"
         if query.users:
             statement = statement.join(
                 UserGroupStatsEntity,
