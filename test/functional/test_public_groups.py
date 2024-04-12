@@ -18,7 +18,8 @@ class TestPublicGroups(BaseServerRestApi):
         )
 
         self.assert_deleted_groups_for_user(0)
-        self.assert_groups_for_user(1)
+        self.assert_groups_for_user(0)
+        self.assert_public_groups_for_user(1)
         self.assertEqual(0, len(self.env.storage.action_log))
 
         self.user_leaves_group(group_id)
@@ -26,11 +27,12 @@ class TestPublicGroups(BaseServerRestApi):
         # we don't create deletion logs for public groups
         self.assert_deleted_groups_for_user(0)
         self.assert_groups_for_user(0)
+        self.assert_public_groups_for_user(0)
 
         # should have an action log for leaving a public group
         self.assertEqual(1, len(self.env.storage.action_log))
 
-    def test_count_groups_includes_public_groups(self):
+    def test_count_groups_does_not_includes_public_groups(self):
         self.assert_groups_for_user(0)
 
         group_id_private = self.create_and_join_group(
@@ -50,10 +52,10 @@ class TestPublicGroups(BaseServerRestApi):
             group_type=GroupTypes.PUBLIC_ROOM
         )
 
-        self.assert_groups_for_user(2)
+        self.assert_groups_for_user(1)
 
         self.user_leaves_group(group_id_private)
-        self.assert_groups_for_user(1)
+        self.assert_groups_for_user(0)
 
         self.user_leaves_group(group_id_public)
         self.assert_groups_for_user(0)
@@ -81,7 +83,8 @@ class TestPublicGroups(BaseServerRestApi):
             group_type=GroupTypes.PUBLIC_ROOM
         )
 
-        self.assert_groups_for_user(2)
+        self.assert_groups_for_user(1)
+        self.assert_public_groups_for_user(1)
         self.assert_unread_amount_and_groups(BaseTest.USER_ID, 0, 0, session)
 
         self.send_message_to_group_from(group_id_private, BaseTest.OTHER_USER_ID)
@@ -241,8 +244,7 @@ class TestPublicGroups(BaseServerRestApi):
         self.assertEqual('de', groups[0]['language'])
 
         groups = self.groups_for_user()
-        self.assertEqual(1, len(groups))
-        self.assertEqual('de', groups[0]['group']['language'])
+        self.assertEqual(0, len(groups))
 
     def test_private_groups_can_not_have_language(self):
         self.create_and_join_group(

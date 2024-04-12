@@ -701,6 +701,14 @@ class BaseServerRestApi(BaseDatabaseTest):
         response = self.groups_for_user(user_id, until=until)
         self.assertEqual(amount_of_groups, len(response))
 
+    def assert_public_groups_for_user(self, amount_of_groups, user_id: int = BaseTest.USER_ID, until: float = None) -> None:
+        users = None
+        if user_id is not None:
+            users = [user_id]
+
+        response = self.get_public_groups(users=users)
+        self.assertEqual(amount_of_groups, len(response))
+
     def assert_deleted_groups_for_user(self, amount_of_groups, user_id: int = BaseTest.USER_ID) -> None:
         response = self.get_deleted_groups_for_user(user_id)
         self.assertEqual(amount_of_groups, len(response["stats"]))
