@@ -111,6 +111,9 @@ async def get_public_groups(query: PublicGroupQuery, db: Session = Depends(get_d
 
     If `admin_id` is set, and `include_archived=true`, then archived groups are included as well, for admin backend use.
 
+    The `users` parameter can be set with a list of user ids, and the API will return only groups which these users are
+    in right now (if any).
+
     This api ignores the value of `include_deleted`.
 
     **Potential error codes in response:**
