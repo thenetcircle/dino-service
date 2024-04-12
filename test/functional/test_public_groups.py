@@ -259,6 +259,42 @@ class TestPublicGroups(BaseServerRestApi):
         self.assertEqual(1, len(groups))
         self.assertIsNone(groups[0]['group']['language'])
 
+    def test_get_public_rooms_my_friends_are_in(self):
+        self.create_and_join_group(
+            user_id=BaseTest.USER_ID,
+            users=[
+                BaseTest.OTHER_USER_ID
+            ],
+            group_type=GroupTypes.PUBLIC_ROOM,
+            language='de'
+        )
+        self.create_and_join_group(
+            user_id=BaseTest.USER_ID,
+            users=[
+                BaseTest.USER_ID
+            ],
+            group_type=GroupTypes.PUBLIC_ROOM,
+            language='de'
+        )
+
+        groups = self.get_public_groups()
+        self.assertEqual(2, len(groups))
+
+        groups = self.get_public_groups(users=[BaseTest.OTHER_USER_ID])
+        self.assertEqual(1, len(groups))
+
+        groups = self.get_public_groups(users=[BaseTest.THIRD_USER_ID])
+        self.assertEqual(0, len(groups))
+
+        groups = self.get_public_groups(users=[BaseTest.USER_ID])
+        self.assertEqual(2, len(groups))
+
+        groups = self.get_public_groups(users=[BaseTest.OTHER_USER_ID, BaseTest.THIRD_USER_ID])
+        self.assertEqual(1, len(groups))
+
+        groups = self.get_public_groups(users=[BaseTest.OTHER_USER_ID, BaseTest.USER_ID])
+        self.assertEqual(2, len(groups))
+
     def test_get_private_groups_for_spoken_languages(self):
         self.create_and_join_group(
             user_id=BaseTest.USER_ID,

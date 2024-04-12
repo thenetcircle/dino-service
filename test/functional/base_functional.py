@@ -219,13 +219,21 @@ class BaseServerRestApi(BaseDatabaseTest):
 
         return raw_response.json()
 
-    def get_public_groups(self, include_archived: bool = False, admin_id: int = None, spoken_languages: List[str] = None):
+    def get_public_groups(
+            self,
+            include_archived: bool = False,
+            admin_id: int = None,
+            spoken_languages: List[str] = None,
+            users: List[int] = None
+    ):
         data = {
             "include_archived": include_archived,
             "admin_id": admin_id
         }
         if spoken_languages and len(spoken_languages):
             data["spoken_languages"] = spoken_languages
+        if users:
+            data["users"] = users
 
         raw_response = self.client.post(
             f"/v1/groups/public", json=data

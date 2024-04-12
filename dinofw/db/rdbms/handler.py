@@ -80,7 +80,7 @@ class RelationalHandler:
         )
 
         # "rooms my friends are in"
-        if query.users:
+        if query.users and len(query.users):
             statement = statement.join(
                 UserGroupStatsEntity,
                 UserGroupStatsEntity.group_id == GroupEntity.group_id,
