@@ -45,6 +45,7 @@ class AdminQuery(AbstractQuery):
 
 
 class NotificationGroup(AbstractQuery):
+    topic: Optional[str]  # send to specific "group" topic instead of single user topics, e.g. chatops topic
     user_ids: Optional[List[int]]
     data: dict
 

@@ -58,6 +58,19 @@ router = APIRouter()
 @timeit(logger, "POST", "/notification/send")
 @wrap_exception()
 async def notify_users(query: NotificationQuery, db: Session = Depends(get_db)) -> None:
+    """
+    Send a notification to a group of users. The `notification` field is a list of `UserGroup` objects, each
+    containing a list of either user ids OR a topic name, plus the data payload.
+
+    If `topic` is specified, the `user_ids` parameter is ignored, and every user subscribed to the topic will receive
+    the notification. User for sending to ChatOps topics, or everyone in public rooms (e.g. room creation events), etc.
+
+    If `event_type` is either `group` or `message`, the user group stats will be included in the event, otherwise not,
+    and any `topic` specified will be ignored for these two event types.
+
+    When `topic` is specified (string), the final topic in MQTT that users will subscribe to will be
+    `dms/{environment}/{topic}`. For example, `dms/prod/chatops` for a `topic` param value of `chatops`.
+    """
     try:
         return await environ.env.rest.broadcast.broadcast_event(query, db)
     except Exception as e:

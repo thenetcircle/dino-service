@@ -812,6 +812,7 @@ class FakePublisherHandler(IClientPublishHandler):
         self.sent_deletions = dict()
         self.sent_reads = dict()
         self.sent_per_user = dict()
+        self.sent_per_topic = dict()
 
     async def stop(self):
         pass
@@ -874,6 +875,12 @@ class FakePublisherHandler(IClientPublishHandler):
             self.sent_per_user[user_id] = list()
 
         self.sent_per_user[user_id].append(data)
+
+    def send_to_topic(self, topic: str, data, qos: int = 0):
+        if topic not in self.sent_per_topic:
+            self.sent_per_topic[topic] = list()
+
+        self.sent_per_topic[topic].append(data)
 
 
 class FakeEnv:
