@@ -7,6 +7,9 @@ class GroupTypes:
     PUBLIC_ROOM: Final = 2
     PRIVATE_ROOM: Final = 3
 
+    public_group_types = {PUBLIC_ROOM, PRIVATE_ROOM}
+    private_group_types = {PRIVATE_GROUP, ONE_TO_ONE}
+
 
 class MessageTypes:
     MESSAGE: Final = 0

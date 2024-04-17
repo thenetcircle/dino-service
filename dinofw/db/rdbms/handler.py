@@ -65,17 +65,20 @@ class RelationalHandler:
 
     def get_public_groups(self, query: PublicGroupQuery, db: Session) -> List[GroupBase]:
         # TODO: check this, why cache group ids and do IN query? just use group types?
+        """
         public_group_ids = self.env.cache.get_public_group_ids()
         if public_group_ids is None or not len(public_group_ids):
             group_ids = self.get_public_group_ids(db)
 
             if len(group_ids):
                 self.env.cache.add_public_group_ids(group_ids)
+        """
 
         statement = (
             db.query(GroupEntity)
             .filter(
-                GroupEntity.group_id.in_(public_group_ids)
+                # GroupEntity.group_id.in_(public_group_ids)
+                GroupEntity.group_type.in_(GroupTypes.public_group_types)
             )
         )
 
@@ -250,6 +253,7 @@ class RelationalHandler:
                 .filter(
                     GroupEntity.last_message_time < until,
                     GroupEntity.archived.is_(False),
+                    GroupEntity.group_type.in_(GroupTypes.private_group_types),
                     UserGroupStatsEntity.deleted.is_(False),
                     UserGroupStatsEntity.user_id == user_id,
 
