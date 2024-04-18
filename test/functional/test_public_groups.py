@@ -126,6 +126,36 @@ class TestPublicGroups(BaseServerRestApi):
             self.assertEqual(GroupTypes.PUBLIC_ROOM, group["group_type"])
             self.assertEqual(group_id_public, group["group_id"])
 
+    def test_get_public_groups_for_friends(self):
+        self.create_and_join_group(
+            user_id=BaseTest.USER_ID,
+            users=[
+                BaseTest.OTHER_USER_ID,
+                BaseTest.THIRD_USER_ID
+            ],
+            group_type=GroupTypes.PUBLIC_ROOM
+        )
+
+        groups = self.get_public_groups(users=[BaseTest.THIRD_USER_ID])
+        self.assertEqual(1, len(groups))
+
+    def test_get_public_groups_for_friends_with_lang(self):
+        self.create_and_join_group(
+            user_id=BaseTest.USER_ID,
+            users=[
+                BaseTest.OTHER_USER_ID,
+                BaseTest.THIRD_USER_ID
+            ],
+            group_type=GroupTypes.PUBLIC_ROOM,
+            language="de"
+        )
+
+        groups = self.get_public_groups(
+            users=[BaseTest.THIRD_USER_ID],
+            spoken_languages=["de"]
+        )
+        self.assertEqual(1, len(groups))
+
     def test_can_archive_groups(self):
         group_id = self.create_and_join_group(
             user_id=BaseTest.USER_ID,

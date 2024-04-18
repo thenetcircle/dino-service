@@ -1857,7 +1857,7 @@ class RelationalHandler:
         self.env.cache.set_group_exists(group_id, True)
 
         language = None
-        if query.group_type == GroupTypes.PUBLIC_ROOM:
+        if query.group_type in {GroupTypes.public_group_types}:
             self.env.cache.add_public_group_ids([group_id])
 
             # only public groups can be for a specific language
