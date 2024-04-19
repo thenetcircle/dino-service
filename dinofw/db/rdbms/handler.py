@@ -78,7 +78,8 @@ class RelationalHandler:
             db.query(GroupEntity)
             .filter(
                 # GroupEntity.group_id.in_(public_group_ids)
-                GroupEntity.group_type.in_(GroupTypes.public_group_types)
+                GroupEntity.group_type.in_(GroupTypes.public_group_types),
+                GroupEntity.deleted.is_(False)
             )
         )
 
@@ -227,6 +228,7 @@ class RelationalHandler:
             u.hide = false and
             u.deleted = false and
             g.archived = false and
+            g.deleted = false and
             u.delete_before < g.updated_at and
             g.last_message_time < now()
         order by
@@ -253,6 +255,7 @@ class RelationalHandler:
                 .filter(
                     GroupEntity.last_message_time < until,
                     GroupEntity.archived.is_(False),
+                    GroupEntity.deleted.is_(False),
                     GroupEntity.group_type.in_(GroupTypes.private_group_types),
                     UserGroupStatsEntity.deleted.is_(False),
                     UserGroupStatsEntity.user_id == user_id,
@@ -465,10 +468,7 @@ class RelationalHandler:
 
             if public_only:
                 statement = statement.filter(
-                    GroupEntity.group_type.in_([
-                        GroupTypes.PUBLIC_ROOM,
-                        GroupTypes.PRIVATE_ROOM
-                    ])
+                    GroupEntity.group_type.in_(GroupTypes.public_group_types)
                 )
 
             return (
@@ -1427,6 +1427,14 @@ class RelationalHandler:
                 group_entity.archived_at = utcnow_dt()
             else:
                 group_entity.archived_at = None
+
+        if query.deleted is not None:
+            group_entity.deleted = query.deleted
+
+            if query.deleted:
+                group_entity.deleted_at = utcnow_dt()
+            else:
+                group_entity.deleted_at = None
 
         if query.group_name is not None:
             group_entity.name = query.group_name

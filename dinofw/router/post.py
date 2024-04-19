@@ -207,6 +207,8 @@ async def get_group_history_for_user(
         log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
     except UserNotInGroupException as e:
         log_error_and_raise_known(ErrorCodes.USER_NOT_IN_GROUP, sys.exc_info(), e)
+    except GroupIsFrozenOrArchivedException as e:
+        log_error_and_raise_known(ErrorCodes.GROUP_IS_FROZEN_OR_ARCHIVED, sys.exc_info(), e)
     except InvalidRangeException as e:
         log_error_and_raise_known(ErrorCodes.WRONG_PARAMETERS, sys.exc_info(), e)
     except Exception as e:

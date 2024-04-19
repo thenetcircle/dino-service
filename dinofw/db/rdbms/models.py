@@ -23,7 +23,9 @@ class GroupEntity(env.Base):
     created_at = Column(DateTime(timezone=True))
 
     archived = Column(Boolean, default=False, nullable=False)
+    deleted = Column(Boolean, default=False, nullable=False)
     archived_at = Column(DateTime(timezone=True), nullable=True)
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
     language = Column(String(2), nullable=True)
 
     # used to schedule batch deletions; if every user in a group has delete_before

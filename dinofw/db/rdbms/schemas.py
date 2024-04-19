@@ -12,7 +12,9 @@ class GroupBase(BaseModel):
     updated_at: Optional[datetime]
 
     archived: bool
+    deleted: bool
     archived_at: Optional[datetime]
+    deleted_at: Optional[datetime]
     language: Optional[str]
 
     first_message_time: datetime
