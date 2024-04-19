@@ -297,6 +297,18 @@ class BaseServerRestApi(BaseDatabaseTest):
         )
         self.assertEqual(raw_response.status_code, 200)
 
+    def update_group_deleted(self, group_id: str, deleted: bool):
+        raw_response = self.client.put(
+            f"/v1/groups/{group_id}", json={
+                "deleted": deleted,
+                "action_log": {
+                    "payload": "some payload for action log",
+                    "user_id": 1971
+                }
+            },
+        )
+        self.assertEqual(raw_response.status_code, 200)
+
     def update_kick_for_user(self, group_id: str, kicked: bool, user_id: int = BaseTest.USER_ID):
         raw_response = self.client.put(
             f"/v1/groups/{group_id}/user/{user_id}/update", json={"kicked": kicked},

@@ -870,13 +870,16 @@ class RelationalHandler:
         }
 
     def copy_to_deleted_groups_table(
-        self, group_id_to_type: Dict[str, int], user_id: int, db: Session
+        self, group_id_to_type: Dict[str, int], user_id: int, db: Session, skip_public: bool = True
     ) -> None:
-        # don't create deletion records for public groups, users will join and leave them all the time
-        group_ids = [
-            group_id for group_id, group_type in group_id_to_type.items()
-            if group_type != GroupTypes.PUBLIC_ROOM
-        ]
+        if skip_public:
+            # don't create deletion records for public groups, users will join and leave them all the time
+            group_ids = [
+                group_id for group_id, group_type in group_id_to_type.items()
+                if group_type != GroupTypes.PUBLIC_ROOM
+            ]
+        else:
+            group_ids = list(group_id_to_type.keys())
 
         groups_to_copy = (
             db.query(
@@ -1456,6 +1459,23 @@ class RelationalHandler:
         db.add(group_entity)
         db.commit()
 
+        # need to query users after committing the previous transaction
+        if query.deleted is not None and query.deleted:
+            user_ids = (
+                db.query(UserGroupStatsEntity.user_id)
+                .filter(UserGroupStatsEntity.group_id == group_id)
+                .all()
+            )
+            user_ids = [user_id[0] for user_id in user_ids]
+            group_id_to_type = {group_id: group_entity.group_type}
+            group_ids = [group_id]
+
+            # deleting a group doesn't happen often, so it's okay we loop here
+            for user_id in user_ids:
+                self.copy_to_deleted_groups_table(group_id_to_type, user_id, db, skip_public=False)
+                self.remove_user_group_stats_for_user(group_ids, user_id, db)
+                self.env.cache.reset_count_group_types_for_user(user_id)
+
         return base
 
     def get_user_ids_in_groups(self, group_ids: List[str], db: Session) -> Dict[str, List[int]]:
@@ -1884,6 +1904,7 @@ class RelationalHandler:
             meta=query.meta,
             description=query.description,
             archived=False,
+            deleted=False,
             language=language
         )
 

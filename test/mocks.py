@@ -579,6 +579,7 @@ class FakeDatabase:
             meta=query.meta,
             description=query.description,
             archived=False,
+            deleted=False,
             language=query.language,
         )
 
