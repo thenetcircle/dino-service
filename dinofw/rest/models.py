@@ -113,8 +113,10 @@ class Group(BaseModel):
     description: Optional[str]
     status: Optional[int]
 
+    deleted: bool
     archived: bool
     archived_at: Optional[float]
+    deleted_at: Optional[float]
     language: Optional[str] = Field(
         description='ISO 639-1 language code. E.g. "en" for English, "de" for German, "ja" for Japanese.'
     )
