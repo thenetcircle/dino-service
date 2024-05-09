@@ -112,7 +112,10 @@ class MqttPublisher(IClientPublisher):
         #
         # reference: https://stackoverflow.com/questions/15733196/where-2x-prefix-are-used-in-bcrypt
         hashed_pwd = f"$2a${hashed_pwd[4:]}"
-        publish_acl = '[{"pattern":"dms/' + self.environment + '/+"},{"pattern":"dms/' + self.environment + '/irc"}]'
+        publish_acl = json.dumps([
+            {"pattern": "dms/" + self.environment + "/+"},
+            {"pattern": "dms/" + self.environment}
+        ]).replace(" ", "")
 
         # this is the format that vernemq expects to be in redis; also
         # we don't set a publisher/subscriber acl pattern here, since
