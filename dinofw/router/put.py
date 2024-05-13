@@ -143,6 +143,15 @@ async def edit_group_information(
     """
     Update group details, such as the group name, owner, or whether to archive the group.
 
+    When a group is deleted, it is not removed from the database, but marked as deleted. Users will be kicked out of
+    the room and the room will not be visible in the conversation list. A group can be un-deleted, but the group will
+    not be restored to its previous state, e.g. the users that were in the group will not be re-added.
+
+    When a group is archived, it is not removed from the database, but marked as archived. Users will not be able to
+    send messages to the room, but the room will be visible in the conversation list if `include_archived` is set to
+    `True`. Archive is meant to be used for rooms that are not active, but should still be visible to users, or if a
+    review process is in the works, e.g. for a group that is reported for inappropriate content.
+
     **Potential error codes in response:**
     * `601`: if the group does not exist,
     * `250`: if an unknown error occurred.
