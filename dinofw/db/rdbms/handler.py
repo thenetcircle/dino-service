@@ -2056,9 +2056,9 @@ class RelationalHandler:
 
             # max 500 messages or 1 month ago
             if msg_count > max_count:
-                delete_before = self.env.storage.get_created_at_for_offset(group_id, offset=max_count)
+                delete_before = self.env.storage.get_created_at_for_offset(group_id, offset=max_count - 1)
                 if delete_before is None:
-                    logger.error(f"no messages in group '{group_id}', but count > 500")
+                    logger.error(f"no messages in group '{group_id}', but count > {max_count}")
                     delete_before = a_month_ago
             else:
                 delete_before = a_month_ago

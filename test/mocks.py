@@ -61,6 +61,13 @@ class FakeStorage:
         msg_to_edit.message_payload = query.message_payload or msg_to_edit.message_payload
         msg_to_edit.context = query.message_payload or msg_to_edit.context
 
+    def get_created_at_for_offset(self, group_id: str, offset: int) -> dt:
+        for message in reversed(self.messages_by_group.get(group_id, [])):
+            if offset == 0:
+                return message.created_at
+
+            offset -= 1
+
     def get_all_messages_in_group(self, group_id: str):
         if group_id not in self.messages_by_group:
             return list()
@@ -900,8 +907,8 @@ class FakeEnv:
                     "max_client_ids": 10
                 },
                 "history": {
-                    "room_max_history_days": 30,
-                    "room_max_history_count": 500,
+                    "room_max_history_days": 5,
+                    "room_max_history_count": 10,
                 }
             }
 

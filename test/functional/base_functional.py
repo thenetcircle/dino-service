@@ -201,9 +201,10 @@ class BaseServerRestApi(BaseDatabaseTest):
             user_id: int = BaseTest.USER_ID,
             admin: bool = False,
             include_deleted: bool = False,
-            assert_response: bool = True
+            assert_response: bool = True,
+            per_page: int = 10
     ):
-        json_data = {"per_page": "10", "since": 0}
+        json_data = {"per_page": str(per_page), "since": 0}
 
         if admin:
             json_data["admin_id"] = 1971
