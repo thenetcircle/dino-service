@@ -52,16 +52,16 @@ class RelationalHandler:
         beginning_of_1995 = 789_000_000
         self.long_ago = arrow.get(beginning_of_1995).datetime
 
-        self.room_max_history_days = env.config.get(
+        self.room_max_history_days = int(float(env.config.get(
             ConfigKeys.ROOM_MAX_HISTORY_DAYS,
             domain=ConfigKeys.HISTORY,
             default=30
-        )
-        self.room_max_history_count = env.config.get(
+        )))
+        self.room_max_history_count = int(float(env.config.get(
             ConfigKeys.ROOM_MAX_HISTORY_COUNT,
             domain=ConfigKeys.HISTORY,
             default=500
-        )
+        )))
 
     def get_public_group_ids(self, db: Session) -> List[str]:
         groups = (
