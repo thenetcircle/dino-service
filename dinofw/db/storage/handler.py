@@ -314,6 +314,20 @@ class CassandraHandler:
         # since we need ascending order on cassandra query if we use 'since', reverse the results here
         return list(reversed(messages))
 
+    def get_created_at_for_offset(self, group_id: str, offset: int):
+        messages = (
+            MessageModel.objects(
+                MessageModel.group_id == group_id
+            )
+            .limit(offset)
+            .all()
+        )
+
+        if not len(messages):
+            return None
+
+        return messages[-1].created_at
+
     # noinspection PyMethodMayBeStatic
     def count_messages_in_group_since(self, group_id: str, since: dt, query: AdminQuery = None) -> int:
         if query and is_non_zero(query.admin_id) and query.include_deleted:

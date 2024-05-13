@@ -691,7 +691,7 @@ class FakeDatabase:
         return len(users)
 
     def update_user_stats_on_join_or_create_group(
-        self, group_id: str, users: Dict[int, float], now: dt, _
+        self, group_id: str, users: Dict[int, float], now: dt, group_type: int, db=None
     ) -> None:
         for user_id, _ in users.items():
             self.update_last_read_and_sent_in_group_for_user(
@@ -898,6 +898,10 @@ class FakeEnv:
                 },
                 "cache": {
                     "max_client_ids": 10
+                },
+                "history": {
+                    "room_max_history_days": 30,
+                    "room_max_history_count": 500,
                 }
             }
 

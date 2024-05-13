@@ -76,6 +76,11 @@ class RedisKeys:
     RKEY_GROUP_STATUS = "group:status:{}"  # group:status:group_id
     RKEY_GROUP_ARCHIVED = "group:archived:{}"  # group:archived:group_id
     RKEY_PUBLIC_GROUP_IDS = "groups:public"
+    RKEY_GROUP_TYPE = "group:type:{}"  # group:type:group_id
+
+    @staticmethod
+    def group_type(group_id: str) -> str:
+        return RedisKeys.RKEY_GROUP_TYPE.format(group_id)
 
     @staticmethod
     def public_group_ids() -> str:
@@ -208,6 +213,10 @@ class ConfigKeys:
     TRACE_SAMPLE_RATE = "trace_sample_rate"
     POOL_SIZE = "pool_size"
     MAX_CLIENT_IDS = "max_client_ids"
+    HISTORY = "history"
+
+    ROOM_MAX_HISTORY_DAYS = "room_max_history_days"
+    ROOM_MAX_HISTORY_COUNT = "room_max_history_count"
 
     # will be overwritten even if specified in config file
     ENVIRONMENT = "_environment"

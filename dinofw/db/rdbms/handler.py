@@ -37,7 +37,7 @@ from dinofw.utils import trim_micros
 from dinofw.utils import users_to_group_id
 from dinofw.utils import utcnow_dt
 from dinofw.utils import utcnow_ts
-from dinofw.utils.config import GroupTypes
+from dinofw.utils.config import GroupTypes, ConfigKeys
 from dinofw.utils.exceptions import NoSuchGroupException, NoSuchUserException, UserStatsOrGroupAlreadyCreated
 from dinofw.utils.exceptions import UserNotInGroupException
 from dinofw.utils.perf import time_method
@@ -51,6 +51,17 @@ class RelationalHandler:
         # used when no `hide_before` is specified in a query
         beginning_of_1995 = 789_000_000
         self.long_ago = arrow.get(beginning_of_1995).datetime
+
+        self.room_max_history_days = env.config.get(
+            ConfigKeys.ROOM_MAX_HISTORY_DAYS,
+            domain=ConfigKeys.HISTORY,
+            default=30
+        )
+        self.room_max_history_count = env.config.get(
+            ConfigKeys.ROOM_MAX_HISTORY_COUNT,
+            domain=ConfigKeys.HISTORY,
+            default=500
+        )
 
     def get_public_group_ids(self, db: Session) -> List[str]:
         groups = (
@@ -1254,7 +1265,7 @@ class RelationalHandler:
         db.commit()
 
     def update_user_stats_on_join_or_create_group(
-        self, group_id: str, users: Dict[int, float], now: dt, db: Session
+        self, group_id: str, users: Dict[int, float], now: dt, group_type: int, db: Session
     ) -> None:
         user_ids_for_cache = set()
         user_ids_to_stats = dict()
@@ -1276,7 +1287,10 @@ class RelationalHandler:
 
                 user_ids_for_cache.add(user_id)
                 user_ids_to_stats[user_id] = self._create_user_stats(
-                    group_id, user_id, now
+                    group_id=group_id,
+                    user_id=user_id,
+                    default_dt=now,
+                    group_type=group_type
                 )
 
             # reset the kicked variable when joining a group
@@ -1918,7 +1932,11 @@ class RelationalHandler:
         for user_id in user_ids:
             self.env.cache.increase_count_group_types_for_user(user_id, query.group_type)
             user_stats = self._create_user_stats(
-                group_entity.group_id, user_id, created_at, delete_before=delete_before
+                group_id=group_id,
+                user_id=user_id,
+                group_type=query.group_type,
+                default_dt=created_at,
+                delete_before=delete_before
             )
             db.add(user_stats)
 
@@ -2025,12 +2043,27 @@ class RelationalHandler:
         )
 
     def _create_user_stats(
-        self, group_id: str, user_id: int, default_dt: dt, delete_before: dt = None
+        self, group_id: str, user_id: int, default_dt: dt, group_type: int, delete_before: dt = None
     ) -> UserGroupStatsEntity:
         now = utcnow_dt()
 
-        # TODO: for group chats, should this be long_ago or join_time? to see old history
-        if delete_before is None:
+        max_days = self.room_max_history_days
+        max_count = self.room_max_history_count
+
+        if group_type in GroupTypes.public_group_types:
+            a_month_ago = arrow.get(now).shift(days=-max_days).datetime
+            msg_count = self.env.storage.count_messages_in_group_since(group_id, a_month_ago)
+
+            # max 500 messages or 1 month ago
+            if msg_count > max_count:
+                delete_before = self.env.storage.get_created_at_for_offset(group_id, offset=max_count)
+                if delete_before is None:
+                    logger.error(f"no messages in group '{group_id}', but count > 500")
+                    delete_before = a_month_ago
+            else:
+                delete_before = a_month_ago
+
+        elif delete_before is None:
             delete_before = default_dt
 
         return UserGroupStatsEntity(

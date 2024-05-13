@@ -30,7 +30,7 @@ from dinofw.utils.config import GroupTypes
 from dinofw.utils.convert import group_base_to_group
 from dinofw.utils.convert import message_base_to_message
 from dinofw.utils.convert import to_user_group_stats
-from dinofw.utils.exceptions import InvalidRangeException
+from dinofw.utils.exceptions import InvalidRangeException, NoSuchGroupException
 from dinofw.utils.exceptions import UserIsKickedException
 
 
@@ -302,7 +302,11 @@ class GroupResource(BaseResource):
             users.update({user_id: float(now_ts) for user_id in query.users})
 
         self.env.db.update_user_stats_on_join_or_create_group(
-            group_base.group_id, users, now, db
+            group_id=group_base.group_id,
+            users=users,
+            now=now,
+            group_type=group_base.group_type,
+            db=db
         )
 
         group = group_base_to_group(
@@ -341,9 +345,23 @@ class GroupResource(BaseResource):
             for user_id in query.users
         }
 
+        group_type = self.env.cache.get_group_type(group_id)
+
+        if group_type is None:
+            group_types = self.env.db.get_group_types([group_id], db)
+            if group_id not in group_types:
+                raise NoSuchGroupException(group_id)
+
+            group_type = group_types[group_id]
+            self.env.cache.set_group_type(group_id, group_type)
+
         self.env.db.set_groups_updated_at([group_id], now, db)
         self.env.db.update_user_stats_on_join_or_create_group(
-            group_id, user_ids_and_last_read, now, db
+            group_id=group_id,
+            users=user_ids_and_last_read,
+            now=now,
+            group_type=group_type,
+            db=db
         )
 
         if not query.action_log:

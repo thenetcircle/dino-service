@@ -501,6 +501,20 @@ class CacheRedis(ICache):
 
         return float(last_message_time)
 
+    def get_group_type(self, group_id: str) -> Optional[int]:
+        key = RedisKeys.group_type(group_id)
+        group_type = self.redis.get(key)
+
+        if group_type is None:
+            return None
+
+        return int(group_type)
+
+    def set_group_type(self, group_id: str, group_type: int) -> None:
+        key = RedisKeys.group_type(group_id)
+        self.redis.set(key, group_type)
+        self.redis.expire(key, ONE_DAY)
+
     def increase_count_group_types_for_user(self, user_id: int, group_type: int) -> None:
         for is_hidden in {True, False}:
             current_group_types = self.get_count_group_types_for_user(user_id, hidden=is_hidden)
