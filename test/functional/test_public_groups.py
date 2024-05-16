@@ -1,4 +1,6 @@
-from dinofw.utils.config import GroupTypes
+import time
+
+from dinofw.utils.config import GroupTypes, GroupStatus
 from test.base import BaseTest
 from test.functional.base_functional import BaseServerRestApi
 
@@ -167,14 +169,14 @@ class TestPublicGroups(BaseServerRestApi):
         )
 
         group = self.get_group_info(group_id, count_messages=False)
-        self.assertEqual(False, group["archived"])
-        self.assertIsNone(group["archived_at"])
+        self.assertNotEquals(GroupStatus.ARCHIVED, group["status"])
+        self.assertIsNone(group["status_changed_at"])
 
         self.update_group_archived(group_id, archived=True)
 
         group = self.get_group_info(group_id, count_messages=False)
-        self.assertEqual(True, group["archived"])
-        self.assertIsNotNone(group["archived_at"])
+        self.assertEqual(GroupStatus.ARCHIVED, group["status"])
+        self.assertIsNotNone(group["status_changed_at"])
 
     def test_can_un_archive_groups(self):
         group_id = self.create_and_join_group(
@@ -189,14 +191,18 @@ class TestPublicGroups(BaseServerRestApi):
         self.update_group_archived(group_id, archived=True)
 
         group = self.get_group_info(group_id, count_messages=False)
-        self.assertEqual(True, group["archived"])
-        self.assertIsNotNone(group["archived_at"])
+        self.assertEqual(GroupStatus.ARCHIVED, group["status"])
+        self.assertIsNotNone(group["status_changed_at"])
+        first_changed_at = group["status_changed_at"]
 
+        # so we can test the time difference
+        time.sleep(0.01)
         self.update_group_archived(group_id, archived=False)
 
         group = self.get_group_info(group_id, count_messages=False)
-        self.assertEqual(False, group["archived"])
-        self.assertIsNone(group["archived_at"])
+        self.assertNotEquals(GroupStatus.ARCHIVED, group["status"])
+        self.assertIsNotNone(group["status_changed_at"])
+        self.assertNotEquals(first_changed_at, group["status_changed_at"])
 
     def test_can_not_send_to_archived_groups(self):
         group_id = self.create_and_join_group(
@@ -211,8 +217,8 @@ class TestPublicGroups(BaseServerRestApi):
         self.update_group_archived(group_id, archived=True)
 
         group = self.get_group_info(group_id, count_messages=False)
-        self.assertEqual(True, group["archived"])
-        self.assertIsNotNone(group["archived_at"])
+        self.assertEqual(GroupStatus.ARCHIVED, group["status"])
+        self.assertIsNotNone(group["status_changed_at"])
 
         self.send_message_to_group_from(group_id, BaseTest.OTHER_USER_ID, expected_error_code=607)
 

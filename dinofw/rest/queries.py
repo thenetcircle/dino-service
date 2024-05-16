@@ -155,8 +155,6 @@ class DeleteAttachmentQuery(CreateActionLogQuery):
 
 
 class UpdateGroupQuery(CreateActionLogQuery):
-    archived: Optional[bool]
-    deleted: Optional[bool]
     status: Optional[int]
     owner: Optional[int]
     group_name: Optional[str]

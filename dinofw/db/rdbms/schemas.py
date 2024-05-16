@@ -10,12 +10,10 @@ class GroupBase(BaseModel):
     description: Optional[str]
     created_at: datetime
     updated_at: Optional[datetime]
-
-    archived: bool
-    deleted: bool
-    archived_at: Optional[datetime]
-    deleted_at: Optional[datetime]
     language: Optional[str]
+
+    status: int = 0
+    status_changed_at: Optional[datetime]
 
     first_message_time: datetime
     last_message_time: datetime
@@ -24,8 +22,7 @@ class GroupBase(BaseModel):
     last_message_type: Optional[int]
     last_message_user_id: Optional[int]
 
-    status: Optional[int]
-    group_type: int
+    group_type: int = 0
     owner_id: Optional[int]
     meta: Optional[int]
 

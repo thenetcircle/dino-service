@@ -11,6 +11,27 @@ class GroupTypes:
     private_group_types = {PRIVATE_GROUP, ONE_TO_ONE}
 
 
+class GroupStatus:
+    DEFAULT: Final = 0
+    FROZEN: Final = -1
+    ARCHIVED: Final = -2
+    DELETED: Final = -3
+
+    visible_statuses = {DEFAULT, FROZEN}
+
+    @staticmethod
+    def to_str(status: int) -> str:
+        if status == GroupStatus.DEFAULT:
+            return "default"
+        if status == GroupStatus.FROZEN:
+            return "frozen"
+        if status == GroupStatus.ARCHIVED:
+            return "archived"
+        if status == GroupStatus.DELETED:
+            return "deleted"
+        return "unknown"
+
+
 class MessageTypes:
     MESSAGE: Final = 0
     NO_THANKS: Final = 1

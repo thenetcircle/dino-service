@@ -26,11 +26,11 @@ from dinofw.utils import to_dt, is_non_zero, one_year_ago
 from dinofw.utils import to_ts
 from dinofw.utils import utcnow_dt
 from dinofw.utils import utcnow_ts
-from dinofw.utils.config import GroupTypes
+from dinofw.utils.config import GroupTypes, GroupStatus
 from dinofw.utils.convert import group_base_to_group
 from dinofw.utils.convert import message_base_to_message
 from dinofw.utils.convert import to_user_group_stats
-from dinofw.utils.exceptions import InvalidRangeException, NoSuchGroupException
+from dinofw.utils.exceptions import InvalidRangeException, NoSuchGroupException, GroupIsFrozenOrArchivedException
 from dinofw.utils.exceptions import UserIsKickedException
 
 
@@ -204,9 +204,6 @@ class GroupResource(BaseResource):
     async def histories(
         self, group_id: str, user_id: int, query: MessageQuery, db: Session
     ) -> Histories:
-        def get_user_stats():
-            return self.env.db.get_user_stats_in_group(group_id, user_id, db)
-
         def get_messages():
             # need to batch query cassandra, can't filter by user id
             if query.only_sender:
@@ -231,7 +228,15 @@ class GroupResource(BaseResource):
         # if query.since is not None and query.until is not None:
         #     raise InvalidRangeException("only one of parameters 'since' and 'until' can be used at the same time")
 
-        user_stats = get_user_stats()
+        group_status = self.env.db.get_group_status(group_id, db)
+        if group_status is None:
+            raise NoSuchGroupException(group_id)
+
+        if group_status != GroupStatus.DEFAULT:
+            error_message = f"group {group_id} is {GroupStatus.to_str(group_status)}"
+            raise GroupIsFrozenOrArchivedException(error_message)
+
+        user_stats = self.env.db.get_user_stats_in_group(group_id, user_id, db)
         if user_stats.kicked:
             raise UserIsKickedException(group_id, user_id)
 

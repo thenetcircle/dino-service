@@ -37,7 +37,7 @@ from dinofw.utils import trim_micros
 from dinofw.utils import users_to_group_id
 from dinofw.utils import utcnow_dt
 from dinofw.utils import utcnow_ts
-from dinofw.utils.config import GroupTypes, ConfigKeys
+from dinofw.utils.config import GroupTypes, ConfigKeys, GroupStatus
 from dinofw.utils.exceptions import NoSuchGroupException, NoSuchUserException, UserStatsOrGroupAlreadyCreated
 from dinofw.utils.exceptions import UserNotInGroupException
 from dinofw.utils.perf import time_method
@@ -90,7 +90,7 @@ class RelationalHandler:
             .filter(
                 # GroupEntity.group_id.in_(public_group_ids)
                 GroupEntity.group_type.in_(GroupTypes.public_group_types),
-                GroupEntity.deleted.is_(False)
+                GroupEntity.status != GroupStatus.DELETED
             )
         )
 
@@ -118,7 +118,7 @@ class RelationalHandler:
         else:
             # otherwise only non-archived groups
             statement = statement.filter(
-                GroupEntity.archived.is_(False)
+                GroupEntity.status != GroupStatus.ARCHIVED
             )
 
         group_entities = statement.all()
@@ -238,8 +238,7 @@ class RelationalHandler:
             g.group_id = '00000000-005f-c238-0000-000000635796' and
             u.hide = false and
             u.deleted = false and
-            g.archived = false and
-            g.deleted = false and
+            g.status in (0, -1) and
             u.delete_before < g.updated_at and
             g.last_message_time < now()
         order by
@@ -247,6 +246,8 @@ class RelationalHandler:
             greatest(u.highlight_time, g.last_message_time) desc
         limit 10;
 
+            g.archived = false and
+            g.deleted = false and
             (u.unread_count > 0 or u.bookmark = true)
             ((u.last_read < g.last_message_time) or u.bookmark = true)
         """
@@ -265,8 +266,7 @@ class RelationalHandler:
                 )
                 .filter(
                     GroupEntity.last_message_time < until,
-                    GroupEntity.archived.is_(False),
-                    GroupEntity.deleted.is_(False),
+                    GroupEntity.status.in_(GroupStatus.visible_statuses),
                     GroupEntity.group_type.in_(GroupTypes.private_group_types),
                     UserGroupStatsEntity.deleted.is_(False),
                     UserGroupStatsEntity.user_id == user_id,
@@ -1437,21 +1437,11 @@ class RelationalHandler:
 
         now = utcnow_dt()
 
-        if query.archived is not None:
-            group_entity.archived = query.archived
-
-            if query.archived:
-                group_entity.archived_at = utcnow_dt()
-            else:
-                group_entity.archived_at = None
-
-        if query.deleted is not None:
-            group_entity.deleted = query.deleted
-
-            if query.deleted:
-                group_entity.deleted_at = utcnow_dt()
-            else:
-                group_entity.deleted_at = None
+        # default, frozen, archived, deleted
+        if query.status is not None:
+            group_entity.status_changed_at = now
+            group_entity.status = query.status
+            self.env.cache.set_group_status(group_id, query.status)
 
         if query.group_name is not None:
             group_entity.name = query.group_name
@@ -1462,10 +1452,6 @@ class RelationalHandler:
         if query.owner is not None:
             group_entity.owner_id = query.owner
 
-        if query.status is not None:
-            group_entity.status = query.status
-            self.env.cache.set_group_status(group_id, query.status)
-
         group_entity.updated_at = now
 
         base = GroupBase(**group_entity.__dict__)
@@ -1474,7 +1460,7 @@ class RelationalHandler:
         db.commit()
 
         # need to query users after committing the previous transaction
-        if query.deleted is not None and query.deleted:
+        if query.status is not None and query.status == GroupStatus.DELETED:
             user_ids = (
                 db.query(UserGroupStatsEntity.user_id)
                 .filter(UserGroupStatsEntity.group_id == group_id)
@@ -1625,14 +1611,10 @@ class RelationalHandler:
 
         db.commit()
 
-    def is_group_frozen_or_archived(self, group_id: str, db: Session) -> Optional[bool]:
+    def get_group_status(self, group_id: str, db: Session) -> Optional[int]:
         group_status = self.env.cache.get_group_status(group_id)
         if group_status is not None:
-            return group_status == -1
-
-        group_is_archived = self.env.cache.get_group_archived(group_id)
-        if group_status is not None:
-            return group_is_archived
+            return group_status
 
         group = (
             db.query(GroupEntity)
@@ -1649,9 +1631,7 @@ class RelationalHandler:
             status = 0
 
         self.env.cache.set_group_status(group_id, status)
-        self.env.cache.set_group_archived(group_id, group.archived)
-
-        return group.status == -1 or group.archived
+        return group.status
 
     # noinspection PyMethodMayBeStatic
     def get_user_stats_in_group(
@@ -1917,8 +1897,6 @@ class RelationalHandler:
             owner_id=owner_id,
             meta=query.meta,
             description=query.description,
-            archived=False,
-            deleted=False,
             language=language
         )
 

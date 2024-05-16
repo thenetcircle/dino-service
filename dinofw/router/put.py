@@ -149,8 +149,18 @@ async def edit_group_information(
 
     When a group is archived, it is not removed from the database, but marked as archived. Users will not be able to
     send messages to the room, but the room will be visible in the conversation list if `include_archived` is set to
-    `True`. Archive is meant to be used for rooms that are not active, but should still be visible to users, or if a
+    `True`. Archive is meant to be used for rooms that are not active anymore, but should not be deleted, in case it
+    will be brought back at a later time.
+
+    When a group is frozen, it is not removed from the database, but is marked as frozen. Users will not be able to
+    send messages to the room, but the room will be visible in the conversation list. A group is normally frozen if a
     review process is in the works, e.g. for a group that is reported for inappropriate content.
+
+    Deleted, archived and frozen are mutually exclusive states, and is decided by the `status` parameter:
+    * `0`: normal state,
+    * `-1`: frozen,
+    * `-2`: archived,
+    * `-3`: deleted.
 
     **Potential error codes in response:**
     * `601`: if the group does not exist,

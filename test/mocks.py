@@ -491,8 +491,11 @@ class FakeDatabase:
                 if user_id in self.last_read[group_id]:
                     del self.last_read[group_id][user_id]
 
-    def is_group_frozen_or_archived(self, _: str, __):
-        return False
+    def get_group_status(self, group_id: str, _) -> Optional[int]:
+        if group_id not in self.groups:
+            return None
+
+        return self.groups[group_id].group_type
 
     def get_oldest_last_read_in_group(self, group_id: str, _) -> Optional[float]:
         last_read = self.env.cache.get_last_read_in_group_oldest(group_id)

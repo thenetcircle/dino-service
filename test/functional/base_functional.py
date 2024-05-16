@@ -6,7 +6,7 @@ import arrow
 
 from dinofw.utils import to_ts
 from dinofw.utils import utcnow_ts
-from dinofw.utils.config import MessageTypes, PayloadStatus
+from dinofw.utils.config import MessageTypes, PayloadStatus, GroupStatus
 from test.base import BaseTest
 from test.functional.base_db import BaseDatabaseTest
 
@@ -293,7 +293,7 @@ class BaseServerRestApi(BaseDatabaseTest):
     def update_group_archived(self, group_id: str, archived: bool):
         raw_response = self.client.put(
             f"/v1/groups/{group_id}", json={
-                "archived": archived
+                "status": GroupStatus.ARCHIVED if archived else GroupStatus.DEFAULT
             },
         )
         self.assertEqual(raw_response.status_code, 200)
@@ -301,7 +301,7 @@ class BaseServerRestApi(BaseDatabaseTest):
     def update_group_deleted(self, group_id: str, deleted: bool):
         raw_response = self.client.put(
             f"/v1/groups/{group_id}", json={
-                "deleted": deleted,
+                "status": GroupStatus.DELETED if deleted else GroupStatus.DEFAULT,
                 "action_log": {
                     "payload": "some payload for action log",
                     "user_id": 1971

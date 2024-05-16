@@ -18,15 +18,12 @@ class GroupEntity(env.Base):
     name = Column(String(128))
 
     owner_id = Column(Integer, nullable=True)
-    status = Column(Integer, nullable=True)
     group_type = Column(Integer, index=True, server_default="0")
+    language = Column(String(2), nullable=True)
     created_at = Column(DateTime(timezone=True))
 
-    archived = Column(Boolean, default=False, nullable=False)
-    deleted = Column(Boolean, default=False, nullable=False)
-    archived_at = Column(DateTime(timezone=True), nullable=True)
-    deleted_at = Column(DateTime(timezone=True), nullable=True)
-    language = Column(String(2), nullable=True)
+    status = Column(Integer, nullable=False, server_default="0")
+    status_changed_at = Column(DateTime(timezone=True), nullable=True)
 
     # used to schedule batch deletions; if every user in a group has delete_before
     # after this time, we remove messages up to the older delete_before, and set
