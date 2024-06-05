@@ -292,12 +292,11 @@ class CacheRedis(ICache):
 
     def set_online_users(self, offline: List[int], online: List[int]) -> None:
         key = RedisKeys.online_users()
+        logger.debug(f"removing {len(offline)} and adding {len(online)} users from online member set")
 
-        logger.info(f"removing {len(offline)} users from online member set")
         for del_chunk in split_into_chunks(offline, 100):
             self.redis.srem(key, *del_chunk)
 
-        logger.info(f"adding {len(online)} users to online member set")
         for add_chunk in split_into_chunks(online, 100):
             self.redis.sadd(key, *add_chunk)
 

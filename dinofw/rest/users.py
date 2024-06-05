@@ -31,7 +31,7 @@ class UserResource(BaseResource):
     async def update_user_sessions(self, users: List[SessionUser]):
         current_online_users: Set[int] = self.env.cache.get_online_users()
 
-        new_users_online = {user.user_id for user in users}
+        new_users_online = {user.user_id for user in users if user.user_id not in current_online_users}
         offline_users = [user_id for user_id in current_online_users if user_id not in new_users_online]
 
         self.env.cache.set_online_users(offline_users, list(new_users_online))
