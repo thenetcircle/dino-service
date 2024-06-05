@@ -132,6 +132,9 @@ class KafkaPublishHandler(IServerPublishHandler):
             logger.info("sending event to kafka:")
             logger.info(event)
             self.publisher.send(event)
+    
+    def offline_users(self, user_ids: List[int]) -> None:
+        logger.info("sending offline users to kafka: {}".format(','.join([str(user_id) for user_id in user_ids])))
 
     def generate_event(self, group_id: str, attachments: List[MessageBase], user_ids: List[int]) -> dict:
         # same owner for all attachments
