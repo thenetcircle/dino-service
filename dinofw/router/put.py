@@ -66,7 +66,7 @@ async def update_sessions(query: UpdateSessionsQuery) -> None:
     Used by the MQTT bridge to track offline status.
     """
     try:
-        return await environ.env.rest.users.update_user_sessions(query.users)
+        return await environ.env.rest.user.update_user_sessions(query.users)
     except NoSuchGroupException as e:
         log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
     except UserNotInGroupException as e:
