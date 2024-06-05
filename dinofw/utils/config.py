@@ -98,7 +98,7 @@ class RedisKeys:
     RKEY_GROUP_ARCHIVED = "group:archived:{}"  # group:archived:group_id
     RKEY_PUBLIC_GROUP_IDS = "groups:public"
     RKEY_GROUP_TYPE = "group:type:{}"  # group:type:group_id
-    RKEY_ONLINE_USERS = "online:users"
+    RKEY_ONLINE_USERS = "users:online"
 
     @staticmethod
     def online_users() -> str:

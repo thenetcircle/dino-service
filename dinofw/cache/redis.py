@@ -288,7 +288,7 @@ class CacheRedis(ICache):
         return int(float(status))
 
     def get_online_users(self) -> Set[int]:
-        return self.redis.smembers(RedisKeys.online_users())
+        return {int(user_id) for user_id in self.redis.smembers(RedisKeys.online_users())}
 
     def set_online_users(self, offline: List[int], online: List[int]) -> None:
         key = RedisKeys.online_users()
