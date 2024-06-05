@@ -10,7 +10,7 @@ from starlette.responses import Response
 from starlette.status import HTTP_201_CREATED
 
 from dinofw.rest.models import Message
-from dinofw.rest.queries import JoinGroupQuery, EditMessageQuery
+from dinofw.rest.queries import JoinGroupQuery, EditMessageQuery, UpdateSessionsQuery
 from dinofw.rest.queries import UpdateGroupQuery
 from dinofw.rest.queries import UpdateUserGroupStats
 from dinofw.utils import environ
@@ -52,6 +52,25 @@ async def update_user_stats(user_id: int, db: Session = Depends(get_db)) -> Resp
     try:
         task = BackgroundTask(set_last_updated, user_id_=user_id, db_=db)
         return Response(background=task, status_code=HTTP_201_CREATED)
+    except Exception as e:
+        log_error_and_raise_unknown(sys.exc_info(), e)
+
+
+@router.put("/sessions", response_model=None)
+@timeit(logger, "POST", "/sessions")
+@wrap_exception()
+async def update_sessions(query: UpdateSessionsQuery) -> None:
+    """
+    INTERNAL API.
+
+    Used by the MQTT bridge to track offline status.
+    """
+    try:
+        return await environ.env.rest.users.update_user_sessions(query.users)
+    except NoSuchGroupException as e:
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
+    except UserNotInGroupException as e:
+        log_error_and_raise_known(ErrorCodes.USER_NOT_IN_GROUP, sys.exc_info(), e)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 

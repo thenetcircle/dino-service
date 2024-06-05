@@ -1,15 +1,15 @@
 from datetime import datetime as dt
 from time import time
-from typing import List, Tuple
+from typing import List, Tuple, Set
 
 from loguru import logger
 from sqlalchemy.orm import Session
 
-from dinofw.db.rdbms.schemas import UserGroupBase, DeletedStatsBase, UserGroupStatsBase
+from dinofw.db.rdbms.schemas import UserGroupBase, DeletedStatsBase
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import UserGroup, LastReads, DeletedStats, UserGroupStats, UnDeletedGroup
+from dinofw.rest.models import UserGroup, LastReads, DeletedStats, UnDeletedGroup
 from dinofw.rest.models import UserStats
-from dinofw.rest.queries import ActionLogQuery, LastReadQuery
+from dinofw.rest.queries import ActionLogQuery, LastReadQuery, SessionUser
 from dinofw.rest.queries import DeleteAttachmentQuery
 from dinofw.rest.queries import GroupQuery
 from dinofw.rest.queries import GroupUpdatesQuery
@@ -27,6 +27,18 @@ class UserResource(BaseResource):
     async def get_deleted_groups(self, user_id: int, db: Session) -> List[DeletedStats]:
         deleted_groups: List[DeletedStatsBase] = self.env.db.get_deleted_groups_for_user(user_id, db)
         return to_deleted_stats(deleted_groups)
+
+    async def update_user_sessions(self, users: List[SessionUser]):
+        current_online_users: Set[int] = self.env.cache.get_online_users()
+
+        new_users_online = {user.user_id for user in users}
+        offline_users = [user_id for user_id in current_online_users if user_id not in new_users_online]
+
+        self.env.cache.set_online_users(offline_users, list(new_users_online))
+
+        # only notify if someone left
+        if offline_users:
+            self.env.server_publisher.offline_users(offline_users)
 
     async def get_all_user_stats_for_user(
         self, user_id: int, db: Session

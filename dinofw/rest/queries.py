@@ -29,6 +29,18 @@ class ActionLogQuery(BaseModel):
     receiver_id: Optional[int]
 
 
+class SessionUser(AbstractQuery):
+    client_id: str
+    is_online: bool
+    topic: str
+    community: str
+    user_id: int
+
+
+class UpdateSessionsQuery(AbstractQuery):
+    users: List[SessionUser]
+
+
 class CreateActionLogQuery(AbstractQuery):
     action_log: Optional[ActionLogQuery]
 

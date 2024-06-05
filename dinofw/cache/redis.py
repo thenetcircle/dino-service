@@ -3,7 +3,7 @@ import sys
 from contextlib import contextmanager
 from datetime import datetime as dt
 from datetime import timedelta
-from typing import Dict
+from typing import Dict, Set
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -12,7 +12,7 @@ import redis
 from loguru import logger
 
 from dinofw.cache import ICache
-from dinofw.utils import to_dt
+from dinofw.utils import to_dt, split_into_chunks
 from dinofw.utils.config import ConfigKeys
 from dinofw.utils.config import RedisKeys
 
@@ -286,6 +286,20 @@ class CacheRedis(ICache):
             return None
 
         return int(float(status))
+
+    def get_online_users(self) -> Set[int]:
+        return self.redis.smembers(RedisKeys.online_users())
+
+    def set_online_users(self, offline: List[int], online: List[int]) -> None:
+        key = RedisKeys.online_users()
+
+        logger.info(f"removing {len(offline)} users from online member set")
+        for del_chunk in split_into_chunks(offline, 100):
+            self.redis.srem(key, *del_chunk)
+
+        logger.info(f"adding {len(offline)} users to online member set")
+        for add_chunk in split_into_chunks(online, 100):
+            self.redis.sadd(key, *add_chunk)
 
     def set_group_status(self, group_id: str, status: int) -> None:
         key = RedisKeys.group_status(group_id)
