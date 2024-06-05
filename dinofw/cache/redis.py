@@ -297,7 +297,7 @@ class CacheRedis(ICache):
         for del_chunk in split_into_chunks(offline, 100):
             self.redis.srem(key, *del_chunk)
 
-        logger.info(f"adding {len(offline)} users to online member set")
+        logger.info(f"adding {len(online)} users to online member set")
         for add_chunk in split_into_chunks(online, 100):
             self.redis.sadd(key, *add_chunk)
 
