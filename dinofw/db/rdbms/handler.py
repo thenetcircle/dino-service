@@ -481,6 +481,10 @@ class RelationalHandler:
                 statement = statement.filter(
                     GroupEntity.group_type.in_(GroupTypes.public_group_types)
                 )
+            else:
+                statement = statement.filter(
+                    GroupEntity.group_type.in_(GroupTypes.private_group_types)
+                )
 
             return (
                 statement.order_by(

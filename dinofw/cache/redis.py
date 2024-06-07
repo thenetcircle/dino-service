@@ -300,6 +300,12 @@ class CacheRedis(ICache):
         for add_chunk in split_into_chunks(online, 100):
             self.redis.sadd(key, *add_chunk)
 
+    def set_online_user(self, user_id: int) -> None:
+        self.redis.sadd(RedisKeys.online_users(), user_id)
+
+    def set_offline_user(self, user_id: int) -> None:
+        self.redis.srem(RedisKeys.online_users(), user_id)
+
     def set_group_status(self, group_id: str, status: int) -> None:
         key = RedisKeys.group_status(group_id)
         self.redis.set(key, status)

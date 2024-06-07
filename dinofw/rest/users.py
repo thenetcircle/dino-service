@@ -40,6 +40,13 @@ class UserResource(BaseResource):
         if offline_users:
             self.env.server_publisher.offline_users(offline_users)
 
+    async def update_real_time_user_session(self, user: SessionUser):
+        if user.is_online:
+            self.env.cache.set_online_user(user.user_id)
+        else:
+            self.env.cache.set_offline_user(user.user_id)
+            self.env.server_publisher.offline_users([user.user_id])
+
     async def get_all_user_stats_for_user(
         self, user_id: int, db: Session
     ) -> List[UnDeletedGroup]:
