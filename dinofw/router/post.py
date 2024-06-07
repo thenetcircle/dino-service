@@ -267,6 +267,8 @@ async def get_groups_updated_since(
     Get a list of groups for this user that has changed since a certain time, sorted
     by last message sent. Used to sync changes to mobile apps.
 
+    This api only includes public/private groups, it does not include public/private rooms.
+
     If `count_unread` is False, the field `unread` will have the value `-1`, and
     similarly if `receiver_unread` is False, the field `receiver_unread` will have
     the value `-1`.
