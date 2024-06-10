@@ -29,12 +29,14 @@ class UserResource(BaseResource):
         return to_deleted_stats(deleted_groups)
 
     async def update_user_sessions(self, users: List[SessionUser]):
-        current_online_users: Set[int] = self.env.cache.get_online_users()
+        # current_online_users: Set[int] = self.env.cache.get_online_users()
 
-        new_users_online = {user.user_id for user in users if user.user_id not in current_online_users}
-        offline_users = [user_id for user_id in current_online_users if user_id not in new_users_online]
+        online_users = [user.user_id for user in users if user.is_online]
+        offline_users = [user.user_id for user in users if not user.is_online]
 
-        self.env.cache.set_online_users(offline_users, list(new_users_online))
+        # offline_users = [user_id for user_id in current_online_users if user_id not in new_users_online]
+
+        self.env.cache.set_online_users(offline_users, online_users)
 
         # only notify if someone left
         if offline_users:
