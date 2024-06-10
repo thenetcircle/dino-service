@@ -134,12 +134,7 @@ class KafkaPublishHandler(IServerPublishHandler):
             self.publisher.send(event)
 
     def offline_users(self, user_ids: List[int]) -> None:
-        logger.info("sending offline users to kafka: {}".format(','.join([str(user_id) for user_id in user_ids])))
-
         event = ActivityBuilder.enrich(self.env, {
-            "actor": {
-                "id": "0",
-            },
             "object": {
                 "objectType": "users",
                 "attachments": [{
@@ -151,9 +146,8 @@ class KafkaPublishHandler(IServerPublishHandler):
             "title": "messenger.users.offline"
         })
 
-        logger.debug(f"sending offline event to kafka: {event}")
-        # TODO: enable
-        # self.publisher.send(event)
+        logger.debug("sending offline users to kafka {}".format(','.join([str(user_id) for user_id in user_ids])))
+        self.publisher.send(event)
 
     def generate_event(self, group_id: str, attachments: List[MessageBase], user_ids: List[int]) -> dict:
         # same owner for all attachments

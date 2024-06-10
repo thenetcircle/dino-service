@@ -56,14 +56,34 @@ async def update_user_stats(user_id: int, db: Session = Depends(get_db)) -> Resp
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.put("/sessions", response_model=None)
+
+@router.put("/mqtt/session", response_model=None)
 @timeit(logger, "POST", "/sessions")
 @wrap_exception()
-async def update_sessions(query: UpdateSessionsQuery) -> None:
+async def update_single_mqtt_session(query: UpdateSessionsQuery) -> None:
     """
     INTERNAL API.
 
-    Used by the MQTT bridge to track offline status.
+    Used by the MQTT bridge to track real-time session updates.
+    """
+    try:
+        return await environ.env.rest.user.update_real_time_user_session(query.users[0])
+    except NoSuchGroupException as e:
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
+    except UserNotInGroupException as e:
+        log_error_and_raise_known(ErrorCodes.USER_NOT_IN_GROUP, sys.exc_info(), e)
+    except Exception as e:
+        log_error_and_raise_unknown(sys.exc_info(), e)
+
+
+@router.put("/mqtt/sessions", response_model=None)
+@timeit(logger, "POST", "/sessions")
+@wrap_exception()
+async def update_batch_mqtt_sessions(query: UpdateSessionsQuery) -> None:
+    """
+    INTERNAL API.
+
+    Used by the MQTT bridge to track offline status in batches.
     """
     try:
         return await environ.env.rest.user.update_user_sessions(query.users)
