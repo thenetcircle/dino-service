@@ -51,7 +51,7 @@ async def is_user_online(user_id: int) -> IsOnline:
     """
     return IsOnline(
         user_id=user_id,
-        online=environ.env.cache.is_online(user_id)
+        is_online=environ.env.cache.is_online(user_id)
     )
 
 
