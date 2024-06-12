@@ -1,5 +1,5 @@
 import sys
-from typing import Optional, List
+from typing import Optional
 
 from fastapi import APIRouter
 from fastapi import Depends
@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from dinofw.rest.models import ClientID, AllDeletedStats, Histories, AllUnDeletedGroups
 from dinofw.rest.models import UserGroup
+from dinofw.rest.models import IsOnline
 from dinofw.rest.models import UsersGroup
 from dinofw.rest.queries import GroupInfoQuery
 from dinofw.utils import environ
@@ -36,6 +37,21 @@ async def get_next_available_client_id(domain: str, user_id: int) -> ClientID:
     """
     return ClientID(
         client_id=await environ.env.rest.user.get_next_client_id(domain, user_id)
+    )
+
+
+@router.get("/online/{user_id}", response_model=IsOnline)
+@wrap_exception()
+async def is_user_online(user_id: int) -> IsOnline:
+    """
+    Check is a user is online or not in public/private rooms.
+
+    **Potential error codes in response:**
+    * `250`: if an unknown error occurred.
+    """
+    return IsOnline(
+        user_id=user_id,
+        online=environ.env.cache.is_online(user_id)
     )
 
 

@@ -85,6 +85,11 @@ class AllDeletedStats(BaseModel):
     stats: List[DeletedStats]
 
 
+class IsOnline(BaseModel):
+    user_id: int
+    is_online: bool
+
+
 class AllUnDeletedGroups(BaseModel):
     stats: List[UnDeletedGroup]
 
