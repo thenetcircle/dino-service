@@ -220,6 +220,11 @@ def init_producer(gn_env: GNEnvironment) -> None:
 def initialize_env(dino_env):
     is_deleter_service = os.getenv("DINO_DELETER") is not None
 
+    # chat and messenger uses the same mqtt topic but different secret files
+    env_override = dino_env.config.get(ConfigKeys.ENVIRONMENT_OVERRIDE, default=None)
+    if env_override and len(env_override) and not env_override.startswith("$"):
+        dino_env.config.set(ConfigKeys.ENVIRONMENT, env_override)
+
     init_logging(dino_env)
     init_database(dino_env)
     init_cassandra(dino_env)

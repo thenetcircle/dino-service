@@ -116,6 +116,7 @@ class CassandraHandler:
         # used for serial consistency level when inserting images with "if not exists"
         self.session = cluster.connect(key_space)
 
+        # from cassandra.cqlengine.management import sync_table
         # sync_table(MessageModel)
         # sync_table(AttachmentModel)
 

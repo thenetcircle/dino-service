@@ -244,6 +244,9 @@ class ConfigKeys:
     ROOM_MAX_HISTORY_DAYS = "room_max_history_days"
     ROOM_MAX_HISTORY_COUNT = "room_max_history_count"
 
+    # can be used to override the environment name used in `_environment`
+    ENVIRONMENT_OVERRIDE = "environment_override"
+
     # will be overwritten even if specified in config file
     ENVIRONMENT = "_environment"
     VERSION = "_version"

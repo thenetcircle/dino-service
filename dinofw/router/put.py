@@ -56,7 +56,6 @@ async def update_user_stats(user_id: int, db: Session = Depends(get_db)) -> Resp
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-
 @router.put("/mqtt/session", response_model=None)
 @timeit(logger, "POST", "/sessions")
 @wrap_exception()
