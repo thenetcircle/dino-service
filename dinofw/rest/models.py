@@ -90,6 +90,10 @@ class IsOnline(BaseModel):
     is_online: bool
 
 
+class OnlineCount(BaseModel):
+    online_count: int
+
+
 class AllUnDeletedGroups(BaseModel):
     stats: List[UnDeletedGroup]
 

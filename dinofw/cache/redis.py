@@ -287,6 +287,21 @@ class CacheRedis(ICache):
 
         return int(float(status))
 
+    def count_online(self):
+        key = RedisKeys.online_users()
+
+        online_count = self.cache.get(key)
+        if online_count is not None:
+            return online_count
+
+        online_count = self.redis.scard(RedisKeys.online_users())
+        if online_count is None:
+            online_count = 0
+
+        self.cache.set(key, online_count, ttl=30)
+
+        return online_count
+
     def is_online(self, user_id: int) -> bool:
         return self.redis.sismember(RedisKeys.online_users(), user_id)
 
