@@ -20,6 +20,14 @@ class ActionLogQuery(BaseModel):
     # sometimes, the preview should update, but not the time (i.e. keep ordering of conversations)
     update_last_message_time: Optional[bool] = True
 
+    unhide_group: Optional[bool] = Field(
+        default=True,
+        description="""
+            When a user changes his/her nickname, an action log is created in all groups, 
+            but in this case we don't want to unhide all the groups. Default value is True.
+        """
+    )
+
     # in some cases the api route doesn't include the user id, e.g.
     # join/kick/etc., but should be recorded on the action log
     user_id: Optional[int]

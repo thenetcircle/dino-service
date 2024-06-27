@@ -607,6 +607,7 @@ class RelationalHandler:
         update_unread_count: bool = True,
         update_last_message: bool = True,
         update_last_message_time: bool = True,
+        unhide_group: bool = True,
         mentions: List[int] = None
     ) -> GroupBase:
         group = (
@@ -727,12 +728,16 @@ class RelationalHandler:
             statement.update({
                 UserGroupStatsEntity.last_updated_time: sent_time,
                 UserGroupStatsEntity.unread_count: UserGroupStatsEntity.unread_count + 1,
-                UserGroupStatsEntity.hide: False,
                 UserGroupStatsEntity.deleted: False
             })
         else:
             statement.update({
                 UserGroupStatsEntity.last_updated_time: sent_time,
+            })
+
+        if unhide_group:
+            statement.update({
+                UserGroupStatsEntity.hide: False
             })
 
         # update 'sent_message_count' in cache

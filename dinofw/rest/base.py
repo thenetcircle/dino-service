@@ -98,6 +98,7 @@ class BaseResource(ABC):
             should_increase_unread=query.update_unread_count,
             update_last_message=query.update_last_message,
             update_last_message_time=query.update_last_message_time,
+            unhide_group=query.unhide_group,
             event_type=EventTypes.ACTION_LOG
         )
 
@@ -113,6 +114,7 @@ class BaseResource(ABC):
             event_type: EventTypes,
             update_last_message: bool = True,
             update_last_message_time: bool = True,
+            unhide_group: bool = True,
             mentions: List[int] = None
     ) -> Optional[GroupBase]:
         """
@@ -127,6 +129,7 @@ class BaseResource(ABC):
             update_unread_count=should_increase_unread,
             update_last_message=update_last_message,
             update_last_message_time=update_last_message_time,
+            unhide_group=unhide_group,
             mentions=mentions
         )
 
