@@ -510,6 +510,10 @@ async def create_action_log_in_all_groups_for_user(
     Only the `payload` field in the request body will be used by this API,
     any other fields that are specified will be ignored.
 
+    The action log parameter `unhide_group` can be set to False. This is
+    useful when a user is changing his/her nickname, otherwise all groups
+    for this user will be unhidden. Default value is True.
+
     This API is run asynchronously, and returns a `201 Created` instead of
     `200 OK`.
 

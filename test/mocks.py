@@ -507,6 +507,7 @@ class FakeDatabase:
         update_unread_count: bool = True,
         update_last_message: bool = True,
         update_last_message_time: bool = True,
+        unhide_group: bool = True,
         mentions: List[int] = None
     ):
         if message.group_id not in self.groups:
