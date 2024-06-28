@@ -736,6 +736,7 @@ class RelationalHandler:
             })
 
         if unhide_group:
+            self.env.cache.set_hide_group(group.group_id, False)
             statement.update({
                 UserGroupStatsEntity.hide: False
             })
@@ -1821,8 +1822,12 @@ class RelationalHandler:
         db.commit()
 
     def update_last_read_and_sent_in_group_for_user(
-        self, group_id: str, user_id: int, the_time: dt, db: Session
+        self, group_id: str, user_id: int, the_time: dt, db: Session, unhide_group: bool = True
     ) -> None:
+        """
+        :param unhide_group: when creating action logs in all of a user's groups, e.g. when the user is changing
+         username, an action log is created in all groups, but we don't want to unhide all groups
+        """
         user_stats = (
             db.query(UserGroupStatsEntity)
             .filter(UserGroupStatsEntity.user_id == user_id)
@@ -1839,9 +1844,10 @@ class RelationalHandler:
 
             # used for user global stats api
             self.env.cache.set_last_sent_for_user(user_id, group_id, the_time_ts, pipeline=p)
-
-            self.env.cache.set_hide_group(group_id, False, pipeline=p)
             self.env.cache.set_unread_in_group(group_id, user_id, 0, pipeline=p)
+
+            if unhide_group:
+                self.env.cache.set_hide_group(group_id, False, pipeline=p)
 
             # if the user sends a message while having unread messages in the group (maybe can happen on the app?)
             if current_unread_count is not None and current_unread_count > 0:
@@ -1858,7 +1864,9 @@ class RelationalHandler:
         # if the user is sending a message without opening the conversation, we have to make sure the group
         # is not deleted or hidden after (opening a conversation would set these two to False as well)
         user_stats.deleted = False
-        user_stats.hide = False
+
+        if unhide_group:
+            user_stats.hide = False
 
         if user_stats.first_sent is None:
             user_stats.first_sent = the_time
