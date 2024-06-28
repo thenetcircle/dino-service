@@ -137,14 +137,14 @@ class BaseResource(ABC):
         if not len(user_ids):
             return None
 
-        if user_id not in user_ids:
+        if user_id not in user_ids and unhide_group:
             # if the user deleted the group, this is an action log for the
             # deletion, and we only have to un-hide it for the other user(s)
             self.env.cache.set_hide_group(group_id, False)
         else:
             # otherwise we update as normal
             self.env.db.update_last_read_and_sent_in_group_for_user(
-                group_id, user_id, message.created_at, db
+                group_id, user_id, message.created_at, db, unhide_group=unhide_group
             )
 
         if event_type == EventTypes.ATTACHMENT:

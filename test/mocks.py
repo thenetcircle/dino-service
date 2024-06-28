@@ -693,7 +693,7 @@ class FakeDatabase:
             self.groups[group_id].updated_at = now
 
     def update_last_read_and_sent_in_group_for_user(
-        self, group_id: str, user_id: int, created_at: dt, _
+        self, group_id: str, user_id: int, created_at: dt, db, unhide_group=True
     ) -> None:
         to_add = UserGroupStatsBase(
             group_id=group_id,
