@@ -92,6 +92,7 @@ class CassandraHandler:
             "protocol_version": 3,
             "retry_connect": True,
             "execution_profiles": profiles,
+            "auth_provider": None
         }
 
         username = self._get_from_conf(ConfigKeys.USER, ConfigKeys.STORAGE)
