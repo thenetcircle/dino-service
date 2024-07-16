@@ -1,7 +1,7 @@
 from typing import List
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class AbstractQuery(BaseModel):
@@ -20,6 +20,14 @@ class ActionLogQuery(BaseModel):
     # sometimes, the preview should update, but not the time (i.e. keep ordering of conversations)
     update_last_message_time: Optional[bool] = True
 
+    unhide_group: Optional[bool] = Field(
+        default=True,
+        description="""
+            When a user changes his/her nickname, an action log is created in all groups, 
+            but in this case we don't want to unhide all the groups. Default value is True.
+        """
+    )
+
     # in some cases the api route doesn't include the user id, e.g.
     # join/kick/etc., but should be recorded on the action log
     user_id: Optional[int]
@@ -27,6 +35,18 @@ class ActionLogQuery(BaseModel):
     # POST /actions api specifies group_id/receiver_id on the query for generic action logs
     group_id: Optional[str]
     receiver_id: Optional[int]
+
+
+class SessionUser(AbstractQuery):
+    client_id: str
+    is_online: bool
+    topic: str
+    community: str
+    user_id: int
+
+
+class UpdateSessionsQuery(AbstractQuery):
+    users: List[SessionUser]
 
 
 class CreateActionLogQuery(AbstractQuery):
@@ -45,6 +65,7 @@ class AdminQuery(AbstractQuery):
 
 
 class NotificationGroup(AbstractQuery):
+    topic: Optional[str]  # send to specific "group" topic instead of single user topics, e.g. chatops topic
     user_ids: Optional[List[int]]
     data: dict
 
@@ -110,6 +131,7 @@ class LastReadQuery(AbstractQuery):
 class CreateGroupQuery(AbstractQuery):
     users: List[int]
 
+    language: Optional[str]
     group_name: str
     group_type: int
     description: Optional[str]
@@ -157,6 +179,18 @@ class UpdateGroupQuery(CreateActionLogQuery):
     owner: Optional[int]
     group_name: Optional[str]
     description: Optional[str]
+
+
+class PublicGroupQuery(AdminQuery):
+    users: Optional[List[int]] = Field(
+        description='List of user ids to get public rooms for. If not provided, will return all public groups.',
+        default=None
+    )
+    include_archived: Optional[bool] = False
+    spoken_languages: Optional[List[str]] = Field(
+        description='List of ISO 639-1 language codes. E.g. "en" for English, "de" for German, "ja" for Japanese.',
+        default=None
+    )
 
 
 class MessageInfoQuery(AbstractQuery):

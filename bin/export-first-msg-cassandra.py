@@ -28,8 +28,8 @@ def split_into_chunks(objects, n):
 """
 get group ids using this query:
 
-dinoms_popp_prod=# copy (select group_id from groups where updated_at >= '2023-12-07 02:10:00+00' and first_message_at < '2023-12-07 03:25:00+00') to '/tmp/popp_msgs_psql-231207.csv' (format csv);
-COPY 104871
+dinoms_feti_prod=# copy (select group_id from groups where updated_at >= '2024-03-18 02:50:00+00' and first_message_time < '2024-03-18 02:56:00+00') to '/tmp/feti_msgs_psql-240320.csv' (format csv);
+COPY 108091
 """
 
 
@@ -37,10 +37,10 @@ with open(sys.argv[1]) as f:
     group_ids = [g.replace('\n', '') for g in f.readlines()]
 
 
-from_time = '2023-12-07 03:25:00.000+0000'
-to_time = '2023-12-07 07:25:00.000+0000'
+from_time = '2024-03-18 02:50:00.000+0000'
+to_time = '2023-12-07 02:56:00.000+0000'
 
-with open('popp_msgs_cassandra-231212.csv', 'w') as f:
+with open('feti_msgs_cassandra-240320.csv', 'w') as f:
     f.write('sender_id,receiver_id,created_at\n')
 
     for group_ids in tqdm(split_into_chunks(group_ids, 100), total=len(group_ids) / 100):
@@ -49,7 +49,7 @@ with open('popp_msgs_cassandra-231212.csv', 'w') as f:
             "--request-timeout=3600",
             "casd1",
             "-k",
-            "dinoms_popp_prod",
+            "dinoms_feti_prod",
             "-e"
             "paging off; select group_id, created_at, user_id from messages where group_id in ({}) and created_at > '{}' and created_at < '{}'".format(
                 ','.join(group_ids),

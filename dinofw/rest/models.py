@@ -1,7 +1,7 @@
 from typing import List
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ClientID(BaseModel):
@@ -85,6 +85,15 @@ class AllDeletedStats(BaseModel):
     stats: List[DeletedStats]
 
 
+class IsOnline(BaseModel):
+    user_id: int
+    is_online: bool
+
+
+class OnlineCount(BaseModel):
+    online_count: int
+
+
 class AllUnDeletedGroups(BaseModel):
     stats: List[UnDeletedGroup]
 
@@ -111,7 +120,14 @@ class Group(BaseModel):
     user_count: int
     name: str
     description: Optional[str]
-    status: Optional[int]
+
+    status: int
+    status_changed_at: Optional[float]
+
+    language: Optional[str] = Field(
+        description='ISO 639-1 language code. E.g. "en" for English, "de" for German, "ja" for Japanese.'
+    )
+
     group_type: int
     created_at: float
     updated_at: Optional[float]

@@ -50,8 +50,11 @@ class BroadcastResource(BaseResource):
             user_group.data["event_type"] = query.event_type
             user_group.data["group_id"] = query.group_id
 
-            for user_id in user_group.user_ids:
-                self.env.client_publisher.send_to_one(user_id, user_group.data)
+            if user_group.topic and len(user_group.topic):
+                self.env.client_publisher.send_to_topic(user_group.topic, user_group.data)
+            else:
+                for user_id in user_group.user_ids:
+                    self.env.client_publisher.send_to_one(user_id, user_group.data)
 
     def get_stats_for(self, group_id: str, db: Session):
         return {

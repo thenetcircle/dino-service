@@ -10,7 +10,7 @@ from starlette.responses import Response
 from starlette.status import HTTP_201_CREATED
 
 from dinofw.rest.models import Message
-from dinofw.rest.queries import JoinGroupQuery, EditMessageQuery
+from dinofw.rest.queries import JoinGroupQuery, EditMessageQuery, UpdateSessionsQuery
 from dinofw.rest.queries import UpdateGroupQuery
 from dinofw.rest.queries import UpdateUserGroupStats
 from dinofw.utils import environ
@@ -52,6 +52,44 @@ async def update_user_stats(user_id: int, db: Session = Depends(get_db)) -> Resp
     try:
         task = BackgroundTask(set_last_updated, user_id_=user_id, db_=db)
         return Response(background=task, status_code=HTTP_201_CREATED)
+    except Exception as e:
+        log_error_and_raise_unknown(sys.exc_info(), e)
+
+
+@router.put("/mqtt/session", response_model=None)
+@timeit(logger, "POST", "/sessions")
+@wrap_exception()
+async def update_single_mqtt_session(query: UpdateSessionsQuery) -> None:
+    """
+    INTERNAL API.
+
+    Used by the MQTT bridge to track real-time session updates.
+    """
+    try:
+        return await environ.env.rest.user.update_real_time_user_session(query.users[0])
+    except NoSuchGroupException as e:
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
+    except UserNotInGroupException as e:
+        log_error_and_raise_known(ErrorCodes.USER_NOT_IN_GROUP, sys.exc_info(), e)
+    except Exception as e:
+        log_error_and_raise_unknown(sys.exc_info(), e)
+
+
+@router.put("/mqtt/sessions", response_model=None)
+@timeit(logger, "POST", "/sessions")
+@wrap_exception()
+async def update_batch_mqtt_sessions(query: UpdateSessionsQuery) -> None:
+    """
+    INTERNAL API.
+
+    Used by the MQTT bridge to track offline status in batches.
+    """
+    try:
+        return await environ.env.rest.user.update_user_sessions(query.users)
+    except NoSuchGroupException as e:
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
+    except UserNotInGroupException as e:
+        log_error_and_raise_known(ErrorCodes.USER_NOT_IN_GROUP, sys.exc_info(), e)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 
@@ -141,7 +179,26 @@ async def edit_group_information(
     group_id, query: UpdateGroupQuery, db: Session = Depends(get_db)
 ) -> Message:
     """
-    Update group details.
+    Update group details, such as the group name, owner, or whether to archive the group.
+
+    When a group is deleted, it is not removed from the database, but marked as deleted. Users will be kicked out of
+    the room and the room will not be visible in the conversation list. A group can be un-deleted, but the group will
+    not be restored to its previous state, e.g. the users that were in the group will not be re-added.
+
+    When a group is archived, it is not removed from the database, but marked as archived. Users will not be able to
+    send messages to the room, but the room will be visible in the conversation list if `include_archived` is set to
+    `True`. Archive is meant to be used for rooms that are not active anymore, but should not be deleted, in case it
+    will be brought back at a later time.
+
+    When a group is frozen, it is not removed from the database, but is marked as frozen. Users will not be able to
+    send messages to the room, but the room will be visible in the conversation list. A group is normally frozen if a
+    review process is in the works, e.g. for a group that is reported for inappropriate content.
+
+    Deleted, archived and frozen are mutually exclusive states, and is decided by the `status` parameter:
+    * `0`: normal state,
+    * `-1`: frozen,
+    * `-2`: archived,
+    * `-3`: deleted.
 
     **Potential error codes in response:**
     * `601`: if the group does not exist,
@@ -165,6 +222,9 @@ async def join_group(
 ) -> Optional[Message]:
     """
     Join a group.
+
+    If this is a public/private room, this user will get a `delete_before` set to 1 month ago, or max 500 msgs ago. If
+    it's a public/private group, `delete_before` will be the same as the join time (no message history).
 
     **Potential error codes in response:**
     * `601`: if the group does not exist,

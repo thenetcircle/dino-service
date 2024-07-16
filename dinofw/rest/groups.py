@@ -14,7 +14,8 @@ from dinofw.rest.models import Histories
 from dinofw.rest.models import Message
 from dinofw.rest.models import OneToOneStats
 from dinofw.rest.models import UserGroupStats
-from dinofw.rest.queries import CreateActionLogQuery, DeleteAttachmentQuery, AdminQuery, CountMessageQuery
+from dinofw.rest.queries import CreateActionLogQuery, DeleteAttachmentQuery, AdminQuery, CountMessageQuery, \
+    PublicGroupQuery
 from dinofw.rest.queries import CreateGroupQuery
 from dinofw.rest.queries import GroupInfoQuery
 from dinofw.rest.queries import JoinGroupQuery
@@ -25,11 +26,11 @@ from dinofw.utils import to_dt, is_non_zero, one_year_ago
 from dinofw.utils import to_ts
 from dinofw.utils import utcnow_dt
 from dinofw.utils import utcnow_ts
-from dinofw.utils.config import GroupTypes
+from dinofw.utils.config import GroupTypes, GroupStatus
 from dinofw.utils.convert import group_base_to_group
 from dinofw.utils.convert import message_base_to_message
 from dinofw.utils.convert import to_user_group_stats
-from dinofw.utils.exceptions import InvalidRangeException
+from dinofw.utils.exceptions import InvalidRangeException, NoSuchGroupException, GroupIsFrozenOrArchivedException
 from dinofw.utils.exceptions import UserIsKickedException
 
 
@@ -50,6 +51,23 @@ class GroupResource(BaseResource):
         return GroupUsers(
             group_id=group_id, owner_id=group.owner_id, user_count=n_users, users=users,
         )
+
+    async def get_all_public_groups(self, query: PublicGroupQuery, db: Session) -> List[Group]:
+        group_bases = self.env.db.get_public_groups(query, db)
+        groups = list()
+
+        # TODO: skip users if only checking rooms for user ids
+        for group in group_bases:
+            _, first_users, n_users = self.env.db.get_users_in_group(group.group_id, db, include_group=False)
+            groups.append(
+                group_base_to_group(
+                    group,
+                    users=first_users,
+                    user_count=n_users
+                )
+            )
+
+        return groups
 
     async def get_group(
             self,
@@ -186,9 +204,6 @@ class GroupResource(BaseResource):
     async def histories(
         self, group_id: str, user_id: int, query: MessageQuery, db: Session
     ) -> Histories:
-        def get_user_stats():
-            return self.env.db.get_user_stats_in_group(group_id, user_id, db)
-
         def get_messages():
             # need to batch query cassandra, can't filter by user id
             if query.only_sender:
@@ -205,13 +220,23 @@ class GroupResource(BaseResource):
                 for message in _messages
             ]
 
+        # TODO: don't return history for archived or deleted groups unless admin
+
         if query.since is None and query.until is None:
             raise InvalidRangeException("both 'since' and 'until' was empty, need at least one")
 
         # if query.since is not None and query.until is not None:
         #     raise InvalidRangeException("only one of parameters 'since' and 'until' can be used at the same time")
 
-        user_stats = get_user_stats()
+        group_status = self.env.db.get_group_status(group_id, db)
+        if group_status is None:
+            raise NoSuchGroupException(group_id)
+
+        if group_status != GroupStatus.DEFAULT:
+            error_message = f"group {group_id} is {GroupStatus.to_str(group_status)}"
+            raise GroupIsFrozenOrArchivedException(error_message)
+
+        user_stats = self.env.db.get_user_stats_in_group(group_id, user_id, db)
         if user_stats.kicked:
             raise UserIsKickedException(group_id, user_id)
 
@@ -282,7 +307,11 @@ class GroupResource(BaseResource):
             users.update({user_id: float(now_ts) for user_id in query.users})
 
         self.env.db.update_user_stats_on_join_or_create_group(
-            group_base.group_id, users, now, db
+            group_id=group_base.group_id,
+            users=users,
+            now=now,
+            group_type=group_base.group_type,
+            db=db
         )
 
         group = group_base_to_group(
@@ -297,16 +326,18 @@ class GroupResource(BaseResource):
     async def update_group_information(
         self, group_id: str, query: UpdateGroupQuery, db: Session
     ) -> Message:
-        group = self.env.db.update_group_information(group_id, query, db)
+        self.env.db.update_group_information(group_id, query, db)
         self.env.db.set_last_updated_at_for_all_in_group(group_id, db)
 
+        action_log = self.create_action_log(query.action_log, db, group_id=group_id)
+
+        """
         user_ids_and_join_times = self.env.db.get_user_ids_and_join_time_in_group(
             group.group_id, db
         )
         user_ids = user_ids_and_join_times.keys()
-
-        action_log = self.create_action_log(query.action_log, db, group_id=group_id)
-        # self.env.client_publisher.group_change(group, user_ids)
+        self.env.client_publisher.group_change(group, user_ids)
+        """
 
         return action_log
 
@@ -319,9 +350,23 @@ class GroupResource(BaseResource):
             for user_id in query.users
         }
 
+        group_type = self.env.cache.get_group_type(group_id)
+
+        if group_type is None:
+            group_types = self.env.db.get_group_types([group_id], db)
+            if group_id not in group_types:
+                raise NoSuchGroupException(group_id)
+
+            group_type = group_types[group_id]
+            self.env.cache.set_group_type(group_id, group_type)
+
         self.env.db.set_groups_updated_at([group_id], now, db)
         self.env.db.update_user_stats_on_join_or_create_group(
-            group_id, user_ids_and_last_read, now, db
+            group_id=group_id,
+            users=user_ids_and_last_read,
+            now=now,
+            group_type=group_type,
+            db=db
         )
 
         if not query.action_log:
@@ -330,10 +375,11 @@ class GroupResource(BaseResource):
         return self.create_action_log(query.action_log, db, group_id=group_id)
 
     def leave_groups(
-            self, group_id_to_type: dict, user_id: int, query: CreateActionLogQuery, db: Session
+            self, group_ids: List[str], user_id: int, query: CreateActionLogQuery, db: Session
     ) -> List[Message]:
-        group_ids = list(group_id_to_type.keys())
         now = utcnow_dt()
+
+        group_id_to_type = self.env.db.get_group_types(group_ids, db)
 
         self.env.db.copy_to_deleted_groups_table(group_id_to_type, user_id, db)
         self.env.db.remove_user_group_stats_for_user(group_ids, user_id, db)
@@ -344,7 +390,7 @@ class GroupResource(BaseResource):
 
         for group_id, group_type in group_id_to_type.items():
             # no need for an action log in 1v1 groups, it's not going to be shown anyway
-            if group_type == GroupTypes.GROUP:
+            if group_type != GroupTypes.ONE_TO_ONE:
                 action_logs.append(
                     self.create_action_log(query.action_log, db, user_id=user_id, group_id=group_id)
                 )

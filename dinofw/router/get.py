@@ -8,7 +8,9 @@ from sqlalchemy.orm import Session
 
 from dinofw.rest.models import ClientID, AllDeletedStats, Histories, AllUnDeletedGroups
 from dinofw.rest.models import UserGroup
+from dinofw.rest.models import IsOnline
 from dinofw.rest.models import UsersGroup
+from dinofw.rest.models import OnlineCount
 from dinofw.rest.queries import GroupInfoQuery
 from dinofw.utils import environ
 from dinofw.utils.api import get_db
@@ -36,6 +38,35 @@ async def get_next_available_client_id(domain: str, user_id: int) -> ClientID:
     """
     return ClientID(
         client_id=await environ.env.rest.user.get_next_client_id(domain, user_id)
+    )
+
+
+@router.get("/online", response_model=OnlineCount)
+@wrap_exception()
+async def count_users_online() -> OnlineCount:
+    """
+    Count the number of users online.
+
+    **Potential error codes in response:**
+    * `250`: if an unknown error occurred.
+    """
+    return OnlineCount(
+        online_count=environ.env.cache.count_online()
+    )
+
+
+@router.get("/online/{user_id}", response_model=IsOnline)
+@wrap_exception()
+async def is_user_online(user_id: int) -> IsOnline:
+    """
+    Check is a user is online or not in public/private rooms.
+
+    **Potential error codes in response:**
+    * `250`: if an unknown error occurred.
+    """
+    return IsOnline(
+        user_id=user_id,
+        is_online=environ.env.cache.is_online(user_id)
     )
 
 

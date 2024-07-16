@@ -12,10 +12,10 @@ from dinofw.rest.queries import MessageQuery
 from dinofw.rest.queries import SendMessageQuery
 from dinofw.utils import users_to_group_id
 from dinofw.utils import utcnow_ts
-from dinofw.utils.config import EventTypes, MessageTypes
+from dinofw.utils.config import EventTypes, MessageTypes, GroupStatus
 from dinofw.utils.convert import message_base_to_message
 from dinofw.utils.exceptions import NoSuchUserException
-from dinofw.utils.exceptions import GroupIsFrozenException
+from dinofw.utils.exceptions import GroupIsFrozenOrArchivedException
 from dinofw.utils.exceptions import QueryValidationError
 
 
@@ -23,8 +23,12 @@ class MessageResource(BaseResource):
     async def send_message_to_group(
         self, group_id: str, user_id: int, query: SendMessageQuery, db: Session
     ) -> Message:
-        if self.env.db.is_group_frozen(group_id, db):
-            raise GroupIsFrozenException(group_id)
+        group_status = self.env.db.get_group_status(group_id, db)
+
+        # can be None if the group doesn't exist yet
+        if group_status is not None and group_status != GroupStatus.DEFAULT:
+            error_message = f"group {group_id} is {GroupStatus.to_str(group_status)}"
+            raise GroupIsFrozenOrArchivedException(error_message)
 
         message = self.env.storage.store_message(group_id, user_id, query)
 
@@ -49,11 +53,12 @@ class MessageResource(BaseResource):
             raise NoSuchUserException(query.receiver_id)
 
         group_id = users_to_group_id(user_id, query.receiver_id)
-        group_is_frozen = self.env.db.is_group_frozen(group_id, db)
+        group_status = self.env.db.get_group_status(group_id, db)
 
         # can be None if the group doesn't exist yet
-        if group_is_frozen is not None and group_is_frozen:
-            raise GroupIsFrozenException(group_id)
+        if group_status is not None and group_status != GroupStatus.DEFAULT:
+            error_message = f"group {group_id} is {GroupStatus.to_str(group_status)}"
+            raise GroupIsFrozenOrArchivedException(error_message)
 
         group_id = self._get_or_create_group_for_1v1(user_id, query.receiver_id, db)
         return await self.send_message_to_group(group_id, user_id, query, db)

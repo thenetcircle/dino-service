@@ -98,6 +98,7 @@ class BaseResource(ABC):
             should_increase_unread=query.update_unread_count,
             update_last_message=query.update_last_message,
             update_last_message_time=query.update_last_message_time,
+            unhide_group=query.unhide_group,
             event_type=EventTypes.ACTION_LOG
         )
 
@@ -113,6 +114,7 @@ class BaseResource(ABC):
             event_type: EventTypes,
             update_last_message: bool = True,
             update_last_message_time: bool = True,
+            unhide_group: bool = True,
             mentions: List[int] = None
     ) -> Optional[GroupBase]:
         """
@@ -127,6 +129,7 @@ class BaseResource(ABC):
             update_unread_count=should_increase_unread,
             update_last_message=update_last_message,
             update_last_message_time=update_last_message_time,
+            unhide_group=unhide_group,
             mentions=mentions
         )
 
@@ -134,14 +137,14 @@ class BaseResource(ABC):
         if not len(user_ids):
             return None
 
-        if user_id not in user_ids:
+        if user_id not in user_ids and unhide_group:
             # if the user deleted the group, this is an action log for the
             # deletion, and we only have to un-hide it for the other user(s)
             self.env.cache.set_hide_group(group_id, False)
         else:
             # otherwise we update as normal
             self.env.db.update_last_read_and_sent_in_group_for_user(
-                group_id, user_id, message.created_at, db
+                group_id, user_id, message.created_at, db, unhide_group=unhide_group
             )
 
         if event_type == EventTypes.ATTACHMENT:

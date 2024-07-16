@@ -19,7 +19,7 @@ from dinofw.rest.models import MessageCount
 from dinofw.rest.models import OneToOneStats
 from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UserStats
-from dinofw.rest.queries import ActionLogQuery, LastReadQuery
+from dinofw.rest.queries import ActionLogQuery, LastReadQuery, PublicGroupQuery
 from dinofw.rest.queries import AttachmentQuery
 from dinofw.rest.queries import CountMessageQuery
 from dinofw.rest.queries import CreateAttachmentQuery
@@ -40,7 +40,7 @@ from dinofw.utils.api import log_error_and_raise_known
 from dinofw.utils.api import log_error_and_raise_unknown
 from dinofw.utils.config import ErrorCodes
 from dinofw.utils.decorators import wrap_exception
-from dinofw.utils.exceptions import GroupIsFrozenException
+from dinofw.utils.exceptions import GroupIsFrozenOrArchivedException
 from dinofw.utils.exceptions import InvalidRangeException
 from dinofw.utils.exceptions import NoSuchAttachmentException
 from dinofw.utils.exceptions import NoSuchGroupException
@@ -58,6 +58,19 @@ router = APIRouter()
 @timeit(logger, "POST", "/notification/send")
 @wrap_exception()
 async def notify_users(query: NotificationQuery, db: Session = Depends(get_db)) -> None:
+    """
+    Send a notification to a group of users. The `notification` field is a list of `UserGroup` objects, each
+    containing a list of either user ids OR a topic name, plus the data payload.
+
+    If `topic` is specified, the `user_ids` parameter is ignored, and every user subscribed to the topic will receive
+    the notification. User for sending to ChatOps topics, or everyone in public rooms (e.g. room creation events), etc.
+
+    If `event_type` is either `group` or `message`, the user group stats will be included in the event, otherwise not,
+    and any `topic` specified will be ignored for these two event types.
+
+    When `topic` is specified (string), the final topic in MQTT that users will subscribe to will be
+    `dms/{environment}/{topic}`. For example, `dms/prod/chatops` for a `topic` param value of `chatops`.
+    """
     try:
         return await environ.env.rest.broadcast.broadcast_event(query, db)
     except Exception as e:
@@ -89,15 +102,38 @@ async def send_message_to_user(
 
     **Potential error codes in response:**
     * `604`: if the user does not exist,
-    * `607`: group is frozen and no message can be sent,
+    * `607`: group is frozen or archived and no message can be sent,
     * `250`: if an unknown error occurred.
     """
     try:
         return await environ.env.rest.message.send_message_to_user(user_id, query, db)
     except NoSuchUserException as e:
         log_error_and_raise_known(ErrorCodes.NO_SUCH_USER, sys.exc_info(), e)
-    except GroupIsFrozenException as e:
-        log_error_and_raise_known(ErrorCodes.GROUP_IS_FROZEN, sys.exc_info(), e)
+    except GroupIsFrozenOrArchivedException as e:
+        log_error_and_raise_known(ErrorCodes.GROUP_IS_FROZEN_OR_ARCHIVED, sys.exc_info(), e)
+    except Exception as e:
+        log_error_and_raise_unknown(sys.exc_info(), e)
+
+
+@router.post("/groups/public", response_model=Optional[List[Group]])
+@timeit(logger, "POST", "/groups/{group_id}/users")
+@wrap_exception()
+async def get_public_groups(query: PublicGroupQuery, db: Session = Depends(get_db)) -> List[Group]:
+    """
+    Get all public groups, including the user amount and a list of user ids in the group, sorted by their join time.
+
+    If `admin_id` is set, and `include_archived=true`, then archived groups are included as well, for admin backend use.
+
+    The `users` parameter can be set with a list of user ids, and the API will return only groups which these users are
+    in right now (if any).
+
+    This api ignores the value of `include_deleted`.
+
+    **Potential error codes in response:**
+    * `250`: if an unknown error occurred.
+    """
+    try:
+        return await environ.env.rest.group.get_all_public_groups(query, db)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 
@@ -171,6 +207,8 @@ async def get_group_history_for_user(
         log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
     except UserNotInGroupException as e:
         log_error_and_raise_known(ErrorCodes.USER_NOT_IN_GROUP, sys.exc_info(), e)
+    except GroupIsFrozenOrArchivedException as e:
+        log_error_and_raise_known(ErrorCodes.GROUP_IS_FROZEN_OR_ARCHIVED, sys.exc_info(), e)
     except InvalidRangeException as e:
         log_error_and_raise_known(ErrorCodes.WRONG_PARAMETERS, sys.exc_info(), e)
     except Exception as e:
@@ -229,6 +267,8 @@ async def get_groups_updated_since(
     Get a list of groups for this user that has changed since a certain time, sorted
     by last message sent. Used to sync changes to mobile apps.
 
+    This api only includes public/private groups, it does not include public/private rooms.
+
     If `count_unread` is False, the field `unread` will have the value `-1`, and
     similarly if `receiver_unread` is False, the field `receiver_unread` will have
     the value `-1`.
@@ -253,6 +293,24 @@ async def get_groups_updated_since(
     """
     try:
         return await environ.env.rest.user.get_groups_updated_since(user_id, query, db)
+    except Exception as e:
+        log_error_and_raise_unknown(sys.exc_info(), e)
+
+
+@router.post("/users/{user_id}/groups/updates/public", response_model=Optional[List[UserGroup]])
+@timeit(logger, "POST", "/users/{user_id}/groups/updates/public")
+@wrap_exception()
+async def get_public_groups_updated_since(
+        user_id: int, query: GroupUpdatesQuery, db: Session = Depends(get_db)
+) -> List[UserGroup]:
+    """
+    Exactly the same as `/v1/users/{user_id}/groups/updates/public`, but only for public groups.
+
+    **Potential error codes in response:**
+    * `250`: if an unknown error occurred.
+    """
+    try:
+        return await environ.env.rest.user.get_public_groups_updated_since(user_id, query, db)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 
@@ -342,8 +400,8 @@ async def send_message_to_group(
         log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
     except UserNotInGroupException as e:
         log_error_and_raise_known(ErrorCodes.USER_NOT_IN_GROUP, sys.exc_info(), e)
-    except GroupIsFrozenException as e:
-        log_error_and_raise_known(ErrorCodes.GROUP_IS_FROZEN, sys.exc_info(), e)
+    except GroupIsFrozenOrArchivedException as e:
+        log_error_and_raise_known(ErrorCodes.GROUP_IS_FROZEN_OR_ARCHIVED, sys.exc_info(), e)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 
@@ -509,6 +567,10 @@ async def create_action_log_in_all_groups_for_user(
 
     Only the `payload` field in the request body will be used by this API,
     any other fields that are specified will be ignored.
+
+    The action log parameter `unhide_group` can be set to False. This is
+    useful when a user is changing his/her nickname, otherwise all groups
+    for this user will be unhidden. Default value is True.
 
     This API is run asynchronously, and returns a `201 Created` instead of
     `200 OK`.

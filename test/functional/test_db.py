@@ -21,7 +21,12 @@ class TestDatabaseQueries(BaseDatabaseTest):
         session = self.env.session_maker()
         now = arrow.utcnow().datetime
 
-        ugs = self.env.db._create_user_stats(BaseTest.GROUP_ID, BaseTest.USER_ID, now)
+        ugs = self.env.db._create_user_stats(
+            group_id=BaseTest.GROUP_ID,
+            user_id=BaseTest.USER_ID,
+            group_type=GroupTypes.PRIVATE_GROUP,
+            default_dt=now
+        )
         session.add(ugs)
         session.commit()
 
@@ -61,7 +66,7 @@ class TestDatabaseQueries(BaseDatabaseTest):
             query = CreateGroupQuery(
                 users=users,
                 group_name=f"test group {i}",
-                group_type=GroupTypes.GROUP,
+                group_type=GroupTypes.PRIVATE_GROUP,
             )
 
             now = utcnow_dt()

@@ -1,11 +1,12 @@
 import json
 import time
+from typing import List
 
 import arrow
 
 from dinofw.utils import to_ts
 from dinofw.utils import utcnow_ts
-from dinofw.utils.config import MessageTypes, PayloadStatus
+from dinofw.utils.config import MessageTypes, PayloadStatus, GroupStatus
 from test.base import BaseTest
 from test.functional.base_db import BaseDatabaseTest
 
@@ -127,7 +128,8 @@ class BaseServerRestApi(BaseDatabaseTest):
         self.assertEqual(raw_response.status_code, 200)
 
     def send_message_to_group_from(
-        self, group_id: str, user_id: int = BaseTest.USER_ID, amount: int = 1, delay: int = 10
+        self, group_id: str, user_id: int = BaseTest.USER_ID,
+        amount: int = 1, delay: int = 10, expected_error_code: int = 200
     ) -> list:
         messages = list()
 
@@ -139,21 +141,35 @@ class BaseServerRestApi(BaseDatabaseTest):
                     "message_type": MessageTypes.MESSAGE,
                 },
             )
-            self.assertEqual(raw_response.status_code, 200)
-            messages.append(raw_response.json())
+
+            if expected_error_code == 200:
+                self.assertEqual(raw_response.status_code, 200)
+                response_json = raw_response.json()
+            else:
+                response_json = raw_response.json()
+                self.assertEqual(response_json['code'], expected_error_code)
+
+            messages.append(response_json)
 
             if delay > 0:
                 time.sleep(delay / 1000)
 
         return messages
 
-    def create_and_join_group(self, user_id: int = BaseTest.USER_ID, users: list = None) -> str:
+    def create_and_join_group(
+            self, user_id: int = BaseTest.USER_ID, users: list = None, group_type: int = 0, language: str = None
+    ) -> str:
         if users is None:
             users = [user_id]
 
+        data = {"group_name": "a new group", "group_type": group_type, "users": users}
+
+        if language is not None:
+            data['language'] = language
+
         raw_response = self.client.post(
             f"/v1/users/{user_id}/groups/create",
-            json={"group_name": "a new group", "group_type": 0, "users": users},
+            json=data,
         )
         self.assertEqual(raw_response.status_code, 200)
         time.sleep(0.01)
@@ -185,9 +201,10 @@ class BaseServerRestApi(BaseDatabaseTest):
             user_id: int = BaseTest.USER_ID,
             admin: bool = False,
             include_deleted: bool = False,
-            assert_response: bool = True
+            assert_response: bool = True,
+            per_page: int = 10
     ):
-        json_data = {"per_page": "10", "since": 0}
+        json_data = {"per_page": str(per_page), "since": 0}
 
         if admin:
             json_data["admin_id"] = 1971
@@ -200,6 +217,29 @@ class BaseServerRestApi(BaseDatabaseTest):
 
         if assert_response:
             self.assertEqual(raw_response.status_code, 200)
+
+        return raw_response.json()
+
+    def get_public_groups(
+            self,
+            include_archived: bool = False,
+            admin_id: int = None,
+            spoken_languages: List[str] = None,
+            users: List[int] = None
+    ):
+        data = {
+            "include_archived": include_archived,
+            "admin_id": admin_id
+        }
+        if spoken_languages and len(spoken_languages):
+            data["spoken_languages"] = spoken_languages
+        if users:
+            data["users"] = users
+
+        raw_response = self.client.post(
+            f"/v1/groups/public", json=data
+        )
+        self.assertEqual(raw_response.status_code, 200)
 
         return raw_response.json()
 
@@ -247,6 +287,26 @@ class BaseServerRestApi(BaseDatabaseTest):
     def update_hide_group_for(self, group_id: str, hide: bool, user_id: int = BaseTest.USER_ID):
         raw_response = self.client.put(
             f"/v1/groups/{group_id}/user/{user_id}/update", json={"hide": hide},
+        )
+        self.assertEqual(raw_response.status_code, 200)
+
+    def update_group_archived(self, group_id: str, archived: bool):
+        raw_response = self.client.put(
+            f"/v1/groups/{group_id}", json={
+                "status": GroupStatus.ARCHIVED if archived else GroupStatus.DEFAULT
+            },
+        )
+        self.assertEqual(raw_response.status_code, 200)
+
+    def update_group_deleted(self, group_id: str, deleted: bool):
+        raw_response = self.client.put(
+            f"/v1/groups/{group_id}", json={
+                "status": GroupStatus.DELETED if deleted else GroupStatus.DEFAULT,
+                "action_log": {
+                    "payload": "some payload for action log",
+                    "user_id": 1971
+                }
+            },
         )
         self.assertEqual(raw_response.status_code, 200)
 
@@ -652,6 +712,14 @@ class BaseServerRestApi(BaseDatabaseTest):
 
     def assert_groups_for_user(self, amount_of_groups, user_id: int = BaseTest.USER_ID, until: float = None) -> None:
         response = self.groups_for_user(user_id, until=until)
+        self.assertEqual(amount_of_groups, len(response))
+
+    def assert_public_groups_for_user(self, amount_of_groups, user_id: int = BaseTest.USER_ID, until: float = None) -> None:
+        users = None
+        if user_id is not None:
+            users = [user_id]
+
+        response = self.get_public_groups(users=users)
         self.assertEqual(amount_of_groups, len(response))
 
     def assert_deleted_groups_for_user(self, amount_of_groups, user_id: int = BaseTest.USER_ID) -> None:

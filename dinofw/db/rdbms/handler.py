@@ -25,19 +25,19 @@ from dinofw.db.rdbms.schemas import GroupBase, DeletedStatsBase
 from dinofw.db.rdbms.schemas import UserGroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.schemas import MessageBase
-from dinofw.rest.queries import CreateGroupQuery
+from dinofw.rest.queries import CreateGroupQuery, PublicGroupQuery
 from dinofw.rest.queries import GroupQuery
 from dinofw.rest.queries import GroupUpdatesQuery
 from dinofw.rest.queries import UpdateGroupQuery
 from dinofw.rest.queries import UpdateUserGroupStats
-from dinofw.utils import group_id_to_users, to_dt, truncate_json_message
+from dinofw.utils import group_id_to_users, to_dt, truncate_json_message, is_none_or_zero, is_non_zero
 from dinofw.utils import split_into_chunks
 from dinofw.utils import to_ts
 from dinofw.utils import trim_micros
 from dinofw.utils import users_to_group_id
 from dinofw.utils import utcnow_dt
 from dinofw.utils import utcnow_ts
-from dinofw.utils.config import GroupTypes
+from dinofw.utils.config import GroupTypes, ConfigKeys, GroupStatus
 from dinofw.utils.exceptions import NoSuchGroupException, NoSuchUserException, UserStatsOrGroupAlreadyCreated
 from dinofw.utils.exceptions import UserNotInGroupException
 from dinofw.utils.perf import time_method
@@ -51,6 +51,82 @@ class RelationalHandler:
         # used when no `hide_before` is specified in a query
         beginning_of_1995 = 789_000_000
         self.long_ago = arrow.get(beginning_of_1995).datetime
+
+        self.room_max_history_days = int(float(env.config.get(
+            ConfigKeys.ROOM_MAX_HISTORY_DAYS,
+            domain=ConfigKeys.HISTORY,
+            default=30
+        )))
+        self.room_max_history_count = int(float(env.config.get(
+            ConfigKeys.ROOM_MAX_HISTORY_COUNT,
+            domain=ConfigKeys.HISTORY,
+            default=500
+        )))
+
+    def get_public_group_ids(self, db: Session) -> List[str]:
+        groups = (
+            db.query(GroupEntity.group_id)
+            .filter(
+                GroupEntity.group_type == GroupTypes.PUBLIC_ROOM
+            )
+            .all()
+        )
+
+        return [group[0] for group in groups]
+
+    def get_public_groups(self, query: PublicGroupQuery, db: Session) -> List[GroupBase]:
+        # TODO: check this, why cache group ids and do IN query? just use group types?
+        """
+        public_group_ids = self.env.cache.get_public_group_ids()
+        if public_group_ids is None or not len(public_group_ids):
+            group_ids = self.get_public_group_ids(db)
+
+            if len(group_ids):
+                self.env.cache.add_public_group_ids(group_ids)
+        """
+
+        statement = (
+            db.query(GroupEntity)
+            .filter(
+                # GroupEntity.group_id.in_(public_group_ids)
+                GroupEntity.group_type.in_(GroupTypes.public_group_types),
+                GroupEntity.status != GroupStatus.DELETED
+            )
+        )
+
+        # "rooms my friends are in"
+        if query.users and len(query.users):
+            statement = statement.join(
+                UserGroupStatsEntity,
+                UserGroupStatsEntity.group_id == GroupEntity.group_id,
+            ).filter(
+                UserGroupStatsEntity.user_id.in_(query.users)
+            ).distinct()  # TODO: test distinct
+
+        if query.spoken_languages is not None and len(query.spoken_languages):
+            spoken_languages = [
+                lang.lower() for lang in query.spoken_languages
+                if type(lang) is str and len(lang) == 2 and lang.isascii()
+            ]
+            statement = statement.filter(
+                GroupEntity.language.in_(spoken_languages)
+            )
+
+        if query.include_archived and is_non_zero(query.admin_id):
+            # include both archived and non-archived groups
+            pass
+        else:
+            # otherwise only non-archived groups
+            statement = statement.filter(
+                GroupEntity.status != GroupStatus.ARCHIVED
+            )
+
+        group_entities = statement.all()
+
+        return [
+            GroupBase(**group_entity.__dict__)
+            for group_entity in group_entities
+        ]
 
     def get_users_in_group(
             self,
@@ -162,6 +238,7 @@ class RelationalHandler:
             g.group_id = '00000000-005f-c238-0000-000000635796' and
             u.hide = false and
             u.deleted = false and
+            g.status in (0, -1) and
             u.delete_before < g.updated_at and
             g.last_message_time < now()
         order by
@@ -169,6 +246,8 @@ class RelationalHandler:
             greatest(u.highlight_time, g.last_message_time) desc
         limit 10;
 
+            g.archived = false and
+            g.deleted = false and
             (u.unread_count > 0 or u.bookmark = true)
             ((u.last_read < g.last_message_time) or u.bookmark = true)
         """
@@ -187,6 +266,8 @@ class RelationalHandler:
                 )
                 .filter(
                     GroupEntity.last_message_time < until,
+                    GroupEntity.status.in_(GroupStatus.visible_statuses),
+                    GroupEntity.group_type.in_(GroupTypes.private_group_types),
                     UserGroupStatsEntity.deleted.is_(False),
                     UserGroupStatsEntity.user_id == user_id,
 
@@ -210,6 +291,10 @@ class RelationalHandler:
             if query.group_type is not None:
                 statement = statement.filter(
                     GroupEntity.group_type == query.group_type
+                )
+            else:
+                statement = statement.filter(
+                    GroupEntity.group_type != GroupTypes.PUBLIC_ROOM
                 )
 
             if query.only_unread:
@@ -361,7 +446,8 @@ class RelationalHandler:
         self,
         user_id: int,
         query: GroupUpdatesQuery,
-        db: Session
+        db: Session,
+        public_only: bool = False
     ):
         """
         the only difference between get_groups_for_user() and get_groups_updated_since() is
@@ -389,6 +475,15 @@ class RelationalHandler:
             if until is not None:
                 statement = statement.filter(
                     UserGroupStatsEntity.last_updated_time <= until
+                )
+
+            if public_only:
+                statement = statement.filter(
+                    GroupEntity.group_type.in_(GroupTypes.public_group_types)
+                )
+            else:
+                statement = statement.filter(
+                    GroupEntity.group_type.in_(GroupTypes.private_group_types)
                 )
 
             return (
@@ -512,6 +607,7 @@ class RelationalHandler:
         update_unread_count: bool = True,
         update_last_message: bool = True,
         update_last_message_time: bool = True,
+        unhide_group: bool = True,
         mentions: List[int] = None
     ) -> GroupBase:
         group = (
@@ -632,12 +728,17 @@ class RelationalHandler:
             statement.update({
                 UserGroupStatsEntity.last_updated_time: sent_time,
                 UserGroupStatsEntity.unread_count: UserGroupStatsEntity.unread_count + 1,
-                UserGroupStatsEntity.hide: False,
                 UserGroupStatsEntity.deleted: False
             })
         else:
             statement.update({
                 UserGroupStatsEntity.last_updated_time: sent_time,
+            })
+
+        if unhide_group:
+            self.env.cache.set_hide_group(group.group_id, False)
+            statement.update({
+                UserGroupStatsEntity.hide: False
             })
 
         # update 'sent_message_count' in cache
@@ -774,16 +875,40 @@ class RelationalHandler:
             for deleted_stats_entity in deleted_stats
         ]
 
+    def get_group_types(self, group_ids: List[str], db: Session) -> Dict[str, int]:
+        group_types = (
+            db.query(
+                GroupEntity.group_id,
+                GroupEntity.group_type
+            )
+            .filter(GroupEntity.group_id.in_(group_ids))
+            .all()
+        )
+
+        return {
+            group_id: group_type
+            for group_id, group_type in group_types
+        }
+
     def copy_to_deleted_groups_table(
-        self, group_id_to_type: Dict[str, int], user_id: int, db: Session
+        self, group_id_to_type: Dict[str, int], user_id: int, db: Session, skip_public: bool = True
     ) -> None:
+        if skip_public:
+            # don't create deletion records for public groups, users will join and leave them all the time
+            group_ids = [
+                group_id for group_id, group_type in group_id_to_type.items()
+                if group_type != GroupTypes.PUBLIC_ROOM
+            ]
+        else:
+            group_ids = list(group_id_to_type.keys())
+
         groups_to_copy = (
             db.query(
                 UserGroupStatsEntity.group_id,
                 UserGroupStatsEntity.join_time
             )
             .filter(
-                UserGroupStatsEntity.group_id.in_(group_id_to_type.keys()),
+                UserGroupStatsEntity.group_id.in_(group_ids),
                 UserGroupStatsEntity.user_id == user_id
             )
             .all()
@@ -1150,7 +1275,7 @@ class RelationalHandler:
         db.commit()
 
     def update_user_stats_on_join_or_create_group(
-        self, group_id: str, users: Dict[int, float], now: dt, db: Session
+        self, group_id: str, users: Dict[int, float], now: dt, group_type: int, db: Session
     ) -> None:
         user_ids_for_cache = set()
         user_ids_to_stats = dict()
@@ -1168,11 +1293,14 @@ class RelationalHandler:
 
         for user_id in user_ids:
             if user_id not in user_ids_to_stats:
-                self.env.cache.increase_count_group_types_for_user(user_id, GroupTypes.GROUP)
+                self.env.cache.increase_count_group_types_for_user(user_id, GroupTypes.PRIVATE_GROUP)
 
                 user_ids_for_cache.add(user_id)
                 user_ids_to_stats[user_id] = self._create_user_stats(
-                    group_id, user_id, now
+                    group_id=group_id,
+                    user_id=user_id,
+                    default_dt=now,
+                    group_type=group_type
                 )
 
             # reset the kicked variable when joining a group
@@ -1239,7 +1367,7 @@ class RelationalHandler:
 
         # make sure we have the cached amount for all possible group
         # types even if the user is not part of all group types
-        for group_type in {GroupTypes.GROUP, GroupTypes.ONE_TO_ONE}:
+        for group_type in {GroupTypes.PRIVATE_GROUP, GroupTypes.ONE_TO_ONE, GroupTypes.PUBLIC_ROOM}:
             if group_type not in types_dict:
                 types_dict[group_type] = 0
 
@@ -1319,6 +1447,12 @@ class RelationalHandler:
 
         now = utcnow_dt()
 
+        # default, frozen, archived, deleted
+        if query.status is not None:
+            group_entity.status_changed_at = now
+            group_entity.status = query.status
+            self.env.cache.set_group_status(group_id, query.status)
+
         if query.group_name is not None:
             group_entity.name = query.group_name
 
@@ -1328,16 +1462,29 @@ class RelationalHandler:
         if query.owner is not None:
             group_entity.owner_id = query.owner
 
-        if query.status is not None:
-            group_entity.status = query.status
-            self.env.cache.set_group_status(group_id, query.status)
-
         group_entity.updated_at = now
 
         base = GroupBase(**group_entity.__dict__)
 
         db.add(group_entity)
         db.commit()
+
+        # need to query users after committing the previous transaction
+        if query.status is not None and query.status == GroupStatus.DELETED:
+            user_ids = (
+                db.query(UserGroupStatsEntity.user_id)
+                .filter(UserGroupStatsEntity.group_id == group_id)
+                .all()
+            )
+            user_ids = [user_id[0] for user_id in user_ids]
+            group_id_to_type = {group_id: group_entity.group_type}
+            group_ids = [group_id]
+
+            # deleting a group doesn't happen often, so it's okay we loop here
+            for user_id in user_ids:
+                self.copy_to_deleted_groups_table(group_id_to_type, user_id, db, skip_public=False)
+                self.remove_user_group_stats_for_user(group_ids, user_id, db)
+                self.env.cache.reset_count_group_types_for_user(user_id)
 
         return base
 
@@ -1474,10 +1621,10 @@ class RelationalHandler:
 
         db.commit()
 
-    def is_group_frozen(self, group_id: str, db: Session) -> Optional[bool]:
+    def get_group_status(self, group_id: str, db: Session) -> Optional[int]:
         group_status = self.env.cache.get_group_status(group_id)
         if group_status is not None:
-            return group_status == -1
+            return group_status
 
         group = (
             db.query(GroupEntity)
@@ -1494,7 +1641,7 @@ class RelationalHandler:
             status = 0
 
         self.env.cache.set_group_status(group_id, status)
-        return group.status == -1
+        return group.status
 
     # noinspection PyMethodMayBeStatic
     def get_user_stats_in_group(
@@ -1675,8 +1822,12 @@ class RelationalHandler:
         db.commit()
 
     def update_last_read_and_sent_in_group_for_user(
-        self, group_id: str, user_id: int, the_time: dt, db: Session
+        self, group_id: str, user_id: int, the_time: dt, db: Session, unhide_group: bool = True
     ) -> None:
+        """
+        :param unhide_group: when creating action logs in all of a user's groups, e.g. when the user is changing
+         username, an action log is created in all groups, but we don't want to unhide all groups
+        """
         user_stats = (
             db.query(UserGroupStatsEntity)
             .filter(UserGroupStatsEntity.user_id == user_id)
@@ -1693,9 +1844,10 @@ class RelationalHandler:
 
             # used for user global stats api
             self.env.cache.set_last_sent_for_user(user_id, group_id, the_time_ts, pipeline=p)
-
-            self.env.cache.set_hide_group(group_id, False, pipeline=p)
             self.env.cache.set_unread_in_group(group_id, user_id, 0, pipeline=p)
+
+            if unhide_group:
+                self.env.cache.set_hide_group(group_id, False, pipeline=p)
 
             # if the user sends a message while having unread messages in the group (maybe can happen on the app?)
             if current_unread_count is not None and current_unread_count > 0:
@@ -1712,7 +1864,9 @@ class RelationalHandler:
         # if the user is sending a message without opening the conversation, we have to make sure the group
         # is not deleted or hidden after (opening a conversation would set these two to False as well)
         user_stats.deleted = False
-        user_stats.hide = False
+
+        if unhide_group:
+            user_stats.hide = False
 
         if user_stats.first_sent is None:
             user_stats.first_sent = the_time
@@ -1741,6 +1895,14 @@ class RelationalHandler:
         # conditions when sending multiple fist messages at the same time
         self.env.cache.set_group_exists(group_id, True)
 
+        language = None
+        if query.group_type in GroupTypes.public_group_types:
+            self.env.cache.add_public_group_ids([group_id])
+
+            # only public groups can be for a specific language
+            if query.language is not None and len(query.language) == 2:
+                language = query.language
+
         group_entity = GroupEntity(
             group_id=group_id,
             name=query.group_name,
@@ -1752,6 +1914,7 @@ class RelationalHandler:
             owner_id=owner_id,
             meta=query.meta,
             description=query.description,
+            language=language
         )
 
         user_ids = {owner_id}
@@ -1764,7 +1927,11 @@ class RelationalHandler:
         for user_id in user_ids:
             self.env.cache.increase_count_group_types_for_user(user_id, query.group_type)
             user_stats = self._create_user_stats(
-                group_entity.group_id, user_id, created_at, delete_before=delete_before
+                group_id=group_id,
+                user_id=user_id,
+                group_type=query.group_type,
+                default_dt=created_at,
+                delete_before=delete_before
             )
             db.add(user_stats)
 
@@ -1871,12 +2038,27 @@ class RelationalHandler:
         )
 
     def _create_user_stats(
-        self, group_id: str, user_id: int, default_dt: dt, delete_before: dt = None
+        self, group_id: str, user_id: int, default_dt: dt, group_type: int, delete_before: dt = None
     ) -> UserGroupStatsEntity:
         now = utcnow_dt()
 
-        # TODO: for group chats, should this be long_ago or join_time? to see old history
-        if delete_before is None:
+        max_days = self.room_max_history_days
+        max_count = self.room_max_history_count
+
+        if group_type in GroupTypes.public_group_types:
+            a_month_ago = arrow.get(now).shift(days=-max_days).datetime
+            msg_count = self.env.storage.count_messages_in_group_since(group_id, a_month_ago)
+
+            # max 500 messages or 1 month ago
+            if msg_count > max_count:
+                delete_before = self.env.storage.get_created_at_for_offset(group_id, offset=max_count - 1)
+                if delete_before is None:
+                    logger.error(f"no messages in group '{group_id}', but count > {max_count}")
+                    delete_before = a_month_ago
+            else:
+                delete_before = a_month_ago
+
+        elif delete_before is None:
             delete_before = default_dt
 
         return UserGroupStatsEntity(

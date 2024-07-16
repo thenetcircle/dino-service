@@ -3,7 +3,7 @@ import sys
 from contextlib import contextmanager
 from datetime import datetime as dt
 from datetime import timedelta
-from typing import Dict
+from typing import Dict, Set
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -12,7 +12,7 @@ import redis
 from loguru import logger
 
 from dinofw.cache import ICache
-from dinofw.utils import to_dt
+from dinofw.utils import to_dt, split_into_chunks
 from dinofw.utils.config import ConfigKeys
 from dinofw.utils.config import RedisKeys
 
@@ -287,9 +287,60 @@ class CacheRedis(ICache):
 
         return int(float(status))
 
+    def count_online(self):
+        key = RedisKeys.online_users()
+
+        online_count = self.cache.get(key)
+        if online_count is not None:
+            return online_count
+
+        online_count = self.redis.scard(RedisKeys.online_users())
+        if online_count is None:
+            online_count = 0
+
+        self.cache.set(key, online_count, ttl=30)
+
+        return online_count
+
+    def is_online(self, user_id: int) -> bool:
+        return self.redis.sismember(RedisKeys.online_users(), user_id)
+
+    def get_online_users(self) -> Set[int]:
+        return {int(user_id) for user_id in self.redis.smembers(RedisKeys.online_users())}
+
+    def set_online_users(self, offline: List[int], online: List[int]) -> None:
+        key = RedisKeys.online_users()
+        logger.debug(f"offline: {offline}, online: {online}")
+
+        for del_chunk in split_into_chunks(offline, 100):
+            self.redis.srem(key, *del_chunk)
+
+        for add_chunk in split_into_chunks(online, 100):
+            self.redis.sadd(key, *add_chunk)
+
+    def set_online_user(self, user_id: int) -> None:
+        self.redis.sadd(RedisKeys.online_users(), user_id)
+
+    def set_offline_user(self, user_id: int) -> None:
+        self.redis.srem(RedisKeys.online_users(), user_id)
+
     def set_group_status(self, group_id: str, status: int) -> None:
         key = RedisKeys.group_status(group_id)
         self.redis.set(key, status)
+        self.redis.expire(key, ONE_HOUR)
+
+    def get_group_archived(self, group_id: str) -> Optional[bool]:
+        key = RedisKeys.group_archived(group_id)
+        archived = self.redis.get(key)
+
+        if archived is None:
+            return None
+
+        return archived == '1'
+
+    def set_group_archived(self, group_id: str, archived: bool) -> None:
+        key = RedisKeys.group_archived(group_id)
+        self.redis.set(key, '1' if archived else '0')
         self.redis.expire(key, ONE_HOUR)
 
     def set_sent_message_count_in_group_for_user(self, group_id: str, user_id: int, count: int) -> None:
@@ -487,6 +538,20 @@ class CacheRedis(ICache):
 
         return float(last_message_time)
 
+    def get_group_type(self, group_id: str) -> Optional[int]:
+        key = RedisKeys.group_type(group_id)
+        group_type = self.redis.get(key)
+
+        if group_type is None:
+            return None
+
+        return int(group_type)
+
+    def set_group_type(self, group_id: str, group_type: int) -> None:
+        key = RedisKeys.group_type(group_id)
+        self.redis.set(key, group_type)
+        self.redis.expire(key, ONE_DAY)
+
     def increase_count_group_types_for_user(self, user_id: int, group_type: int) -> None:
         for is_hidden in {True, False}:
             current_group_types = self.get_count_group_types_for_user(user_id, hidden=is_hidden)
@@ -574,6 +639,13 @@ class CacheRedis(ICache):
         r = pipeline or self.redis
 
         r.set(key, f"{group_id}:{last_time}")
+
+    def get_public_group_ids(self) -> Optional[set]:
+        return self.redis.smembers(RedisKeys.public_group_ids())
+
+    def add_public_group_ids(self, group_ids: List[str]) -> None:
+        key = RedisKeys.public_group_ids()
+        self.redis.sadd(key, *group_ids)
 
     def get_last_sent_for_user(self, user_id: int) -> (str, float):
         key = RedisKeys.last_sent_time_user(user_id)

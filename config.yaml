@@ -1,3 +1,9 @@
+environment_override: $DINO_ENVIRONMENT_OVERRIDE
+
+history:
+    room_max_history_days: $DINO_ROOM_MAX_HISTORY_DAYS
+    room_max_history_count: $DINO_ROOM_MAX_HISTORY_COUNT
+
 cache:
     type: "redis"
     host: "$DINO_REDIS_HOST"

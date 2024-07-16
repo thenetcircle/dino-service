@@ -116,6 +116,7 @@ def group_base_to_group(
     ]
     users.sort(key=lambda user: user.join_time, reverse=True)
 
+    group_dict["status_changed_at"] = to_ts(group_dict["status_changed_at"], allow_none=True)
     group_dict["updated_at"] = to_ts(group_dict["updated_at"], allow_none=True)
     group_dict["created_at"] = to_ts(group_dict["created_at"])
     group_dict["last_message_time"] = to_ts(group_dict["last_message_time"])

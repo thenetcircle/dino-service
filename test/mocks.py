@@ -61,6 +61,13 @@ class FakeStorage:
         msg_to_edit.message_payload = query.message_payload or msg_to_edit.message_payload
         msg_to_edit.context = query.message_payload or msg_to_edit.context
 
+    def get_created_at_for_offset(self, group_id: str, offset: int) -> dt:
+        for message in reversed(self.messages_by_group.get(group_id, [])):
+            if offset == 0:
+                return message.created_at
+
+            offset -= 1
+
     def get_all_messages_in_group(self, group_id: str):
         if group_id not in self.messages_by_group:
             return list()
@@ -437,6 +444,17 @@ class FakeDatabase:
     def get_deleted_groups_for_user(self, user_id: int, _) -> List[DeletedStatsBase]:
         return self.deleted_stats.get(user_id, list())
 
+    def get_group_types(self, group_ids: List[str], _) -> Dict[str, int]:
+        response = dict()
+
+        for group_id in group_ids:
+            if group_id not in self.groups:
+                continue
+
+            response[group_id] = self.groups[group_id].group_type
+
+        return response
+
     def copy_to_deleted_groups_table(
         self, group_id_to_type: Dict[str, int], user_id: int, _
     ) -> None:
@@ -473,8 +491,11 @@ class FakeDatabase:
                 if user_id in self.last_read[group_id]:
                     del self.last_read[group_id][user_id]
 
-    def is_group_frozen(self, _: str, __):
-        return False
+    def get_group_status(self, group_id: str, _) -> Optional[int]:
+        if group_id not in self.groups:
+            return None
+
+        return self.groups[group_id].group_type
 
     def get_oldest_last_read_in_group(self, group_id: str, _) -> Optional[float]:
         last_read = self.env.cache.get_last_read_in_group_oldest(group_id)
@@ -507,6 +528,7 @@ class FakeDatabase:
         update_unread_count: bool = True,
         update_last_message: bool = True,
         update_last_message_time: bool = True,
+        unhide_group: bool = True,
         mentions: List[int] = None
     ):
         if message.group_id not in self.groups:
@@ -567,6 +589,9 @@ class FakeDatabase:
             owner_id=owner_id,
             meta=query.meta,
             description=query.description,
+            archived=False,
+            deleted=False,
+            language=query.language,
         )
 
         self.groups[group.group_id] = group
@@ -677,7 +702,7 @@ class FakeDatabase:
         return len(users)
 
     def update_user_stats_on_join_or_create_group(
-        self, group_id: str, users: Dict[int, float], now: dt, _
+        self, group_id: str, users: Dict[int, float], now: dt, group_type: int, db=None
     ) -> None:
         for user_id, _ in users.items():
             self.update_last_read_and_sent_in_group_for_user(
@@ -692,7 +717,7 @@ class FakeDatabase:
             self.groups[group_id].updated_at = now
 
     def update_last_read_and_sent_in_group_for_user(
-        self, group_id: str, user_id: int, created_at: dt, _
+        self, group_id: str, user_id: int, created_at: dt, db, unhide_group=True
     ) -> None:
         to_add = UserGroupStatsBase(
             group_id=group_id,
@@ -799,6 +824,7 @@ class FakePublisherHandler(IClientPublishHandler):
         self.sent_deletions = dict()
         self.sent_reads = dict()
         self.sent_per_user = dict()
+        self.sent_per_topic = dict()
 
     async def stop(self):
         pass
@@ -862,6 +888,12 @@ class FakePublisherHandler(IClientPublishHandler):
 
         self.sent_per_user[user_id].append(data)
 
+    def send_to_topic(self, topic: str, data, qos: int = 0):
+        if topic not in self.sent_per_topic:
+            self.sent_per_topic[topic] = list()
+
+        self.sent_per_topic[topic].append(data)
+
 
 class FakeEnv:
     class Config:
@@ -877,6 +909,10 @@ class FakeEnv:
                 },
                 "cache": {
                     "max_client_ids": 10
+                },
+                "history": {
+                    "room_max_history_days": 5,
+                    "room_max_history_count": 10,
                 }
             }
 

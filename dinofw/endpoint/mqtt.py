@@ -3,7 +3,7 @@ import os
 import socket
 import sys
 from datetime import datetime as dt
-from typing import List
+from typing import List, Union
 
 import bcrypt
 import redis
@@ -111,8 +111,12 @@ class MqttPublisher(IClientPublisher):
         #   same result.
         #
         # reference: https://stackoverflow.com/questions/15733196/where-2x-prefix-are-used-in-bcrypt
+        # info on patterns: https://www.hivemq.com/blog/mqtt-essentials-part-5-mqtt-topics-best-practices/
         hashed_pwd = f"$2a${hashed_pwd[4:]}"
-        publish_acl = '[{"pattern":"dms/' + self.environment + '/+"}]'
+        publish_acl = json.dumps([
+            {"pattern": "dms/" + self.environment + "/+"},
+            {"pattern": "dms/" + self.environment + "/irc/+"}
+        ]).replace(" ", "")
 
         # this is the format that vernemq expects to be in redis; also
         # we don't set a publisher/subscriber acl pattern here, since
@@ -162,7 +166,7 @@ class MqttPublisher(IClientPublisher):
         if self.mqtt is not None:
             await self.mqtt.disconnect()
 
-    def send(self, user_id: int, fields: dict, qos: int = 0) -> None:
+    def send(self, user_id_or_topic: Union[int, str], fields: dict, qos: int = 0) -> None:
         if self.mqtt is None:
             logger.warning("mqtt instance is none!")
             return
@@ -173,10 +177,10 @@ class MqttPublisher(IClientPublisher):
             if value is not None
         }
 
-        logger.debug(f"sending mqtt event to user {user_id}: {json.dumps(data)}")
+        logger.debug(f"sending mqtt event to user/topic {user_id_or_topic}: {json.dumps(data)}")
         try:
             self.mqtt.publish(
-                message_or_topic=f"dms/{self.environment}/{user_id}",
+                message_or_topic=f"dms/{self.environment}/{user_id_or_topic}",
                 payload=data,
                 qos=qos,
                 message_expiry_interval=self.mqtt_ttl
@@ -275,6 +279,14 @@ class MqttPublishHandler(IClientPublishHandler):
     def send_to_one(self, user_id: int, data, qos: int = 0):
         try:
             self.publisher.send(user_id, data, qos)
+        except Exception as e:
+            logger.error(f"could not handle message: {str(e)}")
+            logger.exception(e)
+            self.env.capture_exception(sys.exc_info())
+
+    def send_to_topic(self, topic: str, data, qos: int = 0):
+        try:
+            self.publisher.send(topic, data, qos)
         except Exception as e:
             logger.error(f"could not handle message: {str(e)}")
             logger.exception(e)

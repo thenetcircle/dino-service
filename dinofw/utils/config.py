@@ -2,8 +2,34 @@ from typing import Final
 
 
 class GroupTypes:
-    GROUP: Final = 0
+    PRIVATE_GROUP: Final = 0
     ONE_TO_ONE: Final = 1
+    PUBLIC_ROOM: Final = 2
+    PRIVATE_ROOM: Final = 3
+
+    public_group_types = {PUBLIC_ROOM, PRIVATE_ROOM}
+    private_group_types = {PRIVATE_GROUP, ONE_TO_ONE}
+
+
+class GroupStatus:
+    DEFAULT: Final = 0
+    FROZEN: Final = -1
+    ARCHIVED: Final = -2
+    DELETED: Final = -3
+
+    visible_statuses = {DEFAULT, FROZEN}
+
+    @staticmethod
+    def to_str(status: int) -> str:
+        if status == GroupStatus.DEFAULT:
+            return "default"
+        if status == GroupStatus.FROZEN:
+            return "frozen"
+        if status == GroupStatus.ARCHIVED:
+            return "archived"
+        if status == GroupStatus.DELETED:
+            return "deleted"
+        return "unknown"
 
 
 class MessageTypes:
@@ -69,6 +95,26 @@ class RedisKeys:
     RKEY_UNREAD_GROUPS = "unread:groups:{}"  # unread:groups:user_id
     RKEY_CLIENT_ID = "user:{}:{}:clientids"  # user:domain:user_id:clientids
     RKEY_GROUP_STATUS = "group:status:{}"  # group:status:group_id
+    RKEY_GROUP_ARCHIVED = "group:archived:{}"  # group:archived:group_id
+    RKEY_PUBLIC_GROUP_IDS = "groups:public"
+    RKEY_GROUP_TYPE = "group:type:{}"  # group:type:group_id
+    RKEY_ONLINE_USERS = "users:online"
+
+    @staticmethod
+    def online_users() -> str:
+        return RedisKeys.RKEY_ONLINE_USERS
+
+    @staticmethod
+    def group_type(group_id: str) -> str:
+        return RedisKeys.RKEY_GROUP_TYPE.format(group_id)
+
+    @staticmethod
+    def public_group_ids() -> str:
+        return RedisKeys.RKEY_PUBLIC_GROUP_IDS
+
+    @staticmethod
+    def group_archived(group_id: str) -> str:
+        return RedisKeys.RKEY_GROUP_ARCHIVED.format(group_id)
 
     @staticmethod
     def group_status(group_id: str) -> str:
@@ -193,6 +239,13 @@ class ConfigKeys:
     TRACE_SAMPLE_RATE = "trace_sample_rate"
     POOL_SIZE = "pool_size"
     MAX_CLIENT_IDS = "max_client_ids"
+    HISTORY = "history"
+
+    ROOM_MAX_HISTORY_DAYS = "room_max_history_days"
+    ROOM_MAX_HISTORY_COUNT = "room_max_history_count"
+
+    # can be used to override the environment name used in `_environment`
+    ENVIRONMENT_OVERRIDE = "environment_override"
 
     # will be overwritten even if specified in config file
     ENVIRONMENT = "_environment"
@@ -217,4 +270,4 @@ class ErrorCodes(object):
     NO_SUCH_USER = 604
     WRONG_PARAMETERS = 605
     USER_IS_KICKED = 606
-    GROUP_IS_FROZEN = 607
+    GROUP_IS_FROZEN_OR_ARCHIVED = 607

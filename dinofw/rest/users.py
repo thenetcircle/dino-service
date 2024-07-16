@@ -1,15 +1,15 @@
 from datetime import datetime as dt
 from time import time
-from typing import List, Tuple
+from typing import List, Tuple, Set
 
 from loguru import logger
 from sqlalchemy.orm import Session
 
-from dinofw.db.rdbms.schemas import UserGroupBase, DeletedStatsBase, UserGroupStatsBase
+from dinofw.db.rdbms.schemas import UserGroupBase, DeletedStatsBase
 from dinofw.rest.base import BaseResource
-from dinofw.rest.models import UserGroup, LastReads, DeletedStats, UserGroupStats, UnDeletedGroup
+from dinofw.rest.models import UserGroup, LastReads, DeletedStats, UnDeletedGroup
 from dinofw.rest.models import UserStats
-from dinofw.rest.queries import ActionLogQuery, LastReadQuery
+from dinofw.rest.queries import ActionLogQuery, LastReadQuery, SessionUser
 from dinofw.rest.queries import DeleteAttachmentQuery
 from dinofw.rest.queries import GroupQuery
 from dinofw.rest.queries import GroupUpdatesQuery
@@ -27,6 +27,29 @@ class UserResource(BaseResource):
     async def get_deleted_groups(self, user_id: int, db: Session) -> List[DeletedStats]:
         deleted_groups: List[DeletedStatsBase] = self.env.db.get_deleted_groups_for_user(user_id, db)
         return to_deleted_stats(deleted_groups)
+
+    async def update_user_sessions(self, users: List[SessionUser]):
+        current_online_users: Set[int] = self.env.cache.get_online_users()
+
+        online_users = list({user.user_id for user in users if user.is_online})
+        offline_users = list({
+            user.user_id for user in users
+            # avoid sending duplicate offline events to kafka byt checking currently online users
+            if not user.is_online and user.user_id in current_online_users
+        })
+
+        self.env.cache.set_online_users(offline_users, online_users)
+
+        # only notify if someone left
+        if offline_users:
+            self.env.server_publisher.offline_users(offline_users)
+
+    async def update_real_time_user_session(self, user: SessionUser):
+        if user.is_online:
+            self.env.cache.set_online_user(user.user_id)
+        else:
+            self.env.cache.set_offline_user(user.user_id)
+            self.env.server_publisher.offline_users([user.user_id])
 
     async def get_all_user_stats_for_user(
         self, user_id: int, db: Session
@@ -83,6 +106,15 @@ class UserResource(BaseResource):
     ) -> List[UserGroup]:
         user_groups: List[UserGroupBase] = self.env.db.get_groups_updated_since(
             user_id, query, db
+        )
+
+        return to_user_group(user_groups)
+
+    def get_public_groups_updated_since(
+        self, user_id: int, query: GroupUpdatesQuery, db: Session
+    ) -> List[UserGroup]:
+        user_groups: List[UserGroupBase] = self.env.db.get_groups_updated_since(
+            user_id, query, db, public_only=True
         )
 
         return to_user_group(user_groups)
@@ -144,7 +176,7 @@ class UserResource(BaseResource):
             user_id=user_id,
             unread_amount=unread_amount,
             unread_groups_amount=n_unread_groups,
-            group_amount=group_amounts.get(GroupTypes.GROUP, 0),
+            group_amount=group_amounts.get(GroupTypes.PRIVATE_GROUP, 0) + group_amounts.get(GroupTypes.PUBLIC_ROOM, 0),
             one_to_one_amount=group_amounts.get(GroupTypes.ONE_TO_ONE, 0),
             last_sent_time=last_sent_time_ts,
             last_sent_group_id=last_sent_group_id,

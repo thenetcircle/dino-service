@@ -33,9 +33,9 @@ class NoSuchUserException(Exception):
         self.message = f"no such user: {message}"
 
 
-class GroupIsFrozenException(Exception):
+class GroupIsFrozenOrArchivedException(Exception):
     def __init__(self, message):
-        self.message = f"group is frozen: {message}"
+        self.message = f"group is frozen or archived: {message}"
 
 
 class QueryValidationError(Exception):
