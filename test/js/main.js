@@ -8,6 +8,7 @@ let other_user_last_read_idx = 0;
 const user_id = '5588';
 const other_user_id = '4321';
 const rest_endpoint = 'http://maggie-kafka-1.thenetcircle.lab:9800';
+const offline_endpoint = 'http://maggie-kafka-1.thenetcircle.lab:9810';
 //const mqtt_endpoint = 'ws://maggie-kafka-1.thenetcircle.lab:1880/mqtt';
 //const mqtt_endpoint = 'ws://maggie-kafka-3.thenetcircle.lab:1886/mqtt';
 const mqtt_endpoint = 'ws://maggie-kafka-3.thenetcircle.lab:1887/mqtt';
@@ -28,6 +29,8 @@ function initialize() {
     $("input#send-mqtt-notification").click(send_notification);
     $("input#update-attachment").click(update_attachment);
     $("input#get-attachment").click(get_attachment);
+    $("input#subscribe-irc").click(subscribe_irc);
+    $("input#unsubscribe-irc").click(unsubscribe_irc);
 
     // since this element can be added dynamically, use on()
     $(document).on('click', 'a.join-group', open_conversation);
@@ -35,7 +38,7 @@ function initialize() {
 
 function setup_mqtt() {
     const settings = {
-        clientId: `${user_id}_123412341243`,
+        clientId: `${user_id}_popp_1`,
         username: user_id,
         password: '5588',
         clean: true,
@@ -57,11 +60,44 @@ function setup_mqtt() {
                 console.log(err);
             }
         });
+        subscribe_irc();
     });
 
     client.on('message', on_mqtt_event);
     client.on("error", function(){
         console.log("error client_1234", arguments);
+    });
+}
+
+function unsubscribe_irc() {
+    client.unsubscribe(`dms/testpopp/irc`, {}, function (err) {
+        console.log('unsubscribed from dms/testpopp/irc');
+        if (err) {
+            console.log(err);
+        }
+    });
+
+    let data = {
+        type: 'POST',
+        contentType: 'application/json',
+        dataType: 'json',
+        processData: false,
+        url: `${offline_endpoint}/api/v1/unsubscribe`,
+        data: JSON.stringify({
+            user_id: user_id,
+            topic: 'dms/testpopp/irc'
+        })
+    }
+
+    $.ajax(data);
+}
+
+function subscribe_irc() {
+    client.subscribe(`dms/testpopp/irc`, {qos: 1}, function (err) {
+        console.log(`subscribed to dms/testpopp/irc`)
+        if (err) {
+            console.log(err);
+        }
     });
 }
 
