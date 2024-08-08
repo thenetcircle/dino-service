@@ -45,6 +45,7 @@ class UserResource(BaseResource):
             self.env.server_publisher.offline_users(offline_users)
 
     async def update_real_time_user_session(self, user: SessionUser):
+        logger.warning(f"DEBUG: update_real_time_user_session: {user.json()}")
         if user.is_online:
             self.env.cache.set_online_user(user.user_id)
         else:
