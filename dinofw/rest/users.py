@@ -42,6 +42,9 @@ class UserResource(BaseResource):
             if user_id not in online_users:
                 offline_users.add(user_id)
 
+        offline_users = list(offline_users)
+        online_users = list(online_users)
+
         self.env.cache.set_online_users(offline_users, online_users)
 
         # only notify if someone left
