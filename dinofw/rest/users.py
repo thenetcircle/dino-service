@@ -31,12 +31,16 @@ class UserResource(BaseResource):
     async def update_user_sessions(self, users: List[SessionUser]):
         current_online_users: Set[int] = self.env.cache.get_online_users()
 
-        online_users = list({user.user_id for user in users if user.is_online})
-        offline_users = list({
+        online_users = {user.user_id for user in users if user.is_online}
+        offline_users = {
             user.user_id for user in users
             # avoid sending duplicate offline events to kafka byt checking currently online users
             if not user.is_online and user.user_id in current_online_users
-        })
+        }
+
+        for user_id in current_online_users:
+            if user_id not in online_users:
+                offline_users.add(user_id)
 
         self.env.cache.set_online_users(offline_users, online_users)
 

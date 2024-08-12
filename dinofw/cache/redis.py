@@ -312,8 +312,8 @@ class CacheRedis(ICache):
         key = RedisKeys.online_users()
         logger.debug(f"offline: {offline}, online: {online}")
 
-        for del_chunk in split_into_chunks(offline, 100):
-            self.redis.srem(key, *del_chunk)
+        for rem_chunk in split_into_chunks(offline, 100):
+            self.redis.srem(key, *rem_chunk)
 
         for add_chunk in split_into_chunks(online, 100):
             self.redis.sadd(key, *add_chunk)
