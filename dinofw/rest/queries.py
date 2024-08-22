@@ -70,19 +70,6 @@ class NotificationGroup(AbstractQuery):
     data: dict
 
 
-# only used for matching in BroadcastResource, some types need extra info
-class EventType:
-    group = "group"
-    message = "message"
-    recall = "recall"
-    read = "read"
-    hide = "hide"
-    unhide = "unhide"
-    delete = "delete"
-    highlight = "highlight"
-    delete_attachment = "delete_attachment"
-
-
 class HighlightStatus:
     RECEIVER = 2
     SENDER = 1

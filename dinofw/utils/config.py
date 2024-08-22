@@ -48,6 +48,22 @@ class MessageTypes:
     attachment_types = {IMAGE, VIDEO, AUDIO}
 
 
+# only used for matching in BroadcastResource, some types need extra info
+class EventType:
+    GROUP: Final = "group"
+    MESSAGE: Final = "message"
+    RECALL: Final = "recall"
+    READ: Final = "read"
+    HIDE: Final = "hide"
+    UNHIDE: Final = "unhide"
+    DELETE: Final = "delete"
+    HIGHLIGHT: Final = "highlight"
+    DELETE_ATTACHMENT: Final = "delete_attachment"
+    IRC_MESSAGE: Final = "irc_message"
+
+    need_stats = {GROUP, MESSAGE, IRC_MESSAGE}
+
+
 class PayloadStatus:
     DELETED: Final = -2
     ERROR: Final = -1
