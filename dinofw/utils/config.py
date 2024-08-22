@@ -49,7 +49,7 @@ class MessageTypes:
 
 
 # only used for matching in BroadcastResource, some types need extra info
-class EventType:
+class MessageEventType:
     GROUP: Final = "group"
     MESSAGE: Final = "message"
     RECALL: Final = "recall"

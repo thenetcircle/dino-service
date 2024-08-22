@@ -3,13 +3,13 @@ from sqlalchemy.orm import Session
 
 from dinofw.rest.base import BaseResource
 from dinofw.rest.queries import NotificationQuery, HighlightStatus
-from dinofw.utils.config import EventType
+from dinofw.utils.config import MessageEventType
 from dinofw.utils.convert import stats_to_event_dict, to_int
 
 
 class BroadcastResource(BaseResource):
     async def broadcast_event(self, query: NotificationQuery, db: Session) -> None:
-        if query.event_type in EventType.need_stats:
+        if query.event_type in MessageEventType.need_stats:
             self.send_event_with_stats(query, db)
         else:
             self.send_other_event(query)
