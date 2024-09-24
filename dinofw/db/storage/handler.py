@@ -231,7 +231,7 @@ class CassandraHandler:
 
         if since is None:
             since = user_stats.delete_before
-            if is_non_zero(query.admin_id) and query.include_deleted:
+            if hasattr(query, "admin_id") and is_non_zero(query.admin_id) and query.include_deleted:
                 # limit to max 1 year ago for GDPR, scheduler will delete periodically, but don't show them here
                 since = one_year_ago(since)
 
