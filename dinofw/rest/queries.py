@@ -213,5 +213,5 @@ class EditMessageQuery(OneToOneQuery):
     message_payload: Optional[str]
 
 
-class ExportQuery(PaginationQuery, UserIdQuery):
+class ExportQuery(PaginationQuery, UserIdQuery, AdminQuery):
     pass
