@@ -19,7 +19,7 @@ from dinofw.rest.models import MessageCount
 from dinofw.rest.models import OneToOneStats
 from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UserStats
-from dinofw.rest.queries import ActionLogQuery, LastReadQuery, PublicGroupQuery
+from dinofw.rest.queries import ActionLogQuery, UserIdQuery, PublicGroupQuery, ExportQuery
 from dinofw.rest.queries import AttachmentQuery
 from dinofw.rest.queries import CountMessageQuery
 from dinofw.rest.queries import CreateAttachmentQuery
@@ -715,7 +715,7 @@ async def get_message_count_for_user_in_group(
 @timeit(logger, "GET", "/groups/{group_id}/lastread")
 @wrap_exception()
 async def get_last_read_in_group(
-        group_id: str, query: Optional[LastReadQuery] = None, db: Session = Depends(get_db)
+        group_id: str, query: Optional[UserIdQuery] = None, db: Session = Depends(get_db)
 ) -> LastReads:
     """
     Get the `last_read_time` for either one user in a group, or for all users in a group.
@@ -734,5 +734,31 @@ async def get_last_read_in_group(
         log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
     except UserNotInGroupException as e:
         log_error_and_raise_known(ErrorCodes.USER_NOT_IN_GROUP, sys.exc_info(), e)
+    except Exception as e:
+        log_error_and_raise_unknown(sys.exc_info(), e)
+
+
+@router.post("/history/{group_id}/export", response_model=Histories)
+@timeit(logger, "POST", "/history/{group_id}/export")
+@wrap_exception()
+async def get_history_in_group_for_export(group_id: str, query: ExportQuery, db: Session = Depends(get_db)) -> Histories:
+    """
+    Internal api to get history in a group for export and SEO reasons.
+
+    **Potential error codes in response:**
+    * `250`: if an unknown error occurred.
+    """
+    try:
+        return await environ.env.rest.group.export_history_in_group(group_id, query, db)
+    except UserIsKickedException as e:
+        log_error_and_raise_known(ErrorCodes.USER_IS_KICKED, sys.exc_info(), e)
+    except NoSuchGroupException as e:
+        log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
+    except UserNotInGroupException as e:
+        log_error_and_raise_known(ErrorCodes.USER_NOT_IN_GROUP, sys.exc_info(), e)
+    except GroupIsFrozenOrArchivedException as e:
+        log_error_and_raise_known(ErrorCodes.GROUP_IS_FROZEN_OR_ARCHIVED, sys.exc_info(), e)
+    except InvalidRangeException as e:
+        log_error_and_raise_known(ErrorCodes.WRONG_PARAMETERS, sys.exc_info(), e)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)

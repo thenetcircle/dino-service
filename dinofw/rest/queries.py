@@ -111,7 +111,7 @@ class SendMessageQuery(OneToOneQuery):
     index: Optional[int] = 0
 
 
-class LastReadQuery(AbstractQuery):
+class UserIdQuery(AbstractQuery):
     user_id: Optional[int] = None
 
 
@@ -211,3 +211,7 @@ class EditMessageQuery(OneToOneQuery):
     group_id: Optional[str]
     context: Optional[str]
     message_payload: Optional[str]
+
+
+class ExportQuery(PaginationQuery, UserIdQuery):
+    pass

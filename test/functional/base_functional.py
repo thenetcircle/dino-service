@@ -687,6 +687,22 @@ class BaseServerRestApi(BaseDatabaseTest):
         self.assertEqual(raw_response.status_code, 200)
         self.assertEqual(amount, len(raw_response.json()["messages"]))
 
+    def export_messages_in_group(self, group_id: str, user_id = None, per_page: int = 100, since: float = None, until: float = None):
+        if since is None and until is None:
+            until = arrow.utcnow().float_timestamp
+
+        raw_response = self.client.post(
+            f"/v1/history/{group_id}/export", json={
+                "per_page": per_page,
+                "since": since,
+                "until": until,
+                "user_id": user_id
+            },
+        )
+
+        self.assertEqual(raw_response.status_code, 200)
+        return raw_response.json()["messages"]
+
     def assert_kicked_for_user(
         self, kicked: bool, group_id: str, user_id: int = BaseTest.USER_ID
     ) -> None:

@@ -16,7 +16,7 @@ from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.schemas import MessageBase
 from dinofw.endpoint import IClientPublishHandler, IClientPublisher
 from dinofw.rest.broadcast import BroadcastResource
-from dinofw.rest.queries import ActionLogQuery
+from dinofw.rest.queries import ActionLogQuery, ExportQuery
 from dinofw.rest.queries import AttachmentQuery
 from dinofw.rest.queries import CreateAttachmentQuery
 from dinofw.rest.queries import CreateGroupQuery
@@ -24,9 +24,9 @@ from dinofw.rest.queries import DeleteAttachmentQuery, EditMessageQuery
 from dinofw.rest.queries import GroupQuery
 from dinofw.rest.queries import MessageQuery
 from dinofw.rest.queries import SendMessageQuery
-from dinofw.utils import trim_micros, to_ts
+from dinofw.utils import trim_micros, to_ts, to_dt
 from dinofw.utils import utcnow_dt
-from dinofw.utils.config import MessageTypes, PayloadStatus
+from dinofw.utils.config import MessageTypes, PayloadStatus, DefaultValues
 from dinofw.utils.exceptions import NoSuchAttachmentException
 from dinofw.utils.exceptions import NoSuchGroupException
 from dinofw.utils.exceptions import NoSuchMessageException
@@ -44,7 +44,7 @@ class FakeStorage:
         self.action_log = dict()
 
     def edit_message(self, group_id: str, user_id: int, message_id: str, query: EditMessageQuery) -> MessageBase:
-        messages = self.messages_by_group.get(group_id)
+        messages = self.get_all_messages_in_group(group_id)
         if not messages:
             raise NoSuchMessageException(message_id)
 
@@ -61,6 +61,8 @@ class FakeStorage:
         msg_to_edit.message_payload = query.message_payload or msg_to_edit.message_payload
         msg_to_edit.context = query.message_payload or msg_to_edit.context
 
+        return msg_to_edit
+
     def get_created_at_for_offset(self, group_id: str, offset: int) -> dt:
         for message in reversed(self.messages_by_group.get(group_id, [])):
             if offset == 0:
@@ -73,6 +75,30 @@ class FakeStorage:
             return list()
 
         return self.messages_by_group[group_id]
+
+    def export_history_in_group(self, group_id: str, query: ExportQuery) -> List[MessageBase]:
+        messages = self.get_all_messages_in_group(group_id)
+        keep_order = True
+
+        until = to_dt(query.until, allow_none=True)
+        since = to_dt(query.since, allow_none=True)
+        query_limit = query.per_page or DefaultValues.PER_PAGE
+
+        if query.user_id:
+            messages = [message for message in messages if message.user_id == query.user_id]
+
+        if query.until:
+            messages = [message for message in messages if message.created_at <= until]
+        elif query.since:
+            messages = [message for message in messages if message.created_at >= since]
+            keep_order = False
+
+        # if since is None:
+        if keep_order:
+            return messages[:query_limit]
+
+        # since we need ascending order on cassandra query if we use 'since', reverse the results here
+        return list(reversed(messages))[:query_limit]
 
     def count_attachments_in_group_since(self, group_id: str, since: dt) -> int:
         if group_id not in self.attachments_by_group:

@@ -15,7 +15,7 @@ from dinofw.rest.models import Message
 from dinofw.rest.models import OneToOneStats
 from dinofw.rest.models import UserGroupStats
 from dinofw.rest.queries import CreateActionLogQuery, DeleteAttachmentQuery, AdminQuery, CountMessageQuery, \
-    PublicGroupQuery
+    PublicGroupQuery, ExportQuery, PaginationQuery
 from dinofw.rest.queries import CreateGroupQuery
 from dinofw.rest.queries import GroupInfoQuery
 from dinofw.rest.queries import JoinGroupQuery
@@ -201,6 +201,52 @@ class GroupResource(BaseResource):
             ]
         )
 
+    def _check_that_query_is_valid_and_group_is_active(self, group_id: str, query: PaginationQuery, db: Session):
+        # TODO: don't return history for archived or deleted groups unless admin
+
+        if query.since is None and query.until is None:
+            raise InvalidRangeException("both 'since' and 'until' was empty, need at least one")
+
+        group_status = self.env.db.get_group_status(group_id, db)
+        if group_status is None:
+            raise NoSuchGroupException(group_id)
+
+        if group_status != GroupStatus.DEFAULT:
+            error_message = f"group {group_id} is {GroupStatus.to_str(group_status)}"
+            raise GroupIsFrozenOrArchivedException(error_message)
+
+    def _get_stats_and_check_that_user_is_not_kicked(self, group_id: str, user_id: int, db: Session):
+        user_stats = self.env.db.get_user_stats_in_group(group_id, user_id, db)
+        if user_stats.kicked:
+            raise UserIsKickedException(group_id, user_id)
+
+        return user_stats
+
+    async def export_history_in_group(self, group_id: str, query: ExportQuery, db: Session) -> Histories:
+        def get_messages():
+            # need to batch query cassandra, can't filter by user id
+            if query.user_id is not None:
+                _messages = self.env.storage.get_messages_in_group_only_from_user(
+                    group_id, user_stats, query
+                )
+            else:
+                _messages = self.env.storage.export_history_in_group(
+                    group_id, query
+                )
+
+            return [
+                message_base_to_message(message)
+                for message in _messages
+            ]
+
+        self._check_that_query_is_valid_and_group_is_active(group_id, query, db)
+        if query.user_id is not None:
+            user_stats = self._get_stats_and_check_that_user_is_not_kicked(group_id, query.user_id, db)
+
+        return Histories(
+            messages=get_messages()
+        )
+
     async def histories(
         self, group_id: str, user_id: int, query: MessageQuery, db: Session
     ) -> Histories:
@@ -220,25 +266,8 @@ class GroupResource(BaseResource):
                 for message in _messages
             ]
 
-        # TODO: don't return history for archived or deleted groups unless admin
-
-        if query.since is None and query.until is None:
-            raise InvalidRangeException("both 'since' and 'until' was empty, need at least one")
-
-        # if query.since is not None and query.until is not None:
-        #     raise InvalidRangeException("only one of parameters 'since' and 'until' can be used at the same time")
-
-        group_status = self.env.db.get_group_status(group_id, db)
-        if group_status is None:
-            raise NoSuchGroupException(group_id)
-
-        if group_status != GroupStatus.DEFAULT:
-            error_message = f"group {group_id} is {GroupStatus.to_str(group_status)}"
-            raise GroupIsFrozenOrArchivedException(error_message)
-
-        user_stats = self.env.db.get_user_stats_in_group(group_id, user_id, db)
-        if user_stats.kicked:
-            raise UserIsKickedException(group_id, user_id)
+        self._check_that_query_is_valid_and_group_is_active(group_id, query, db)
+        user_stats = self._get_stats_and_check_that_user_is_not_kicked(group_id, user_id, db)
 
         messages = get_messages()
 

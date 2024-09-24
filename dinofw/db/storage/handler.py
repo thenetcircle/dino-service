@@ -28,7 +28,7 @@ from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.models import AttachmentModel
 from dinofw.db.storage.models import MessageModel
 from dinofw.db.storage.schemas import MessageBase
-from dinofw.rest.queries import ActionLogQuery, AdminQuery
+from dinofw.rest.queries import ActionLogQuery, AdminQuery, ExportQuery
 from dinofw.rest.queries import AttachmentQuery
 from dinofw.rest.queries import CreateAttachmentQuery
 from dinofw.rest.queries import DeleteAttachmentQuery
@@ -260,6 +260,34 @@ class CassandraHandler:
         raw_messages = MessageModel.objects.filter(MessageModel.group_id == group_id).all()
         return self._try_parse_messages(raw_messages)
 
+    def export_history_in_group(self, group_id: str, query: ExportQuery) -> List[MessageBase]:
+        statement = MessageModel.objects.filter(MessageModel.group_id == group_id)
+        keep_order = True
+
+        until = to_dt(query.until, allow_none=True)
+        since = to_dt(query.since, allow_none=True)
+        query_limit = query.per_page or DefaultValues.PER_PAGE
+
+        if until:
+            statement = statement.filter(MessageModel.created_at < until)
+
+        elif since:
+            statement = statement.filter(MessageModel.created_at >= since)
+            keep_order = False
+
+            # default ordering is descending, so change to ascending when using 'since'
+            statement = statement.order_by('created_at')
+
+        raw_messages = statement.limit(query_limit).all()
+        messages = self._try_parse_messages(raw_messages)
+
+        # if since is None:
+        if keep_order:
+            return messages
+
+        # since we need ascending order on cassandra query if we use 'since', reverse the results here
+        return list(reversed(messages))
+
     # noinspection PyMethodMayBeStatic
     def get_messages_in_group_for_user(
             self,
@@ -269,6 +297,7 @@ class CassandraHandler:
     ) -> List[MessageBase]:
         until = to_dt(query.until, allow_none=True)
         since = to_dt(query.since, allow_none=True)
+        query_limit = query.per_page or DefaultValues.PER_PAGE
 
         statement = MessageModel.objects.filter(
             MessageModel.group_id == group_id
@@ -306,7 +335,7 @@ class CassandraHandler:
             statement = statement.order_by('created_at')
             keep_order = False
 
-        raw_messages = statement.limit(query.per_page or DefaultValues.PER_PAGE).all()
+        raw_messages = statement.limit(query_limit).all()
         messages = self._try_parse_messages(raw_messages)
 
         # if since is None:

@@ -9,7 +9,7 @@ from dinofw.db.rdbms.schemas import UserGroupBase, DeletedStatsBase
 from dinofw.rest.base import BaseResource
 from dinofw.rest.models import UserGroup, LastReads, DeletedStats, UnDeletedGroup
 from dinofw.rest.models import UserStats
-from dinofw.rest.queries import ActionLogQuery, LastReadQuery, SessionUser
+from dinofw.rest.queries import ActionLogQuery, UserIdQuery, SessionUser
 from dinofw.rest.queries import DeleteAttachmentQuery
 from dinofw.rest.queries import GroupQuery
 from dinofw.rest.queries import GroupUpdatesQuery
@@ -127,7 +127,7 @@ class UserResource(BaseResource):
 
         return to_user_group(user_groups)
 
-    async def get_last_read(self, group_id: str, query: LastReadQuery, db: Session) -> LastReads:
+    async def get_last_read(self, group_id: str, query: UserIdQuery, db: Session) -> LastReads:
         if query.user_id is None:
             last_reads = self.env.db.get_last_reads_in_group(group_id, db)
         else:
