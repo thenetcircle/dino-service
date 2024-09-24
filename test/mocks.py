@@ -87,9 +87,9 @@ class FakeStorage:
         if query.user_id:
             messages = [message for message in messages if message.user_id == query.user_id]
 
-        if query.until:
+        if query.until is not None:
             messages = [message for message in messages if message.created_at <= until]
-        elif query.since:
+        elif query.since is not None:
             messages = [message for message in messages if message.created_at >= since]
             keep_order = False
 

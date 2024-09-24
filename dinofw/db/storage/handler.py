@@ -224,6 +224,7 @@ class CassandraHandler:
         until = to_dt(query.until, allow_none=True)
         since = to_dt(query.since, allow_none=True)
         query_limit = query.per_page or DefaultValues.PER_PAGE
+        keep_order = True
 
         batch_limit = query_limit * 10
         if batch_limit > 1000:
@@ -234,6 +235,8 @@ class CassandraHandler:
             if hasattr(query, "admin_id") and is_non_zero(query.admin_id) and query.include_deleted:
                 # limit to max 1 year ago for GDPR, scheduler will delete periodically, but don't show them here
                 since = one_year_ago(since)
+        else:
+            keep_order = False
 
         # if not specified, use the last sent time (e.g. to get for first page results)
         if until is None:
@@ -251,7 +254,13 @@ class CassandraHandler:
         )
 
         messages = self._try_parse_messages(raw_messages)
-        return messages[:query_limit]
+
+        # if since is None:
+        if keep_order:
+            return messages[:query_limit]
+
+        # since we need ascending order on cassandra query if we use 'since', reverse the results here
+        return list(reversed(messages))[:query_limit]
 
     def get_all_messages_in_group(self, group_id: str) -> List[MessageBase]:
         """

@@ -1,5 +1,7 @@
 import time
 
+import arrow
+
 from dinofw.utils.config import GroupTypes
 from test.base import BaseTest
 from test.functional.base_functional import BaseServerRestApi
@@ -58,3 +60,27 @@ class TestServerRestApi(BaseServerRestApi):
         # test per_page/limit
         messages = self.export_messages_in_group(group_id=group_id, per_page=limit)
         self.assertEqual(len(messages), limit)
+
+    def test_export_messages_since_and_until_different_order(self):
+        group_id = self.create_and_join_group(
+            user_id=BaseTest.USER_ID,
+            group_type=GroupTypes.PUBLIC_ROOM
+        )
+        self.user_joins_group(
+            group_id=group_id,
+            user_id=BaseTest.OTHER_USER_ID
+        )
+
+        limit = 1
+        msgs_to_send = 3
+
+        self.send_message_to_group_from(group_id=group_id, amount=msgs_to_send)
+        self.assert_messages_in_group(group_id=group_id, amount=msgs_to_send + 1)
+
+        time.sleep(0.05)
+        until = arrow.utcnow().float_timestamp
+
+        messages_until = self.export_messages_in_group(group_id=group_id, per_page=limit, until=until)
+        messages_since = self.export_messages_in_group(group_id=group_id, per_page=limit, since=0)
+
+        self.assertNotEqual(messages_until[0]["message_id"], messages_since[0]["message_id"])
