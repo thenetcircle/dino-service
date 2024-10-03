@@ -3,6 +3,7 @@ from datetime import datetime as dt
 from typing import List
 from typing import Optional
 
+import arrow
 from sqlalchemy.orm import Session
 
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
@@ -222,10 +223,33 @@ class GroupResource(BaseResource):
 
         return user_stats
 
+    def _create_empty_user_stats(self, user_id: int):
+        now = arrow.utcnow().datetime
+
+        return UserGroupStatsBase(
+            group_id="",
+            user_id=user_id,
+            last_read=now,
+            last_sent=now,
+            delete_before=self.long_ago,
+            join_time=self.long_ago,
+            last_updated_time=now,
+            sent_message_count=0,
+            unread_count=0,
+            deleted=False,
+            hide=False,
+            pin=False,
+            bookmark=False,
+            mentions=0,
+            notifications=False,
+            kicked=False
+        )
+
     async def export_history_in_group(self, group_id: str, query: ExportQuery, db: Session) -> Histories:
         def get_messages():
             # need to batch query cassandra, can't filter by user id
             if query.user_id is not None:
+                user_stats = self._create_empty_user_stats(query.user_id)
                 _messages = self.env.storage.get_messages_in_group_only_from_user(
                     group_id, user_stats, query
                 )
@@ -238,10 +262,6 @@ class GroupResource(BaseResource):
                 message_base_to_message(message)
                 for message in _messages
             ]
-
-        self._check_that_query_is_valid_and_group_is_active(group_id, query, db)
-        if query.user_id is not None:
-            user_stats = self._get_stats_and_check_that_user_is_not_kicked(group_id, query.user_id, db)
 
         return Histories(
             messages=get_messages()
