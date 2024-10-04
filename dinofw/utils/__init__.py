@@ -1,9 +1,11 @@
 import json
 from datetime import datetime
 from datetime import timedelta
-from typing import Optional
+from typing import Optional, Final
 
 import arrow
+
+LONG_AGO: Final = arrow.get(789_000_000).datetime  # beginning of 1995
 
 
 def split_into_chunks(objects, n):

@@ -3,6 +3,7 @@ from datetime import timedelta
 from typing import List
 from typing import Optional
 
+import arrow
 from fastapi import APIRouter
 from fastapi import Depends
 from loguru import logger
@@ -33,7 +34,7 @@ from dinofw.rest.queries import NotificationQuery
 from dinofw.rest.queries import OneToOneQuery
 from dinofw.rest.queries import SendMessageQuery
 from dinofw.rest.queries import UserStatsQuery
-from dinofw.utils import environ, is_non_zero, one_year_ago
+from dinofw.utils import environ, is_non_zero, LONG_AGO
 from dinofw.utils import to_ts
 from dinofw.utils.api import get_db
 from dinofw.utils.api import log_error_and_raise_known
@@ -633,6 +634,9 @@ async def get_message_count_for_user_in_group(
     users (up to max one year ago before deletion date). Default value is `false`. Useful for the admin UI. Can be
     combined with `only_sender=true` and/or `only_attachments=true`.
 
+    If the `user_id` has left this group, but you want to count the number of messages he/she has sent before leaving,
+    you _must_ set `include_deleted=true` and `admin_id>0`. Used by GDPR exports.
+
     Note: setting `only_sender=true` is slow. Around 2 seconds for a group
     of 6k messages. This is because we can not filter by `user_id` in
     Cassandra, and have to instead batch query for all messages in the group
@@ -643,17 +647,25 @@ async def get_message_count_for_user_in_group(
     * `601`: if the group does not exist,
     * `250`: if an unknown error occurred.
     """
-
     def count_messages():
         # can't filter by user id in cassandra without restricting 'created_at', so
         # use the cached value from the rdbms
         if query and query.only_sender:
-            group_info: UserGroupStatsBase = environ.env.db.get_user_stats_in_group(group_id, user_id, db)
+            try:
+                group_info: UserGroupStatsBase = environ.env.db.get_user_stats_in_group(group_id, user_id, db)
 
-            # until isn't inclusive, so the last message sent won't be counted otherwise;
-            until = group_info.last_sent
-            until += timedelta(seconds=1)
-            since = group_info.delete_before
+                # until isn't inclusive, so the last message sent won't be counted otherwise;
+                until = group_info.last_sent
+                until += timedelta(seconds=1)
+                since = group_info.delete_before
+            except UserNotInGroupException as error:
+                # can only count non-deleted messages if the user is still in the group
+                if not query.include_deleted:
+                    raise error
+
+                # if the user left the group
+                until = arrow.utcnow().datetime
+                since = LONG_AGO
 
             if is_non_zero(query.admin_id) and query.include_deleted:
                 message_count = None
