@@ -701,7 +701,11 @@ async def get_message_count_for_user_in_group(
         )
 
     try:
-        delete_before = environ.env.db.get_delete_before(group_id, user_id, db)
+        if query.include_deleted:
+            delete_before_ts = to_ts(LONG_AGO)
+        else:
+            delete_before = environ.env.db.get_delete_before(group_id, user_id, db)
+            delete_before_ts = to_ts(delete_before)
 
         if query.only_attachments:
             the_count = await count_attachments()
@@ -711,7 +715,7 @@ async def get_message_count_for_user_in_group(
         return MessageCount(
             group_id=group_id,
             user_id=user_id,
-            delete_before=to_ts(delete_before),
+            delete_before=delete_before_ts,
             message_count=the_count
         )
 
