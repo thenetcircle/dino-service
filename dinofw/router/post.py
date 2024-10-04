@@ -702,7 +702,8 @@ async def get_message_count_for_user_in_group(
 
     try:
         if query.include_deleted:
-            delete_before_ts = to_ts(LONG_AGO)
+            delete_before = LONG_AGO
+            delete_before_ts = to_ts(delete_before)
         else:
             delete_before = environ.env.db.get_delete_before(group_id, user_id, db)
             delete_before_ts = to_ts(delete_before)
