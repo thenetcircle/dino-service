@@ -305,10 +305,18 @@ class CacheRedis(ICache):
     def is_online(self, user_id: int) -> bool:
         return self.redis.sismember(RedisKeys.online_users(), user_id)
 
+    def get_online_users_ttl_expired(self) -> bool:
+        key = RedisKeys.online_users() + ":ttl"
+        return self.redis.ttl(key) < 0
+
+    def set_online_users_ttl_expired(self, ttl: int = FIVE_MINUTES*2) -> None:
+        key = RedisKeys.online_users() + ":ttl"
+        self.redis.expire(key, ttl)
+
     def get_online_users(self) -> Set[int]:
         return {int(user_id) for user_id in self.redis.smembers(RedisKeys.online_users())}
 
-    def set_online_users(self, offline: List[int] = None, online: List[int] = None, ttl=FIVE_MINUTES*2) -> None:
+    def set_online_users(self, offline: List[int] = None, online: List[int] = None) -> None:
         key = RedisKeys.online_users()
         logger.debug(f"offline: {offline}, online: {online}")
 
@@ -320,7 +328,7 @@ class CacheRedis(ICache):
             for add_chunk in split_into_chunks(online, 100):
                 self.redis.sadd(key, *add_chunk)
 
-        self.redis.expire(key, ttl)
+        self.set_online_users_ttl_expired()
 
     def set_online_user(self, user_id: int) -> None:
         self.redis.sadd(RedisKeys.online_users(), user_id)

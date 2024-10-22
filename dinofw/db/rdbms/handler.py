@@ -838,17 +838,20 @@ class RelationalHandler:
         return {user_id: last_read}
 
     def get_online_users(self, db: Session) -> List[int]:
-        online = self.env.cache.get_online_users()
-        if online is not None and len(online):
-            return online
+        # don't actually expire the online list, since that one is
+        # used in other places to check individual users
+        expired = self.env.cache.get_online_users_ttl_expired()
+
+        if not expired:
+            online = self.env.cache.get_online_users()
+            if online is not None and len(online):
+                return online
 
         # also sync with the users in the db, since those are the ones that will be shown as dangling
         # if we miss them when syncing from the offline detector; this API is also only called once
         # every 5min or so, so it's not a big deal to have a big select query for it
         online = db.query(UserGroupStatsEntity.user_id).all()
         online = [user[0] for user in online]
-
-        self.env.cache.set_online_users(online=online)
 
         return online
 
