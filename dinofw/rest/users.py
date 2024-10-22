@@ -28,8 +28,8 @@ class UserResource(BaseResource):
         deleted_groups: List[DeletedStatsBase] = self.env.db.get_deleted_groups_for_user(user_id, db)
         return to_deleted_stats(deleted_groups)
 
-    async def update_user_sessions(self, users: List[SessionUser]):
-        current_online_users: Set[int] = self.env.db.get_online_users()
+    async def update_user_sessions(self, users: List[SessionUser], db: Session):
+        current_online_users: Set[int] = self.env.db.get_online_users(db)
 
         online_users = {user.user_id for user in users if user.is_online}
         offline_users = {

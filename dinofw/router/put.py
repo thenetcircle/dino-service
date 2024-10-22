@@ -78,14 +78,14 @@ async def update_single_mqtt_session(query: UpdateSessionsQuery) -> None:
 @router.put("/mqtt/sessions", response_model=None)
 @timeit(logger, "POST", "/sessions")
 @wrap_exception()
-async def update_batch_mqtt_sessions(query: UpdateSessionsQuery) -> None:
+async def update_batch_mqtt_sessions(query: UpdateSessionsQuery, db: Session = Depends(get_db)) -> None:
     """
     INTERNAL API.
 
     Used by the MQTT bridge to track offline status in batches.
     """
     try:
-        return await environ.env.rest.user.update_user_sessions(query.users)
+        return await environ.env.rest.user.update_user_sessions(query.users, db)
     except NoSuchGroupException as e:
         log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
     except UserNotInGroupException as e:
