@@ -29,12 +29,12 @@ class UserResource(BaseResource):
         return to_deleted_stats(deleted_groups)
 
     async def update_user_sessions(self, users: List[SessionUser]):
-        current_online_users: Set[int] = self.env.cache.get_online_users()
+        current_online_users: Set[int] = self.env.db.get_online_users()
 
         online_users = {user.user_id for user in users if user.is_online}
         offline_users = {
             user.user_id for user in users
-            # avoid sending duplicate offline events to kafka byt checking currently online users
+            # avoid sending duplicate offline events to kafka by checking currently online users
             if not user.is_online and user.user_id in current_online_users
         }
 

@@ -22,8 +22,8 @@ def count_messages(config_file, max_year):
         config = yaml.safe_load(f.read())
 
     key_space = config['cassandra']['keyspace']
-    c_pass = config['cassandra']['username']
-    c_user = config['cassandra']['password']
+    c_pass = config['cassandra']['password']
+    c_user = config['cassandra']['username']
     c_host = config['cassandra']['host'].split(',')
 
     p_host = config['postgres']['host']
@@ -42,7 +42,6 @@ def count_messages(config_file, max_year):
         print(traceback.format_exception(e))
         sys.exit(1)
 
-
     with conn.cursor() as curs:
         try:
             for year in range(start_year, int(max_year)):
@@ -53,7 +52,7 @@ def count_messages(config_file, max_year):
                 if os.path.exists(year_path):
                     continue
 
-                curs.execute(f"SELECT group_id FROM groups where first_message_time < '{before}' and first_message_time >= '{after}' limit 10;")
+                curs.execute(f"SELECT group_id FROM groups where group_type = 1 and created_at < '{before}' and created_at >= '{after}';")
                 rows = curs.fetchall()
 
                 print(f'groups started in {year}: {len(rows)}')
@@ -107,7 +106,7 @@ def count_messages(config_file, max_year):
             except Exception as e:
                 print(f'could not query msgs for group {group_id}: {str(e)}')
 
-    pprint(year_counts)
+        pprint(year_counts)
 
 
 if __name__ == "__main__":
