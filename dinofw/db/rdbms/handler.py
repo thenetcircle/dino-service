@@ -850,10 +850,15 @@ class RelationalHandler:
         # also sync with the users in the db, since those are the ones that will be shown as dangling
         # if we miss them when syncing from the offline detector; this API is also only called once
         # every 5min or so, so it's not a big deal to have a big select query for it
-        online = db.query(UserGroupStatsEntity.user_id).all()
-        online = [user[0] for user in online]
+        online = (
+            db.query(UserGroupStatsEntity.user_id)
+            .filter(UserGroupStatsEntity.kicked.is_(False))
+            .all()
+        )
+        if not online or not len(online):
+            return list()
 
-        return online
+        return [user[0] for user in online]
 
     def get_last_reads_in_group(self, group_id: str, db: Session) -> Dict[int, float]:
         users = self.env.cache.get_last_read_times_in_group(group_id)
