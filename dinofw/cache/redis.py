@@ -311,6 +311,7 @@ class CacheRedis(ICache):
 
     def set_online_users_ttl_expired(self, ttl: int = FIVE_MINUTES*2) -> None:
         key = RedisKeys.online_users() + ":ttl"
+        self.redis.set(key, "1")
         self.redis.expire(key, ttl)
 
     def get_online_users(self) -> Set[int]:
