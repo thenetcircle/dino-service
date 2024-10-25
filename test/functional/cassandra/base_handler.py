@@ -2,8 +2,9 @@ import os
 from typing import Optional
 from pathlib import Path
 
+from cassandra.cluster import Cluster
 from cassandra.cqlengine.connection import execute
-from cassandra.cqlengine.management import sync_table, create_keyspace_simple
+from cassandra.cqlengine.management import sync_table
 from gnenv.environ import find_config
 from gnenv.environ import load_secrets_file
 from gnenv.environ import ConfigDict
@@ -54,15 +55,22 @@ class BaseCassandraHandlerTest(BaseTest):
         env = FakeEnv()
         env.config = ConfigDict(config_dict)
         key_space = env.config.get(ConfigKeys.KEY_SPACE, domain=ConfigKeys.STORAGE)
+        hosts = env.config.get(ConfigKeys.HOST, domain=ConfigKeys.STORAGE)
+        hosts = hosts.split(",")
+
+        if "test" in key_space:
+            cluster = Cluster(hosts)
+            session = cluster.connect()
+            session.execute(f"CREATE KEYSPACE IF NOT EXISTS {key_space} WITH REPLICATION={{'class':'SimpleStrategy', 'replication_factor':1}}")
+            cluster.shutdown()
 
         self.handler = CassandraHandler(env)
         self.handler.setup_tables()
         # sync table after setting up
-        create_keyspace_simple(key_space, 1)
         sync_table(MessageModel)
         sync_table(AttachmentModel)
-        execute(f"TRUNCATE TABLE {key_space}.{MessageModel.__table_name__}")
-        execute(f"TRUNCATE TABLE {key_space}.{AttachmentModel.__table_name__}")
+        execute(f"TRUNCATE TABLE {key_space}.{MessageModel.__table_name__};")
+        execute(f"TRUNCATE TABLE {key_space}.{AttachmentModel.__table_name__};")
 
     @classmethod
     def _generate_message_query(cls, page: int = 10, since: Optional[float] = None, until: Optional[float] = None) -> MessageQuery:
