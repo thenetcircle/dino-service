@@ -25,22 +25,23 @@ class BaseTest(TestCase):
     FILE_ID = str(uuid()).replace("-", "")
     FILE_STATUS = 1
     FILE_CONTEXT = '{"some-key":"some-value"}'
+    LONG_AGO = arrow.Arrow.utcfromtimestamp(789_000_000).datetime
 
     def setUp(self) -> None:
-        # used when no `hide_before` is specified in a query
-        beginning_of_1995 = 789_000_000
-        long_ago = arrow.Arrow.utcfromtimestamp(beginning_of_1995).datetime
-
         self.fake_env = FakeEnv()
-        self.fake_env.db.stats[BaseTest.USER_ID] = [
-            UserGroupStatsBase(
-                group_id=BaseTest.GROUP_ID,
-                user_id=BaseTest.USER_ID,
-                last_read=long_ago,
-                last_sent=long_ago,
-                delete_before=long_ago,
-                join_time=long_ago,
-                last_updated_time=long_ago,
+        self.fake_env.db.stats[BaseTest.USER_ID] = [BaseTest._generate_user_group_stats()]
+
+    @classmethod
+    def _generate_user_group_stats(cls,) -> UserGroupStatsBase:
+        # used when no `hide_before` is specified in a query
+        return UserGroupStatsBase(
+                group_id=cls.GROUP_ID,
+                user_id=cls.USER_ID,
+                last_read=cls.LONG_AGO,
+                last_sent=cls.LONG_AGO,
+                delete_before=cls.LONG_AGO,
+                join_time=cls.LONG_AGO,
+                last_updated_time=cls.LONG_AGO,
                 hide=False,
                 pin=False,
                 bookmark=False,
@@ -51,4 +52,3 @@ class BaseTest(TestCase):
                 sent_message_count=-1,
                 kicked=False,
             )
-        ]
