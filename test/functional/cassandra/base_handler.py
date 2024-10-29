@@ -49,7 +49,9 @@ class BaseCassandraHandlerTest(BaseTest):
     def setUp(self) -> None:
         config_dict, config_path = find_config(str(get_project_root()))
         config_dict = load_secrets_file(
-            config_dict, secrets_path=os.path.join(str(get_project_root()), "secrets"), env_name="test"
+            config_dict,
+            secrets_path=os.path.join(str(get_project_root()), "secrets"),
+            env_name="test",
         )
 
         env = FakeEnv()
@@ -61,7 +63,9 @@ class BaseCassandraHandlerTest(BaseTest):
         if "test" in key_space:
             cluster = Cluster(hosts)
             session = cluster.connect()
-            session.execute(f"CREATE KEYSPACE IF NOT EXISTS {key_space} WITH REPLICATION={{'class':'SimpleStrategy', 'replication_factor':1}}")
+            session.execute(
+                f"CREATE KEYSPACE IF NOT EXISTS {key_space} WITH REPLICATION={{'class':'SimpleStrategy', 'replication_factor':1}}"
+            )
             cluster.shutdown()
 
         self.handler = CassandraHandler(env)
@@ -73,7 +77,12 @@ class BaseCassandraHandlerTest(BaseTest):
         execute(f"TRUNCATE TABLE {key_space}.{AttachmentModel.__table_name__};")
 
     @classmethod
-    def _generate_message_query(cls, page: int = 10, since: Optional[float] = None, until: Optional[float] = None) -> MessageQuery:
+    def _generate_message_query(
+        cls,
+        page: int = 10,
+        since: Optional[float] = None,
+        until: Optional[float] = None,
+    ) -> MessageQuery:
         return MessageQuery(per_page=page, since=since, until=until)
 
     def clear_messages(self) -> None:
@@ -90,13 +99,15 @@ class BaseCassandraHandlerTest(BaseTest):
 
     def assert_get_messages_in_group_empty(self) -> None:
         messages = self.handler.get_messages_in_group(
-            BaseCassandraHandlerTest.GROUP_ID, BaseCassandraHandlerTest._generate_message_query()
+            BaseCassandraHandlerTest.GROUP_ID,
+            BaseCassandraHandlerTest._generate_message_query(),
         )
         self.assertEqual(0, len(messages))
 
     def assert_get_attachments_in_group_for_user_empty(self) -> None:
         messages = self.handler.get_attachments_in_group_for_user(
-            BaseCassandraHandlerTest.GROUP_ID, BaseCassandraHandlerTest._generate_user_group_stats(),
-            BaseCassandraHandlerTest._generate_message_query()
+            BaseCassandraHandlerTest.GROUP_ID,
+            BaseCassandraHandlerTest._generate_user_group_stats(),
+            BaseCassandraHandlerTest._generate_message_query(),
         )
         self.assertEqual(0, len(messages))
