@@ -135,6 +135,10 @@ class KafkaPublishHandler(IServerPublishHandler):
 
     def offline_users(self, user_ids: List[int]) -> None:
         event = ActivityBuilder.enrich(self.env, {
+            "actor": {
+                "id": "0",
+                "objectType": "user"
+            },
             "object": {
                 "objectType": "users",
                 "attachments": [{
