@@ -926,7 +926,7 @@ class FakeEnv:
         def __init__(self):
             self.config = {
                 "storage": {
-                    "key_space": "dinofw",
+                    "key_space": "defaulttest",
                     "host": "maggie-cassandra-1,maggie-cassandra-2",
                 },
                 "kafka": {
