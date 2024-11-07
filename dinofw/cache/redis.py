@@ -16,8 +16,9 @@ from dinofw.utils import to_dt, split_into_chunks
 from dinofw.utils.config import ConfigKeys
 from dinofw.utils.config import RedisKeys
 
-FIVE_MINUTES = 60 * 5
-ONE_HOUR = 60 * 60
+ONE_MINUTE = 60
+FIVE_MINUTES = ONE_MINUTE * 5
+ONE_HOUR = ONE_MINUTE * 60
 ONE_DAY = 24 * ONE_HOUR
 ONE_WEEK = 7 * ONE_DAY
 
@@ -309,7 +310,7 @@ class CacheRedis(ICache):
         key = RedisKeys.online_users() + ":ttl"
         return self.redis.ttl(key) < 0
 
-    def set_online_users_ttl_expired(self, ttl: int = FIVE_MINUTES*2) -> None:
+    def set_online_users_ttl_expired(self, ttl: int = ONE_MINUTE * 4) -> None:
         key = RedisKeys.online_users() + ":ttl"
         self.redis.set(key, "1")
         self.redis.expire(key, ttl)
