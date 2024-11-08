@@ -837,6 +837,42 @@ class RelationalHandler:
 
         return {user_id: last_read}
 
+    def remove_user_stats_for_offline_users(self, user_ids: List[int], db: Session) -> None:
+        logger.info("removing user stats for users (went offline): {user_ids}")
+
+        groups = (
+            db.query(
+                GroupEntity.group_id,
+                GroupEntity.group_type,
+                UserGroupStatsEntity.user_id
+            )
+            .join(
+                UserGroupStatsEntity,
+                UserGroupStatsEntity.group_id == GroupEntity.group_id
+            )
+            .filter(
+                UserGroupStatsEntity.user_id.in_(user_ids),
+                GroupEntity.group_type.in_(GroupTypes.public_group_types)
+            )
+            .all()
+        )
+
+        user_to_group_and_type = dict()
+        for group_id, group_type, user_id in groups:
+            if user_id not in user_to_group_and_type:
+                user_to_group_and_type[user_id] = dict()
+
+            user_to_group_and_type[user_id][group_id] = group_type
+
+        for user_id in user_ids:
+            group_id_to_type = user_to_group_and_type.get(user_id, dict())
+            group_ids = list(group_id_to_type.keys())
+
+            self.copy_to_deleted_groups_table(group_id_to_type, user_id, db, skip_public=False)
+            self.remove_user_group_stats_for_user(group_ids, user_id, db)
+            self.env.cache.reset_count_group_types_for_user(user_id)
+
+
     def get_online_users(self, db: Session) -> List[int]:
         # don't actually expire the online list, since that one is
         # used in other places to check individual users

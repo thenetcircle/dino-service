@@ -117,7 +117,7 @@ async def send_message_to_user(
 
 
 @router.post("/groups/public", response_model=Optional[List[Group]])
-@timeit(logger, "POST", "/groups/{group_id}/users")
+@timeit(logger, "POST", "/groups/public")
 @wrap_exception()
 async def get_public_groups(query: PublicGroupQuery, db: Session = Depends(get_db)) -> List[Group]:
     """
