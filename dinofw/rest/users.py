@@ -50,7 +50,8 @@ class UserResource(BaseResource):
         # only notify if someone left
         if offline_users:
             self.env.server_publisher.offline_users(offline_users)
-            self.env.db.remove_user_stats_for_offline_users(offline_users, db)
+            # TODO: disable for now, community will call the api to remove offline users
+            # self.env.db.remove_user_stats_for_offline_users(offline_users, db)
 
     async def update_real_time_user_session(self, user: SessionUser):
         logger.debug(f"update_real_time_user_session: {user.json()}")
