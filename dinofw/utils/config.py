@@ -60,8 +60,9 @@ class MessageEventType:
     HIGHLIGHT: Final = "highlight"
     DELETE_ATTACHMENT: Final = "delete_attachment"
     IRC_MESSAGE: Final = "irc_message"
+    ACTION: Final = "action"
 
-    need_stats = {GROUP, MESSAGE, IRC_MESSAGE}
+    need_stats = {GROUP, MESSAGE, IRC_MESSAGE, ACTION}
 
 
 class PayloadStatus:
