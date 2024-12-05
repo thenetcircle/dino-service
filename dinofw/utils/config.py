@@ -63,7 +63,7 @@ class MessageEventType:
     IRC_ROOMS: Final = "irc_rooms"
     ACTION: Final = "action"
 
-    need_stats = {GROUP, MESSAGE, IRC_MESSAGE, IRC_ROOMS, ACTION}
+    need_stats = {GROUP, MESSAGE, IRC_MESSAGE, ACTION}
 
 
 class PayloadStatus:
