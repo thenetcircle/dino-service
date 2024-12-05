@@ -134,20 +134,26 @@ class KafkaPublishHandler(IServerPublishHandler):
             self.publisher.send(event)
 
     def offline_users(self, user_ids: List[int]) -> None:
-        event = ActivityBuilder.enrich(self.env, {
-            "object": {
-                "objectType": "users",
-                "attachments": [{
-                    "id": str(user_id),
+        # batch the offline events, sometimes there could be thousands of offline events, in case network issues
+        for user_ids_chunk in split_into_chunks(user_ids, 50):
+            event = ActivityBuilder.enrich(self.env, {
+                "actor": {
+                    "id": "0",
                     "objectType": "user"
-                } for user_id in user_ids]
-            },
-            "verb": "offline",
-            "title": "messenger.users.offline"
-        })
+                },
+                "object": {
+                    "objectType": "users",
+                    "attachments": [{
+                        "id": str(user_id),
+                        "objectType": "user"
+                    } for user_id in user_ids_chunk]
+                },
+                "verb": "offline",
+                "title": "messenger.users.offline"
+            })
 
-        logger.debug("sending offline users to kafka {}".format(','.join([str(user_id) for user_id in user_ids])))
-        self.publisher.send(event)
+            logger.debug("sending offline users to kafka {}".format(','.join([str(user_id) for user_id in user_ids])))
+            self.publisher.send(event)
 
     def generate_event(self, group_id: str, attachments: List[MessageBase], user_ids: List[int]) -> dict:
         # same owner for all attachments
