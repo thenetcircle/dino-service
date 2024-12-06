@@ -43,8 +43,8 @@ class FakeStorage:
         self.attachments_by_message = dict()
         self.action_log = dict()
 
-    def edit_message(self, group_id: str, user_id: int, message_id: str, query: EditMessageQuery) -> MessageBase:
-        messages = self.get_all_messages_in_group(group_id)
+    async def edit_message(self, group_id: str, user_id: int, message_id: str, query: EditMessageQuery) -> MessageBase:
+        messages = await self.get_all_messages_in_group(group_id)
         if not messages:
             raise NoSuchMessageException(message_id)
 
@@ -63,21 +63,21 @@ class FakeStorage:
 
         return msg_to_edit
 
-    def get_created_at_for_offset(self, group_id: str, offset: int) -> dt:
+    async def get_created_at_for_offset(self, group_id: str, offset: int) -> dt:
         for message in reversed(self.messages_by_group.get(group_id, [])):
             if offset == 0:
                 return message.created_at
 
             offset -= 1
 
-    def get_all_messages_in_group(self, group_id: str):
+    async def get_all_messages_in_group(self, group_id: str):
         if group_id not in self.messages_by_group:
             return list()
 
         return self.messages_by_group[group_id]
 
-    def export_history_in_group(self, group_id: str, query: ExportQuery) -> List[MessageBase]:
-        messages = self.get_all_messages_in_group(group_id)
+    async def export_history_in_group(self, group_id: str, query: ExportQuery) -> List[MessageBase]:
+        messages = await self.get_all_messages_in_group(group_id)
         keep_order = True
 
         until = to_dt(query.until, allow_none=True)
@@ -100,7 +100,7 @@ class FakeStorage:
         # since we need ascending order on cassandra query if we use 'since', reverse the results here
         return list(reversed(messages))[:query_limit]
 
-    def count_attachments_in_group_since(self, group_id: str, since: dt) -> int:
+    async def count_attachments_in_group_since(self, group_id: str, since: dt) -> int:
         if group_id not in self.attachments_by_group:
             return 0
 
@@ -114,7 +114,7 @@ class FakeStorage:
 
         return len(attachments)
 
-    def get_message_with_id(self, group_id: str, user_id: int, message_id: str, created_at: float):
+    async def get_message_with_id(self, group_id: str, user_id: int, message_id: str, created_at: float):
         if group_id not in self.messages_by_group:
             raise NoSuchMessageException(message_id)
 
@@ -128,7 +128,7 @@ class FakeStorage:
 
         raise NoSuchMessageException(message_id)
 
-    def create_action_log(self, user_id: int, group_id: str, query: ActionLogQuery):
+    async def create_action_log(self, user_id: int, group_id: str, query: ActionLogQuery):
         if group_id not in self.action_log:
             self.action_log[group_id] = list()
 
@@ -148,7 +148,7 @@ class FakeStorage:
         self.messages_by_group[group_id].append(log)
         return log
 
-    def delete_attachment(self, group_id: str, created_at: dt, query: AttachmentQuery) -> MessageBase:
+    async def delete_attachment(self, group_id: str, created_at: dt, query: AttachmentQuery) -> MessageBase:
         file_id = query.file_id
         att_copy = None
 
@@ -177,7 +177,7 @@ class FakeStorage:
 
         return att_copy
 
-    def delete_attachments(
+    async def delete_attachments(
         self,
         group_id: str,
         group_created_at: dt,
@@ -219,7 +219,7 @@ class FakeStorage:
 
         return attachments
 
-    def delete_attachments_in_all_groups(
+    async def delete_attachments_in_all_groups(
         self,
         group_created_at: List[Tuple[str, dt]],
         user_id: int,
@@ -228,11 +228,11 @@ class FakeStorage:
         attachments = dict()
 
         for group_id, created_at in group_created_at:
-            attachments[group_id] = self.delete_attachments(group_id, created_at, user_id, query)
+            attachments[group_id] = await self.delete_attachments(group_id, created_at, user_id, query)
 
         return attachments
 
-    def get_unread_in_group(self, group_id: str, user_id: int, last_read: dt) -> int:
+    async def get_unread_in_group(self, group_id: str, user_id: int, last_read: dt) -> int:
         unread = self.env.cache.get_unread_in_group(group_id, user_id)
         if unread is not None:
             return unread
@@ -247,7 +247,7 @@ class FakeStorage:
 
         return unread
 
-    def store_attachment(
+    async def store_attachment(
         self, group_id: str, user_id: int, message_id: str, query: CreateAttachmentQuery
     ) -> MessageBase:
 
@@ -280,7 +280,7 @@ class FakeStorage:
 
         return attachment
 
-    def store_message(
+    async def store_message(
         self, group_id: str, user_id: int, query: SendMessageQuery
     ) -> MessageBase:
         if group_id not in self.messages_by_group:
@@ -301,22 +301,22 @@ class FakeStorage:
 
         return message
 
-    def create_join_action_log(
+    async def create_join_action_log(
         self, group_id: str, users: Dict[int, float], action_time: dt
     ) -> List[MessageBase]:
         user_ids = [user_id for user_id, _ in users.items()]
-        return self._create_action_log(
+        return await self._create_action_log(
             group_id, user_ids, action_time, FakeStorage.ACTION_TYPE_JOIN
         )
 
-    def create_leave_action_log(
+    async def create_leave_action_log(
         self, group_id: str, user_ids: [int], action_time: dt
     ) -> List[MessageBase]:
-        return self._create_action_log(
+        return await self._create_action_log(
             group_id, user_ids, action_time, FakeStorage.ACTION_TYPE_LEAVE
         )
 
-    def _create_action_log(
+    async def _create_action_log(
         self, group_id: str, user_ids: List[int], action_time: dt, action_type: int
     ) -> List[MessageBase]:
         if group_id not in self.action_log:
@@ -338,7 +338,7 @@ class FakeStorage:
 
         return new_logs
 
-    def get_messages_in_group(
+    async def get_messages_in_group(
         self, group_id: str, query: MessageQuery
     ) -> List[MessageBase]:
         if group_id not in self.messages_by_group:
@@ -354,7 +354,7 @@ class FakeStorage:
 
         return messages
 
-    def get_attachments_in_group_for_user(
+    async def get_attachments_in_group_for_user(
         self, group_id: str, user_stats: UserGroupStatsBase, query: MessageQuery
     ) -> List[MessageBase]:
         if group_id not in self.attachments_by_group:
@@ -374,7 +374,7 @@ class FakeStorage:
 
         return attachments
 
-    def get_attachment_from_file_id(self, group_id: str, created_at: dt, query: AttachmentQuery) -> MessageBase:
+    async def get_attachment_from_file_id(self, group_id: str, created_at: dt, query: AttachmentQuery) -> MessageBase:
         if group_id not in self.attachments_by_group:
             raise NoSuchAttachmentException(query.file_id)
 
@@ -384,7 +384,7 @@ class FakeStorage:
 
         raise NoSuchAttachmentException(query.file_id)
 
-    def get_messages_in_group_for_user(
+    async def get_messages_in_group_for_user(
         self, group_id: str, user_stats: UserGroupStatsBase, query: MessageQuery,
     ) -> List[MessageBase]:
         if group_id not in self.messages_by_group:
@@ -436,7 +436,7 @@ class FakeStorage:
 
         return logs
 
-    def count_messages_in_group_since(self, group_id: str, since: dt) -> int:
+    async def count_messages_in_group_since(self, group_id: str, since: dt) -> int:
         if group_id not in self.messages_by_group:
             return 0
 
@@ -601,7 +601,7 @@ class FakeDatabase:
             stat.highlight_time = the_time
             stat.unread_count = 0
 
-    def create_group(self, owner_id: int, query: CreateGroupQuery, now, _) -> GroupBase:
+    async def create_group(self, owner_id: int, query: CreateGroupQuery, now, _) -> GroupBase:
         created_at = trim_micros(arrow.get(now).shift(seconds=-1).datetime)
 
         group = GroupBase(
@@ -727,7 +727,7 @@ class FakeDatabase:
 
         return len(users)
 
-    def update_user_stats_on_join_or_create_group(
+    async def update_user_stats_on_join_or_create_group(
         self, group_id: str, users: Dict[int, float], now: dt, group_type: int, db=None
     ) -> None:
         for user_id, _ in users.items():

@@ -85,27 +85,27 @@ class BaseCassandraHandlerTest(BaseTest):
     ) -> MessageQuery:
         return MessageQuery(per_page=page, since=since, until=until)
 
-    def clear_messages(self) -> None:
-        self.handler.delete_messages_in_group_before(
+    async def clear_messages(self) -> None:
+        await self.handler.delete_messages_in_group_before(
             BaseCassandraHandlerTest.GROUP_ID, utcnow_dt()
         )
-        self.assert_get_messages_in_group_empty()
+        await self.assert_get_messages_in_group_empty()
 
-    def clear_attachments(self) -> None:
-        self.handler.delete_attachments_in_group_before(
+    async def clear_attachments(self) -> None:
+        await self.handler.delete_attachments_in_group_before(
             BaseCassandraHandlerTest.GROUP_ID, utcnow_dt()
         )
-        self.assert_get_attachments_in_group_for_user_empty()
+        await self.assert_get_attachments_in_group_for_user_empty()
 
-    def assert_get_messages_in_group_empty(self) -> None:
-        messages = self.handler.get_messages_in_group(
+    async def assert_get_messages_in_group_empty(self) -> None:
+        messages = await self.handler.get_messages_in_group(
             BaseCassandraHandlerTest.GROUP_ID,
             BaseCassandraHandlerTest._generate_message_query(),
         )
         self.assertEqual(0, len(messages))
 
-    def assert_get_attachments_in_group_for_user_empty(self) -> None:
-        messages = self.handler.get_attachments_in_group_for_user(
+    async def assert_get_attachments_in_group_for_user_empty(self) -> None:
+        messages = await self.handler.get_attachments_in_group_for_user(
             BaseCassandraHandlerTest.GROUP_ID,
             BaseCassandraHandlerTest._generate_user_group_stats(),
             BaseCassandraHandlerTest._generate_message_query(),

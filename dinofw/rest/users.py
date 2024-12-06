@@ -77,7 +77,7 @@ class UserResource(BaseResource):
 
         return to_user_group(user_groups)
 
-    def create_action_log_in_all_groups(
+    async def create_action_log_in_all_groups(
             self, user_id: int, query: ActionLogQuery, db: Session
     ) -> None:
         """
@@ -100,7 +100,7 @@ class UserResource(BaseResource):
 
         for group_id, _ in group_ids_and_created_at:
             try:
-                self.create_action_log(query, db, user_id=user_id, group_id=group_id)
+                await self.create_action_log(query, db, user_id=user_id, group_id=group_id)
             except Exception as e:
                 logger.error(f"could not create action log in group {group_id} for user {user_id}: {str(e)}")
                 logger.exception(e)
@@ -190,13 +190,13 @@ class UserResource(BaseResource):
             last_sent_group_id=last_sent_group_id,
         )
 
-    def delete_all_user_attachments(self, user_id: int, query: DeleteAttachmentQuery, db: Session) -> None:
+    async def delete_all_user_attachments(self, user_id: int, query: DeleteAttachmentQuery, db: Session) -> None:
         group_created_at = self.env.db.get_group_ids_and_created_at_for_user(user_id, db)
-        group_to_atts = self.env.storage.delete_attachments_in_all_groups(group_created_at, user_id, query)
+        group_to_atts = await self.env.storage.delete_attachments_in_all_groups(group_created_at, user_id, query)
 
         now = utcnow_ts()
 
         for group_id, attachments in group_to_atts.items():
             user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db).keys()
             self.env.server_publisher.delete_attachments(group_id, attachments, user_ids, now)
-            self.create_action_log(query.action_log, db, user_id=user_id, group_id=group_id)
+            await self.create_action_log(query.action_log, db, user_id=user_id, group_id=group_id)

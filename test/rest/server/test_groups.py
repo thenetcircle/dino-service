@@ -197,7 +197,7 @@ class TestGroupResource(BaseTest):
         )
 
         # group doesn't exist yet
-        self.group.leave_groups({BaseTest.GROUP_ID: GroupTypes.PRIVATE_GROUP}, BaseTest.USER_ID, CreateActionLogQuery(), None)  # noqa
+        await self.group.leave_groups({BaseTest.GROUP_ID: GroupTypes.PRIVATE_GROUP}, BaseTest.USER_ID, CreateActionLogQuery(), None)  # noqa
 
         # create a new group
         group = await self.group.create_new_group(
@@ -210,7 +210,7 @@ class TestGroupResource(BaseTest):
         self.assertEqual(1, group_users.user_count)
 
         # leave the group
-        self.group.leave_groups({group.group_id: GroupTypes.PRIVATE_GROUP}, BaseTest.USER_ID, CreateActionLogQuery(), None)  # noqa
+        await self.group.leave_groups({group.group_id: GroupTypes.PRIVATE_GROUP}, BaseTest.USER_ID, CreateActionLogQuery(), None)  # noqa
 
         # check there's no users left in the group after leaving
         group_users = await self.group.get_users_in_group(group.group_id, None)  # noqa

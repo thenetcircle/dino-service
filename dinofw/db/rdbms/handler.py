@@ -1237,7 +1237,7 @@ class RelationalHandler:
 
         return GroupBase(**group.__dict__)
 
-    def create_group_for_1to1(self, user_a: int, user_b: int, db: Session) -> GroupBase:
+    async def create_group_for_1to1(self, user_a: int, user_b: int, db: Session) -> GroupBase:
         users = sorted([user_a, user_b])
         group_name = ",".join([str(user_id) for user_id in users])
         now = utcnow_dt()
@@ -1246,7 +1246,7 @@ class RelationalHandler:
             group_name=group_name, group_type=GroupTypes.ONE_TO_ONE, users=users
         )
 
-        return self.create_group(user_a, query, now, db)
+        return await self.create_group(user_a, query, now, db)
 
     def get_user_ids_and_join_time_in_groups(self, group_ids: List[str], db: Session) -> dict:
         group_and_users: Dict[str, Dict[int, float]] = \
@@ -1333,7 +1333,7 @@ class RelationalHandler:
         )
         db.commit()
 
-    def update_user_stats_on_join_or_create_group(
+    async def update_user_stats_on_join_or_create_group(
         self, group_id: str, users: Dict[int, float], now: dt, group_type: int, db: Session
     ) -> None:
         user_ids_for_cache = set()
@@ -1355,7 +1355,7 @@ class RelationalHandler:
                 self.env.cache.increase_count_group_types_for_user(user_id, GroupTypes.PRIVATE_GROUP)
 
                 user_ids_for_cache.add(user_id)
-                user_ids_to_stats[user_id] = self._create_user_stats(
+                user_ids_to_stats[user_id] = await self._create_user_stats(
                     group_id=group_id,
                     user_id=user_id,
                     default_dt=now,
@@ -1775,11 +1775,11 @@ class RelationalHandler:
 
         return user_stats, that_user_stats, group
 
-    def update_user_group_stats(
+    async def update_user_group_stats(
         self, group_id: str, user_id: int, query: UpdateUserGroupStats, db: Session
     ) -> None:
         # delegate to separate handler, too much business logic
-        self.stats_handler.update(group_id, user_id, query, db)
+        await self.stats_handler.update(group_id, user_id, query, db)
 
     def get_delete_before(self, group_id: str, user_id: int, db: Session) -> dt:
         delete_before = self.env.cache.get_delete_before(group_id, user_id)
@@ -1933,7 +1933,7 @@ class RelationalHandler:
         db.add(user_stats)
         db.commit()
 
-    def create_group(
+    async def create_group(
         self, owner_id: int, query: CreateGroupQuery, utc_now, db: Session
     ) -> GroupBase:
         # can't be exactly the same, because when listing groups for a
@@ -1985,7 +1985,7 @@ class RelationalHandler:
 
         for user_id in user_ids:
             self.env.cache.increase_count_group_types_for_user(user_id, query.group_type)
-            user_stats = self._create_user_stats(
+            user_stats = await self._create_user_stats(
                 group_id=group_id,
                 user_id=user_id,
                 group_type=query.group_type,
@@ -2096,7 +2096,7 @@ class RelationalHandler:
             .first()
         )
 
-    def _create_user_stats(
+    async def _create_user_stats(
         self, group_id: str, user_id: int, default_dt: dt, group_type: int, delete_before: dt = None
     ) -> UserGroupStatsEntity:
         now = utcnow_dt()
@@ -2106,11 +2106,11 @@ class RelationalHandler:
 
         if group_type in GroupTypes.public_group_types:
             a_month_ago = arrow.get(now).shift(days=-max_days).datetime
-            msg_count = self.env.storage.count_messages_in_group_since(group_id, a_month_ago)
+            msg_count = await self.env.storage.count_messages_in_group_since(group_id, a_month_ago)
 
             # max 500 messages or 1 month ago
             if msg_count > max_count:
-                delete_before = self.env.storage.get_created_at_for_offset(group_id, offset=max_count - 1)
+                delete_before = await self.env.storage.get_created_at_for_offset(group_id, offset=max_count - 1)
                 if delete_before is None:
                     logger.error(f"no messages in group '{group_id}', but count > {max_count}")
                     delete_before = a_month_ago

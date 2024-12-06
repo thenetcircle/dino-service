@@ -17,11 +17,11 @@ class TestDatabaseQueries(BaseDatabaseTest):
         self.assertIsNone(group_id)
         self.assertIsNone(last_sent)
 
-    def test_get_last_sent_for_user_with_ugs(self):
+    async def test_get_last_sent_for_user_with_ugs(self):
         session = self.env.session_maker()
         now = arrow.utcnow().datetime
 
-        ugs = self.env.db._create_user_stats(
+        ugs = await self.env.db._create_user_stats(
             group_id=BaseTest.GROUP_ID,
             user_id=BaseTest.USER_ID,
             group_type=GroupTypes.PRIVATE_GROUP,
@@ -36,7 +36,7 @@ class TestDatabaseQueries(BaseDatabaseTest):
         self.assertEqual(BaseTest.GROUP_ID, group_id)
         self.assertIsNotNone(last_sent)
 
-    def test_get_group_ids_and_created_at_for_user(self):
+    async def test_get_group_ids_and_created_at_for_user(self):
         session = self.env.session_maker()
 
         user_id = 50
@@ -46,7 +46,7 @@ class TestDatabaseQueries(BaseDatabaseTest):
 
         for receiver_id in receivers:
             time.sleep(0.01)
-            group = self.env.db.create_group_for_1to1(user_id, receiver_id, session)
+            group = await self.env.db.create_group_for_1to1(user_id, receiver_id, session)
             groups[group.group_id] = group.created_at
 
         group_and_created_at = self.env.db.get_group_ids_and_created_at_for_user(user_id, session)
