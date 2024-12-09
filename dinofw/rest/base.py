@@ -64,7 +64,7 @@ class BaseResource(ABC):
                 group_id, user_id, user_ids, now_dt, bookmark=user_stats.bookmark
             )
 
-    def create_action_log(
+    async def create_action_log(
         self,
             query: ActionLogQuery,
             db: Session,
@@ -87,9 +87,9 @@ class BaseResource(ABC):
         if query.group_id is not None and len(query.group_id.strip()):
             group_id = query.group_id
         elif query.receiver_id is not None and query.receiver_id > 0:
-            group_id = self._get_or_create_group_for_1v1(user_id, query.receiver_id, db)
+            group_id = await self._get_or_create_group_for_1v1(user_id, query.receiver_id, db)
 
-        log = self.env.storage.create_action_log(user_id, group_id, query)
+        log = await self.env.storage.create_action_log(user_id, group_id, query)
         self._user_sends_a_message(
             group_id,
             user_id=user_id,
@@ -157,7 +157,7 @@ class BaseResource(ABC):
 
         return group_base
 
-    def _get_or_create_group_for_1v1(
+    async def _get_or_create_group_for_1v1(
         self, user_id: int, receiver_id: int, db: Session
     ) -> str:
         if user_id is None or receiver_id is None:
@@ -173,7 +173,7 @@ class BaseResource(ABC):
             group = self.env.db.get_group_for_1to1(user_id, receiver_id, db)
         except NoSuchGroupException:
             try:
-                group = self.env.db.create_group_for_1to1(user_id, receiver_id, db)
+                group = await self.env.db.create_group_for_1to1(user_id, receiver_id, db)
             except UserStatsOrGroupAlreadyCreated:
                 # another api call created it after we checked but before we finished creating it,
                 # so we should now be able to just fetch the one created by the other call

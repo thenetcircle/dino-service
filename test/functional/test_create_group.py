@@ -10,7 +10,7 @@ from test.functional.base_functional import BaseServerRestApi
 
 
 class TestCreateGroup(BaseServerRestApi):
-    def test_create_group_that_exists(self):
+    async def test_create_group_that_exists(self):
         session = self.env.session_maker()
 
         self.send_1v1_message(
@@ -25,14 +25,14 @@ class TestCreateGroup(BaseServerRestApi):
         )
 
         with self.assertRaises(UserStatsOrGroupAlreadyCreated):
-            self.env.db.create_group(
+            await self.env.db.create_group(
                 owner_id=BaseTest.USER_ID,
                 query=query,
                 utc_now=utcnow_dt(),
                 db=session
             )
 
-    def test_create_with_users_that_exists(self):
+    async def test_create_with_users_that_exists(self):
         session = self.env.session_maker()
 
         utc_now = utcnow_dt()
@@ -41,14 +41,14 @@ class TestCreateGroup(BaseServerRestApi):
         delete_before = created_at - datetime.timedelta(seconds=1)
 
         # group_id: str, user_id: int, default_dt: dt, group_type: int, delete_before: dt = None
-        session.add(self.env.db._create_user_stats(
+        session.add(await self.env.db._create_user_stats(
             group_id=group_id,
             user_id=BaseTest.USER_ID,
             default_dt=created_at,
             group_type=GroupTypes.PRIVATE_GROUP,
             delete_before=delete_before
         ))
-        session.add(self.env.db._create_user_stats(
+        session.add(await self.env.db._create_user_stats(
             group_id=group_id,
             user_id=BaseTest.OTHER_USER_ID,
             default_dt=created_at,
@@ -64,7 +64,7 @@ class TestCreateGroup(BaseServerRestApi):
         )
 
         with self.assertRaises(UserStatsOrGroupAlreadyCreated):
-            self.env.db.create_group(
+            await self.env.db.create_group(
                 owner_id=BaseTest.USER_ID,
                 query=query,
                 utc_now=utcnow_dt(),
@@ -72,7 +72,7 @@ class TestCreateGroup(BaseServerRestApi):
             )
 
 
-    def test_get_group_fails_not_create_user_fails(self):
+    async def test_get_group_fails_not_create_user_fails(self):
         session = self.env.session_maker()
 
         utc_now = utcnow_dt()
@@ -80,14 +80,14 @@ class TestCreateGroup(BaseServerRestApi):
         created_at = trim_micros(arrow.get(utc_now).shift(seconds=-1).datetime)
         delete_before = created_at - datetime.timedelta(seconds=1)
 
-        session.add(self.env.db._create_user_stats(
+        session.add(await self.env.db._create_user_stats(
             group_id=group_id,
             user_id=BaseTest.USER_ID,
             default_dt=created_at,
             group_type=GroupTypes.PRIVATE_GROUP,
             delete_before=delete_before
         ))
-        session.add(self.env.db._create_user_stats(
+        session.add(await self.env.db._create_user_stats(
             group_id=group_id,
             user_id=BaseTest.OTHER_USER_ID,
             default_dt=created_at,
@@ -97,7 +97,7 @@ class TestCreateGroup(BaseServerRestApi):
         session.commit()
 
         with self.assertRaises(NoSuchGroupException):
-            self.env.rest.message._get_or_create_group_for_1v1(
+            await self.env.rest.message._get_or_create_group_for_1v1(
                 BaseTest.USER_ID,
                 BaseTest.OTHER_USER_ID,
                 session

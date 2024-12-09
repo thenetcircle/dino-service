@@ -80,7 +80,7 @@ class GroupResource(BaseResource):
         group, first_users, n_users = self.env.db.get_users_in_group(group_id, db)
 
         if query.count_messages:
-            message_amount = self.env.storage.count_messages_in_group_since(group_id, group.created_at)
+            message_amount = await self.env.storage.count_messages_in_group_since(group_id, group.created_at)
 
         return group_base_to_group(
             group, users=first_users, user_count=n_users, message_amount=message_amount,
@@ -95,7 +95,7 @@ class GroupResource(BaseResource):
             raise InvalidRangeException("only one of parameters 'since' and 'until' can be used at the same time")
 
         user_stats = self.env.db.get_user_stats_in_group(group_id, user_id, db)
-        attachments = self.env.storage.get_attachments_in_group_for_user(group_id, user_stats, query)
+        attachments = await self.env.storage.get_attachments_in_group_for_user(group_id, user_stats, query)
 
         return [
             message_base_to_message(attachment)
@@ -184,9 +184,9 @@ class GroupResource(BaseResource):
                 return the_count
 
         if query and query.only_sender:
-            the_count = self.env.storage.count_attachments_in_group_since(group_id, since, sender_id=user_id)
+            the_count = await self.env.storage.count_attachments_in_group_since(group_id, since, sender_id=user_id)
         else:
-            the_count = self.env.storage.count_attachments_in_group_since(group_id, since)
+            the_count = await self.env.storage.count_attachments_in_group_since(group_id, since)
 
         if not include_deleted:
             # don't cache the value if we're including deleted messages
@@ -198,7 +198,7 @@ class GroupResource(BaseResource):
         return Histories(
             messages=[
                 message_base_to_message(message)
-                for message in self.env.storage.get_all_messages_in_group(group_id)
+                for message in await self.env.storage.get_all_messages_in_group(group_id)
             ]
         )
 
@@ -246,15 +246,15 @@ class GroupResource(BaseResource):
         )
 
     async def export_history_in_group(self, group_id: str, query: ExportQuery, db: Session) -> Histories:
-        def get_messages():
+        async def get_messages():
             # need to batch query cassandra, can't filter by user id
             if query.user_id is not None:
                 user_stats = self._create_empty_user_stats(query.user_id)
-                _messages = self.env.storage.get_messages_in_group_only_from_user(
+                _messages = await self.env.storage.get_messages_in_group_only_from_user(
                     group_id, user_stats, query
                 )
             else:
-                _messages = self.env.storage.export_history_in_group(
+                _messages = await self.env.storage.export_history_in_group(
                     group_id, query
                 )
 
@@ -264,20 +264,20 @@ class GroupResource(BaseResource):
             ]
 
         return Histories(
-            messages=get_messages()
+            messages=await get_messages()
         )
 
     async def histories(
         self, group_id: str, user_id: int, query: MessageQuery, db: Session
     ) -> Histories:
-        def get_messages():
+        async def get_messages():
             # need to batch query cassandra, can't filter by user id
             if query.only_sender:
-                _messages = self.env.storage.get_messages_in_group_only_from_user(
+                _messages = await self.env.storage.get_messages_in_group_only_from_user(
                     group_id, user_stats, query
                 )
             else:
-                _messages = self.env.storage.get_messages_in_group_for_user(
+                _messages = await self.env.storage.get_messages_in_group_for_user(
                     group_id, user_stats, query
                 )
 
@@ -289,7 +289,7 @@ class GroupResource(BaseResource):
         self._check_that_query_is_valid_and_group_is_active(group_id, query, db)
         user_stats = self._get_stats_and_check_that_user_is_not_kicked(group_id, user_id, db)
 
-        messages = get_messages()
+        messages = await get_messages()
 
         # history api can be called by the admin interface, in which case we don't want to change read status
         if query.admin_id is None or query.admin_id == 0:
@@ -308,7 +308,7 @@ class GroupResource(BaseResource):
         else:
             until = to_dt(until)
 
-        messages_since = self.env.storage.count_messages_in_group_since(group_id, until)
+        messages_since = await self.env.storage.count_messages_in_group_since(group_id, until)
         total_messages = n_messages + messages_since
         now = utcnow_ts()
 
@@ -340,8 +340,8 @@ class GroupResource(BaseResource):
     async def update_user_group_stats(
         self, group_id: str, user_id: int, query: UpdateUserGroupStats, db: Session
     ) -> None:
-        self.env.db.update_user_group_stats(group_id, user_id, query, db)
-        self.create_action_log(query.action_log, db, user_id=user_id, group_id=group_id)
+        await self.env.db.update_user_group_stats(group_id, user_id, query, db)
+        await self.create_action_log(query.action_log, db, user_id=user_id, group_id=group_id)
 
     async def create_new_group(
         self, user_id: int, query: CreateGroupQuery, db: Session
@@ -349,13 +349,13 @@ class GroupResource(BaseResource):
         now = utcnow_dt()
         now_ts = to_ts(now)
 
-        group_base = self.env.db.create_group(user_id, query, now, db)
+        group_base = await self.env.db.create_group(user_id, query, now, db)
         users = {user_id: float(now_ts)}
 
         if query.users is not None and query.users:
             users.update({user_id: float(now_ts) for user_id in query.users})
 
-        self.env.db.update_user_stats_on_join_or_create_group(
+        await self.env.db.update_user_stats_on_join_or_create_group(
             group_id=group_base.group_id,
             users=users,
             now=now,
@@ -378,7 +378,7 @@ class GroupResource(BaseResource):
         self.env.db.update_group_information(group_id, query, db)
         self.env.db.set_last_updated_at_for_all_in_group(group_id, db)
 
-        action_log = self.create_action_log(query.action_log, db, group_id=group_id)
+        action_log = await self.create_action_log(query.action_log, db, group_id=group_id)
 
         """
         user_ids_and_join_times = self.env.db.get_user_ids_and_join_time_in_group(
@@ -410,7 +410,7 @@ class GroupResource(BaseResource):
             self.env.cache.set_group_type(group_id, group_type)
 
         self.env.db.set_groups_updated_at([group_id], now, db)
-        self.env.db.update_user_stats_on_join_or_create_group(
+        await self.env.db.update_user_stats_on_join_or_create_group(
             group_id=group_id,
             users=user_ids_and_last_read,
             now=now,
@@ -421,9 +421,9 @@ class GroupResource(BaseResource):
         if not query.action_log:
             return None
 
-        return self.create_action_log(query.action_log, db, group_id=group_id)
+        return await self.create_action_log(query.action_log, db, group_id=group_id)
 
-    def leave_groups(
+    async def leave_groups(
             self, group_ids: List[str], user_id: int, query: CreateActionLogQuery, db: Session
     ) -> List[Message]:
         now = utcnow_dt()
@@ -441,12 +441,12 @@ class GroupResource(BaseResource):
             # no need for an action log in 1v1 groups, it's not going to be shown anyway
             if group_type != GroupTypes.ONE_TO_ONE:
                 action_logs.append(
-                    self.create_action_log(query.action_log, db, user_id=user_id, group_id=group_id)
+                    await self.create_action_log(query.action_log, db, user_id=user_id, group_id=group_id)
                 )
 
         return action_logs
 
-    def delete_attachments_in_group_for_user(
+    async def delete_attachments_in_group_for_user(
             self,
             group_id: str,
             user_id: int,
@@ -455,7 +455,7 @@ class GroupResource(BaseResource):
     ) -> Message:
         group = self.env.db.get_group_from_id(group_id, db)
 
-        attachments = self.env.storage.delete_attachments(
+        attachments = await self.env.storage.delete_attachments(
             group_id, group.created_at, user_id, query
         )
 
@@ -463,10 +463,10 @@ class GroupResource(BaseResource):
         user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db).keys()
 
         self.env.server_publisher.delete_attachments(group_id, attachments, user_ids, now)
-        return self.create_action_log(query.action_log, db, user_id=user_id, group_id=group_id)
+        return await self.create_action_log(query.action_log, db, user_id=user_id, group_id=group_id)
 
-    def delete_all_groups_for_user(self, user_id: int, query: CreateActionLogQuery, db: Session) -> None:
+    async def delete_all_groups_for_user(self, user_id: int, query: CreateActionLogQuery, db: Session) -> None:
         group_id_to_type = self.env.db.get_all_group_ids_and_types_for_user(user_id, db)
 
         # TODO: this is async, but check how long time this would take for like 5-10k groups
-        self.leave_groups(group_id_to_type, user_id, query, db)
+        await self.leave_groups(group_id_to_type, user_id, query, db)

@@ -39,7 +39,7 @@ async def leave_group(
     """
     try:
         # TODO: double check that this api will only be called for many-to-many groups
-        logs = environ.env.rest.group.leave_groups([group_id], user_id, query, db)
+        logs = await environ.env.rest.group.leave_groups([group_id], user_id, query, db)
         if len(logs):
             return logs[0]
     except NoSuchGroupException as e:
@@ -63,8 +63,8 @@ async def delete_all_groups_for_user(
     * `250`: if an unknown error occurred.
     """
 
-    def leave_all_groups(user_id_, query_, db_):
-        environ.env.rest.group.delete_all_groups_for_user(user_id_, query_, db_)
+    async def leave_all_groups(user_id_, query_, db_):
+        await environ.env.rest.group.delete_all_groups_for_user(user_id_, query_, db_)
 
     try:
         task = BackgroundTask(leave_all_groups, user_id_=user_id, query_=query, db_=db)
@@ -88,8 +88,8 @@ async def delete_attachment_with_file_id(
     * `250`: if an unknown error occurred.
     """
 
-    def _delete_attachment_with_file_id(group_id_, query_, db_):
-        environ.env.rest.message.delete_attachment(group_id_, query_, db_)
+    async def _delete_attachment_with_file_id(group_id_, query_, db_):
+        await environ.env.rest.message.delete_attachment(group_id_, query_, db_)
 
     try:
         task = BackgroundTask(
@@ -116,7 +116,7 @@ async def delete_attachments_in_group_for_user(
     * `250`: if an unknown error occurred.
     """
     try:
-        return environ.env.rest.group.delete_attachments_in_group_for_user(
+        return await environ.env.rest.group.delete_attachments_in_group_for_user(
             group_id, user_id, query, db
         )
     except Exception as e:
@@ -138,8 +138,8 @@ async def delete_attachments_in_all_groups_from_user(
     * `250`: if an unknown error occurred.
     """
 
-    def _delete_attachments_in_all_groups_from_user(user_id_, query_, db_):
-        environ.env.rest.user.delete_all_user_attachments(user_id_, query_, db_)
+    async def _delete_attachments_in_all_groups_from_user(user_id_, query_, db_):
+        await environ.env.rest.user.delete_all_user_attachments(user_id_, query_, db_)
 
     try:
         task = BackgroundTask(
