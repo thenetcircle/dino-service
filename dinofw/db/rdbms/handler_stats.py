@@ -173,7 +173,7 @@ class UpdateUserGroupStatsHandler:
                 #     [user_id], unread_count_before_changing, pipeline=p
                 # )
 
-    def _set_last_read(
+    async def _set_last_read(
             self,
             group_id: str,
             user_id: int,
@@ -200,7 +200,7 @@ class UpdateUserGroupStatsHandler:
 
         # recount unread from cassandra and save in cache and db
         self.env.cache.clear_unread_in_group_for_user(group_id, user_id)
-        user_stats.unread_count = self.env.storage.get_unread_in_group(group_id, user_id, last_read)
+        user_stats.unread_count = await self.env.storage.get_unread_in_group(group_id, user_id, last_read)
 
         # when updating last read, we reset the mention count to 0 and bookmark to false
         user_stats.mentions = 0
@@ -244,7 +244,7 @@ class UpdateUserGroupStatsHandler:
             self.env.cache.reset_total_unread_message_count(user_id)
             self.env.cache.remove_unread_group(user_id, group_id)
 
-    def update(
+    async def update(
             self,
             group_id: str,
             user_id: int,
@@ -307,7 +307,7 @@ class UpdateUserGroupStatsHandler:
             self.env.cache.reset_total_unread_message_count(user_id)
 
         if last_read is not None:
-            self._set_last_read(
+            await self._set_last_read(
                 group_id, user_id, last_read, unread_count_before_changing, group, user_stats, that_user_stats, db
             )
 

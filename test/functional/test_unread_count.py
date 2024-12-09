@@ -565,7 +565,7 @@ class TestUnreadCount(BaseServerRestApi):
 
         # leave the group, so should have 0 unread for this group, 1 unread in total
         group_id_to_type = {group_id: GroupTypes.ONE_TO_ONE}
-        self.env.rest.group.leave_groups(group_id_to_type, BaseTest.USER_ID, CreateActionLogQuery(), session)
+        await self.env.rest.group.leave_groups(group_id_to_type, BaseTest.USER_ID, CreateActionLogQuery(), session)
 
         # force a count to cache the real values
         await self.env.rest.user.get_user_stats(BaseTest.USER_ID, UserStatsQuery(count_unread=True), session)

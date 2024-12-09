@@ -4,10 +4,11 @@ from cassandra.cqlengine.columns import DateTime
 from cassandra.cqlengine.columns import Integer
 from cassandra.cqlengine.columns import Text
 from cassandra.cqlengine.columns import UUID
-from cassandra.cqlengine.models import Model
+
+from dinofw.db.storage.aiocqlengine import AioModel
 
 
-class MessageModel(Model):
+class MessageModel(AioModel):
     __table_name__ = "messages"
 
     group_id = UUID(
@@ -48,7 +49,7 @@ class MessageModel(Model):
     removed_at = DateTime()
 
 
-class AttachmentModel(Model):
+class AttachmentModel(AioModel):
     # duplicate attachments from message table to this table for fast querying
     __table_name__ = "attachments"
 

@@ -30,7 +30,7 @@ class MessageResource(BaseResource):
             error_message = f"group {group_id} is {GroupStatus.to_str(group_status)}"
             raise GroupIsFrozenOrArchivedException(error_message)
 
-        message = self.env.storage.store_message(group_id, user_id, query)
+        message = await self.env.storage.store_message(group_id, user_id, query)
 
         self._user_sends_a_message(
             group_id,
@@ -60,13 +60,13 @@ class MessageResource(BaseResource):
             error_message = f"group {group_id} is {GroupStatus.to_str(group_status)}"
             raise GroupIsFrozenOrArchivedException(error_message)
 
-        group_id = self._get_or_create_group_for_1v1(user_id, query.receiver_id, db)
+        group_id = await self._get_or_create_group_for_1v1(user_id, query.receiver_id, db)
         return await self.send_message_to_group(group_id, user_id, query, db)
 
     async def messages_in_group(
         self, group_id: str, query: MessageQuery
     ) -> List[Message]:
-        raw_messages = self.env.storage.get_messages_in_group(group_id, query)
+        raw_messages = await self.env.storage.get_messages_in_group(group_id, query)
         messages = list()
 
         for message_base in raw_messages:
@@ -83,7 +83,7 @@ class MessageResource(BaseResource):
         if user_stats.hide:
             return list()
 
-        raw_messages = self.env.storage.get_messages_in_group_for_user(
+        raw_messages = await self.env.storage.get_messages_in_group_for_user(
             group_id, user_stats, query
         )
         messages = list()
@@ -97,7 +97,7 @@ class MessageResource(BaseResource):
     async def get_attachment_info(self, group_id: str, query: AttachmentQuery, db: Session) -> Message:
         group = self.env.db.get_group_from_id(group_id, db)
 
-        message_base = self.env.storage.get_attachment_from_file_id(
+        message_base = await self.env.storage.get_attachment_from_file_id(
             group_id,
             group.created_at,
             query
@@ -106,7 +106,7 @@ class MessageResource(BaseResource):
         return message_base_to_message(message_base)
 
     async def get_message_info(self, user_id: int, message_id: str, query: MessageInfoQuery) -> Message:
-        message_base = self.env.storage.get_message_with_id(
+        message_base = await self.env.storage.get_message_with_id(
             group_id=query.group_id,
             user_id=user_id,
             message_id=message_id,
@@ -126,11 +126,11 @@ class MessageResource(BaseResource):
         group_id = query.group_id
 
         if group_id is None:
-            group_id = self._get_or_create_group_for_1v1(
+            group_id = await self._get_or_create_group_for_1v1(
                 user_id, query.receiver_id, db
             )
 
-        attachment = self.env.storage.store_attachment(
+        attachment = await self.env.storage.store_attachment(
             group_id, user_id, message_id, query
         )
 
@@ -156,12 +156,12 @@ class MessageResource(BaseResource):
 
         return message_base_to_message(attachment)
 
-    def delete_message(
+    async def delete_message(
         self, group_id: str, user_id: int, message_id: str, db: Session
     ) -> None:
         group = self.env.db.get_group_from_id(group_id, db)
 
-        self.env.storage.delete_message(
+        await self.env.storage.delete_message(
             group_id, user_id, message_id, group.created_at
         )
 
@@ -169,10 +169,10 @@ class MessageResource(BaseResource):
         #  now the /notification/send api should be used for this?
         #  self.env.publisher.delete_message(group_id, message_id)
 
-    def delete_attachment(self, group_id: str, query: AttachmentQuery, db: Session) -> None:
+    async def delete_attachment(self, group_id: str, query: AttachmentQuery, db: Session) -> None:
         group = self.env.db.get_group_from_id(group_id, db)
 
-        attachment = self.env.storage.delete_attachment(
+        attachment = await self.env.storage.delete_attachment(
             group_id, group.created_at, query
         )
 
@@ -180,7 +180,7 @@ class MessageResource(BaseResource):
         user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db).keys()
 
         self.env.cache.remove_attachment_count_in_group_for_users(group_id, user_ids)
-        self.create_action_log(query.action_log, db, group_id=group_id)
+        await self.create_action_log(query.action_log, db, group_id=group_id)
         self.env.server_publisher.delete_attachments(group_id, [attachment], user_ids, now)
 
     async def edit(self, user_id: int, message_id: str, query: EditMessageQuery, db: Session) -> Message:
@@ -193,8 +193,8 @@ class MessageResource(BaseResource):
         if group_id is None or not len(group_id.strip()):
             group_id = users_to_group_id(user_id, query.receiver_id)
 
-        self.env.storage.edit_message(group_id, user_id, message_id, query)
-        action_log = self.create_action_log(query.action_log, db, group_id=group_id)
+        await self.env.storage.edit_message(group_id, user_id, message_id, query)
+        action_log = await self.create_action_log(query.action_log, db, group_id=group_id)
 
         """
         if query.action_log is not None:

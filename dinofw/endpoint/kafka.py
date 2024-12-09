@@ -135,7 +135,7 @@ class KafkaPublishHandler(IServerPublishHandler):
 
     def offline_users(self, user_ids: List[int]) -> None:
         # batch the offline events, sometimes there could be thousands of offline events, in case network issues
-        for user_ids_chunk in split_into_chunks(user_ids, 50):
+        for user_ids_chunk in split_into_chunks(user_ids, 10):
             event = ActivityBuilder.enrich(self.env, {
                 "actor": {
                     "id": "0",
