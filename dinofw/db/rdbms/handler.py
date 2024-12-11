@@ -891,10 +891,14 @@ class RelationalHandler:
             .filter(UserGroupStatsEntity.kicked.is_(False))
             .all()
         )
-        if not online or not len(online):
-            return list()
 
-        return [user[0] for user in online]
+        if online and len(online):
+            online = [user[0] for user in online]
+        else:
+            online = list()
+
+        self.env.cache.set_online_users_only(online)
+        return online
 
     def get_last_reads_in_group(self, group_id: str, db: Session) -> Dict[int, float]:
         users = self.env.cache.get_last_read_times_in_group(group_id)
