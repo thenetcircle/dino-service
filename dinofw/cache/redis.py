@@ -339,7 +339,7 @@ class CacheRedis(ICache):
         to_remove = in_cache - set(online)
 
         if len(to_remove):
-            for rem_chunk in split_into_chunks(to_remove, 100):
+            for rem_chunk in split_into_chunks(list(to_remove), 100):
                 self.redis.srem(key, *rem_chunk)
 
         if online and len(online):
