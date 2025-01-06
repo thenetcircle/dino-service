@@ -169,7 +169,7 @@ class TestPublicGroups(BaseServerRestApi):
         )
 
         group = self.get_group_info(group_id, count_messages=False)
-        self.assertNotEquals(GroupStatus.ARCHIVED, group["status"])
+        self.assertNotEqual(GroupStatus.ARCHIVED, group["status"])
         self.assertIsNone(group["status_changed_at"])
 
         self.update_group_archived(group_id, archived=True)
@@ -200,9 +200,9 @@ class TestPublicGroups(BaseServerRestApi):
         self.update_group_archived(group_id, archived=False)
 
         group = self.get_group_info(group_id, count_messages=False)
-        self.assertNotEquals(GroupStatus.ARCHIVED, group["status"])
+        self.assertNotEqual(GroupStatus.ARCHIVED, group["status"])
         self.assertIsNotNone(group["status_changed_at"])
-        self.assertNotEquals(first_changed_at, group["status_changed_at"])
+        self.assertNotEqual(first_changed_at, group["status_changed_at"])
 
     def test_can_not_send_to_archived_groups(self):
         group_id = self.create_and_join_group(
