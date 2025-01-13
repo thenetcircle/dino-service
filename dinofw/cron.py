@@ -17,7 +17,7 @@ class Deleter:
 
         logger.info("fetching groups with un-deleted messages...")
         session = environ.env.SessionLocal()
-        groups = self.env.db.get_groups_with_undeleted_messages(session)
+        groups = await self.env.db.get_groups_with_undeleted_messages(session)
 
         if len(groups) == 0:
             logger.info("no groups with un-deleted messages, exiting!")
@@ -30,7 +30,7 @@ class Deleter:
             try:
                 await self.env.storage.delete_messages_in_group_before(group_id, delete_before)
                 await self.env.storage.delete_attachments_in_group_before(group_id, delete_before)
-                self.env.db.update_first_message_time(group_id, delete_before, session)
+                await self.env.db.update_first_message_time(group_id, delete_before, session)
             except Exception as e:
                 logger.error(f"could not delete messages for group {group_id}: {str(e)}")
                 logger.exception(e)
@@ -38,7 +38,7 @@ class Deleter:
 
 
 deleter = Deleter(environ.env)
-app = FastAPI()
+app = FastAPI(lifespan=environ.lifespan)
 
 
 @app.delete("/v1/run")

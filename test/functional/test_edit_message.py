@@ -5,18 +5,18 @@ from test.functional.base_functional import BaseServerRestApi
 
 
 class TestEditMessage(BaseServerRestApi):
-    def test_edit_payload(self):
+    async def test_edit_payload(self):
         old_payload = "some payload"
         new_payload = "updated payload"
 
-        message = self.send_1v1_message(
+        message = await self.send_1v1_message(
             message_type=MessageTypes.IMAGE,
             payload=json.dumps({
                 "content": old_payload,
                 "status": PayloadStatus.PENDING
             })
         )
-        info = self.get_message_info(
+        info = await self.get_message_info(
             user_id=BaseTest.USER_ID,
             message_id=message["message_id"],
             group_id=message["group_id"],
@@ -25,7 +25,7 @@ class TestEditMessage(BaseServerRestApi):
         )
         self.assertEqual(old_payload, json.loads(info["message_payload"])["content"])
 
-        self.edit_message(
+        await self.edit_message(
             user_id=message["user_id"],
             group_id=message["group_id"],
             message_id=message["message_id"],
@@ -36,7 +36,7 @@ class TestEditMessage(BaseServerRestApi):
             })
         )
 
-        info = self.get_message_info(
+        info = await self.get_message_info(
             user_id=BaseTest.USER_ID,
             message_id=message["message_id"],
             group_id=message["group_id"],

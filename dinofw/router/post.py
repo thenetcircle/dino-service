@@ -657,7 +657,7 @@ async def get_message_count_for_user_in_group(
         # use the cached value from the rdbms
         if query and query.only_sender:
             try:
-                group_info: UserGroupStatsBase = environ.env.db.get_user_stats_in_group(group_id, user_id, db)
+                group_info: UserGroupStatsBase = await environ.env.db.get_user_stats_in_group(group_id, user_id, db)
 
                 # until isn't inclusive, so the last message sent won't be counted otherwise;
                 until = group_info.last_sent
@@ -677,7 +677,7 @@ async def get_message_count_for_user_in_group(
             else:
                 # can return both None and -1; -1 means we've checked the db before, but it has not
                 # yet been counted, to avoid checking the db every time a new message is sent
-                message_count = environ.env.db.get_sent_message_count(group_id, user_id, db)
+                message_count = await environ.env.db.get_sent_message_count(group_id, user_id, db)
 
             # if it hasn't been counted before, count from cassandra in batches (could be slow)
             if message_count is None or message_count == -1:
@@ -691,7 +691,7 @@ async def get_message_count_for_user_in_group(
 
                 # don't cache counts when including deleted messages, it's only used by admins
                 if not query.include_deleted:
-                    environ.env.db.set_sent_message_count(group_id, user_id, message_count, db)
+                    await environ.env.db.set_sent_message_count(group_id, user_id, message_count, db)
 
         else:
             message_count = await environ.env.storage.count_messages_in_group_since(
@@ -710,7 +710,7 @@ async def get_message_count_for_user_in_group(
             delete_before = LONG_AGO
             delete_before_ts = to_ts(delete_before)
         else:
-            delete_before = environ.env.db.get_delete_before(group_id, user_id, db)
+            delete_before = await environ.env.db.get_delete_before(group_id, user_id, db)
             delete_before_ts = to_ts(delete_before)
 
         if query.only_attachments:

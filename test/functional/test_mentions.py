@@ -11,9 +11,10 @@ from test.functional.base_functional import BaseServerRestApi
 
 
 class TestMentions(BaseServerRestApi):
-    @async_test
+
+    @BaseServerRestApi.init_db_session
     async def test_mentions_increases(self):
-        session = self.env.session_maker()
+        session = self.env.db_session
 
         send_query = SendMessageQuery(
             receiver_id=BaseTest.OTHER_USER_ID,
@@ -34,9 +35,9 @@ class TestMentions(BaseServerRestApi):
         stats = await self.env.rest.group.get_user_group_stats(group_id, BaseTest.OTHER_USER_ID, session)
         self.assertEqual(1, stats.mentions)
 
-    @async_test
+    @BaseServerRestApi.init_db_session
     async def test_mentions_reset_on_get_history(self):
-        session = self.env.session_maker()
+        session = self.env.db_session
 
         send_query = SendMessageQuery(
             receiver_id=BaseTest.OTHER_USER_ID,
@@ -57,9 +58,9 @@ class TestMentions(BaseServerRestApi):
         stats = await self.env.rest.group.get_user_group_stats(group_id, BaseTest.OTHER_USER_ID, session)
         self.assertEqual(0, stats.mentions)
 
-    @async_test
+    @BaseServerRestApi.init_db_session
     async def test_mentions_reset_on_update_last_read(self):
-        session = self.env.session_maker()
+        session = self.env.db_session
 
         send_query = SendMessageQuery(
             receiver_id=BaseTest.OTHER_USER_ID,

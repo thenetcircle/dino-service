@@ -10,12 +10,12 @@ from dinofw.utils.convert import stats_to_event_dict, to_int
 class BroadcastResource(BaseResource):
     async def broadcast_event(self, query: NotificationQuery, db: Session) -> None:
         if query.event_type in MessageEventType.need_stats:
-            self.send_event_with_stats(query, db)
+            await self.send_event_with_stats(query, db)
         else:
             self.send_other_event(query)
 
-    def send_event_with_stats(self, query: NotificationQuery, db: Session):
-        user_id_to_stats = self.get_stats_for(query.group_id, db)
+    async def send_event_with_stats(self, query: NotificationQuery, db: Session):
+        user_id_to_stats = await self.get_stats_for(query.group_id, db)
         now_int = to_int(arrow.utcnow().int_timestamp)
 
         for user_group in query.notification:
@@ -57,8 +57,8 @@ class BroadcastResource(BaseResource):
                 for user_id in user_group.user_ids:
                     self.env.client_publisher.send_to_one(user_id, user_group.data)
 
-    def get_stats_for(self, group_id: str, db: Session):
+    async def get_stats_for(self, group_id: str, db: Session):
         return {
             stat.user_id: stats_to_event_dict(stat)
-            for stat in self.env.db.get_all_user_stats_in_group(group_id, db, include_kicked=False)
+            for stat in await self.env.db.get_all_user_stats_in_group(group_id, db, include_kicked=False)
         }

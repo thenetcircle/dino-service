@@ -8,16 +8,16 @@ from test.functional.base_functional import BaseServerRestApi
 
 
 class TestMqttEvents(BaseServerRestApi):
-    def test_read_event_sent_with_ms_timestamps(self):
-        self.assert_groups_for_user(0)
+    async def test_read_event_sent_with_ms_timestamps(self):
+        await self.assert_groups_for_user(0)
         self.assert_mqtt_read_events(BaseTest.OTHER_USER_ID, 0)
-        group_message = self.send_1v1_message(user_id=BaseTest.USER_ID, receiver_id=8888)
+        group_message = await self.send_1v1_message(user_id=BaseTest.USER_ID, receiver_id=8888)
         group_id = group_message["group_id"]
 
-        self.send_1v1_message(user_id=BaseTest.USER_ID, receiver_id=BaseTest.OTHER_USER_ID)
-        self.send_1v1_message(user_id=BaseTest.OTHER_USER_ID, receiver_id=BaseTest.USER_ID)
+        await self.send_1v1_message(user_id=BaseTest.USER_ID, receiver_id=BaseTest.OTHER_USER_ID)
+        await self.send_1v1_message(user_id=BaseTest.OTHER_USER_ID, receiver_id=BaseTest.USER_ID)
 
-        self.histories_for(group_id, user_id=BaseTest.USER_ID)
+        await self.histories_for(group_id, user_id=BaseTest.USER_ID)
 
         # should have a read receipt event from USER_ID now
         self.assert_mqtt_read_events(BaseTest.OTHER_USER_ID, 1)

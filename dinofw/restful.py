@@ -16,7 +16,7 @@ API_VERSION: Final = "v1"
 
 
 def create_app():
-    api = FastAPI()
+    api = FastAPI(lifespan=environ.lifespan)
 
     config_path = Path(__file__).with_name("logging_config.json")
     custom_logger = CustomizeLogger.make_logger(config_path)

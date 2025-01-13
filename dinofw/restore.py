@@ -16,19 +16,19 @@ class Restorer:
         self.env = env
         logger.info("initializing Restorer...")
 
-    def dry_run(self):
-        self.run(dry=True)
+    async def dry_run(self):
+        await self.run(dry=True)
 
-    def run(self, dry: bool = False):
+    async def run(self, dry: bool = False):
         logger.info("fetching groups without users...")
         session = environ.env.SessionLocal()
 
-        groups = self.env.db.get_groups_without_users(session)
+        groups = await self.env.db.get_groups_without_users(session)
         if len(groups) == 0:
             logger.info("no groups without users, exiting!")
             return
 
-        groups_to_fix, existing_user_ids = self.get_groups_and_users_to_fix(groups, session)
+        groups_to_fix, existing_user_ids = await self.get_groups_and_users_to_fix(groups, session)
         logger.info(f"existing_user_ids: {existing_user_ids}")
         logger.info(f"groups_to_fix: {[group.group_id for group in groups_to_fix]}")
         if not len(existing_user_ids):
@@ -41,9 +41,9 @@ class Restorer:
             return
 
         logger.info(f"about to create {len(stats_to_create)} stats")
-        self.env.db.create_stats_for(stats_to_create, session, dry=dry)
+        await self.env.db.create_stats_for(stats_to_create, session, dry=dry)
 
-    def get_groups_and_users_to_fix(self, groups: List[GroupBase], session) -> (List[GroupBase], Set[int]):
+    async def get_groups_and_users_to_fix(self, groups: List[GroupBase], session) -> (List[GroupBase], Set[int]):
         unique_user_ids = set()
         groups_to_fix = list()
 
@@ -70,7 +70,7 @@ class Restorer:
             unique_user_ids.add(user_b)
             groups_to_fix.append(group)
 
-        return groups_to_fix, self.env.db.get_existing_user_ids_out_of(unique_user_ids, session)
+        return groups_to_fix, await self.env.db.get_existing_user_ids_out_of(unique_user_ids, session)
 
     def get_stats_to_create(self, groups_to_fix: List[GroupBase], existing_user_ids: Set[int]):
         stats_to_create = list()
@@ -113,14 +113,14 @@ class Restorer:
 
 
 restorer = Restorer(environ.env)
-app = FastAPI()
+app = FastAPI(lifespan=environ.lifespan)
 
 
 @app.post("/v1/run")
-def run_restorer():
-    restorer.run()
+async def run_restorer():
+    await restorer.run()
 
 
 @app.post("/v1/check")
-def dry_run():
-    restorer.dry_run()
+async def dry_run():
+    await restorer.dry_run()

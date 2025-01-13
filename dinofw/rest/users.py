@@ -25,11 +25,11 @@ class UserResource(BaseResource):
         return self.env.cache.get_next_client_id(domain, user_id)
 
     async def get_deleted_groups(self, user_id: int, db: Session) -> List[DeletedStats]:
-        deleted_groups: List[DeletedStatsBase] = self.env.db.get_deleted_groups_for_user(user_id, db)
+        deleted_groups: List[DeletedStatsBase] = await self.env.db.get_deleted_groups_for_user(user_id, db)
         return to_deleted_stats(deleted_groups)
 
     async def update_user_sessions(self, users: List[SessionUser], db: Session):
-        current_online_users: Set[int] = self.env.db.get_online_users(db)
+        current_online_users: Set[int] = await self.env.db.get_online_users(db)
 
         online_users = {user.user_id for user in users if user.is_online}
         offline_users = {
@@ -62,7 +62,7 @@ class UserResource(BaseResource):
     async def get_all_user_stats_for_user(
         self, user_id: int, db: Session
     ) -> List[UnDeletedGroup]:
-        groups: List[Tuple[str, int, dt]] = self.env.db.get_group_id_type_join_time_for_user(
+        groups: List[Tuple[str, int, dt]] = await self.env.db.get_group_id_type_join_time_for_user(
             user_id, db
         )
 
@@ -71,7 +71,7 @@ class UserResource(BaseResource):
     async def get_groups_for_user(
         self, user_id: int, query: GroupQuery, db: Session
     ) -> List[UserGroup]:
-        user_groups: List[UserGroupBase] = self.env.db.get_groups_for_user(
+        user_groups: List[UserGroupBase] = await self.env.db.get_groups_for_user(
             user_id, query, db
         )
 
@@ -84,7 +84,7 @@ class UserResource(BaseResource):
         This method is called only from an async rest api, so if it
         takes a while it doesn't matter for the caller.
         """
-        group_ids_and_created_at: Tuple[str, dt] = self.env.db.get_group_ids_and_created_at_for_user(
+        group_ids_and_created_at: Tuple[str, dt] = await self.env.db.get_group_ids_and_created_at_for_user(
             user_id, db
         )
 
@@ -112,16 +112,16 @@ class UserResource(BaseResource):
     async def get_groups_updated_since(
         self, user_id: int, query: GroupUpdatesQuery, db: Session
     ) -> List[UserGroup]:
-        user_groups: List[UserGroupBase] = self.env.db.get_groups_updated_since(
+        user_groups: List[UserGroupBase] = await self.env.db.get_groups_updated_since(
             user_id, query, db
         )
 
         return to_user_group(user_groups)
 
-    def get_public_groups_updated_since(
+    async def get_public_groups_updated_since(
         self, user_id: int, query: GroupUpdatesQuery, db: Session
     ) -> List[UserGroup]:
-        user_groups: List[UserGroupBase] = self.env.db.get_groups_updated_since(
+        user_groups: List[UserGroupBase] = await self.env.db.get_groups_updated_since(
             user_id, query, db, public_only=True
         )
 
@@ -129,13 +129,13 @@ class UserResource(BaseResource):
 
     async def get_last_read(self, group_id: str, query: UserIdQuery, db: Session) -> LastReads:
         if query.user_id is None:
-            last_reads = self.env.db.get_last_reads_in_group(group_id, db)
+            last_reads = await self.env.db.get_last_reads_in_group(group_id, db)
         else:
-            last_reads = self.env.db.get_last_read_for_user(group_id, query.user_id, db)
+            last_reads = await self.env.db.get_last_read_for_user(group_id, query.user_id, db)
 
         return to_last_reads(group_id, last_reads)
 
-    def count_unread(self, user_id: int, db: Session) -> (int, int):
+    async def count_unread(self, user_id: int, db: Session) -> (int, int):
         # TODO: need to update cache on hide, bookmark, read, send, delete, highlight(?)
         #  * highlight(?)   :
         #  * delete         : done? not yet, updating delete_before needs a fix
@@ -148,7 +148,7 @@ class UserResource(BaseResource):
         if unread_count is not None:
             return unread_count, n_unread_groups
 
-        unread_count, unread_groups = self.env.db.count_total_unread(user_id, db)
+        unread_count, unread_groups = await self.env.db.count_total_unread(user_id, db)
         n_unread_groups = len(unread_groups)
 
         self.env.cache.set_total_unread_count(user_id, unread_count, unread_groups)
@@ -156,12 +156,12 @@ class UserResource(BaseResource):
 
     async def get_user_stats(self, user_id: int, query: UserStatsQuery, db: Session) -> UserStats:
         if query.count_unread:
-            unread_amount, n_unread_groups = self.count_unread(user_id, db)
+            unread_amount, n_unread_groups = await self.count_unread(user_id, db)
         else:
             unread_amount = -1
             n_unread_groups = -1
 
-        group_amounts = self.env.db.count_group_types_for_user(
+        group_amounts = await self.env.db.count_group_types_for_user(
             user_id,
             GroupQuery(
                 per_page=-1,
@@ -173,7 +173,7 @@ class UserResource(BaseResource):
         )
         group_amounts = dict(group_amounts)
 
-        last_sent_group_id, last_sent_time = self.env.db.get_last_sent_for_user(user_id, db)
+        last_sent_group_id, last_sent_time = await self.env.db.get_last_sent_for_user(user_id, db)
         if last_sent_time is None:
             last_sent_time = self.long_ago
 
@@ -191,12 +191,12 @@ class UserResource(BaseResource):
         )
 
     async def delete_all_user_attachments(self, user_id: int, query: DeleteAttachmentQuery, db: Session) -> None:
-        group_created_at = self.env.db.get_group_ids_and_created_at_for_user(user_id, db)
+        group_created_at = await self.env.db.get_group_ids_and_created_at_for_user(user_id, db)
         group_to_atts = await self.env.storage.delete_attachments_in_all_groups(group_created_at, user_id, query)
 
         now = utcnow_ts()
 
         for group_id, attachments in group_to_atts.items():
-            user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db).keys()
+            user_ids = (await self.env.db.get_user_ids_and_join_time_in_group(group_id, db)).keys()
             self.env.server_publisher.delete_attachments(group_id, attachments, user_ids, now)
             await self.create_action_log(query.action_log, db, user_id=user_id, group_id=group_id)
