@@ -31,7 +31,7 @@ from dinofw.rest.queries import GroupUpdatesQuery
 from dinofw.rest.queries import MessageInfoQuery
 from dinofw.rest.queries import MessageQuery
 from dinofw.rest.queries import NotificationQuery
-from dinofw.rest.queries import OneToOneQuery
+from dinofw.rest.queries import GetOneToOneQuery
 from dinofw.rest.queries import SendMessageQuery
 from dinofw.rest.queries import UserStatsQuery
 from dinofw.utils import environ, is_non_zero, LONG_AGO
@@ -411,7 +411,7 @@ async def send_message_to_group(
 @timeit(logger, "POST", "/users/{user_id}/group")
 @wrap_exception()
 async def get_one_to_one_information(
-        user_id: int, query: OneToOneQuery, db: Session = Depends(get_db)
+        user_id: int, query: GetOneToOneQuery, db: Session = Depends(get_db)
 ) -> OneToOneStats:
     """
     Get details about a 1v1 group.
@@ -422,12 +422,17 @@ async def get_one_to_one_information(
     If `admin_id>0` and `include_deleted=true`, message amount will also count messages that have been deleted by the
     users (up to max one year ago before deletion date). Default value is `false`. Useful for the admin UI.
 
+    If `only_group_info` is `true`, then no user stats will be returned. Useful for getting group info of a 1v1 group
+    where one user has deleted their profile (thus no user stats will exist for that user in the group).
+
     **Potential error codes in response:**
     * `601`: if the group does not exist,
     * `250`: if an unknown error occurred.
     """
     try:
-        return await environ.env.rest.group.get_1v1_info(user_id, query.receiver_id, db)
+        return await environ.env.rest.group.get_1v1_info(
+            user_id, query.receiver_id, db, only_group_info=query.only_group_info
+        )
     except NoSuchGroupException as e:
         log_error_and_raise_known(ErrorCodes.NO_SUCH_GROUP, sys.exc_info(), e)
     except Exception as e:
@@ -761,6 +766,8 @@ async def get_last_read_in_group(
 async def get_history_in_group_for_export(group_id: str, query: ExportQuery, db: Session = Depends(get_db)) -> Histories:
     """
     Internal api to get history in a group for export and SEO reasons.
+
+    If the `user_id` parameter is specified, only messages from that user will be exported from the group.
 
     **Potential error codes in response:**
     * `250`: if an unknown error occurred.

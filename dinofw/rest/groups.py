@@ -117,23 +117,11 @@ class GroupResource(BaseResource):
                 group_id, user_id, user_ids, now_dt, bookmark=False
             )
 
-    async def get_1v1_info(
-        self, user_id_a: int, user_id_b: int, db: Session
-    ) -> OneToOneStats:
-        users = sorted([user_id_a, user_id_b])
-        group = self.env.db.get_group_for_1to1(users[0], users[1], db)
-
-        group_id = group.group_id
-        message_amount = await self.count_messages_in_group(group_id)
-
-        users_and_join_time = self.env.db.get_user_ids_and_join_time_in_group(
-            group_id, db
-        )
-
+    async def _get_1v1_user_stats(self, group_id: str, user_id_a: int, user_id_b: int, db: Session) -> List[UserGroupStats]:
         user_stats = [
             await self.get_user_group_stats(
                 group_id, user_id, db
-            ) for user_id in users
+            ) for user_id in [user_id_a, user_id_b]
         ]
 
         delete_before = self.env.db.get_delete_before(group_id, user_id_a, db)
@@ -159,6 +147,26 @@ class GroupResource(BaseResource):
                 this_user.receiver_deleted = that_user.deleted
                 this_user.receiver_highlight_time = that_user.highlight_time
                 this_user.receiver_delete_before = that_user.delete_before
+
+        return user_stats
+
+    async def get_1v1_info(
+        self, user_id_a: int, user_id_b: int, db: Session, only_group_info: bool = False
+    ) -> OneToOneStats:
+        users = sorted([user_id_a, user_id_b])
+        group = self.env.db.get_group_for_1to1(users[0], users[1], db)
+
+        group_id = group.group_id
+        message_amount = await self.count_messages_in_group(group_id)
+
+        users_and_join_time = self.env.db.get_user_ids_and_join_time_in_group(
+            group_id, db
+        )
+
+        if only_group_info:
+            user_stats = list()
+        else:
+            user_stats = await self._get_1v1_user_stats(group_id, user_id_a, user_id_b, db)
 
         return OneToOneStats(
             stats=user_stats,

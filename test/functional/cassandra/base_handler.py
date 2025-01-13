@@ -1,4 +1,6 @@
 import os
+os.environ["CQLENG_ALLOW_SCHEMA_MANAGEMENT"] = "1"
+
 from typing import Optional
 from pathlib import Path
 
