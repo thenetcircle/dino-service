@@ -1,3 +1,4 @@
+import os
 import sys
 
 from fastapi import FastAPI
@@ -38,7 +39,7 @@ class Deleter:
 
 
 deleter = Deleter(environ.env)
-app = FastAPI(lifespan=environ.lifespan)
+app = FastAPI()
 
 
 @app.delete("/v1/run")
@@ -72,3 +73,8 @@ async def run_deletions():
     we update `first_message_time` on those groups to `min(delete_before)` for that group.
     """
     await deleter.run_deletions()
+
+
+@app.on_event("startup")
+async def startup():
+    await environ.startup()

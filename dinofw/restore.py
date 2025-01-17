@@ -113,7 +113,7 @@ class Restorer:
 
 
 restorer = Restorer(environ.env)
-app = FastAPI(lifespan=environ.lifespan)
+app = FastAPI()
 
 
 @app.post("/v1/run")
@@ -124,3 +124,8 @@ async def run_restorer():
 @app.post("/v1/check")
 async def dry_run():
     await restorer.dry_run()
+
+
+@app.on_event("startup")
+async def startup():
+    await environ.startup()

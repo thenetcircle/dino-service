@@ -1,7 +1,5 @@
 import os
-from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
 from gnenv import create_env
 from gnenv.environ import GNEnvironment
 from loguru import logger
@@ -243,9 +241,7 @@ gn_environment = os.getenv(ENV_KEY_ENVIRONMENT)
 
 env = create_env(gn_environment)
 
-# lifespan for fastapi app
-@asynccontextmanager
-async def lifespan(app: FastAPI):
+
+async def startup():
     if not env.config.get(ConfigKeys.TESTING, False) and os.getenv(ConfigKeys.TESTING, "0") != "1":
         await initialize_env(env)
-    yield

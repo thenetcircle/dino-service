@@ -11,12 +11,13 @@ from dinofw.router import post
 from dinofw.router import put
 from dinofw.utils import environ
 from dinofw.utils.custom_logging import CustomizeLogger
+from dinofw.utils.config import ConfigKeys
 
 API_VERSION: Final = "v1"
 
 
 def create_app():
-    api = FastAPI(lifespan=environ.lifespan)
+    api = FastAPI()
 
     config_path = Path(__file__).with_name("logging_config.json")
     custom_logger = CustomizeLogger.make_logger(config_path)
@@ -64,6 +65,7 @@ app = create_app()
 
 @app.on_event("startup")
 async def startup():
+    await environ.startup()
     await environ.env.client_publisher.setup()
     environ.env.server_publisher.setup()
 
