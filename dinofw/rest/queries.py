@@ -89,6 +89,10 @@ class OneToOneQuery(AbstractQuery):
     receiver_id: Optional[int]
 
 
+class GetOneToOneQuery(OneToOneQuery):
+    only_group_info: Optional[bool] = False
+
+
 class OnlySenderQuery(AbstractQuery):
     only_sender: Optional[bool] = False
 

@@ -332,6 +332,20 @@ class CacheRedis(ICache):
 
         self.set_online_users_ttl_expired()
 
+    def set_online_users_only(self, online: List[int] = None) -> None:
+        key = RedisKeys.online_users()
+
+        in_cache = {int(user_id) for user_id in self.redis.smembers(RedisKeys.online_users())}
+        to_remove = in_cache - set(online)
+
+        if len(to_remove):
+            for rem_chunk in split_into_chunks(list(to_remove), 100):
+                self.redis.srem(key, *rem_chunk)
+
+        if online and len(online):
+            for add_chunk in split_into_chunks(online, 100):
+                self.redis.sadd(key, *add_chunk)
+
     def set_online_user(self, user_id: int) -> None:
         self.redis.sadd(RedisKeys.online_users(), user_id)
 

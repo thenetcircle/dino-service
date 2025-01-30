@@ -10,10 +10,11 @@ from test.functional.base_functional import BaseServerRestApi
 
 
 class TestCreateGroup(BaseServerRestApi):
+    @BaseServerRestApi.init_db_session
     async def test_create_group_that_exists(self):
-        session = self.env.session_maker()
+        session = self.env.db_session
 
-        self.send_1v1_message(
+        await self.send_1v1_message(
             user_id=BaseTest.USER_ID,
             receiver_id=BaseTest.OTHER_USER_ID
         )
@@ -32,8 +33,9 @@ class TestCreateGroup(BaseServerRestApi):
                 db=session
             )
 
+    @BaseServerRestApi.init_db_session
     async def test_create_with_users_that_exists(self):
-        session = self.env.session_maker()
+        session = self.env.db_session
 
         utc_now = utcnow_dt()
         group_id = users_to_group_id(BaseTest.USER_ID, BaseTest.OTHER_USER_ID)
@@ -55,7 +57,7 @@ class TestCreateGroup(BaseServerRestApi):
             group_type=GroupTypes.PRIVATE_GROUP,
             delete_before=delete_before
         ))
-        session.commit()
+        await session.commit()
 
         query = CreateGroupQuery(
             group_name="some name",
@@ -71,9 +73,9 @@ class TestCreateGroup(BaseServerRestApi):
                 db=session
             )
 
-
+    @BaseServerRestApi.init_db_session
     async def test_get_group_fails_not_create_user_fails(self):
-        session = self.env.session_maker()
+        session = self.env.db_session
 
         utc_now = utcnow_dt()
         group_id = users_to_group_id(BaseTest.USER_ID, BaseTest.OTHER_USER_ID)
@@ -94,7 +96,7 @@ class TestCreateGroup(BaseServerRestApi):
             group_type=GroupTypes.PRIVATE_GROUP,
             delete_before=delete_before
         ))
-        session.commit()
+        await session.commit()
 
         with self.assertRaises(NoSuchGroupException):
             await self.env.rest.message._get_or_create_group_for_1v1(

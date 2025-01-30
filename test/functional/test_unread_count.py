@@ -10,15 +10,15 @@ from dinofw.utils.config import GroupTypes
 from dinofw.utils.config import MessageTypes
 
 from test.base import BaseTest
-from test.base import async_test
 from test.functional.base_db import BaseDatabaseTest
 from test.functional.base_functional import BaseServerRestApi
 
 
 class TestUnreadCount(BaseServerRestApi):
-    @async_test
+
+    @BaseServerRestApi.init_db_session
     async def test_total_unread_count_only_counts_mentions_if_notifications_are_disabled(self):
-        session = self.env.session_maker()
+        session = self.env.db_session
         send_query = SendMessageQuery(
             receiver_id=BaseTest.OTHER_USER_ID,
             message_type=MessageTypes.MESSAGE,
@@ -27,7 +27,7 @@ class TestUnreadCount(BaseServerRestApi):
 
         message = await self.env.rest.message.send_message_to_user(BaseTest.USER_ID, send_query, session)
         group_id = message.group_id
-        self.assert_unread_amount_and_groups(BaseDatabaseTest.OTHER_USER_ID, 1, 1, session)
+        await self.assert_unread_amount_and_groups(BaseDatabaseTest.OTHER_USER_ID, 1, 1, session)
         self.assert_cached_unread_for_group(BaseDatabaseTest.OTHER_USER_ID, group_id, 1)
 
         # disable notifications, since the user hasn't been mentioned, total unread should now be 0
@@ -35,25 +35,25 @@ class TestUnreadCount(BaseServerRestApi):
             group_id, BaseTest.OTHER_USER_ID, UpdateUserGroupStats(notifications=False), session
         )
         await self.env.rest.message.send_message_to_user(BaseTest.USER_ID, send_query, session)
-        self.assert_unread_amount_and_groups(BaseDatabaseTest.OTHER_USER_ID, 0, 0, session)
+        await self.assert_unread_amount_and_groups(BaseDatabaseTest.OTHER_USER_ID, 0, 0, session)
         self.assert_cached_unread_for_group(BaseDatabaseTest.OTHER_USER_ID, group_id, 2)
 
         # mention the user, now it should update to one more unread, and one unread group
         send_query.mention_user_ids = [BaseTest.OTHER_USER_ID]
         await self.env.rest.message.send_message_to_user(BaseTest.USER_ID, send_query, session)
-        self.assert_unread_amount_and_groups(BaseDatabaseTest.OTHER_USER_ID, 1, 1, session)
+        await self.assert_unread_amount_and_groups(BaseDatabaseTest.OTHER_USER_ID, 1, 1, session)
         self.assert_cached_unread_for_group(BaseDatabaseTest.OTHER_USER_ID, group_id, 3)
 
         # mention the user AGAIN, unread count should be +1, but unread groups should stay the same
         send_query.mention_user_ids = [BaseTest.OTHER_USER_ID]
         await self.env.rest.message.send_message_to_user(BaseTest.USER_ID, send_query, session)
-        self.assert_unread_amount_and_groups(BaseDatabaseTest.OTHER_USER_ID, 2, 1, session)
+        await self.assert_unread_amount_and_groups(BaseDatabaseTest.OTHER_USER_ID, 2, 1, session)
         self.assert_cached_unread_for_group(BaseDatabaseTest.OTHER_USER_ID, group_id, 4)
 
         # don't mention the user, total unread should now be the same as before
         send_query.mention_user_ids = None
         await self.env.rest.message.send_message_to_user(BaseTest.USER_ID, send_query, session)
-        self.assert_unread_amount_and_groups(BaseDatabaseTest.OTHER_USER_ID, 2, 1, session)
+        await self.assert_unread_amount_and_groups(BaseDatabaseTest.OTHER_USER_ID, 2, 1, session)
         self.assert_cached_unread_for_group(BaseDatabaseTest.OTHER_USER_ID, group_id, 5)
 
         # enable notifications again and send yet another message
@@ -61,12 +61,12 @@ class TestUnreadCount(BaseServerRestApi):
             group_id, BaseTest.OTHER_USER_ID, UpdateUserGroupStats(notifications=True), session
         )
         await self.env.rest.message.send_message_to_user(BaseTest.USER_ID, send_query, session)
-        self.assert_unread_amount_and_groups(BaseDatabaseTest.OTHER_USER_ID, 6, 1, session)
+        await self.assert_unread_amount_and_groups(BaseDatabaseTest.OTHER_USER_ID, 6, 1, session)
         self.assert_cached_unread_for_group(BaseDatabaseTest.OTHER_USER_ID, group_id, 6)
 
-    @async_test
+    @BaseServerRestApi.init_db_session
     async def test_unread_count_0_and_1(self):
-        session = self.env.session_maker()
+        session = self.env.db_session
 
         await self.env.rest.message.send_message_to_user(
             BaseTest.USER_ID,
@@ -78,23 +78,23 @@ class TestUnreadCount(BaseServerRestApi):
             session
         )
 
-        unread_amount, n_unread_groups = self.env.rest.user.count_unread(
+        unread_amount, n_unread_groups = await self.env.rest.user.count_unread(
             BaseDatabaseTest.USER_ID, session
         )
         self.assertEqual(0, unread_amount)
         self.assertEqual(0, n_unread_groups)
 
-        unread_amount, n_unread_groups = self.env.rest.user.count_unread(
+        unread_amount, n_unread_groups = await self.env.rest.user.count_unread(
             BaseDatabaseTest.OTHER_USER_ID, session
         )
         self.assertEqual(1, unread_amount)
         self.assertEqual(1, n_unread_groups)
 
-    @async_test
+    @BaseServerRestApi.init_db_session
     async def test_count_total_unread(self):
-        session = self.env.session_maker()
+        session = self.env.db_session
 
-        unread_count, unread_groups = self.env.db.count_total_unread(BaseTest.USER_ID, session)
+        unread_count, unread_groups = await self.env.db.count_total_unread(BaseTest.USER_ID, session)
         self.assertEqual(0, unread_count)
         self.assertEqual(0, len(unread_groups))
 
@@ -108,15 +108,15 @@ class TestUnreadCount(BaseServerRestApi):
             session
         )
 
-        unread_count, unread_groups = self.env.db.count_total_unread(BaseTest.USER_ID, session)
+        unread_count, unread_groups = await self.env.db.count_total_unread(BaseTest.USER_ID, session)
         self.assertEqual(1, unread_count)
         self.assertEqual(1, len(unread_groups))
 
-    @async_test
+    @BaseServerRestApi.init_db_session
     async def test_count_total_unread_included_bookmark(self):
-        session = self.env.session_maker()
+        session = self.env.db_session
 
-        unread_count, unread_groups = self.env.db.count_total_unread(BaseTest.USER_ID, session)
+        unread_count, unread_groups = await self.env.db.count_total_unread(BaseTest.USER_ID, session)
         self.assertEqual(0, unread_count)
         self.assertEqual(0, len(unread_groups))
 
@@ -145,7 +145,7 @@ class TestUnreadCount(BaseServerRestApi):
             group_id = message.group_id
 
         # two groups, one each
-        unread_count, unread_groups = self.env.db.count_total_unread(BaseTest.USER_ID, session)
+        unread_count, unread_groups = await self.env.db.count_total_unread(BaseTest.USER_ID, session)
         self.assertEqual(4, unread_count)
         self.assertEqual(2, len(unread_groups))
 
@@ -154,7 +154,7 @@ class TestUnreadCount(BaseServerRestApi):
             group_id, BaseTest.USER_ID, MessageQuery(per_page=30, since=0), session
         )
 
-        unread_count, unread_groups = self.env.db.count_total_unread(BaseTest.USER_ID, session)
+        unread_count, unread_groups = await self.env.db.count_total_unread(BaseTest.USER_ID, session)
         self.assertEqual(1, unread_count)
         self.assertEqual(1, len(unread_groups))
 
@@ -164,13 +164,13 @@ class TestUnreadCount(BaseServerRestApi):
         )
 
         # should have 1 unread message, and 1 bookmarked without unread (counting as 1 unread)
-        unread_count, unread_groups = self.env.db.count_total_unread(BaseTest.USER_ID, session)
+        unread_count, unread_groups = await self.env.db.count_total_unread(BaseTest.USER_ID, session)
         self.assertEqual(2, unread_count)
         self.assertEqual(2, len(unread_groups))
 
-    @async_test
+    @BaseServerRestApi.init_db_session
     async def test_count_total_unread_cached_not_none(self):
-        session = self.env.session_maker()
+        session = self.env.db_session
 
         cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
         self.assertIsNone(cached_unread_count)
@@ -186,7 +186,7 @@ class TestUnreadCount(BaseServerRestApi):
             session
         )
 
-        unread_count, unread_groups = self.env.rest.user.count_unread(BaseTest.USER_ID, session)
+        unread_count, unread_groups = await self.env.rest.user.count_unread(BaseTest.USER_ID, session)
         self.assertEqual(1, unread_count)
         self.assertEqual(1, unread_groups)
 
@@ -194,14 +194,15 @@ class TestUnreadCount(BaseServerRestApi):
         self.assertEqual(unread_count, cached_unread_count)
         self.assertEqual(unread_groups, cached_unread_groups)
 
-    def test_count_total_unread_cached_is_set_to_zero(self):
-        session = self.env.session_maker()
+    @BaseServerRestApi.init_db_session
+    async def test_count_total_unread_cached_is_set_to_zero(self):
+        session = self.env.db_session
 
         cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
         self.assertIsNone(cached_unread_count)
         self.assertIsNone(cached_unread_groups)
 
-        unread_count, unread_groups = self.env.rest.user.count_unread(BaseTest.USER_ID, session)
+        unread_count, unread_groups = await self.env.rest.user.count_unread(BaseTest.USER_ID, session)
         self.assertEqual(0, unread_count)
         self.assertEqual(0, unread_groups)
 
@@ -209,32 +210,33 @@ class TestUnreadCount(BaseServerRestApi):
         self.assertEqual(0, cached_unread_count)
         self.assertEqual(0, cached_unread_groups)
 
-    def test_count_total_unread_increase_cache(self):
-        session = self.env.session_maker()
+    @BaseServerRestApi.init_db_session
+    async def test_count_total_unread_increase_cache(self):
+        session = self.env.db_session
 
         cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
         self.assertIsNone(cached_unread_count)
         self.assertIsNone(cached_unread_groups)
 
-        unread_count, unread_groups = self.env.rest.user.count_unread(BaseTest.USER_ID, session)
+        unread_count, unread_groups = await self.env.rest.user.count_unread(BaseTest.USER_ID, session)
         self.assertEqual(0, unread_count)
         self.assertEqual(0, unread_groups)
 
         self.env.cache.increase_total_unread_message_count([BaseTest.USER_ID], 1)
 
-        unread_count, unread_groups = self.env.rest.user.count_unread(BaseTest.USER_ID, session)
+        unread_count, unread_groups = await self.env.rest.user.count_unread(BaseTest.USER_ID, session)
         self.assertEqual(1, unread_count)
         self.assertEqual(0, unread_groups)
 
         self.env.cache.add_unread_group([BaseTest.USER_ID], str(uuid()))
 
-        unread_count, unread_groups = self.env.rest.user.count_unread(BaseTest.USER_ID, session)
+        unread_count, unread_groups = await self.env.rest.user.count_unread(BaseTest.USER_ID, session)
         self.assertEqual(1, unread_count)
         self.assertEqual(1, unread_groups)
 
-    @async_test
+    @BaseServerRestApi.init_db_session
     async def test_cached_unread_count_increases_on_new_message(self):
-        session = self.env.session_maker()
+        session = self.env.db_session
 
         cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
         self.assertIsNone(cached_unread_count)
@@ -261,9 +263,9 @@ class TestUnreadCount(BaseServerRestApi):
         self.assertEqual(1, cached_unread_count)
         self.assertEqual(1, cached_unread_groups)
 
-    @async_test
+    @BaseServerRestApi.init_db_session
     async def test_cached_unread_count_decreases_on_getting_history(self):
-        session = self.env.session_maker()
+        session = self.env.db_session
 
         cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
         self.assertIsNone(cached_unread_count)
@@ -304,9 +306,9 @@ class TestUnreadCount(BaseServerRestApi):
         self.assertEqual(0, cached_unread_count)
         self.assertEqual(0, cached_unread_groups)
 
-    @async_test
+    @BaseServerRestApi.init_db_session
     async def test_cached_unread_count_decreases_on_updating_last_read(self):
-        session = self.env.session_maker()
+        session = self.env.db_session
 
         cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
         self.assertIsNone(cached_unread_count)
@@ -347,9 +349,9 @@ class TestUnreadCount(BaseServerRestApi):
         self.assertEqual(0, cached_unread_count)
         self.assertEqual(0, cached_unread_groups)
 
-    @async_test
+    @BaseServerRestApi.init_db_session
     async def test_cached_unread_count_changes_on_bookmark(self):
-        session = self.env.session_maker()
+        session = self.env.db_session
 
         cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
         self.assertIsNone(cached_unread_count)
@@ -406,9 +408,9 @@ class TestUnreadCount(BaseServerRestApi):
         self.assertIsNone(cached_unread_count)
         self.assertIsNone(cached_unread_groups)
 
-    @async_test
+    @BaseServerRestApi.init_db_session
     async def test_cached_unread_count_decrease_by_one_when_getting_history_and_bookmarked(self):
-        session = self.env.session_maker()
+        session = self.env.db_session
 
         cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
         self.assertIsNone(cached_unread_count)
@@ -469,9 +471,9 @@ class TestUnreadCount(BaseServerRestApi):
         self.assertEqual(0, cached_unread_count)
         self.assertEqual(0, cached_unread_groups)
 
-    @async_test
+    @BaseServerRestApi.init_db_session
     async def test_cached_unread_count_decrease_by_one_when_updating_last_read_and_bookmarked(self):
-        session = self.env.session_maker()
+        session = self.env.db_session
 
         cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
         self.assertIsNone(cached_unread_count)
@@ -532,9 +534,9 @@ class TestUnreadCount(BaseServerRestApi):
         self.assertEqual(0, cached_unread_count)
         self.assertEqual(0, cached_unread_groups)
 
-    @async_test
+    @BaseServerRestApi.init_db_session
     async def test_cached_unread_count_decrease_when_leaving_group(self):
-        session = self.env.session_maker()
+        session = self.env.db_session
 
         cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
         self.assertIsNone(cached_unread_count)
@@ -574,9 +576,9 @@ class TestUnreadCount(BaseServerRestApi):
         self.assertEqual(0, cached_unread_count)
         self.assertEqual(0, cached_unread_groups)
 
-    @async_test
+    @BaseServerRestApi.init_db_session
     async def test_cached_unread_count_changes_on_hiding_or_unhide(self):
-        session = self.env.session_maker()
+        session = self.env.db_session
 
         cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
         self.assertIsNone(cached_unread_count)
@@ -629,9 +631,9 @@ class TestUnreadCount(BaseServerRestApi):
         self.assertEqual(1, cached_unread_count)
         self.assertEqual(1, cached_unread_groups)
 
-    @async_test
+    @BaseServerRestApi.init_db_session
     async def test_cached_unread_count_changes_new_message_for_hidden_group(self):
-        session = self.env.session_maker()
+        session = self.env.db_session
 
         cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
         self.assertIsNone(cached_unread_count)
@@ -687,9 +689,9 @@ class TestUnreadCount(BaseServerRestApi):
         self.assertEqual(2, cached_unread_count)
         self.assertEqual(1, cached_unread_groups)
 
-    @async_test
+    @BaseServerRestApi.init_db_session
     async def test_cached_unread_count_does_not_change_when_group_is_undeleted(self):
-        session = self.env.session_maker()
+        session = self.env.db_session
 
         cached_unread_count, cached_unread_groups = self.env.cache.get_total_unread_count(BaseTest.USER_ID)
         self.assertIsNone(cached_unread_count)

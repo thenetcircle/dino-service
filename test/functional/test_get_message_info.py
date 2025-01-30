@@ -4,11 +4,11 @@ from test.functional.base_functional import BaseServerRestApi
 
 
 class TestGetMessageInfo(BaseServerRestApi):
-    def test_get_message_info_1v1(self):
-        self.assert_groups_for_user(0)
-        group_message = self.send_1v1_message()
+    async def test_get_message_info_1v1(self):
+        await self.assert_groups_for_user(0)
+        group_message = await self.send_1v1_message()
 
-        info = self.get_message_info(
+        info = await self.get_message_info(
             user_id=BaseTest.USER_ID,
             message_id=group_message["message_id"],
             group_id=group_message["group_id"],
@@ -18,11 +18,11 @@ class TestGetMessageInfo(BaseServerRestApi):
 
         self.assertEqual(group_message["message_payload"], info["message_payload"])
 
-    def test_get_message_info_1v1_wrong_created_at(self):
-        self.assert_groups_for_user(0)
-        group_message = self.send_1v1_message()
+    async def test_get_message_info_1v1_wrong_created_at(self):
+        await self.assert_groups_for_user(0)
+        group_message = await self.send_1v1_message()
 
-        response = self.get_message_info(
+        response = await self.get_message_info(
             user_id=BaseTest.USER_ID,
             message_id=group_message["message_id"],
             group_id=group_message["group_id"],
@@ -32,11 +32,11 @@ class TestGetMessageInfo(BaseServerRestApi):
 
         self.assertEqual(int(response["detail"].split(":")[0]), ErrorCodes.NO_SUCH_MESSAGE)
 
-    def test_get_message_info_1v1_wrong_user_id(self):
-        self.assert_groups_for_user(0)
-        group_message = self.send_1v1_message()
+    async def test_get_message_info_1v1_wrong_user_id(self):
+        await self.assert_groups_for_user(0)
+        group_message = await self.send_1v1_message()
 
-        response = self.get_message_info(
+        response = await self.get_message_info(
             user_id=BaseTest.OTHER_USER_ID,
             message_id=group_message["message_id"],
             group_id=group_message["group_id"],
@@ -46,11 +46,11 @@ class TestGetMessageInfo(BaseServerRestApi):
 
         self.assertEqual(int(response["detail"].split(":")[0]), ErrorCodes.NO_SUCH_MESSAGE)
 
-    def test_get_message_info_1v1_wrong_group_id(self):
-        self.assert_groups_for_user(0)
-        group_message = self.send_1v1_message()
+    async def test_get_message_info_1v1_wrong_group_id(self):
+        await self.assert_groups_for_user(0)
+        group_message = await self.send_1v1_message()
 
-        response = self.get_message_info(
+        response = await self.get_message_info(
             user_id=BaseTest.USER_ID,
             message_id=group_message["message_id"],
             group_id="bad-group-id",

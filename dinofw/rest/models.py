@@ -150,7 +150,7 @@ class GroupMessage(BaseModel):
 
 class OneToOneStats(BaseModel):
     group: Group
-    stats: List[UserGroupStats]
+    stats: Optional[List[Optional[UserGroupStats]]]
 
 
 class UserGroup(BaseModel):

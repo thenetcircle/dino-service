@@ -22,6 +22,22 @@ def time_method(_logger, prefix: str, threshold_ms: int = 100):
     return factory
 
 
+# used for async coroutine
+def time_coroutine(_logger, prefix: str, threshold_ms: int = 100):
+    def factory(view_coro):
+        @wraps(view_coro)
+        async def decorator(*args, **kwargs):
+            before = time.time()
+            try:
+                return await view_coro(*args, **kwargs)
+            finally:
+                the_time = (time.time() - before) * 1000
+                if the_time > threshold_ms:
+                    _logger.warning(f"{prefix} took {the_time:.2f}ms")
+        return decorator
+    return factory
+
+
 def timeit(_logger, method: str, tag: str = None, threshold_ms: int = 100, only_log: bool = False):
     def factory(view_func):
         @wraps(view_func)

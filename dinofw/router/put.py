@@ -44,8 +44,8 @@ async def update_user_stats(user_id: int, db: Session = Depends(get_db)) -> Resp
     * `250`: if an unknown error occurred.
     """
 
-    def set_last_updated(user_id_, db_):
-        environ.env.rest.group.set_last_updated_at_on_all_stats_related_to_user(
+    async def set_last_updated(user_id_, db_):
+        await environ.env.rest.group.set_last_updated_at_on_all_stats_related_to_user(
             user_id_, db_
         )
 
@@ -111,8 +111,8 @@ async def mark_all_groups_as_read(
     * `250`: if an unknown error occurred.
     """
 
-    def set_read_time(user_id_, db_):
-        environ.env.rest.group.mark_all_as_read(user_id_, db_)
+    async def set_read_time(user_id_, db_):
+        await environ.env.rest.group.mark_all_as_read(user_id_, db_)
 
     try:
         task = BackgroundTask(set_read_time, user_id_=user_id, db_=db)
