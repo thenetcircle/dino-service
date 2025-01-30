@@ -23,7 +23,7 @@ class MessageResource(BaseResource):
     async def send_message_to_group(
         self, group_id: str, user_id: int, query: SendMessageQuery, db: Session
     ) -> Message:
-        group_status = self.env.db.get_group_status(group_id, db)
+        group_status = await self.env.db.get_group_status(group_id, db)
 
         # can be None if the group doesn't exist yet
         if group_status is not None and group_status != GroupStatus.DEFAULT:
@@ -32,7 +32,7 @@ class MessageResource(BaseResource):
 
         message = await self.env.storage.store_message(group_id, user_id, query)
 
-        self._user_sends_a_message(
+        await self._user_sends_a_message(
             group_id,
             user_id=user_id,
             message=message,
@@ -53,7 +53,7 @@ class MessageResource(BaseResource):
             raise NoSuchUserException(query.receiver_id)
 
         group_id = users_to_group_id(user_id, query.receiver_id)
-        group_status = self.env.db.get_group_status(group_id, db)
+        group_status = await self.env.db.get_group_status(group_id, db)
 
         # can be None if the group doesn't exist yet
         if group_status is not None and group_status != GroupStatus.DEFAULT:
@@ -78,7 +78,7 @@ class MessageResource(BaseResource):
     async def messages_for_user(
         self, group_id: str, user_id: int, query: MessageQuery, db: Session
     ) -> List[Message]:
-        user_stats = self.env.db.get_user_stats_in_group(group_id, user_id, db)
+        user_stats = await self.env.db.get_user_stats_in_group(group_id, user_id, db)
 
         if user_stats.hide:
             return list()
@@ -95,7 +95,7 @@ class MessageResource(BaseResource):
         return messages
 
     async def get_attachment_info(self, group_id: str, query: AttachmentQuery, db: Session) -> Message:
-        group = self.env.db.get_group_from_id(group_id, db)
+        group = await self.env.db.get_group_from_id(group_id, db)
 
         message_base = await self.env.storage.get_attachment_from_file_id(
             group_id,
@@ -141,7 +141,7 @@ class MessageResource(BaseResource):
             update_last_message = query.action_log.update_last_message
             update_last_message_time = query.action_log.update_last_message_time
 
-        self._user_sends_a_message(
+        await self._user_sends_a_message(
             group_id,
             user_id=user_id,
             message=attachment,
@@ -159,7 +159,7 @@ class MessageResource(BaseResource):
     async def delete_message(
         self, group_id: str, user_id: int, message_id: str, db: Session
     ) -> None:
-        group = self.env.db.get_group_from_id(group_id, db)
+        group = await self.env.db.get_group_from_id(group_id, db)
 
         await self.env.storage.delete_message(
             group_id, user_id, message_id, group.created_at
@@ -170,14 +170,14 @@ class MessageResource(BaseResource):
         #  self.env.publisher.delete_message(group_id, message_id)
 
     async def delete_attachment(self, group_id: str, query: AttachmentQuery, db: Session) -> None:
-        group = self.env.db.get_group_from_id(group_id, db)
+        group = await self.env.db.get_group_from_id(group_id, db)
 
         attachment = await self.env.storage.delete_attachment(
             group_id, group.created_at, query
         )
 
         now = utcnow_ts()
-        user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db).keys()
+        user_ids = (await self.env.db.get_user_ids_and_join_time_in_group(group_id, db)).keys()
 
         self.env.cache.remove_attachment_count_in_group_for_users(group_id, user_ids)
         await self.create_action_log(query.action_log, db, group_id=group_id)
@@ -202,7 +202,7 @@ class MessageResource(BaseResource):
             update_unread_count = query.action_log.update_unread_count
             update_last_message = query.action_log.update_last_message
 
-            self._user_sends_a_message(
+            await self._user_sends_a_message(
                 group_id,
                 user_id=user_id,
                 message=action_log,  # we want to update last_message_overview to be the payload of the action log

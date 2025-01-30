@@ -463,14 +463,14 @@ class FakeDatabase:
         beginning_of_1995 = 789_000_000
         self.long_ago = arrow.Arrow.utcfromtimestamp(beginning_of_1995).datetime
 
-    def count_total_unread(self, user_id, _):
+    async def count_total_unread(self, user_id, _):
         # TODO: mock this as needed
         return 0, []
 
-    def get_deleted_groups_for_user(self, user_id: int, _) -> List[DeletedStatsBase]:
+    async def get_deleted_groups_for_user(self, user_id: int, _) -> List[DeletedStatsBase]:
         return self.deleted_stats.get(user_id, list())
 
-    def get_group_types(self, group_ids: List[str], _) -> Dict[str, int]:
+    async def get_group_types(self, group_ids: List[str], _) -> Dict[str, int]:
         response = dict()
 
         for group_id in group_ids:
@@ -481,7 +481,7 @@ class FakeDatabase:
 
         return response
 
-    def copy_to_deleted_groups_table(
+    async def copy_to_deleted_groups_table(
         self, group_id_to_type: Dict[str, int], user_id: int, _
     ) -> None:
         if user_id not in self.deleted_stats:
@@ -500,7 +500,7 @@ class FakeDatabase:
                 delete_time=delete_time
             ))
 
-    def remove_user_group_stats_for_user(self, group_ids: List[str], user_id: int, _):
+    async def remove_user_group_stats_for_user(self, group_ids: List[str], user_id: int, _):
         if user_id in self.stats:
             to_keep = list()
 
@@ -517,13 +517,13 @@ class FakeDatabase:
                 if user_id in self.last_read[group_id]:
                     del self.last_read[group_id][user_id]
 
-    def get_group_status(self, group_id: str, _) -> Optional[int]:
+    async def get_group_status(self, group_id: str, _) -> Optional[int]:
         if group_id not in self.groups:
             return None
 
         return self.groups[group_id].group_type
 
-    def get_oldest_last_read_in_group(self, group_id: str, _) -> Optional[float]:
+    async def get_oldest_last_read_in_group(self, group_id: str, _) -> Optional[float]:
         last_read = self.env.cache.get_last_read_in_group_oldest(group_id)
         if last_read is not None:
             return last_read
@@ -540,13 +540,13 @@ class FakeDatabase:
         self.env.cache.set_last_read_in_group_oldest(group_id, oldest)
         return oldest
 
-    def get_last_message_time_in_group(self, group_id: str, _) -> dt:
+    async def get_last_message_time_in_group(self, group_id: str, _) -> dt:
         if group_id not in self.groups:
             raise NoSuchGroupException(group_id)
 
         return self.groups[group_id].last_message_time
 
-    def update_group_new_message(
+    async def update_group_new_message(
         self,
         message: MessageBase,
         db,
@@ -577,7 +577,7 @@ class FakeDatabase:
                 else:
                     stat.unread_count += 1
 
-    def set_last_updated_at_for_all_in_group(self, group_id: str, _):
+    async def set_last_updated_at_for_all_in_group(self, group_id: str, _):
         now = arrow.utcnow().datetime
 
         for _, stats in self.stats.items():
@@ -587,7 +587,7 @@ class FakeDatabase:
 
                 stat.last_updated_time = now
 
-    def update_last_read_and_highlight_in_group_for_user(
+    async def update_last_read_and_highlight_in_group_for_user(
         self, group_id: str, user_id: int, the_time: dt, _
     ) -> None:
         if user_id not in self.stats:
@@ -624,7 +624,7 @@ class FakeDatabase:
 
         return group
 
-    def get_last_sent_for_user(self, user_id: int, _) -> (str, float):
+    async def get_last_sent_for_user(self, user_id: int, _) -> (str, float):
         if user_id not in self.last_sent:
             return None, None
 
@@ -635,7 +635,7 @@ class FakeDatabase:
     ) -> None:
         self.last_sent[user_id] = group_id, the_time
 
-    def count_group_types_for_user(
+    async def count_group_types_for_user(
         self, user_id: int, query: GroupQuery, _
     ) -> List[Tuple[int, int]]:
         group_ids_for_user = set()
@@ -662,7 +662,7 @@ class FakeDatabase:
 
         return list(group_types.items())
 
-    def get_groups_for_user(
+    async def get_groups_for_user(
         self, user_id: int, query: GroupQuery, _, count_receiver_unread: bool = True, receiver_stats: bool = False,
     ) -> List[UserGroupBase]:
         groups = list()
@@ -671,7 +671,7 @@ class FakeDatabase:
             return list()
 
         for stat in self.stats[user_id]:
-            users = self.get_user_ids_and_join_time_in_group(stat.group_id, None)
+            users = await self.get_user_ids_and_join_time_in_group(stat.group_id, None)
 
             if query.count_unread:
                 user_count = self.count_users_in_group(stat.group_id, None)
@@ -703,7 +703,7 @@ class FakeDatabase:
 
         return groups
 
-    def get_users_in_group(
+    async def get_users_in_group(
         self, group_id: str, db, include_group: bool = True
     ) -> (Optional[GroupBase], Optional[Dict[int, float]], Optional[int]):
         group = None
@@ -712,7 +712,7 @@ class FakeDatabase:
                 raise NoSuchGroupException(group_id)
             group = self.groups[group_id]
 
-        users = self.get_user_ids_and_join_time_in_group(group_id, db)
+        users = await self.get_user_ids_and_join_time_in_group(group_id, db)
         user_count = self.count_users_in_group(group_id, db)
 
         return group, users, user_count
@@ -731,18 +731,18 @@ class FakeDatabase:
         self, group_id: str, users: Dict[int, float], now: dt, group_type: int, db=None
     ) -> None:
         for user_id, _ in users.items():
-            self.update_last_read_and_sent_in_group_for_user(
+            await self.update_last_read_and_sent_in_group_for_user(
                 group_id, user_id, now, None
             )
 
-    def set_groups_updated_at(self, group_ids: List[str], now: dt, _) -> None:
+    async def set_groups_updated_at(self, group_ids: List[str], now: dt, _) -> None:
         for group_id in group_ids:
             if group_id not in self.groups:
                 return
 
             self.groups[group_id].updated_at = now
 
-    def update_last_read_and_sent_in_group_for_user(
+    async def update_last_read_and_sent_in_group_for_user(
         self, group_id: str, user_id: int, created_at: dt, db, unhide_group=True
     ) -> None:
         to_add = UserGroupStatsBase(
@@ -799,7 +799,7 @@ class FakeDatabase:
     def group_exists(self, group_id: str, _) -> bool:
         return group_id in self.groups
 
-    def get_last_reads_in_group(self, group_id: str, _) -> Dict[int, float]:
+    async def get_last_reads_in_group(self, group_id: str, _) -> Dict[int, float]:
         last_reads = dict()
 
         for user_id in self.stats:
@@ -809,7 +809,7 @@ class FakeDatabase:
 
         return last_reads
 
-    def get_user_ids_and_join_time_in_group(
+    async def get_user_ids_and_join_time_in_group(
         self, group_id: str, _=None
     ) -> Dict[int, float]:
         response = dict()
@@ -822,7 +822,7 @@ class FakeDatabase:
 
         return response  # noqa
 
-    def get_user_stats_in_group(
+    async def get_user_stats_in_group(
         self, group_id: str, user_id: int, _
     ) -> Optional[UserGroupStatsBase]:
         if user_id not in self.stats:

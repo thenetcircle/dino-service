@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
 
 from dinofw.db.rdbms.models import GroupEntity
@@ -15,12 +15,12 @@ class UpdateUserGroupStatsHandler:
         self.env = env
         self.handler = handler
 
-    def _clear_oldest_highlight_if_limit_reached(
+    async def _clear_oldest_highlight_if_limit_reached(
             self,
             group_id: str,
             user_id: int,
             query: UpdateUserGroupStats,
-            db: Session
+            db: AsyncSession
     ) -> None:
         """
         Need to make up to two queries; one to get the group_ids of all
@@ -37,8 +37,8 @@ class UpdateUserGroupStatsHandler:
         if limit is None:
             return
 
-        highlighted_groups = (
-            db.query(UserGroupStatsEntity)
+        highlighted_groups = await db.run_sync(lambda _db:
+            _db.query(UserGroupStatsEntity)
             .filter(UserGroupStatsEntity.user_id == user_id)
 
             # in case we set it on an already highlighted group; otherwise it will count +1 towards the limit
@@ -57,8 +57,8 @@ class UpdateUserGroupStatsHandler:
         oldest_groups = highlighted_groups[:start_idx]
 
         # need to get the receiver's stat entry as well
-        stats_in_groups = (
-            db.query(UserGroupStatsEntity)
+        stats_in_groups = await db.run_sync(lambda _db:
+            _db.query(UserGroupStatsEntity)
             .filter(UserGroupStatsEntity.group_id.in_(
                 [stat.group_id for stat in oldest_groups]
             ))
@@ -71,7 +71,7 @@ class UpdateUserGroupStatsHandler:
             stat.receiver_highlight_time = self.handler.long_ago
             db.add(stat)
 
-    def _set_highlight_time(
+    async def _set_highlight_time(
             self,
             group_id: str,
             user_id: int,
@@ -79,7 +79,7 @@ class UpdateUserGroupStatsHandler:
             that_user_stats: UserGroupStatsEntity,
             highlight_time: datetime,
             query: UpdateUserGroupStats,
-            db: Session
+            db: AsyncSession
     ):
         user_stats.highlight_time = highlight_time
 
@@ -88,7 +88,7 @@ class UpdateUserGroupStatsHandler:
         if that_user_stats is not None:
             that_user_stats.receiver_highlight_time = highlight_time
 
-        self._clear_oldest_highlight_if_limit_reached(group_id, user_id, query, db)
+        await self._clear_oldest_highlight_if_limit_reached(group_id, user_id, query, db)
 
         # always becomes unhidden if highlighted
         user_stats.hide = False
@@ -101,7 +101,7 @@ class UpdateUserGroupStatsHandler:
             user_stats: UserGroupStatsEntity,
             delete_before: datetime,
             unread_count_before_changing: int,
-            db: Session
+            db: AsyncSession
     ) -> None:
         user_stats.delete_before = delete_before
 
@@ -182,12 +182,12 @@ class UpdateUserGroupStatsHandler:
             group: GroupEntity,
             user_stats: UserGroupStatsEntity,
             that_user_stats: UserGroupStatsEntity,
-            db: Session
+            db: AsyncSession
     ) -> None:
         # check previous last read before updating it, and send read-receipts to other users
         # if last_message_time is more than the previous last_read
         if group.last_message_time > user_stats.last_read:
-            user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
+            user_ids = await self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
 
             del user_ids[user_id]
             self.env.client_publisher.read(
@@ -249,9 +249,9 @@ class UpdateUserGroupStatsHandler:
             group_id: str,
             user_id: int,
             query: UpdateUserGroupStats,
-            db: Session
+            db: AsyncSession
     ) -> None:
-        user_stats, that_user_stats, group = self.handler.get_both_user_stats_in_group(group_id, user_id, query, db)
+        user_stats, that_user_stats, group = await self.handler.get_both_user_stats_in_group(group_id, user_id, query, db)
 
         unread_count_before_changing = user_stats.unread_count
         last_read = to_dt(query.last_read_time, allow_none=True)
@@ -316,7 +316,7 @@ class UpdateUserGroupStatsHandler:
 
         # can't set highlight time if also setting last read time
         if highlight_time is not None and last_read is None:
-            self._set_highlight_time(group_id, user_id, user_stats, that_user_stats, highlight_time, query, db)
+            await self._set_highlight_time(group_id, user_id, user_stats, that_user_stats, highlight_time, query, db)
 
         elif query.hide is not None:
             self._set_hide(group_id, user_id, user_stats, unread_count_before_changing, query)
@@ -325,4 +325,4 @@ class UpdateUserGroupStatsHandler:
             self.env.cache.reset_count_group_types_for_user(user_id)
 
         db.add(user_stats)
-        db.commit()
+        await db.commit()
