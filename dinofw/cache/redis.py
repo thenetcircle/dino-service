@@ -1,6 +1,6 @@
 import socket
 import sys
-from contextlib import contextmanager
+from contextlib import asynccontextmanager
 from datetime import datetime as dt
 from datetime import timedelta
 from typing import Dict, Set
@@ -8,7 +8,7 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 
-import redis
+import redis as redis
 from loguru import logger
 
 from dinofw.cache import ICache
@@ -58,10 +58,10 @@ class MemoryCache:
 class CacheRedis(ICache):
     def __init__(self, env, host: str, port: int = 6379, db: int = 0):
         if env.config.get(ConfigKeys.TESTING, default=False) or host == "mock":
-            from fakeredis import FakeStrictRedis
+            from fakeredis import FakeAsyncRedis
 
             self.redis_pool = None
-            self.redis_instance = FakeStrictRedis(host=host, port=port, db=db, decode_responses=True)
+            self.redis_instance = FakeAsyncRedis(host=host, port=port, db=db, decode_responses=True)
 
             # fakeredis doesn't use execute on pipelines...
             self.redis_instance.execute = lambda: None
@@ -90,8 +90,8 @@ class CacheRedis(ICache):
             env.config.get(ConfigKeys.MAX_CLIENT_IDS, domain=ConfigKeys.CACHE_SERVICE, default=10)
         ))
 
-    @contextmanager
-    def pipeline(self):
+    @asynccontextmanager
+    async def pipeline(self):
         """
         to chain separate cache functions using a single pipeline, will be executed
         at the end of the context managers lifecycle
@@ -103,11 +103,11 @@ class CacheRedis(ICache):
             yield p
         finally:
             if p is not None:
-                p.execute()
+                await p.execute()
 
-    def get_next_client_id(self, domain: str, user_id: int) -> str:
+    async def get_next_client_id(self, domain: str, user_id: int) -> str:
         key = RedisKeys.client_id(domain, user_id)
-        current_idx = self.redis.llen(key)
+        current_idx = await self.redis.llen(key)
 
         # start from 0 if no pool found
         if current_idx == 0:
@@ -116,24 +116,24 @@ class CacheRedis(ICache):
         # if we've reached the max 50 ids, reset the pool and restart from 0
         elif current_idx >= self.max_client_ids - 1:
             current_idx = -1
-            self.redis.delete(key)
+            await self.redis.delete(key)
 
         next_client_id = f"{user_id}_{domain}_{current_idx+1}"
-        self.redis.lpush(key, next_client_id)
+        await self.redis.lpush(key, next_client_id)
 
         # try to reuse lower ids by expiring the pool
-        self.redis.expire(key, 6 * ONE_HOUR)
+        await self.redis.expire(key, 6 * ONE_HOUR)
 
         return next_client_id
 
-    def get_total_unread_count(self, user_id: int) -> (Optional[int], Optional[int]):
+    async def get_total_unread_count(self, user_id: int) -> (Optional[int], Optional[int]):
         p = self.redis.pipeline()
 
-        p.get(RedisKeys.total_unread_count(user_id))
-        p.scard(RedisKeys.unread_groups(user_id))
+        await p.get(RedisKeys.total_unread_count(user_id))
+        await p.scard(RedisKeys.unread_groups(user_id))
 
         try:
-            unread_count, unread_groups = p.execute()
+            unread_count, unread_groups = await p.execute()
         except redis.exceptions.ResponseError:
             # if no value is cached, SCARD will throw an error
             return None, None
@@ -143,12 +143,12 @@ class CacheRedis(ICache):
 
         return None, None
 
-    def set_total_unread_count(self, user_id: int, unread_count: int, unread_groups: List[str]) -> None:
+    async def set_total_unread_count(self, user_id: int, unread_count: int, unread_groups: List[str]) -> None:
         p = self.redis.pipeline()
 
         key_count = RedisKeys.total_unread_count(user_id)
-        p.set(key_count, unread_count)
-        p.expire(key_count, ONE_HOUR * 12)
+        await p.set(key_count, unread_count)
+        await p.expire(key_count, ONE_HOUR * 12)
 
         if len(unread_groups):
             key = RedisKeys.unread_groups(user_id)
@@ -156,19 +156,19 @@ class CacheRedis(ICache):
             # FakeRedis doesn't support multiple values for SADD
             if self.testing:
                 for group_id in unread_groups:
-                    p.sadd(key, group_id)
+                    await p.sadd(key, group_id)
             else:
-                p.sadd(key, *unread_groups)
+                await p.sadd(key, *unread_groups)
 
-            p.expire(key, ONE_HOUR * 12)
-        p.execute()
+            await p.expire(key, ONE_HOUR * 12)
+        await p.execute()
 
-    def decrease_total_unread_message_count(self, user_id: int, amount: int):
+    async def decrease_total_unread_message_count(self, user_id: int, amount: int):
         if amount == 0:
             return
 
         key = RedisKeys.total_unread_count(user_id)
-        current_amount = self.redis.get(key)
+        current_amount = await self.redis.get(key)
 
         # not yet cached, ignore decreasing
         if current_amount is None:
@@ -184,72 +184,72 @@ class CacheRedis(ICache):
             amount = current_amount
 
         r = self.redis.pipeline()
-        r.decr(key, amount)
-        r.expire(key, ONE_HOUR)
-        r.execute()
+        await r.decr(key, amount)
+        await r.expire(key, ONE_HOUR)
+        await r.execute()
 
-    def reset_total_unread_message_count(self, user_id: int, pipeline=None):
+    async def reset_total_unread_message_count(self, user_id: int, pipeline=None):
         # use pipeline if provided
         r = pipeline or self.redis.pipeline()
 
-        r.delete(RedisKeys.total_unread_count(user_id))
-        r.delete(RedisKeys.unread_groups(user_id))
+        await r.delete(RedisKeys.total_unread_count(user_id))
+        await r.delete(RedisKeys.unread_groups(user_id))
 
         # only execute if we weren't provided a pipeline
         if pipeline is None:
-            r.execute()
+            await r.execute()
 
-    def increase_total_unread_message_count(self, user_ids: List[int], amount: int, pipeline=None):
+    async def increase_total_unread_message_count(self, user_ids: List[int], amount: int, pipeline=None):
         for user_id in user_ids:
             key = RedisKeys.total_unread_count(user_id)
-            current_cached_unread = self.redis.get(key)
+            current_cached_unread = await self.redis.get(key)
 
             # if not cached before, don't increase, make a total count next time it's
             # requested, and then it will be cached correctly
             if current_cached_unread is None:
                 continue
 
-            self.redis.incrby(key, amount)
-            self.redis.expire(key, ONE_HOUR)
+            await self.redis.incrby(key, amount)
+            await self.redis.expire(key, ONE_HOUR)
 
-    def add_unread_group(self, user_ids: List[int], group_id: str, pipeline=None) -> None:
+    async def add_unread_group(self, user_ids: List[int], group_id: str, pipeline=None) -> None:
         # use pipeline if provided
         r = pipeline or self.redis.pipeline()
 
         for user_id in user_ids:
             key = RedisKeys.unread_groups(user_id)
-            r.sadd(key, group_id)
-            r.expire(key, ONE_HOUR)
+            await r.sadd(key, group_id)
+            await r.expire(key, ONE_HOUR)
 
         # only execute if we weren't provided a pipeline
         if pipeline is None:
-            r.execute()
+            await r.execute()
 
-    def remove_unread_group(self, user_id: int, group_id: str, pipeline=None) -> None:
+    async def remove_unread_group(self, user_id: int, group_id: str, pipeline=None) -> None:
         # use pipeline if provided
         r = pipeline or self.redis.pipeline()
 
         key = RedisKeys.unread_groups(user_id)
-        r.srem(key, group_id)
-        r.expire(key, ONE_HOUR)
+        await r.srem(key, group_id)
+        await r.expire(key, ONE_HOUR)
 
         # only execute if we weren't provided a pipeline
         if pipeline is None:
             try:
-                r.execute()
+                await r.execute()
             except redis.exceptions.ResponseError:
                 # if the group is not cached, redis will throw an error
                 pass
 
-    def add_unread_groups(self, user_id: int, group_ids: List[str]) -> None:
+    async def add_unread_groups(self, user_id: int, group_ids: List[str]) -> None:
         p = self.redis.pipeline()
 
         key = RedisKeys.unread_groups(user_id)
         for group_id in group_ids:
-            p.sadd(key, group_id)
+            await p.sadd(key, group_id)
 
-        p.expire(key, ONE_HOUR)
-        p.execute()
+        await p.expire(key, ONE_HOUR)
+        await p.execute()
 
     """
     def increase_total_unread_group_count(self, user_id: int):
@@ -261,41 +261,41 @@ class CacheRedis(ICache):
         p.execute()
     """
 
-    def get_group_exists(self, group_id: str) -> Optional[bool]:
-        value = self.redis.get(RedisKeys.group_exists(group_id))
+    async def get_group_exists(self, group_id: str) -> Optional[bool]:
+        value = await self.redis.get(RedisKeys.group_exists(group_id))
         if value is None:
             return None
         return value == '1'
 
-    def set_group_exists(self, group_id: str, exists: bool) -> None:
-        self.redis.set(RedisKeys.group_exists(group_id), '1' if exists else '0')
+    async def set_group_exists(self, group_id: str, exists: bool) -> None:
+        await self.redis.set(RedisKeys.group_exists(group_id), '1' if exists else '0')
 
-    def get_sent_message_count_in_group_for_user(self, group_id: str, user_id: int) -> Optional[int]:
+    async def get_sent_message_count_in_group_for_user(self, group_id: str, user_id: int) -> Optional[int]:
         key = RedisKeys.sent_message_count_in_group(group_id)
-        count = self.redis.hget(key, str(user_id))
+        count = await self.redis.hget(key, str(user_id))
 
         if count is None:
             return None
 
         return int(float(count))
 
-    def get_group_status(self, group_id: str) -> Optional[int]:
+    async def get_group_status(self, group_id: str) -> Optional[int]:
         key = RedisKeys.group_status(group_id)
-        status = self.redis.get(key)
+        status = await self.redis.get(key)
 
         if status is None:
             return None
 
         return int(float(status))
 
-    def count_online(self):
+    async def count_online(self):
         key = RedisKeys.online_users()
 
         online_count = self.cache.get(key)
         if online_count is not None:
             return online_count
 
-        online_count = self.redis.scard(RedisKeys.online_users())
+        online_count = await self.redis.scard(RedisKeys.online_users())
         if online_count is None:
             online_count = 0
 
@@ -303,36 +303,36 @@ class CacheRedis(ICache):
 
         return online_count
 
-    def is_online(self, user_id: int) -> bool:
-        return self.redis.sismember(RedisKeys.online_users(), user_id)
+    async def is_online(self, user_id: int) -> bool:
+        return bool(await self.redis.sismember(RedisKeys.online_users(), str(user_id)))
 
-    def get_online_users_ttl_expired(self) -> bool:
+    async def get_online_users_ttl_expired(self) -> bool:
         key = RedisKeys.online_users() + ":ttl"
-        return self.redis.ttl(key) < 0
+        return (await self.redis.ttl(key)) < 0
 
-    def set_online_users_ttl_expired(self, ttl: int = ONE_MINUTE * 4) -> None:
+    async def set_online_users_ttl_expired(self, ttl: int = ONE_MINUTE * 4) -> None:
         key = RedisKeys.online_users() + ":ttl"
-        self.redis.set(key, "1")
-        self.redis.expire(key, ttl)
+        await self.redis.set(key, "1")
+        await self.redis.expire(key, ttl)
 
     def get_online_users(self) -> Set[int]:
         return {int(user_id) for user_id in self.redis.smembers(RedisKeys.online_users())}
 
-    def set_online_users(self, offline: List[int] = None, online: List[int] = None) -> None:
+    async def set_online_users(self, offline: List[int] = None, online: List[int] = None) -> None:
         key = RedisKeys.online_users()
         logger.debug(f"offline: {offline}, online: {online}")
 
         if offline and len(offline):
             for rem_chunk in split_into_chunks(offline, 100):
-                self.redis.srem(key, *rem_chunk)
+                await self.redis.srem(key, *rem_chunk)
 
         if online and len(online):
             for add_chunk in split_into_chunks(online, 100):
-                self.redis.sadd(key, *add_chunk)
+                await self.redis.sadd(key, *add_chunk)
 
-        self.set_online_users_ttl_expired()
+        await self.set_online_users_ttl_expired()
 
-    def set_online_users_only(self, online: List[int] = None) -> None:
+    async def set_online_users_only(self, online: List[int] = None) -> None:
         key = RedisKeys.online_users()
 
         in_cache = {int(user_id) for user_id in self.redis.smembers(RedisKeys.online_users())}
@@ -340,78 +340,78 @@ class CacheRedis(ICache):
 
         if len(to_remove):
             for rem_chunk in split_into_chunks(list(to_remove), 100):
-                self.redis.srem(key, *rem_chunk)
+                await self.redis.srem(key, *rem_chunk)
 
         if online and len(online):
             for add_chunk in split_into_chunks(online, 100):
-                self.redis.sadd(key, *add_chunk)
+                await self.redis.sadd(key, *add_chunk)
 
-    def set_online_user(self, user_id: int) -> None:
-        self.redis.sadd(RedisKeys.online_users(), user_id)
+    async def set_online_user(self, user_id: int) -> None:
+        await self.redis.sadd(RedisKeys.online_users(), user_id)
 
-    def set_offline_user(self, user_id: int) -> None:
-        self.redis.srem(RedisKeys.online_users(), user_id)
+    async def set_offline_user(self, user_id: int) -> None:
+        await self.redis.srem(RedisKeys.online_users(), user_id)
 
-    def set_group_status(self, group_id: str, status: int) -> None:
+    async def set_group_status(self, group_id: str, status: int) -> None:
         key = RedisKeys.group_status(group_id)
-        self.redis.set(key, status)
-        self.redis.expire(key, ONE_HOUR)
+        await self.redis.set(key, status)
+        await self.redis.expire(key, ONE_HOUR)
 
-    def get_group_archived(self, group_id: str) -> Optional[bool]:
+    async def get_group_archived(self, group_id: str) -> Optional[bool]:
         key = RedisKeys.group_archived(group_id)
-        archived = self.redis.get(key)
+        archived = await self.redis.get(key)
 
         if archived is None:
             return None
 
         return archived == '1'
 
-    def set_group_archived(self, group_id: str, archived: bool) -> None:
+    async def set_group_archived(self, group_id: str, archived: bool) -> None:
         key = RedisKeys.group_archived(group_id)
-        self.redis.set(key, '1' if archived else '0')
-        self.redis.expire(key, ONE_HOUR)
+        await self.redis.set(key, '1' if archived else '0')
+        await self.redis.expire(key, ONE_HOUR)
 
-    def set_sent_message_count_in_group_for_user(self, group_id: str, user_id: int, count: int) -> None:
+    async def set_sent_message_count_in_group_for_user(self, group_id: str, user_id: int, count: int) -> None:
         key = RedisKeys.sent_message_count_in_group(group_id)
-        self.redis.hset(key, str(user_id), count)
+        await self.redis.hset(key, str(user_id), str(count))
 
-    def get_last_read_in_group_oldest(self, group_id: str) -> Optional[float]:
+    async def get_last_read_in_group_oldest(self, group_id: str) -> Optional[float]:
         key = RedisKeys.oldest_last_read_time(group_id)
-        last_read = self.redis.get(key)
+        last_read = await self.redis.get(key)
         if last_read is None:
             return
 
         return float(last_read)
 
-    def set_last_read_in_group_oldest(self, group_id: str, last_read: float) -> None:
+    async def set_last_read_in_group_oldest(self, group_id: str, last_read: float) -> None:
         key = RedisKeys.oldest_last_read_time(group_id)
-        self.redis.set(key, str(last_read))
-        self.redis.expire(key, ONE_DAY * 7)
+        await self.redis.set(key, str(last_read))
+        await self.redis.expire(key, ONE_DAY * 7)
 
-    def remove_last_read_in_group_oldest(self, group_id: str) -> None:
+    async def remove_last_read_in_group_oldest(self, group_id: str) -> None:
         key = RedisKeys.oldest_last_read_time(group_id)
-        self.redis.delete(key)
+        await self.redis.delete(key)
 
-    def get_last_read_in_group_for_user(self, group_id: str, user_id: int) -> Optional[float]:
+    async def get_last_read_in_group_for_user(self, group_id: str, user_id: int) -> Optional[float]:
         key = RedisKeys.last_read_time(group_id)
-        last_read = self.redis.hget(key, str(user_id))
+        last_read = await self.redis.hget(key, str(user_id))
 
         if last_read is not None:
             return float(last_read)
 
-    def get_last_read_in_group_for_users(
+    async def get_last_read_in_group_for_users(
         self, group_id: str, user_ids: List[int]
     ) -> Tuple[dict, list]:
         p = self.redis.pipeline()
 
         for user_id in user_ids:
             key = RedisKeys.last_read_time(group_id)
-            p.hget(key, str(user_id))
+            await p.hget(key, str(user_id))
 
         not_cached = list()
         last_reads = dict()
 
-        for user_id, last_read in zip(user_ids, p.execute()):
+        for user_id, last_read in zip(user_ids, await p.execute()):
             if last_read is None:
                 not_cached.append(user_id)
             else:
@@ -419,21 +419,21 @@ class CacheRedis(ICache):
 
         return last_reads, not_cached
 
-    def set_last_read_in_group_for_users(
+    async def set_last_read_in_group_for_users(
         self, group_id: str, users: Dict[int, float]
     ) -> None:
         key = RedisKeys.last_read_time(group_id)
         p = self.redis.pipeline()
 
         for user_id, last_read in users.items():
-            p.hset(key, str(user_id), last_read)
+            await p.hset(key, str(user_id), str(last_read))
 
-        p.expire(key, 7 * ONE_DAY)
-        p.execute()
+        await p.expire(key, 7 * ONE_DAY)
+        await p.execute()
 
-    def get_last_read_times_in_group(self, group_id: str) -> Optional[Dict[int, float]]:
+    async def get_last_read_times_in_group(self, group_id: str) -> Optional[Dict[int, float]]:
         key = RedisKeys.last_read_time(group_id)
-        last_reads = self.redis.hgetall(key)
+        last_reads = await self.redis.hgetall(key)
 
         if not len(last_reads):
             return
@@ -443,19 +443,19 @@ class CacheRedis(ICache):
             for user_id, last_read in last_reads.items()
         }
 
-    def set_last_read_in_groups_for_user(
+    async def set_last_read_in_groups_for_user(
         self, group_ids: List[str], user_id: int, last_read: float
     ) -> None:
         p = self.redis.pipeline()
 
         for group_id in group_ids:
             key = RedisKeys.last_read_time(group_id)
-            p.hset(key, str(user_id), last_read)
-            p.expire(key, 7 * ONE_DAY)
+            await p.hset(key, str(user_id), str(last_read))
+            await p.expire(key, 7 * ONE_DAY)
 
-        p.execute()
+        await p.execute()
 
-    def set_last_read_in_group_for_user(
+    async def set_last_read_in_group_for_user(
         self, group_id: str, user_id: int, last_read: float, pipeline=None
     ) -> None:
         key = RedisKeys.last_read_time(group_id)
@@ -463,53 +463,53 @@ class CacheRedis(ICache):
         # use pipeline if provided
         r = pipeline or self.redis
 
-        r.hset(key, str(user_id), last_read)
-        r.expire(key, 7 * ONE_DAY)
+        await r.hset(key, str(user_id), str(last_read))
+        await r.expire(key, 7 * ONE_DAY)
 
-    def remove_last_read_in_group_for_user(self, group_id: str, user_id: int, pipeline=None) -> None:
+    async def remove_last_read_in_group_for_user(self, group_id: str, user_id: int, pipeline=None) -> None:
         key = RedisKeys.last_read_time(group_id)
 
         # use pipeline if provided
         r = pipeline or self.redis
-        r.hdel(key, str(user_id))
+        await r.hdel(key, str(user_id))
 
-    def remove_join_time_in_group_for_user(self, group_id: str, user_id: int, pipeline=None) -> None:
+    async def remove_join_time_in_group_for_user(self, group_id: str, user_id: int, pipeline=None) -> None:
         key = RedisKeys.user_in_group(group_id)
 
         # use pipeline if provided
         r = pipeline or self.redis
-        r.hdel(key, str(user_id))
+        await r.hdel(key, str(user_id))
 
-    def increase_unread_in_group_for(self, group_id: str, user_ids: List[int], pipeline=None) -> None:
+    async def increase_unread_in_group_for(self, group_id: str, user_ids: List[int], pipeline=None) -> None:
         key = RedisKeys.unread_in_group(group_id)
 
         # use pipeline if provided
         r = pipeline or self.redis.pipeline()
 
         for user_id in user_ids:
-            r.hincrby(key, str(user_id), 1)
+            await r.hincrby(key, str(user_id), 1)
 
         # only execute if we weren't provided a pipeline
         if pipeline is None:
-            r.execute()
+            await r.execute()
 
-    def reset_unread_in_groups(self, user_id: int, group_ids: List[str]):
+    async def reset_unread_in_groups(self, user_id: int, group_ids: List[str]):
         p = self.redis.pipeline()
 
         for group_id in group_ids:
             key = RedisKeys.unread_in_group(group_id)
-            p.hset(key, str(user_id), 0)
+            await p.hset(key, str(user_id), "0")
 
-        p.execute()
+        await p.execute()
 
-    def clear_unread_in_group_for_user(self, group_id: str, user_id) -> None:
+    async def clear_unread_in_group_for_user(self, group_id: str, user_id) -> None:
         key = RedisKeys.unread_in_group(group_id)
-        self.redis.hdel(key, str(user_id))
+        await self.redis.hdel(key, str(user_id))
 
-    def get_unread_in_group(self, group_id: str, user_id: int) -> Optional[int]:
+    async def get_unread_in_group(self, group_id: str, user_id: int) -> Optional[int]:
         key = RedisKeys.unread_in_group(group_id)
 
-        n_unread = self.redis.hget(key, str(user_id))
+        n_unread = await self.redis.hget(key, str(user_id))
         if n_unread is None:
             return None
 
@@ -518,25 +518,25 @@ class CacheRedis(ICache):
         except (TypeError, ValueError):
             return None
 
-    def set_unread_in_group(self, group_id: str, user_id: int, unread: int, pipeline=None) -> None:
+    async def set_unread_in_group(self, group_id: str, user_id: int, unread: int, pipeline=None) -> None:
         key = RedisKeys.unread_in_group(group_id)
 
         # use pipeline if provided
         r = pipeline or self.redis
-        r.hset(key, str(user_id), unread)
+        await r.hset(key, str(user_id), str(unread))
 
-    def get_user_count_in_group(self, group_id: str) -> Optional[int]:
+    async def get_user_count_in_group(self, group_id: str) -> Optional[int]:
         key = RedisKeys.user_in_group(group_id)
-        n_users = self.redis.hlen(key)
+        n_users = await self.redis.hlen(key)
 
         if n_users is None:
             return None
 
         return n_users
 
-    def get_messages_in_group(self, group_id: str) -> (Optional[int], Optional[float]):
+    async def get_messages_in_group(self, group_id: str) -> (Optional[int], Optional[float]):
         key = RedisKeys.messages_in_group(group_id)
-        messages_until = self.redis.get(key)
+        messages_until = await self.redis.get(key)
 
         if messages_until is None:
             return None, None
@@ -544,45 +544,45 @@ class CacheRedis(ICache):
         messages, until = messages_until.split("|")
         return int(messages), float(until)
 
-    def set_last_message_time_in_group(self, group_id: str, last_message_time: float, pipeline=None):
+    async def set_last_message_time_in_group(self, group_id: str, last_message_time: float, pipeline=None):
         key = RedisKeys.last_message_time(group_id)
 
         # use pipeline if provided
         r = pipeline or self.redis.pipeline()
 
-        r.set(key, last_message_time)
-        r.expire(key, ONE_WEEK)
+        await r.set(key, last_message_time)
+        await r.expire(key, ONE_WEEK)
 
         # only execute if we weren't provided a pipeline
         if pipeline is None:
-            r.execute()
+            await r.execute()
 
-    def get_last_message_time_in_group(self, group_id: str):
+    async def get_last_message_time_in_group(self, group_id: str):
         key = RedisKeys.last_message_time(group_id)
-        last_message_time = self.redis.get(key)
+        last_message_time = await self.redis.get(key)
 
         if last_message_time is None:
             return None
 
         return float(last_message_time)
 
-    def get_group_type(self, group_id: str) -> Optional[int]:
+    async def get_group_type(self, group_id: str) -> Optional[int]:
         key = RedisKeys.group_type(group_id)
-        group_type = self.redis.get(key)
+        group_type = await self.redis.get(key)
 
         if group_type is None:
             return None
 
         return int(group_type)
 
-    def set_group_type(self, group_id: str, group_type: int) -> None:
+    async def set_group_type(self, group_id: str, group_type: int) -> None:
         key = RedisKeys.group_type(group_id)
-        self.redis.set(key, group_type)
-        self.redis.expire(key, ONE_DAY)
+        await self.redis.set(key, group_type)
+        await self.redis.expire(key, ONE_DAY)
 
-    def increase_count_group_types_for_user(self, user_id: int, group_type: int) -> None:
+    async def increase_count_group_types_for_user(self, user_id: int, group_type: int) -> None:
         for is_hidden in {True, False}:
-            current_group_types = self.get_count_group_types_for_user(user_id, hidden=is_hidden)
+            current_group_types = await self.get_count_group_types_for_user(user_id, hidden=is_hidden)
             if current_group_types is None:
                 continue
 
@@ -593,37 +593,37 @@ class CacheRedis(ICache):
 
                 new_group_types.append((current_group_type, the_count))
 
-            self.set_count_group_types_for_user(user_id, new_group_types, is_hidden)
+            await self.set_count_group_types_for_user(user_id, new_group_types, is_hidden)
 
-    def reset_count_group_types_for_user(self, user_id: int) -> None:
+    async def reset_count_group_types_for_user(self, user_id: int) -> None:
         key = RedisKeys.count_group_types_including_hidden(user_id)
-        self.redis.delete(key)
+        await self.redis.delete(key)
 
         key = RedisKeys.count_group_types_not_including_hidden(user_id)
-        self.redis.delete(key)
+        await self.redis.delete(key)
 
-    def get_delete_before(self, group_id: str, user_id: int) -> Optional[dt]:
+    async def get_delete_before(self, group_id: str, user_id: int) -> Optional[dt]:
         key = RedisKeys.delete_before(group_id, user_id)
-        delete_before = self.redis.get(key)
+        delete_before = await self.redis.get(key)
 
         if delete_before is not None:
             delete_before = float(delete_before)
             return to_dt(delete_before, allow_none=True)
 
-    def set_delete_before(self, group_id: str, user_id: int, delete_before: float, pipeline=None) -> None:
+    async def set_delete_before(self, group_id: str, user_id: int, delete_before: float, pipeline=None) -> None:
         key = RedisKeys.delete_before(group_id, user_id)
 
         # use pipeline if provided
         r = pipeline or self.redis.pipeline()
 
-        r.set(key, delete_before)
-        r.expire(key, 14 * ONE_DAY)
+        await r.set(key, delete_before)
+        await r.expire(key, 14 * ONE_DAY)
 
         # only execute if we weren't provided a pipeline
         if pipeline is None:
-            r.execute()
+            await r.execute()
 
-    def increase_attachment_count_in_group_for_users(self, group_id: str, user_ids: List[int]):
+    async def increase_attachment_count_in_group_for_users(self, group_id: str, user_ids: List[int]):
         p = self.redis.pipeline()
 
         # loop-invariant-global-usage
@@ -631,12 +631,12 @@ class CacheRedis(ICache):
 
         for user_id in user_ids:
             key = RedisKeys.attachment_count_group_user(group_id, user_id)
-            p.incr(key)
-            p.expire(key, two_weeks)
+            await p.incr(key)
+            await p.expire(key, two_weeks)
 
-        p.execute()
+        await p.execute()
 
-    def remove_attachment_count_in_group_for_users(self, group_id: str, user_ids: List[int], pipeline=None):
+    async def remove_attachment_count_in_group_for_users(self, group_id: str, user_ids: List[int], pipeline=None):
         keys = [
             RedisKeys.attachment_count_group_user(group_id, user_id)
             for user_id in user_ids
@@ -644,47 +644,47 @@ class CacheRedis(ICache):
 
         # use pipeline if provided
         r = pipeline or self.redis
-        r.delete(*keys)
+        await r.delete(*keys)
 
-    def get_attachment_count_in_group_for_user(self, group_id: str, user_id: int) -> Optional[int]:
+    async def get_attachment_count_in_group_for_user(self, group_id: str, user_id: int) -> Optional[int]:
         key = RedisKeys.attachment_count_group_user(group_id, user_id)
-        the_count = self.redis.get(key)
+        the_count = await self.redis.get(key)
 
         if the_count is None:
             return None
 
         return int(float(the_count))
 
-    def set_attachment_count_in_group_for_user(self, group_id: str, user_id: int, the_count: int) -> None:
+    async def set_attachment_count_in_group_for_user(self, group_id: str, user_id: int, the_count: int) -> None:
         key = RedisKeys.attachment_count_group_user(group_id, user_id)
-        self.redis.set(key, str(the_count))
-        self.redis.expire(key, ONE_DAY * 14)
+        await self.redis.set(key, str(the_count))
+        await self.redis.expire(key, ONE_DAY * 14)
 
-    def set_last_sent_for_user(self, user_id: int, group_id: str, last_time: float, pipeline=None) -> None:
+    async def set_last_sent_for_user(self, user_id: int, group_id: str, last_time: float, pipeline=None) -> None:
         key = RedisKeys.last_sent_time_user(user_id)
 
         # use pipeline if provided
         r = pipeline or self.redis
 
-        r.set(key, f"{group_id}:{last_time}")
+        await r.set(key, f"{group_id}:{last_time}")
 
-    def get_public_group_ids(self) -> Optional[set]:
-        return self.redis.smembers(RedisKeys.public_group_ids())
+    async def get_public_group_ids(self) -> Optional[set]:
+        return await self.redis.smembers(RedisKeys.public_group_ids())
 
-    def add_public_group_ids(self, group_ids: List[str]) -> None:
+    async def add_public_group_ids(self, group_ids: List[str]) -> None:
         key = RedisKeys.public_group_ids()
-        self.redis.sadd(key, *group_ids)
+        await self.redis.sadd(key, *group_ids)
 
-    def get_last_sent_for_user(self, user_id: int) -> (str, float):
+    async def get_last_sent_for_user(self, user_id: int) -> (str, float):
         key = RedisKeys.last_sent_time_user(user_id)
-        values = self.redis.get(key)
+        values = await self.redis.get(key)
         if values is None:
             return None, None
 
         group_id, last_time = values.split(":", maxsplit=1)
         return group_id, float(last_time)
 
-    def set_count_group_types_for_user(self, user_id: int, counts: List[Tuple[int, int]], hidden: bool) -> None:
+    async def set_count_group_types_for_user(self, user_id: int, counts: List[Tuple[int, int]], hidden: bool) -> None:
         if hidden:
             key = RedisKeys.count_group_types_including_hidden(user_id)
         else:
@@ -692,10 +692,10 @@ class CacheRedis(ICache):
 
         types = ",".join([":".join(map(str, values)) for values in counts])
 
-        self.redis.set(key, types)
-        self.redis.expire(key, ONE_DAY * 5)
+        await self.redis.set(key, types)
+        await self.redis.expire(key, ONE_DAY * 5)
 
-    def get_count_group_types_for_user(self, user_id: int, hidden: bool) -> Optional[List[Tuple[int, int]]]:
+    async def get_count_group_types_for_user(self, user_id: int, hidden: bool) -> Optional[List[Tuple[int, int]]]:
         if hidden is None:
             return None
 
@@ -704,7 +704,7 @@ class CacheRedis(ICache):
         else:
             key = RedisKeys.count_group_types_not_including_hidden(user_id)
 
-        count = self.redis.get(key)
+        count = await self.redis.get(key)
         if count is None:
             return None
 
@@ -720,21 +720,21 @@ class CacheRedis(ICache):
 
         return [(int(a), int(b)) for a, b in types]
 
-    def set_messages_in_group(self, group_id: str, n_messages: int, until: float) -> None:
+    async def set_messages_in_group(self, group_id: str, n_messages: int, until: float) -> None:
         key = RedisKeys.messages_in_group(group_id)
         messages_until = f"{n_messages}|{until}"
 
-        self.redis.set(key, messages_until)
-        self.redis.expire(key, ONE_HOUR)  # can't cache forever, since users may delete historical messages
+        await self.redis.set(key, messages_until)
+        await self.redis.expire(key, ONE_HOUR)  # can't cache forever, since users may delete historical messages
 
-    def get_user_ids_and_join_time_in_groups(self, group_ids: List[str]):
+    async def get_user_ids_and_join_time_in_groups(self, group_ids: List[str]):
         join_times = dict()
 
         p = self.redis.pipeline()
         for group_id in group_ids:
-            p.hgetall(RedisKeys.user_in_group(group_id))
+            await p.hgetall(RedisKeys.user_in_group(group_id))
 
-        for group_id, users in zip(group_ids, p.execute()):
+        for group_id, users in zip(group_ids, await p.execute()):
             if not len(users):
                 continue
 
@@ -745,78 +745,78 @@ class CacheRedis(ICache):
 
         return join_times
 
-    def set_user_ids_and_join_time_in_groups(
+    async def set_user_ids_and_join_time_in_groups(
         self, group_users: Dict[str, Dict[int, float]]
     ):
         p = self.redis.pipeline()
 
         for group_id, users in group_users.items():
             key = RedisKeys.user_in_group(group_id)
-            p.delete(key)
+            await p.delete(key)
 
             if len(users):
                 for user_id, join_time in users.items():
-                    p.hset(key, str(user_id), str(join_time))
-                p.expire(key, ONE_DAY)
+                    await p.hset(key, str(user_id), str(join_time))
+                await p.expire(key, ONE_DAY)
 
-        p.execute()
+        await p.execute()
 
-    def get_user_ids_and_join_time_in_group(
+    async def get_user_ids_and_join_time_in_group(
         self, group_id: str
     ) -> Optional[Dict[int, float]]:
-        users = self.redis.hgetall(RedisKeys.user_in_group(group_id))
+        users = await self.redis.hgetall(RedisKeys.user_in_group(group_id))
 
         if not len(users):
             return None
 
         return {int(user_id): float(join_time) for user_id, join_time in users.items()}
 
-    def set_user_ids_and_join_time_in_group(
+    async def set_user_ids_and_join_time_in_group(
         self, group_id: str, users: Dict[int, float]
     ):
         key = RedisKeys.user_in_group(group_id)
-        self.redis.delete(key)
+        await self.redis.delete(key)
 
         if len(users):
-            self.add_user_ids_and_join_time_in_group(group_id, users)
-            self.redis.expire(key, ONE_HOUR)
+            await self.add_user_ids_and_join_time_in_group(group_id, users)
+            await self.redis.expire(key, ONE_HOUR)
 
-    def remove_user_id_and_join_time_in_groups_for_user(self, group_ids: List[str], user_id: int, pipeline=None):
+    async def remove_user_id_and_join_time_in_groups_for_user(self, group_ids: List[str], user_id: int, pipeline=None):
         # use pipeline if provided
         r = pipeline or self.redis.pipeline()
         user_id = str(user_id)
 
         for group_id in group_ids:
             key = RedisKeys.user_in_group(group_id)
-            r.hdel(key, user_id)
+            await r.hdel(key, user_id)
 
         # only execute if we weren't provided a pipeline
         if pipeline is None:
-            r.execute()
+            await r.execute()
 
-    def add_user_ids_and_join_time_in_group(
+    async def add_user_ids_and_join_time_in_group(
         self, group_id: str, users: Dict[int, float]
     ) -> None:
         key = RedisKeys.user_in_group(group_id)
         p = self.redis.pipeline()
 
         for user_id, join_time in users.items():
-            p.hset(key, str(user_id), str(join_time))
+            await p.hset(key, str(user_id), str(join_time))
 
-        p.expire(key, ONE_DAY)
-        p.execute()
+        await p.expire(key, ONE_DAY)
+        await p.execute()
 
-    def clear_user_ids_and_join_time_in_group(self, group_id: str) -> None:
+    async def clear_user_ids_and_join_time_in_group(self, group_id: str) -> None:
         key = RedisKeys.user_in_group(group_id)
-        self.redis.delete(key)
+        await self.redis.delete(key)
 
-    def set_hide_group(
+    async def set_hide_group(
         self, group_id: str, hide: bool, user_ids: List[int] = None, pipeline=None
     ) -> None:
         key = RedisKeys.hide_group(group_id)
 
         if user_ids is None:
-            users = self.redis.hgetall(key)
+            users = await self.redis.hgetall(key)
         else:
             users = user_ids
 
@@ -824,20 +824,20 @@ class CacheRedis(ICache):
         r = pipeline or self.redis.pipeline()
 
         for user in users:
-            r.hset(key, user, "t" if hide else "f")
+            await r.hset(key, user, "t" if hide else "f")
 
         # only execute if we weren't provided a pipeline
         if pipeline is None:
-            r.execute()
+            await r.execute()
 
     @property
     def redis(self):
         if self.redis_pool is None:
             return self.redis_instance
-        return redis.Redis(connection_pool=self.redis_pool, decode_responses=True)
+        return redis.asyncio.Redis(connection_pool=self.redis_pool, decode_responses=True)
 
-    def _flushall(self) -> None:
-        self.redis.flushdb()
+    async def _flushall(self) -> None:
+        await self.redis.flushdb()
         self.cache.flushall()
 
     def _set(self, key, val, ttl=None) -> None:

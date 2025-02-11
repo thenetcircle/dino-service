@@ -51,7 +51,7 @@ async def count_users_online() -> OnlineCount:
     * `250`: if an unknown error occurred.
     """
     return OnlineCount(
-        online_count=environ.env.cache.count_online()
+        online_count=await environ.env.cache.count_online()
     )
 
 
@@ -66,7 +66,7 @@ async def is_user_online(user_id: int) -> IsOnline:
     """
     return IsOnline(
         user_id=user_id,
-        is_online=environ.env.cache.is_online(user_id)
+        is_online=await environ.env.cache.is_online(user_id)
     )
 
 

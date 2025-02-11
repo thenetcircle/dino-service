@@ -22,7 +22,7 @@ from dinofw.utils.convert import to_user_group, to_last_reads, to_deleted_stats,
 
 class UserResource(BaseResource):
     async def get_next_client_id(self, domain: str, user_id: int) -> str:
-        return self.env.cache.get_next_client_id(domain, user_id)
+        return await self.env.cache.get_next_client_id(domain, user_id)
 
     async def get_deleted_groups(self, user_id: int, db: Session) -> List[DeletedStats]:
         deleted_groups: List[DeletedStatsBase] = await self.env.db.get_deleted_groups_for_user(user_id, db)
@@ -45,7 +45,7 @@ class UserResource(BaseResource):
         offline_users = list(offline_users)
         online_users = list(online_users)
 
-        self.env.cache.set_online_users(offline_users, online_users)
+        await self.env.cache.set_online_users(offline_users, online_users)
 
         # only notify if someone left
         if offline_users:
@@ -54,9 +54,9 @@ class UserResource(BaseResource):
     async def update_real_time_user_session(self, user: SessionUser):
         logger.debug(f"update_real_time_user_session: {user.json()}")
         if user.is_online:
-            self.env.cache.set_online_user(user.user_id)
+            await self.env.cache.set_online_user(user.user_id)
         else:
-            self.env.cache.set_offline_user(user.user_id)
+            await self.env.cache.set_offline_user(user.user_id)
             self.env.server_publisher.offline_users([user.user_id])
 
     async def get_all_user_stats_for_user(
@@ -144,14 +144,14 @@ class UserResource(BaseResource):
         #  * read           : done?
         #  * bookmark       : done?
 
-        unread_count, n_unread_groups = self.env.cache.get_total_unread_count(user_id)
+        unread_count, n_unread_groups = await self.env.cache.get_total_unread_count(user_id)
         if unread_count is not None:
             return unread_count, n_unread_groups
 
         unread_count, unread_groups = await self.env.db.count_total_unread(user_id, db)
         n_unread_groups = len(unread_groups)
 
-        self.env.cache.set_total_unread_count(user_id, unread_count, unread_groups)
+        await self.env.cache.set_total_unread_count(user_id, unread_count, unread_groups)
         return unread_count, n_unread_groups
 
     async def get_user_stats(self, user_id: int, query: UserStatsQuery, db: Session) -> UserStats:

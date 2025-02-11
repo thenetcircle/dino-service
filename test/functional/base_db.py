@@ -36,6 +36,8 @@ class BaseDatabaseTest(BaseTest):
         engine = create_async_engine(db_uri)
 
         self.env = FakeEnv()
+        # fakeredis 2.26.2 doesn't clear data automatically
+        await self.env.cache._flushall()
         self.long_ago = 789000000.0  # default value for many timestamps
 
         # need to replace the global environ.env with our FakeEnv, functional model files import it directly

@@ -187,7 +187,7 @@ class GroupResource(BaseResource):
         if include_deleted:
             since = one_year_ago(since)
         else:
-            the_count = self.env.cache.get_attachment_count_in_group_for_user(group_id, user_id)
+            the_count = await self.env.cache.get_attachment_count_in_group_for_user(group_id, user_id)
             if the_count is not None:
                 return the_count
 
@@ -198,7 +198,7 @@ class GroupResource(BaseResource):
 
         if not include_deleted:
             # don't cache the value if we're including deleted messages
-            self.env.cache.set_attachment_count_in_group_for_user(group_id, user_id, the_count)
+            await self.env.cache.set_attachment_count_in_group_for_user(group_id, user_id, the_count)
 
         return the_count
 
@@ -308,7 +308,7 @@ class GroupResource(BaseResource):
         )
 
     async def count_messages_in_group(self, group_id: str) -> int:
-        n_messages, until = self.env.cache.get_messages_in_group(group_id)
+        n_messages, until = await self.env.cache.get_messages_in_group(group_id)
 
         if until is None:
             until = self.long_ago
@@ -320,7 +320,7 @@ class GroupResource(BaseResource):
         total_messages = n_messages + messages_since
         now = utcnow_ts()
 
-        self.env.cache.set_messages_in_group(group_id, total_messages, now)
+        await self.env.cache.set_messages_in_group(group_id, total_messages, now)
         return total_messages
 
     async def get_all_user_group_stats(self, group_id: str, db: Session) -> List[UserGroupStats]:
@@ -407,7 +407,7 @@ class GroupResource(BaseResource):
             for user_id in query.users
         }
 
-        group_type = self.env.cache.get_group_type(group_id)
+        group_type = await self.env.cache.get_group_type(group_id)
 
         if group_type is None:
             group_types = await self.env.db.get_group_types([group_id], db)
@@ -415,7 +415,7 @@ class GroupResource(BaseResource):
                 raise NoSuchGroupException(group_id)
 
             group_type = group_types[group_id]
-            self.env.cache.set_group_type(group_id, group_type)
+            await self.env.cache.set_group_type(group_id, group_type)
 
         await self.env.db.set_groups_updated_at([group_id], now, db)
         await self.env.db.update_user_stats_on_join_or_create_group(
@@ -441,7 +441,7 @@ class GroupResource(BaseResource):
         await self.env.db.copy_to_deleted_groups_table(group_id_to_type, user_id, db)
         await self.env.db.remove_user_group_stats_for_user(group_ids, user_id, db)
         await self.env.db.set_groups_updated_at(group_ids, now, db)
-        self.env.cache.reset_count_group_types_for_user(user_id)
+        await self.env.cache.reset_count_group_types_for_user(user_id)
 
         action_logs = list()
 

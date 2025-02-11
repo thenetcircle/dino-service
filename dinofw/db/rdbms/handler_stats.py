@@ -92,9 +92,9 @@ class UpdateUserGroupStatsHandler:
 
         # always becomes unhidden if highlighted
         user_stats.hide = False
-        self.env.cache.set_hide_group(group_id, False, [user_id])
+        await self.env.cache.set_hide_group(group_id, False, [user_id])
 
-    def _set_delete_before(
+    async def _set_delete_before(
             self,
             group_id: str,
             user_id: int,
@@ -119,26 +119,26 @@ class UpdateUserGroupStatsHandler:
         # messages from this user after he deletes a conversation,
         # so there's no need to count from cassandra from now on
         user_stats.sent_message_count = 0
-        self.env.cache.set_sent_message_count_in_group_for_user(group_id, user_id, 0)
+        await self.env.cache.set_sent_message_count_in_group_for_user(group_id, user_id, 0)
 
         # no pipeline for these two, might have to run multiple queries to correct negative value
         # self.env.cache.decrease_total_unread_message_count(user_id, unread_count_before_changing)
-        self.env.cache.reset_total_unread_message_count(user_id)
-        self.env.cache.remove_unread_group(user_id, group_id)
+        await self.env.cache.reset_total_unread_message_count(user_id)
+        await self.env.cache.remove_unread_group(user_id, group_id)
 
-        with self.env.cache.pipeline() as p:
+        async with self.env.cache.pipeline() as p:
             # need to reset unread count when deleting a group
             user_stats.unread_count = 0
-            self.env.cache.set_unread_in_group(group_id, user_id, 0, pipeline=p)
+            await self.env.cache.set_unread_in_group(group_id, user_id, 0, pipeline=p)
 
             # update the cached value of delete before, and also remove
             # the cached count of attachments in this group for this
             # user; it will be recounted and cached again the next time
             # it's requested
-            self.env.cache.set_delete_before(group_id, user_id, to_ts(delete_before), pipeline=p)
-            self.env.cache.remove_attachment_count_in_group_for_users(group_id, [user_id], pipeline=p)
+            await self.env.cache.set_delete_before(group_id, user_id, to_ts(delete_before), pipeline=p)
+            await self.env.cache.remove_attachment_count_in_group_for_users(group_id, [user_id], pipeline=p)
 
-    def _set_hide(
+    async def _set_hide(
             self,
             group_id: str,
             user_id: int,
@@ -148,16 +148,16 @@ class UpdateUserGroupStatsHandler:
     ) -> None:
         user_stats.hide = query.hide
 
-        with self.env.cache.pipeline() as p:
-            self.env.cache.set_hide_group(group_id, query.hide, [user_id], pipeline=p)
+        async with self.env.cache.pipeline() as p:
+            await self.env.cache.set_hide_group(group_id, query.hide, [user_id], pipeline=p)
 
             # TODO: there's a somewhere that's using decrease_total_unread_message_count(),
             #  the cached count sometimes becomes the wrong value, so reset() instead for now
-            self.env.cache.reset_total_unread_message_count(user_id, pipeline=p)
+            await self.env.cache.reset_total_unread_message_count(user_id, pipeline=p)
 
             if query.hide:
                 # no pipline for removing, might have to run multiple queries
-                self.env.cache.remove_unread_group(user_id, group_id, pipeline=p)
+                await self.env.cache.remove_unread_group(user_id, group_id, pipeline=p)
 
                 """
                 # bookmark AND hide makes it a bit tricky
@@ -168,7 +168,7 @@ class UpdateUserGroupStatsHandler:
                 self.env.cache.decrease_total_unread_message_count(user_id, change_by)
                 """
             else:
-                self.env.cache.add_unread_group([user_id], group_id, pipeline=p)
+                await self.env.cache.add_unread_group([user_id], group_id, pipeline=p)
                 # self.env.cache.increase_total_unread_message_count(
                 #     [user_id], unread_count_before_changing, pipeline=p
                 # )
@@ -196,10 +196,10 @@ class UpdateUserGroupStatsHandler:
 
         # TODO: use pipeline
         user_stats.last_read = last_read
-        self.env.cache.set_last_read_in_group_for_user(group_id, user_id, to_ts(last_read))
+        await self.env.cache.set_last_read_in_group_for_user(group_id, user_id, to_ts(last_read))
 
         # recount unread from cassandra and save in cache and db
-        self.env.cache.clear_unread_in_group_for_user(group_id, user_id)
+        await self.env.cache.clear_unread_in_group_for_user(group_id, user_id)
         user_stats.unread_count = await self.env.storage.get_unread_in_group(group_id, user_id, last_read)
 
         # when updating last read, we reset the mention count to 0 and bookmark to false
@@ -216,15 +216,15 @@ class UpdateUserGroupStatsHandler:
         self.env.cache.decrease_total_unread_message_count(user_id, decrease_by)
         """
 
-        self.env.cache.remove_unread_group(user_id, group_id)
-        self.env.cache.reset_total_unread_message_count(user_id)
+        await self.env.cache.remove_unread_group(user_id, group_id)
+        await self.env.cache.reset_total_unread_message_count(user_id)
 
         # highlight time is removed if a user reads a conversation
         user_stats.highlight_time = self.handler.long_ago
         if that_user_stats is not None:
             that_user_stats.receiver_highlight_time = self.handler.long_ago
 
-    def _set_bookmark(
+    async def _set_bookmark(
             self,
             group_id: str,
             user_id: int,
@@ -234,15 +234,15 @@ class UpdateUserGroupStatsHandler:
         user_stats.bookmark = query.bookmark
 
         if query.bookmark:
-            with self.env.cache.pipeline() as p:
-                self.env.cache.increase_total_unread_message_count([user_id], 1, pipeline=p)
-                self.env.cache.add_unread_group([user_id], group_id, pipeline=p)
+            async with self.env.cache.pipeline() as p:
+                await self.env.cache.increase_total_unread_message_count([user_id], 1, pipeline=p)
+                await self.env.cache.add_unread_group([user_id], group_id, pipeline=p)
         # doesn't work well with pipeline
         else:
             # bookmark always counts as 1 unread, so just decrease by 1
             # self.env.cache.decrease_total_unread_message_count(user_id, 1)
-            self.env.cache.reset_total_unread_message_count(user_id)
-            self.env.cache.remove_unread_group(user_id, group_id)
+            await self.env.cache.reset_total_unread_message_count(user_id)
+            await self.env.cache.remove_unread_group(user_id, group_id)
 
     async def update(
             self,
@@ -273,10 +273,10 @@ class UpdateUserGroupStatsHandler:
         if query.kicked is not None:
             # only reset if this is the first kick
             if not user_stats.kicked and query.kicked:
-                self.env.cache.remove_user_id_and_join_time_in_groups_for_user([group_id], user_id)
+                await self.env.cache.remove_user_id_and_join_time_in_groups_for_user([group_id], user_id)
                 if user_stats.unread_count > 0:
                     # self.env.cache.decrease_total_unread_message_count(user_id, user_stats.unread_count)
-                    self.env.cache.reset_total_unread_message_count(user_id)
+                    await self.env.cache.reset_total_unread_message_count(user_id)
 
                 user_stats.mentions = 0
                 user_stats.unread_count = 0
@@ -287,7 +287,7 @@ class UpdateUserGroupStatsHandler:
             user_stats.kicked = query.kicked
 
         if query.bookmark is not None:
-            self._set_bookmark(group_id, user_id, user_stats, query)
+            await self._set_bookmark(group_id, user_id, user_stats, query)
 
             # set the last read time to now(), since a user can't remove a
             # bookmark without opening the conversation
@@ -304,7 +304,7 @@ class UpdateUserGroupStatsHandler:
             user_stats.notifications = query.notifications
 
             # force a recount of total unreads, since previously only mentions were cached for this group
-            self.env.cache.reset_total_unread_message_count(user_id)
+            await self.env.cache.reset_total_unread_message_count(user_id)
 
         if last_read is not None:
             await self._set_last_read(
@@ -312,17 +312,17 @@ class UpdateUserGroupStatsHandler:
             )
 
         if delete_before is not None:
-            self._set_delete_before(group_id, user_id, user_stats, delete_before, unread_count_before_changing, db)
+            await self._set_delete_before(group_id, user_id, user_stats, delete_before, unread_count_before_changing, db)
 
         # can't set highlight time if also setting last read time
         if highlight_time is not None and last_read is None:
             await self._set_highlight_time(group_id, user_id, user_stats, that_user_stats, highlight_time, query, db)
 
         elif query.hide is not None:
-            self._set_hide(group_id, user_id, user_stats, unread_count_before_changing, query)
+            await self._set_hide(group_id, user_id, user_stats, unread_count_before_changing, query)
 
         if query.hide is not None or query.delete_before is not None:
-            self.env.cache.reset_count_group_types_for_user(user_id)
+            await self.env.cache.reset_count_group_types_for_user(user_id)
 
         db.add(user_stats)
         await db.commit()
