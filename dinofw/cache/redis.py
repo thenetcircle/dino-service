@@ -8,7 +8,7 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 
-import redis as redis
+import redis
 from loguru import logger
 
 from dinofw.cache import ICache
@@ -68,7 +68,7 @@ class CacheRedis(ICache):
 
             self.testing = True
         else:
-            self.redis_pool = redis.ConnectionPool(host=host, port=port, db=db, decode_responses=True)
+            self.redis_pool = redis.asyncio.ConnectionPool(host=host, port=port, db=db, decode_responses=True)
             self.redis_instance = None
             self.testing = False
 
