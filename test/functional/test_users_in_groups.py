@@ -35,17 +35,17 @@ class TestUsersInGroups(BaseServerRestApi):
         ]
 
         # should be cached when sending messages
-        self.assertEqual(4, len(self.env.cache.get_user_ids_and_join_time_in_groups(group_ids)))
+        self.assertEqual(4, len(await self.env.cache.get_user_ids_and_join_time_in_groups(group_ids)))
         _group_to_users = await self.env.db.get_user_ids_in_groups(group_ids, db=session)
         assert_users_in_groups(_group_to_users)
 
         # delete from cache and get from db
         for group_id in group_ids:
-            self.env.cache.redis.delete(RedisKeys.user_in_group(group_id))
+            await self.env.cache.redis.delete(RedisKeys.user_in_group(group_id))
 
-        self.assertEqual(0, len(self.env.cache.get_user_ids_and_join_time_in_groups(group_ids)))
+        self.assertEqual(0, len(await self.env.cache.get_user_ids_and_join_time_in_groups(group_ids)))
         _group_to_users = await self.env.db.get_user_ids_in_groups(group_ids, db=session)
         assert_users_in_groups(_group_to_users)
 
         # should be cached again now
-        self.assertEqual(4, len(self.env.cache.get_user_ids_and_join_time_in_groups(group_ids)))
+        self.assertEqual(4, len(await self.env.cache.get_user_ids_and_join_time_in_groups(group_ids)))
