@@ -9,12 +9,9 @@ from dinofw.utils.config import ErrorCodes
 
 
 # dependency
-def get_db():
-    db = environ.env.SessionLocal()
-    try:
+async def get_db():
+    async with environ.env.SessionLocal() as db:
         yield db
-    finally:
-        db.close()
 
 
 def log_error_and_raise_unknown(exc_info, e):

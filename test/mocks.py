@@ -233,7 +233,7 @@ class FakeStorage:
         return attachments
 
     async def get_unread_in_group(self, group_id: str, user_id: int, last_read: dt) -> int:
-        unread = self.env.cache.get_unread_in_group(group_id, user_id)
+        unread = await self.env.cache.get_unread_in_group(group_id, user_id)
         if unread is not None:
             return unread
 
@@ -524,7 +524,7 @@ class FakeDatabase:
         return self.groups[group_id].group_type
 
     async def get_oldest_last_read_in_group(self, group_id: str, _) -> Optional[float]:
-        last_read = self.env.cache.get_last_read_in_group_oldest(group_id)
+        last_read = await self.env.cache.get_last_read_in_group_oldest(group_id)
         if last_read is not None:
             return last_read
 
@@ -537,7 +537,7 @@ class FakeDatabase:
             if last_read < oldest:
                 oldest = last_read
 
-        self.env.cache.set_last_read_in_group_oldest(group_id, oldest)
+        await self.env.cache.set_last_read_in_group_oldest(group_id, oldest)
         return oldest
 
     async def get_last_message_time_in_group(self, group_id: str, _) -> dt:
@@ -630,7 +630,7 @@ class FakeDatabase:
 
         return self.last_sent[user_id]
 
-    def set_last_sent_for_user(
+    async def set_last_sent_for_user(
         self, user_id: int, group_id: str, the_time: float, _
     ) -> None:
         self.last_sent[user_id] = group_id, the_time
@@ -779,7 +779,7 @@ class FakeDatabase:
         else:
             self.stats[user_id] = [to_add]
 
-    def remove_last_read_in_group_for_user(
+    async def remove_last_read_in_group_for_user(
         self, group_id: str, user_id: int, _
     ) -> None:
         if user_id not in self.stats:

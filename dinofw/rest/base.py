@@ -49,9 +49,9 @@ class BaseResource(ABC):
         )
 
         if user_stats.unread_count > 0 or user_stats.bookmark:
-            self.env.cache.set_unread_in_group(group_id, user_id, 0)
-            self.env.cache.remove_unread_group(user_id, group_id)
-            self.env.cache.reset_total_unread_message_count(user_id)
+            await self.env.cache.set_unread_in_group(group_id, user_id, 0)
+            await self.env.cache.remove_unread_group(user_id, group_id)
+            await self.env.cache.reset_total_unread_message_count(user_id)
 
         # no point updating if already newer than last message (also skips
         # broadcasting unnecessary read-receipts)
@@ -140,7 +140,7 @@ class BaseResource(ABC):
         if user_id not in user_ids and unhide_group:
             # if the user deleted the group, this is an action log for the
             # deletion, and we only have to un-hide it for the other user(s)
-            self.env.cache.set_hide_group(group_id, False)
+            await self.env.cache.set_hide_group(group_id, False)
         else:
             # otherwise we update as normal
             await self.env.db.update_last_read_and_sent_in_group_for_user(
@@ -148,11 +148,11 @@ class BaseResource(ABC):
             )
 
         if event_type == EventTypes.ATTACHMENT:
-            self.env.cache.increase_attachment_count_in_group_for_users(group_id, list(user_ids.keys()))
+            await self.env.cache.increase_attachment_count_in_group_for_users(group_id, list(user_ids.keys()))
         elif event_type == EventTypes.DELETE_ATTACHMENT:
             # instead of decreasing, just remove it, since in case no count is cached, decreasing
             # a non-existing key will store -1, which is incorrect
-            self.env.cache.remove_attachment_count_in_group_for_users(group_id, list(user_ids.keys()))
+            await self.env.cache.remove_attachment_count_in_group_for_users(group_id, list(user_ids.keys()))
             # TODO: decrease total unread count in redis? or remove it?
 
         return group_base
@@ -166,7 +166,7 @@ class BaseResource(ABC):
             )
 
         group_id = users_to_group_id(user_id, receiver_id)
-        if self.env.cache.get_group_exists(group_id):
+        if await self.env.cache.get_group_exists(group_id):
             return group_id
 
         try:
@@ -180,5 +180,5 @@ class BaseResource(ABC):
                 group = await self.env.db.get_group_for_1to1(user_id, receiver_id, db)
 
         group_id = group.group_id
-        self.env.cache.set_group_exists(group_id, True)
+        await self.env.cache.set_group_exists(group_id, True)
         return group_id

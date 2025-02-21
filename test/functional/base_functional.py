@@ -784,6 +784,6 @@ class BaseServerRestApi(BaseDatabaseTest):
         self.assertEqual(n_unread_amount, unread_amount)
         self.assertEqual(n_unread_groups, unread_groups)
 
-    def assert_cached_unread_for_group(self, user_id, group_id, amount):
-        cache_unread = self.env.cache.get_unread_in_group(group_id, user_id)
+    async def assert_cached_unread_for_group(self, user_id, group_id, amount):
+        cache_unread = await self.env.cache.get_unread_in_group(group_id, user_id)
         self.assertEqual(cache_unread, amount)

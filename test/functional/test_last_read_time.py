@@ -10,11 +10,11 @@ class TestLastReadTime(BaseServerRestApi):
         message = await self.send_1v1_message()
         group_id = message["group_id"]
 
-        last_read_cache = self.env.cache.get_last_read_in_group_oldest(group_id)
+        last_read_cache = await self.env.cache.get_last_read_in_group_oldest(group_id)
         self.assertIsNone(last_read_cache)
 
         last_read = await self.env.db.get_oldest_last_read_in_group(group_id, session)
-        last_read_cache = self.env.cache.get_last_read_in_group_oldest(group_id)
+        last_read_cache = await self.env.cache.get_last_read_in_group_oldest(group_id)
         self.assertIsNotNone(last_read)
         self.assertIsNotNone(last_read_cache)
         self.assertEqual(last_read, last_read_cache)

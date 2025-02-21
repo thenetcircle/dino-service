@@ -467,13 +467,13 @@ class CassandraHandler:
         return len(messages_from_user)
 
     async def get_unread_in_group(self, group_id: str, user_id: int, last_read: dt) -> int:
-        unread = self.env.cache.get_unread_in_group(group_id, user_id)
+        unread = await self.env.cache.get_unread_in_group(group_id, user_id)
         if unread is not None:
             return unread
 
         unread = await self.count_messages_in_group_since(group_id, last_read)
 
-        self.env.cache.set_unread_in_group(group_id, user_id, unread)
+        await self.env.cache.set_unread_in_group(group_id, user_id, unread)
         return unread
 
     async def delete_attachments_in_all_groups(
