@@ -597,6 +597,9 @@ class CassandraHandler:
             .allow_filtering()
             .async_first()
         )
+        if attachment is None:
+            raise NoSuchAttachmentException(query.file_id)
+
         message = await(
             MessageModel.objects(
                 MessageModel.group_id == group_id,
@@ -606,9 +609,6 @@ class CassandraHandler:
             .allow_filtering()
             .async_first()
         )
-
-        if attachment is None:
-            raise NoSuchAttachmentException(query.file_id)
 
         # to be returned
         attachment_base = CassandraHandler.message_base_from_entity(attachment)
