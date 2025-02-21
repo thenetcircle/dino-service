@@ -69,8 +69,6 @@ class MqttPublisher(IClientPublisher):
 
         if auth_type == "redis":
             self.set_auth_redis(env, client_id, username, password)
-        elif auth_type == "mysql":
-            self.set_auth_mysql(env, client_id, username, password)
         else:
             raise ValueError(f"unknown MQTT auth type: {auth_type}")
 
@@ -128,30 +126,6 @@ class MqttPublisher(IClientPublisher):
         # pid will change for each worker on startup
         r_client.set(mqtt_key, mqtt_value)
         logger.debug(f"set mqtt auth in redis to key {mqtt_key} and value {mqtt_value}")
-
-    def set_auth_mysql(self, env, client_id, username, password):
-        import MySQLdb
-        import hashlib
-
-        mqtt_mysql_host = env.config.get(ConfigKeys.HOST, domain=ConfigKeys.MQTT_AUTH)
-        mqtt_mysql_db = env.config.get(ConfigKeys.DB, domain=ConfigKeys.MQTT_AUTH)
-        mqtt_mysql_user = env.config.get(ConfigKeys.USER, domain=ConfigKeys.MQTT_AUTH)
-        mqtt_mysql_pass = env.config.get(ConfigKeys.PASSWORD, domain=ConfigKeys.MQTT_AUTH)
-
-        db = MySQLdb.connect(
-            host=mqtt_mysql_host,
-            user=mqtt_mysql_user,
-            passwd=mqtt_mysql_pass,
-            db=mqtt_mysql_db
-        )
-
-        cur = db.cursor()
-        cur.execute(
-            "insert into vmq_auth_acl(mountpoint,client_id,username,password,publish_acl,subscribe_acl) values(%s,%s,%s,%s,%s,%s)",
-            ("", client_id, username, hashlib.sha256(password.encode()).hexdigest(), '[{"pattern":"#"}]', '[{"pattern":"#"}]')
-        )
-        db.commit()
-        db.close()
 
     async def setup(self):
         logger.debug(f"mqtt connecting to host {self.mqtt_host} port {self.mqtt_port}")
