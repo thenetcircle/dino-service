@@ -10,6 +10,20 @@ from test.functional.cassandra.base_handler import BaseCassandraHandlerTest
 
 
 class BaseMessageTest(BaseCassandraHandlerTest):
+    async def test_timezone_of_sent_message_is_set(self):
+        await self.clear_messages()
+        msg = await self.handler.store_message(
+            BaseMessageTest.GROUP_ID,
+            BaseMessageTest.USER_ID,
+            SendMessageQuery(
+                message_payload=BaseMessageTest.MESSAGE_PAYLOAD,
+                message_type=MessageTypes.MESSAGE,
+            )
+        )
+
+        message = await self.handler.get_all_messages_in_group(msg.group_id)
+        self.assertEqual(1, len(message))
+        self.assertIsNotNone(message[0].created_at.tzinfo)
 
     async def test_store_message(self) -> None:
         await self.clear_messages()

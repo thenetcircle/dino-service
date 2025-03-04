@@ -971,7 +971,10 @@ class CassandraHandler:
     def message_base_from_entity(message: MessageModel) -> MessageBase:
         return MessageBase(
             group_id=str(message.group_id),
-            created_at=message.created_at,
+            # we have to explicitly set the UTC timezone here, since when reading the datetime from the Cassandra model
+            # it will skip the tzinfo, causing issues on servers where the local time of the postgres database is not
+            # set to UTC
+            created_at=arrow.get(message.created_at, tzinfo='UTC').datetime,
             user_id=message.user_id,
             message_id=str(message.message_id),
             message_payload=message.message_payload,
