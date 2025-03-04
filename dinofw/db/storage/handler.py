@@ -957,14 +957,14 @@ class CassandraHandler:
                 .async_all()
             )
         else:
-            return (
+            return await (
                 MessageModel.objects(
                     MessageModel.group_id == group_id,
                     MessageModel.user_id == user_id,
                     MessageModel.created_at < until,
                 )
                 .limit(500)
-                .all()
+                .async_all()
             )
 
     @staticmethod
