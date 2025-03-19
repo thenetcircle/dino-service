@@ -43,6 +43,7 @@ to_time = '2023-12-07 02:56:00.000+0000'
 with open('feti_msgs_cassandra-240320.csv', 'w') as f:
     f.write('sender_id,receiver_id,created_at\n')
 
+    # don't increase above 100 in batch size, query usually will timeout then and the whole export needs to be restarted
     for group_ids in tqdm(split_into_chunks(group_ids, 100), total=len(group_ids) / 100):
         args = [
             "/usr/local/tncdata/apps/apache-cassandra-3.11.8/bin/cqlsh",
