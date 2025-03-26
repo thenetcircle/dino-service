@@ -1,7 +1,7 @@
 import time
 import random
 
-from locust import HttpUser, task, between
+from locust import FastHttpUser, task, between
 
 n_users = 20
 user_ids = list(set([
@@ -10,8 +10,9 @@ user_ids = list(set([
 ]))
 
 
-class QuickstartUser(HttpUser):
+class QuickstartUser(FastHttpUser):
     wait_time = between(0, 1)
+    sender_id, receiver_id = random.sample(user_ids, 2)
 
     @task(10)
     def count_users_online(self):
@@ -25,15 +26,42 @@ class QuickstartUser(HttpUser):
 
     @task(1)
     def send_message(self):
-       sender, receiver = random.sample(user_ids, 2)
+       self.sender_id, self.receiver_id = random.sample(user_ids, 2)
 
        for _ in range(1):
            self.client.post(
-               f"/v1/users/{sender}/send",
+               f"/v1/users/{self.sender_id}/send",
                json={
-                   "receiver_id": receiver,
+                   "receiver_id": self.receiver_id,
                    "message_payload": "load test",
                    "message_type": 0
                }
            )
            time.sleep(0.01)
+
+    @task(1)
+    def check_group_info(self):
+        response = self.client.post(
+            f"/v1/users/{self.sender_id}/groups",
+            json={
+                "per_page": 5,
+                "only_unread": False,
+            },
+        )
+
+        for group in response.json():
+            group_id = group["group"]["group_id"]
+            self.client.post(
+                f"/v1/groups/{group_id}",
+                json={
+                    "count_messages": True
+                }
+            )
+            time.sleep(0.01)
+            self.client.post(
+                f"/v1/groups/{group_id}/user/{self.sender_id}/histories",
+                json={
+                    "per_page": 10,
+                    "since": 0
+                }
+            )
