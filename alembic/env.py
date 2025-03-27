@@ -1,11 +1,11 @@
+import asyncio
 import os
 from logging.config import fileConfig
 
-from gnenv import create_env
-from sqlalchemy import engine_from_config, create_engine
-from sqlalchemy import pool
-
 from alembic import context
+from gnenv import create_env
+from sqlalchemy import pool
+from sqlalchemy.ext.asyncio import create_async_engine
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -57,10 +57,15 @@ def run_migrations_offline():
         context.run_migrations()
 
 
-def run_migrations_online():
-    """Run migrations in 'online' mode.
+def do_run_migrations(connection):
+    context.configure(connection=connection, target_metadata=target_metadata)
 
-    In this scenario we need to create an Engine
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+async def run_async_migrations():
+    """In this scenario we need to create an Engine
     and associate a connection with the context.
     """
     env = create_env(
@@ -69,18 +74,21 @@ def run_migrations_online():
         gn_environment=os.getenv("DINO_ENVIRONMENT"),
     )
 
-    connectable = create_engine(
+    connectable = create_async_engine(
         env.config.get("uri", domain="db"),
         poolclass=pool.NullPool,
     )
 
-    with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+    async with connectable.connect() as connection:
+        await connection.run_sync(do_run_migrations)
 
-        with context.begin_transaction():
-            context.run_migrations()
+    await connectable.dispose()
+
+
+def run_migrations_online():
+    """Run migrations in 'online' mode."""
+
+    asyncio.run(run_async_migrations())
 
 
 if context.is_offline_mode():
