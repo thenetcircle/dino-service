@@ -14,6 +14,7 @@ db:
     uri: "$DINO_DB_URI"
     user: "$DINO_DB_USERNAME"
     password: "$DINO_DB_PASSWORD"
+    pool_size: 500
 
 storage:
     host: "$DINO_STORAGE_HOSTS"
