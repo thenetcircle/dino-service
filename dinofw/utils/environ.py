@@ -89,13 +89,13 @@ def init_logging(gn_env: GNEnvironment) -> None:
     gn_env.capture_message = capture_msg_wrapper
 
 
-def init_database(gn_env):
+async def init_database(gn_env):
     if len(gn_env.config) == 0 or gn_env.config.get(ConfigKeys.TESTING, False):
         # assume we're testing
         return
 
     from dinofw.db.rdbms.database import init_db as init_sql_alchemy
-    init_sql_alchemy(gn_env)
+    await init_sql_alchemy(gn_env)
 
     from dinofw.db.rdbms.handler import RelationalHandler
     gn_env.db = RelationalHandler(gn_env)
@@ -217,7 +217,7 @@ def init_producer(gn_env: GNEnvironment) -> None:
     gn_env.server_publisher = KafkaPublishHandler(gn_env)
 
 
-def initialize_env(dino_env):
+async def initialize_env(dino_env):
     is_deleter_service = os.getenv("DINO_DELETER") is not None
 
     # chat and messenger uses the same mqtt topic but different secret files
@@ -226,7 +226,7 @@ def initialize_env(dino_env):
         dino_env.config.set(ConfigKeys.ENVIRONMENT, env_override)
 
     init_logging(dino_env)
-    init_database(dino_env)
+    await init_database(dino_env)
     init_cassandra(dino_env)
     init_cache_service(dino_env)
 
@@ -241,5 +241,7 @@ gn_environment = os.getenv(ENV_KEY_ENVIRONMENT)
 
 env = create_env(gn_environment)
 
-if not env.config.get(ConfigKeys.TESTING, False) and os.getenv(ConfigKeys.TESTING, "0") != "1":
-    initialize_env(env)
+
+async def startup():
+    if not env.config.get(ConfigKeys.TESTING, False) and os.getenv(ConfigKeys.TESTING, "0") != "1":
+        await initialize_env(env)

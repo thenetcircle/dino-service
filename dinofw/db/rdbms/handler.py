@@ -15,7 +15,7 @@ from sqlalchemy import distinct
 from sqlalchemy import or_
 from sqlalchemy import and_
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import load_only
 
 from dinofw.db.rdbms.handler_stats import UpdateUserGroupStatsHandler
@@ -40,7 +40,7 @@ from dinofw.utils import utcnow_ts
 from dinofw.utils.config import GroupTypes, ConfigKeys, GroupStatus
 from dinofw.utils.exceptions import NoSuchGroupException, NoSuchUserException, UserStatsOrGroupAlreadyCreated
 from dinofw.utils.exceptions import UserNotInGroupException
-from dinofw.utils.perf import time_method
+from dinofw.utils.perf import time_coroutine
 
 
 class RelationalHandler:
@@ -63,18 +63,19 @@ class RelationalHandler:
             default=500
         )))
 
-    def get_public_group_ids(self, db: Session) -> List[str]:
-        groups = (
-            db.query(GroupEntity.group_id)
+    async def get_public_group_ids(self, db: AsyncSession) -> List[str]:
+
+        groups = await db.run_sync(lambda _db: (
+            _db.query(GroupEntity.group_id)
             .filter(
                 GroupEntity.group_type == GroupTypes.PUBLIC_ROOM
             )
             .all()
-        )
+        ))
 
         return [group[0] for group in groups]
 
-    def get_public_groups(self, query: PublicGroupQuery, db: Session) -> List[GroupBase]:
+    async def get_public_groups(self, query: PublicGroupQuery, db: AsyncSession) -> List[GroupBase]:
         # TODO: check this, why cache group ids and do IN query? just use group types?
         """
         public_group_ids = self.env.cache.get_public_group_ids()
@@ -85,8 +86,8 @@ class RelationalHandler:
                 self.env.cache.add_public_group_ids(group_ids)
         """
 
-        statement = (
-            db.query(GroupEntity)
+        statement = await db.run_sync(lambda _db:
+            _db.query(GroupEntity)
             .filter(
                 # GroupEntity.group_id.in_(public_group_ids)
                 GroupEntity.group_type.in_(GroupTypes.public_group_types),
@@ -96,12 +97,14 @@ class RelationalHandler:
 
         # "rooms my friends are in"
         if query.users and len(query.users):
-            statement = statement.join(
-                UserGroupStatsEntity,
-                UserGroupStatsEntity.group_id == GroupEntity.group_id,
-            ).filter(
-                UserGroupStatsEntity.user_id.in_(query.users)
-            ).distinct()  # TODO: test distinct
+            statement = await db.run_sync(lambda _db:
+                statement.join(
+                    UserGroupStatsEntity,
+                    UserGroupStatsEntity.group_id == GroupEntity.group_id,
+                ).filter(
+                    UserGroupStatsEntity.user_id.in_(query.users)
+                ).distinct()
+            )  # TODO: test distinct
 
         if query.spoken_languages is not None and len(query.spoken_languages):
             spoken_languages = [
@@ -121,25 +124,25 @@ class RelationalHandler:
                 GroupEntity.status != GroupStatus.ARCHIVED
             )
 
-        group_entities = statement.all()
+        group_entities = await db.run_sync(lambda _db: statement.all())
 
         return [
             GroupBase(**group_entity.__dict__)
             for group_entity in group_entities
         ]
 
-    def get_users_in_group(
+    async def get_users_in_group(
             self,
             group_id: str,
-            db: Session,
+            db: AsyncSession,
             include_group: bool = True
     ) -> (Optional[GroupBase], Optional[Dict[int, float]], Optional[int]):
         group = None
 
         # not always needed
         if include_group:
-            group_entity = (
-                db.query(GroupEntity)
+            group_entity = await db.run_sync(lambda _db:
+                _db.query(GroupEntity)
                 .filter(GroupEntity.group_id == group_id)
                 .first()
             )
@@ -148,18 +151,18 @@ class RelationalHandler:
                 raise NoSuchGroupException(group_id)
             group = GroupBase(**group_entity.__dict__)
 
-        users_and_join_time = self.get_user_ids_and_join_time_in_group(group_id, db)
+        users_and_join_time = await self.get_user_ids_and_join_time_in_group(group_id, db)
         user_count = len(users_and_join_time)
 
         return group, users_and_join_time, user_count
 
-    def get_last_sent_for_user(self, user_id: int, db: Session) -> (str, float):
-        group_id, last_sent = self.env.cache.get_last_sent_for_user(user_id)
+    async def get_last_sent_for_user(self, user_id: int, db: AsyncSession) -> (str, float):
+        group_id, last_sent = await self.env.cache.get_last_sent_for_user(user_id)
         if group_id is not None:
             return group_id, last_sent
 
-        group_id_and_last_sent = (
-            db.query(
+        group_id_and_last_sent = await db.run_sync(lambda _db:
+            _db.query(
                 UserGroupStatsEntity.group_id,
                 UserGroupStatsEntity.last_sent
             )
@@ -174,17 +177,17 @@ class RelationalHandler:
 
         group_id, last_sent = group_id_and_last_sent
         last_sent = to_ts(last_sent)
-        self.env.cache.set_last_sent_for_user(user_id, group_id, last_sent)
+        await self.env.cache.set_last_sent_for_user(user_id, group_id, last_sent)
 
         return group_id, last_sent
 
     # noinspection PyMethodMayBeStatic
-    def get_group_id_type_join_time_for_user(self, user_id: int, db: Session) -> List[Tuple[str, int, dt]]:
+    async def get_group_id_type_join_time_for_user(self, user_id: int, db: AsyncSession) -> List[Tuple[str, int, dt]]:
         """
         No restrictions. Used for data exports. Only called internally.
         """
-        groups = (
-            db.query(
+        groups = await db.run_sync(lambda _db:
+            _db.query(
                 GroupEntity.group_id,
                 GroupEntity.group_type,
                 UserGroupStatsEntity.join_time
@@ -202,9 +205,9 @@ class RelationalHandler:
         return groups
 
     # noinspection PyMethodMayBeStatic
-    def get_group_ids_and_created_at_for_user(self, user_id: int, db: Session) -> List[Tuple[str, dt]]:
-        groups = (
-            db.query(
+    async def get_group_ids_and_created_at_for_user(self, user_id: int, db: AsyncSession) -> List[Tuple[str, dt]]:
+        groups = await db.run_sync(lambda _db:
+            _db.query(
                 GroupEntity.group_id,
                 GroupEntity.created_at,
             )
@@ -220,11 +223,11 @@ class RelationalHandler:
 
         return groups
 
-    def get_groups_for_user(
+    async def get_groups_for_user(
         self,
         user_id: int,
         query: GroupQuery,
-        db: Session
+        db: AsyncSession
     ) -> List[UserGroupBase]:
         """
         what we're doing:
@@ -251,12 +254,12 @@ class RelationalHandler:
             (u.unread_count > 0 or u.bookmark = true)
             ((u.last_read < g.last_message_time) or u.bookmark = true)
         """
-        @time_method(logger, "get_groups_for_user(): query groups")
-        def query_groups():
+        @time_coroutine(logger, "get_groups_for_user(): query groups")
+        async def query_groups():
             until = to_dt(query.until)
 
-            statement = (
-                db.query(
+            statement = await db.run_sync(lambda _db:
+                _db.query(
                     GroupEntity,
                     UserGroupStatsEntity
                 )
@@ -331,12 +334,12 @@ class RelationalHandler:
                 .limit(query.per_page)
             )
 
-            return statement.all()
+            return await db.run_sync(lambda _db: statement.all())
 
-        results = query_groups()
-        receiver_stats_base = self.get_receiver_stats(results, user_id, query.receiver_stats, db)
+        results = await query_groups()
+        receiver_stats_base = await self.get_receiver_stats(results, user_id, query.receiver_stats, db)
 
-        return self.format_group_stats_and_count_unread(
+        return await self.format_group_stats_and_count_unread(
             db,
             results,
             receiver_stats=receiver_stats_base,
@@ -344,7 +347,7 @@ class RelationalHandler:
             query=query
         )
 
-    def count_total_unread(self, user_id: int, db: Session) -> (int, List[str]):
+    async def count_total_unread(self, user_id: int, db: AsyncSession) -> (int, List[str]):
         """
         count all unread messages for a user, including bookmarked groups
 
@@ -375,8 +378,8 @@ class RelationalHandler:
                     mentions > 0
                 );
         """
-        unread_count = (
-            db.query(
+        unread_count = await db.run_sync(lambda _db:
+            _db.query(
                 func.coalesce(
                     func.sum(UserGroupStatsEntity.unread_count).filter(
                         UserGroupStatsEntity.bookmark.is_(False),
@@ -405,8 +408,8 @@ class RelationalHandler:
             .first()
         )
 
-        unread_group_ids = (
-            db.query(
+        unread_group_ids = await db.run_sync(lambda _db:
+            _db.query(
                 UserGroupStatsEntity
             )
             .filter(
@@ -442,11 +445,11 @@ class RelationalHandler:
 
         return unread_count[0], unread_group_ids
 
-    def get_groups_updated_since(
+    async def get_groups_updated_since(
         self,
         user_id: int,
         query: GroupUpdatesQuery,
-        db: Session,
+        db: AsyncSession,
         public_only: bool = False
     ):
         """
@@ -456,15 +459,15 @@ class RelationalHandler:
         filtering by "since" instead of "until", because for syncing we're paginating
         "forwards" instead of "backwards"
         """
-        @time_method(logger, "get_groups_updated_since(): query groups")
-        def query_groups():
+        @time_coroutine(logger, "get_groups_updated_since(): query groups")
+        async def query_groups():
             since = to_dt(query.since)
             until = None
             if query.until is not None and query.until > 0:
                 until = to_dt(query.until)
 
-            statement = (
-                db.query(GroupEntity, UserGroupStatsEntity)
+            statement = await db.run_sync(lambda _db:
+                _db.query(GroupEntity, UserGroupStatsEntity)
                 .filter(
                     GroupEntity.group_id == UserGroupStatsEntity.group_id,
                     UserGroupStatsEntity.user_id == user_id,
@@ -486,7 +489,7 @@ class RelationalHandler:
                     GroupEntity.group_type.in_(GroupTypes.private_group_types)
                 )
 
-            return (
+            return await db.run_sync(lambda _db:
                 statement.order_by(
                     UserGroupStatsEntity.pin.desc(),
                     func.greatest(
@@ -498,10 +501,10 @@ class RelationalHandler:
                 .all()
             )
 
-        results = query_groups()
-        receiver_stats = self.get_receiver_stats(results, user_id, query.receiver_stats, db)
+        results = await query_groups()
+        receiver_stats = await self.get_receiver_stats(results, user_id, query.receiver_stats, db)
 
-        return self.format_group_stats_and_count_unread(
+        return await self.format_group_stats_and_count_unread(
             db,
             results,
             receiver_stats=receiver_stats,
@@ -509,21 +512,21 @@ class RelationalHandler:
             query=query
         )
 
-    @time_method(logger, "get_receiver_stats()")
-    def get_receiver_stats(self, results, user_id, receiver_stats: bool, db: Session):
+    @time_coroutine(logger, "get_receiver_stats()")
+    async def get_receiver_stats(self, results, user_id, receiver_stats: bool, db: AsyncSession):
         if not receiver_stats:
             return list()
 
         group_ids = [g.group_id for g, _ in results if g.group_type == GroupTypes.ONE_TO_ONE]
         if len(group_ids):
-            return self.get_receiver_user_stats(group_ids, user_id, db)
+            return await self.get_receiver_user_stats(group_ids, user_id, db)
 
         return list()
 
     # noinspection PyMethodMayBeStatic
-    def get_receiver_user_stats(self, group_ids: List[str], user_id: int, db: Session):
-        return (
-            db.query(UserGroupStatsEntity)
+    async def get_receiver_user_stats(self, group_ids: List[str], user_id: int, db: AsyncSession):
+        return await db.run_sync(lambda _db:
+            _db.query(UserGroupStatsEntity)
             .filter(
                 UserGroupStatsEntity.group_id.in_(group_ids),
                 UserGroupStatsEntity.user_id != user_id,
@@ -531,10 +534,10 @@ class RelationalHandler:
             .all()
         )
 
-    @time_method(logger, "format_group_stats_and_count_unread()")
-    def format_group_stats_and_count_unread(
+    @time_coroutine(logger, "format_group_stats_and_count_unread()")
+    async def format_group_stats_and_count_unread(
         self,
-        db: Session,
+        db: AsyncSession,
         results: List[Tuple[GroupEntity, UserGroupStatsEntity]],
         receiver_stats: List[UserGroupStatsEntity],
         user_id: int,
@@ -569,7 +572,7 @@ class RelationalHandler:
             receivers[stat.group_id] = UserGroupStatsBase(**stat.__dict__)
 
         # batch all redis/db queries for join times
-        group_users_join_time = self.get_user_ids_and_join_time_in_groups(
+        group_users_join_time = await self.get_user_ids_and_join_time_in_groups(
             [group.group_id for group, user_stats in results],
             db
         )
@@ -599,10 +602,10 @@ class RelationalHandler:
 
         return groups
 
-    def update_group_new_message(
+    async def update_group_new_message(
         self,
         message: MessageBase,
-        db: Session,
+        db: AsyncSession,
         sender_user_id: int,
         update_unread_count: bool = True,
         update_last_message: bool = True,
@@ -610,8 +613,8 @@ class RelationalHandler:
         unhide_group: bool = True,
         mentions: List[int] = None
     ) -> GroupBase:
-        group = (
-            db.query(GroupEntity)
+        group = await db.run_sync(lambda _db:
+            _db.query(GroupEntity)
             .filter(GroupEntity.group_id == message.group_id)
             .first()
         )
@@ -624,8 +627,8 @@ class RelationalHandler:
         if update_unread_count:
             # if a group is hidden, it might have unread messages when it was hidden, so we have
             # to query for it and restore the original amount plus one (this message)
-            receivers_in_group = (
-                db.query(UserGroupStatsEntity)
+            receivers_in_group = await db.run_sync(lambda _db:
+                _db.query(UserGroupStatsEntity)
                 .filter(
                     UserGroupStatsEntity.group_id == message.group_id,
                     UserGroupStatsEntity.user_id != sender_user_id,
@@ -649,9 +652,9 @@ class RelationalHandler:
                 if user.notifications
             }
 
-            with self.env.cache.pipeline() as p:
+            async with self.env.cache.pipeline() as p:
                 # for knowing if we need to send read-receipts when user opens a conversation
-                self.env.cache.set_last_message_time_in_group(
+                await self.env.cache.set_last_message_time_in_group(
                     message.group_id,
                     to_ts(sent_time),
                     pipeline=p
@@ -665,20 +668,20 @@ class RelationalHandler:
                             continue
 
                         amount = user_to_hidden_stats[user_id].unread_count + 1
-                        self.env.cache.increase_total_unread_message_count([user_id], amount, pipeline=p)
+                        await self.env.cache.increase_total_unread_message_count([user_id], amount, pipeline=p)
                 else:
                     # update total unread count for all users that have notifications enabled
-                    self.env.cache.increase_total_unread_message_count(user_ids_with_notification_on, 1, pipeline=p)
+                    await self.env.cache.increase_total_unread_message_count(user_ids_with_notification_on, 1, pipeline=p)
 
                 # unread in THIS group should increase whether notifications are on or off
-                self.env.cache.increase_unread_in_group_for(message.group_id, non_sender_user_ids, pipeline=p)
-                self.env.cache.add_unread_group(non_sender_user_ids, message.group_id, pipeline=p)
+                await self.env.cache.increase_unread_in_group_for(message.group_id, non_sender_user_ids, pipeline=p)
+                await self.env.cache.add_unread_group(non_sender_user_ids, message.group_id, pipeline=p)
 
                 # if notifications are disabled BUT the user was mentioned, increase the total unread count anyway
                 if mentions and len(mentions):
                     for mention_user_id in mentions:
                         if mention_user_id not in user_ids_with_notification_on:
-                            self.env.cache.increase_total_unread_message_count([mention_user_id], 1, pipeline=p)
+                            await self.env.cache.increase_total_unread_message_count([mention_user_id], 1, pipeline=p)
 
         # some action logs don't need to update last message
         if update_last_message:
@@ -702,8 +705,8 @@ class RelationalHandler:
 
         # we have to count the number of mentions; it's reset when the user reads/opens the conversation
         if mentions and len(mentions):
-            _ = (
-                db.query(UserGroupStatsEntity)
+            await db.run_sync(lambda _db:
+                _db.query(UserGroupStatsEntity)
                 .filter(
                     UserGroupStatsEntity.group_id == group.group_id,
                     UserGroupStatsEntity.user_id.in_(mentions),
@@ -714,8 +717,8 @@ class RelationalHandler:
                 }, synchronize_session=False)
             )
 
-        statement = (
-            db.query(UserGroupStatsEntity)
+        statement = await db.run_sync(lambda _db:
+            _db.query(UserGroupStatsEntity)
             .filter(
                 UserGroupStatsEntity.group_id == group.group_id,
                 UserGroupStatsEntity.user_id != sender_user_id,
@@ -725,24 +728,24 @@ class RelationalHandler:
 
         # when creating action logs, we want to sync changes to apps, but not necessarily un-hide a group
         if update_unread_count:
-            statement.update({
+            await db.run_sync(lambda _db: statement.update({
                 UserGroupStatsEntity.last_updated_time: sent_time,
                 UserGroupStatsEntity.unread_count: UserGroupStatsEntity.unread_count + 1,
                 UserGroupStatsEntity.deleted: False
-            })
+            }))
         else:
-            statement.update({
+            await db.run_sync(lambda _db: statement.update({
                 UserGroupStatsEntity.last_updated_time: sent_time,
-            })
+            }))
 
         if unhide_group:
-            self.env.cache.set_hide_group(group.group_id, False)
-            statement.update({
+            await self.env.cache.set_hide_group(group.group_id, False)
+            await db.run_sync(lambda _db: statement.update({
                 UserGroupStatsEntity.hide: False
-            })
+            }))
 
         # update 'sent_message_count' in cache
-        previous_sent_count = self._get_then_update_sent_count(message.group_id, sender_user_id, db)
+        previous_sent_count = await self._get_then_update_sent_count(message.group_id, sender_user_id, db)
 
         # previously we increase unread for all; now set to 0 for the sender, since
         # it won't be unread for him/her
@@ -750,54 +753,54 @@ class RelationalHandler:
         # also only update 'sent_message_count' if it's been previously counted using
         # the /count api (-1 means it has not been counted in cassandra yet)
         if previous_sent_count == -1:
-            db.query(UserGroupStatsEntity).filter(
+            await db.run_sync(lambda _db: _db.query(UserGroupStatsEntity).filter(
                 UserGroupStatsEntity.group_id == message.group_id,
                 UserGroupStatsEntity.user_id == sender_user_id
             ).update({
                 UserGroupStatsEntity.unread_count: 0
-            })
+            }))
         else:
-            db.query(UserGroupStatsEntity).filter(
+            await db.run_sync(lambda _db: _db.query(UserGroupStatsEntity).filter(
                 UserGroupStatsEntity.group_id == message.group_id,
                 UserGroupStatsEntity.user_id == sender_user_id
             ).update({
                 UserGroupStatsEntity.unread_count: 0,
                 UserGroupStatsEntity.sent_message_count: previous_sent_count + 1
-            })
+            }))
 
         group_base = GroupBase(**group.__dict__)
 
         db.add(group)
-        db.commit()
+        await db.commit()
 
         return group_base
 
-    def _get_then_update_sent_count(self, group_id, user_id, db):
-        def update_cache_value(_sent_count):
+    async def _get_then_update_sent_count(self, group_id, user_id, db):
+        async def update_cache_value(_sent_count):
             # the db default value is -1, so even if it's -1, set it in the cache so that we
             # don't have to check the db for every new message
             if sent_count == -1:
-                self.env.cache.set_sent_message_count_in_group_for_user(group_id, user_id, sent_count)
+                await self.env.cache.set_sent_message_count_in_group_for_user(group_id, user_id, sent_count)
 
             # if it's been counted before, increase by one in cache since the user is now
             # sending a new message
             else:
-                self.env.cache.set_sent_message_count_in_group_for_user(group_id, user_id, sent_count + 1)
+                await self.env.cache.set_sent_message_count_in_group_for_user(group_id, user_id, sent_count + 1)
 
         # first check the cache
-        sent_count = self.env.cache.get_sent_message_count_in_group_for_user(group_id, user_id)
+        sent_count = await self.env.cache.get_sent_message_count_in_group_for_user(group_id, user_id)
 
         # count be -1, which means we've checked the db before, and it has not yet been
         # counted from cassandra, in which case we'll skip increasing the sent count for
         # this new message, since we don't know yet how many messages the user has sent
         # previously without counting in cassandra first
         if sent_count is not None:
-            update_cache_value(sent_count)
+            await update_cache_value(sent_count)
             return sent_count
 
         # then check the db
-        sent_count = (
-            db.query(UserGroupStatsEntity.sent_message_count)
+        sent_count = await db.run_sync(lambda _db:
+            _db.query(UserGroupStatsEntity.sent_message_count)
             .filter(UserGroupStatsEntity.group_id == group_id)
             .filter(UserGroupStatsEntity.user_id == user_id)
             .first()
@@ -808,16 +811,16 @@ class RelationalHandler:
         else:
             sent_count = sent_count[0]
 
-        update_cache_value(sent_count)
+        await update_cache_value(sent_count)
         return sent_count
 
-    def get_last_read_for_user(self, group_id: str, user_id: int, db: Session) -> Dict[int, float]:
-        last_read = self.env.cache.get_last_read_in_group_for_user(group_id, user_id)
+    async def get_last_read_for_user(self, group_id: str, user_id: int, db: AsyncSession) -> Dict[int, float]:
+        last_read = await self.env.cache.get_last_read_in_group_for_user(group_id, user_id)
         if last_read is not None:
             return {user_id: last_read}
 
-        last_reads = (
-            db.query(
+        last_reads = await db.run_sync(lambda _db:
+            _db.query(
                 UserGroupStatsEntity.last_read
             )
             .filter(
@@ -833,15 +836,15 @@ class RelationalHandler:
             )
 
         last_read = to_ts(last_reads[0])
-        self.env.cache.set_last_read_in_group_for_user(group_id, user_id, last_read)
+        await self.env.cache.set_last_read_in_group_for_user(group_id, user_id, last_read)
 
         return {user_id: last_read}
 
-    def remove_user_stats_for_offline_users(self, user_ids: List[int], db: Session) -> None:
+    async def remove_user_stats_for_offline_users(self, user_ids: List[int], db: AsyncSession) -> None:
         logger.info("removing user stats for users (went offline): {user_ids}")
 
-        groups = (
-            db.query(
+        groups = await db.run_sync(lambda _db:
+            _db.query(
                 GroupEntity.group_id,
                 GroupEntity.group_type,
                 UserGroupStatsEntity.user_id
@@ -868,26 +871,26 @@ class RelationalHandler:
             group_id_to_type = user_to_group_and_type.get(user_id, dict())
             group_ids = list(group_id_to_type.keys())
 
-            self.copy_to_deleted_groups_table(group_id_to_type, user_id, db, skip_public=False)
-            self.remove_user_group_stats_for_user(group_ids, user_id, db)
-            self.env.cache.reset_count_group_types_for_user(user_id)
+            await self.copy_to_deleted_groups_table(group_id_to_type, user_id, db, skip_public=False)
+            await self.remove_user_group_stats_for_user(group_ids, user_id, db)
+            await self.env.cache.reset_count_group_types_for_user(user_id)
 
 
-    def get_online_users(self, db: Session) -> List[int]:
+    async def get_online_users(self, db: AsyncSession) -> List[int]:
         # don't actually expire the online list, since that one is
         # used in other places to check individual users
-        expired = self.env.cache.get_online_users_ttl_expired()
+        expired = await self.env.cache.get_online_users_ttl_expired()
 
         if not expired:
-            online = self.env.cache.get_online_users()
+            online = await self.env.cache.get_online_users()
             if online is not None and len(online):
                 return online
 
         # also sync with the users in the db, since those are the ones that will be shown as dangling
         # if we miss them when syncing from the offline detector; this API is also only called once
         # every 5min or so, so it's not a big deal to have a big select query for it
-        online = (
-            db.query(UserGroupStatsEntity.user_id)
+        online = await db.run_sync(lambda _db:
+            _db.query(UserGroupStatsEntity.user_id)
             .filter(UserGroupStatsEntity.kicked.is_(False))
             .all()
         )
@@ -897,16 +900,16 @@ class RelationalHandler:
         else:
             online = list()
 
-        self.env.cache.set_online_users_only(online)
+        await self.env.cache.set_online_users_only(online)
         return online
 
-    def get_last_reads_in_group(self, group_id: str, db: Session) -> Dict[int, float]:
-        users = self.env.cache.get_last_read_times_in_group(group_id)
+    async def get_last_reads_in_group(self, group_id: str, db: AsyncSession) -> Dict[int, float]:
+        users = await self.env.cache.get_last_read_times_in_group(group_id)
         if users is not None:
             return users
 
-        users = (
-            db.query(
+        users = await db.run_sync(lambda _db:
+            _db.query(
                 UserGroupStatsEntity.user_id,
                 UserGroupStatsEntity.last_read
             )
@@ -918,13 +921,13 @@ class RelationalHandler:
             return dict()
 
         user_ids_last_read = {user[0]: to_ts(user[1]) for user in users}
-        self.env.cache.set_last_read_in_group_for_users(group_id, user_ids_last_read)
+        await self.env.cache.set_last_read_in_group_for_users(group_id, user_ids_last_read)
 
         return user_ids_last_read
 
-    def get_deleted_groups_for_user(self, user_id: int, db: Session) -> List[DeletedStatsBase]:
-        deleted_stats = (
-            db.query(
+    async def get_deleted_groups_for_user(self, user_id: int, db: AsyncSession) -> List[DeletedStatsBase]:
+        deleted_stats = await db.run_sync(lambda _db:
+            _db.query(
                 DeletedStatsEntity
             )
             .filter(
@@ -938,9 +941,9 @@ class RelationalHandler:
             for deleted_stats_entity in deleted_stats
         ]
 
-    def get_group_types(self, group_ids: List[str], db: Session) -> Dict[str, int]:
-        group_types = (
-            db.query(
+    async def get_group_types(self, group_ids: List[str], db: AsyncSession) -> Dict[str, int]:
+        group_types = await db.run_sync(lambda _db:
+            _db.query(
                 GroupEntity.group_id,
                 GroupEntity.group_type
             )
@@ -953,8 +956,8 @@ class RelationalHandler:
             for group_id, group_type in group_types
         }
 
-    def copy_to_deleted_groups_table(
-        self, group_id_to_type: Dict[str, int], user_id: int, db: Session, skip_public: bool = True
+    async def copy_to_deleted_groups_table(
+        self, group_id_to_type: Dict[str, int], user_id: int, db: AsyncSession, skip_public: bool = True
     ) -> None:
         if skip_public:
             # don't create deletion records for public groups, users will join and leave them all the time
@@ -965,8 +968,8 @@ class RelationalHandler:
         else:
             group_ids = list(group_id_to_type.keys())
 
-        groups_to_copy = (
-            db.query(
+        groups_to_copy = await db.run_sync(lambda _db:
+            _db.query(
                 UserGroupStatsEntity.group_id,
                 UserGroupStatsEntity.join_time
             )
@@ -990,18 +993,18 @@ class RelationalHandler:
             )
             db.add(deleted_entity)
 
-        db.commit()
+        await db.commit()
 
-    def remove_user_group_stats_for_user(
-        self, group_ids: List[str], user_id: int, db: Session
+    async def remove_user_group_stats_for_user(
+        self, group_ids: List[str], user_id: int, db: AsyncSession
     ) -> None:
         """
         called when a user leaves a group
         """
         """
         # need to count how much to decrease the cached total unread count with
-        unread_count = (
-            db.query(
+        unread_count = await db.run_sync(lambda _db:
+            _db.query(
                 func.sum(UserGroupStatsEntity.unread_count).filter(UserGroupStatsEntity.bookmark.is_(False)) +
                 func.count(1).filter(UserGroupStatsEntity.bookmark.is_(True))
             )
@@ -1028,18 +1031,18 @@ class RelationalHandler:
             self.env.cache.decrease_total_unread_message_count(user_id, unread_count)
         """
 
-        with self.env.cache.pipeline() as p:
+        async with self.env.cache.pipeline() as p:
             for group_id in group_ids:
-                self.env.cache.remove_unread_group(user_id, group_id, pipeline=p)
+                await self.env.cache.remove_unread_group(user_id, group_id, pipeline=p)
 
-            self.env.cache.reset_total_unread_message_count(user_id, pipeline=p)  # TODO: decreasing seems buggy, sometimes gets negative, so just reset instead
-            self.env.cache.remove_last_read_in_group_for_user(group_ids, user_id, pipeline=p)
-            self.env.cache.remove_join_time_in_group_for_user(group_ids, user_id, pipeline=p)
-            self.env.cache.remove_user_id_and_join_time_in_groups_for_user(group_ids, user_id, pipeline=p)
+            await self.env.cache.reset_total_unread_message_count(user_id, pipeline=p)  # TODO: decreasing seems buggy, sometimes gets negative, so just reset instead
+            await self.env.cache.remove_last_read_in_group_for_user(group_ids, user_id, pipeline=p)
+            await self.env.cache.remove_join_time_in_group_for_user(group_ids, user_id, pipeline=p)
+            await self.env.cache.remove_user_id_and_join_time_in_groups_for_user(group_ids, user_id, pipeline=p)
 
         # delete the stats for this user in these groups
-        _ = (
-            db.query(UserGroupStatsEntity)
+        await db.run_sync(lambda _db:
+            _db.query(UserGroupStatsEntity)
             .filter(
                 UserGroupStatsEntity.group_id.in_(group_ids),
                 UserGroupStatsEntity.user_id == user_id
@@ -1048,8 +1051,8 @@ class RelationalHandler:
         )
 
         # reset owner if the user is one
-        _ = (
-            db.query(GroupEntity)
+        await db.run_sync(lambda _db:
+            _db.query(GroupEntity)
             .filter(
                 GroupEntity.group_id.in_(group_ids),
                 GroupEntity.owner_id == user_id
@@ -1059,11 +1062,11 @@ class RelationalHandler:
             }, synchronize_session=False)
         )
 
-        db.commit()
+        await db.commit()
 
-    def get_groups_without_users(self, db: Session) -> List[GroupBase]:
-        groups = (
-            db.query(GroupEntity)
+    async def get_groups_without_users(self, db: AsyncSession) -> List[GroupBase]:
+        groups = await db.run_sync(lambda _db:
+            _db.query(GroupEntity)
             .outerjoin(
                 UserGroupStatsEntity,
                 UserGroupStatsEntity.group_id == GroupEntity.group_id,
@@ -1080,9 +1083,9 @@ class RelationalHandler:
             for group_entity in groups
         ]
 
-    def get_existing_user_ids_out_of(self, user_ids: List[int], db: Session):
-        users = (
-            db.query(distinct(UserGroupStatsEntity.user_id))
+    async def get_existing_user_ids_out_of(self, user_ids: List[int], db: AsyncSession):
+        users = await db.run_sync(lambda _db:
+            _db.query(distinct(UserGroupStatsEntity.user_id))
             .filter(UserGroupStatsEntity.user_id.in_(user_ids))
             .all()
         )
@@ -1092,7 +1095,7 @@ class RelationalHandler:
 
         return {user[0] for user in users}
 
-    def create_stats_for(self, stats: List[UserGroupStatsBase], db: Session, dry: bool) -> None:
+    async def create_stats_for(self, stats: List[UserGroupStatsBase], db: AsyncSession, dry: bool) -> None:
         """
         used for restoring stats when they've been incorrectly deleted by users removing their profiles
         """
@@ -1118,15 +1121,15 @@ class RelationalHandler:
                 db.add(stat_entity)
 
         if not dry:
-            db.commit()
+            await db.commit()
 
-    def get_oldest_last_read_in_group(self, group_id: str, db: Session) -> Optional[float]:
-        last_read = self.env.cache.get_last_read_in_group_oldest(group_id)
+    async def get_oldest_last_read_in_group(self, group_id: str, db: AsyncSession) -> Optional[float]:
+        last_read = await self.env.cache.get_last_read_in_group_oldest(group_id)
         if last_read is not None:
             return last_read
 
-        last_read = (
-            db.query(
+        last_read = await db.run_sync(lambda _db:
+            _db.query(
                 func.min(UserGroupStatsEntity.last_read)
             )
             .filter(
@@ -1140,16 +1143,16 @@ class RelationalHandler:
             return
 
         last_read = to_ts(last_read[0])
-        self.env.cache.set_last_read_in_group_oldest(group_id, last_read)
+        await self.env.cache.set_last_read_in_group_oldest(group_id, last_read)
 
         return last_read
 
-    @time_method(logger, "get_last_read_in_group_for_users()")
-    def get_last_read_in_group_for_users(
-        self, group_id: str, user_ids: List[int], db: Session
+    @time_coroutine(logger, "get_last_read_in_group_for_users()")
+    async def get_last_read_in_group_for_users(
+        self, group_id: str, user_ids: List[int], db: AsyncSession
     ) -> Dict[int, float]:
         # TODO: remove this, not needed anymore
-        last_reads, not_cached = self.env.cache.get_last_read_in_group_for_users(
+        last_reads, not_cached = await self.env.cache.get_last_read_in_group_for_users(
             group_id, user_ids
         )
 
@@ -1157,8 +1160,8 @@ class RelationalHandler:
         if not len(not_cached):
             return last_reads
 
-        reads = (
-            db.query(UserGroupStatsEntity)
+        reads = await db.run_sync(lambda _db:
+            _db.query(UserGroupStatsEntity)
             .with_entities(
                 UserGroupStatsEntity.user_id,
                 UserGroupStatsEntity.last_read,
@@ -1174,20 +1177,20 @@ class RelationalHandler:
             last_read_float = to_ts(last_read)
             last_reads[user_id] = last_read_float
 
-        self.env.cache.set_last_read_in_group_for_users(
+        await self.env.cache.set_last_read_in_group_for_users(
             group_id, last_reads
         )
 
         return last_reads
 
     # noinspection PyMethodMayBeStatic
-    def get_all_group_ids_and_types_for_user(self, user_id: int, db: Session) -> Dict:
+    async def get_all_group_ids_and_types_for_user(self, user_id: int, db: AsyncSession) -> Dict:
         """
         used only when a user is deleting their profile, no need
         to cache it, shouldn't happen that often
         """
-        groups = (
-            db.query(
+        groups = await db.run_sync(lambda _db:
+            _db.query(
                 UserGroupStatsEntity.group_id,
                 GroupEntity.group_type
             )
@@ -1207,9 +1210,9 @@ class RelationalHandler:
         return {group[0]: group[1] for group in groups}
 
     # noinspection PyMethodMayBeStatic
-    def get_group_from_id(self, group_id: str, db: Session) -> GroupBase:
-        group = (
-            db.query(GroupEntity)
+    async def get_group_from_id(self, group_id: str, db: AsyncSession) -> GroupBase:
+        group = await db.run_sync(lambda _db:
+            _db.query(GroupEntity)
             .filter(
                 GroupEntity.group_id == group_id,
             )
@@ -1222,13 +1225,13 @@ class RelationalHandler:
         return GroupBase(**group.__dict__)
 
     # noinspection PyMethodMayBeStatic
-    def get_group_for_1to1(
-        self, user_a: int, user_b: int, db: Session
+    async def get_group_for_1to1(
+        self, user_a: int, user_b: int, db: AsyncSession
     ):
         group_id = users_to_group_id(user_a, user_b)
 
-        group = (
-            db.query(GroupEntity)
+        group = await db.run_sync(lambda _db:
+            _db.query(GroupEntity)
             .filter(
                 GroupEntity.group_type == GroupTypes.ONE_TO_ONE,
                 GroupEntity.group_id == group_id,
@@ -1241,7 +1244,7 @@ class RelationalHandler:
 
         return GroupBase(**group.__dict__)
 
-    def create_group_for_1to1(self, user_a: int, user_b: int, db: Session) -> GroupBase:
+    async def create_group_for_1to1(self, user_a: int, user_b: int, db: AsyncSession) -> GroupBase:
         users = sorted([user_a, user_b])
         group_name = ",".join([str(user_id) for user_id in users])
         now = utcnow_dt()
@@ -1250,11 +1253,11 @@ class RelationalHandler:
             group_name=group_name, group_type=GroupTypes.ONE_TO_ONE, users=users
         )
 
-        return self.create_group(user_a, query, now, db)
+        return await self.create_group(user_a, query, now, db)
 
-    def get_user_ids_and_join_time_in_groups(self, group_ids: List[str], db: Session) -> dict:
+    async def get_user_ids_and_join_time_in_groups(self, group_ids: List[str], db: AsyncSession) -> dict:
         group_and_users: Dict[str, Dict[int, float]] = \
-            self.env.cache.get_user_ids_and_join_time_in_groups(group_ids)
+            await self.env.cache.get_user_ids_and_join_time_in_groups(group_ids)
 
         if len(group_and_users) == len(group_ids):
             return group_and_users
@@ -1265,8 +1268,8 @@ class RelationalHandler:
             if group_id not in group_and_users.keys()
         ]
 
-        users = (
-            db.query(
+        users = await db.run_sync(lambda _db:
+            _db.query(
                 UserGroupStatsEntity.group_id,
                 UserGroupStatsEntity.user_id,
                 UserGroupStatsEntity.join_time,
@@ -1286,17 +1289,17 @@ class RelationalHandler:
                 group_and_users[group_id] = dict()
             group_and_users[group_id][user_id] = to_ts(join_time)
 
-        self.env.cache.set_user_ids_and_join_time_in_groups(group_and_users)
+        await self.env.cache.set_user_ids_and_join_time_in_groups(group_and_users)
         return group_and_users
 
-    def get_user_ids_and_join_time_in_group(self, group_id: str, db: Session) -> dict:
-        users = self.env.cache.get_user_ids_and_join_time_in_group(group_id)
+    async def get_user_ids_and_join_time_in_group(self, group_id: str, db: AsyncSession) -> dict:
+        users = await self.env.cache.get_user_ids_and_join_time_in_group(group_id)
 
         if users is not None:
             return users
 
-        users = (
-            db.query(
+        users = await db.run_sync(lambda _db:
+            _db.query(
                 UserGroupStatsEntity.user_id,
                 UserGroupStatsEntity.join_time,
             )
@@ -1311,14 +1314,14 @@ class RelationalHandler:
             return dict()
 
         user_ids_join_time = {user[0]: to_ts(user[1]) for user in users}
-        self.env.cache.set_user_ids_and_join_time_in_group(group_id, user_ids_join_time)
+        await self.env.cache.set_user_ids_and_join_time_in_group(group_id, user_ids_join_time)
 
         return user_ids_join_time
 
     # noinspection PyMethodMayBeStatic
-    def group_exists(self, group_id: str, db: Session) -> bool:
-        group = (
-            db.query(literal(True))
+    async def group_exists(self, group_id: str, db: AsyncSession) -> bool:
+        group = await db.run_sync(lambda _db:
+            _db.query(literal(True))
             .filter(GroupEntity.group_id == group_id)
             .first()
         )
@@ -1326,26 +1329,26 @@ class RelationalHandler:
         return group is not None
 
     # noinspection PyMethodMayBeStatic
-    def set_groups_updated_at(self, group_ids: List[str], now: dt, db: Session) -> None:
-        _ = (
-            db.query(GroupEntity)
+    async def set_groups_updated_at(self, group_ids: List[str], now: dt, db: AsyncSession) -> None:
+        await db.run_sync(lambda _db:
+            _db.query(GroupEntity)
             .filter(GroupEntity.group_id.in_(group_ids))
             .update(
                 {GroupEntity.updated_at: now},
                 synchronize_session='fetch'
             )
         )
-        db.commit()
+        await db.commit()
 
-    def update_user_stats_on_join_or_create_group(
-        self, group_id: str, users: Dict[int, float], now: dt, group_type: int, db: Session
+    async def update_user_stats_on_join_or_create_group(
+        self, group_id: str, users: Dict[int, float], now: dt, group_type: int, db: AsyncSession
     ) -> None:
         user_ids_for_cache = set()
         user_ids_to_stats = dict()
         user_ids = list(users.keys())
 
-        user_stats = (
-            db.query(UserGroupStatsEntity)
+        user_stats = await db.run_sync(lambda _db:
+            _db.query(UserGroupStatsEntity)
             .filter(UserGroupStatsEntity.user_id.in_(user_ids))
             .filter(UserGroupStatsEntity.group_id == group_id)
             .all()
@@ -1356,10 +1359,10 @@ class RelationalHandler:
 
         for user_id in user_ids:
             if user_id not in user_ids_to_stats:
-                self.env.cache.increase_count_group_types_for_user(user_id, GroupTypes.PRIVATE_GROUP)
+                await self.env.cache.increase_count_group_types_for_user(user_id, GroupTypes.PRIVATE_GROUP)
 
                 user_ids_for_cache.add(user_id)
-                user_ids_to_stats[user_id] = self._create_user_stats(
+                user_ids_to_stats[user_id] = await self._create_user_stats(
                     group_id=group_id,
                     user_id=user_id,
                     default_dt=now,
@@ -1376,28 +1379,31 @@ class RelationalHandler:
         if not len(user_ids_to_stats):
             return
 
-        db.commit()
+        await db.commit()
 
         now_ts = to_ts(now)
 
         join_times = {
-            user_id: to_ts(stats.join_time)
+            # actual query happens, similar github issue: https://github.com/sqlalchemy/sqlalchemy/discussions/8913
+            user_id: to_ts(await db.run_sync(lambda _db: stats.join_time))
             for user_id, stats in user_ids_to_stats.items()
         }
         read_times = {user_id: now_ts for user_id in user_ids}
 
-        self.env.cache.add_user_ids_and_join_time_in_group(group_id, join_times)
-        self.env.cache.set_last_read_in_group_for_users(group_id, read_times)
+        await self.env.cache.add_user_ids_and_join_time_in_group(group_id, join_times)
+        await self.env.cache.set_last_read_in_group_for_users(group_id, read_times)
 
-    def count_group_types_for_user(self, user_id: int, query: GroupQuery, db: Session) -> List[Tuple[int, int]]:
+    async def count_group_types_for_user(
+            self, user_id: int, query: GroupQuery, db: AsyncSession
+    ) -> List[Tuple[int, int]]:
         hidden = query.hidden
 
-        types = self.env.cache.get_count_group_types_for_user(user_id, hidden)
+        types = await self.env.cache.get_count_group_types_for_user(user_id, hidden)
         if types is not None:
             return types
 
-        statement = (
-            db.query(
+        statement = await db.run_sync(lambda _db:
+            _db.query(
                 GroupEntity.group_type,
                 func.count(GroupEntity.group_type),
             )
@@ -1417,7 +1423,7 @@ class RelationalHandler:
                 UserGroupStatsEntity.hide.is_(hidden)
             )
 
-        types = (
+        types = await db.run_sync(lambda _db:
             statement.group_by(
                 GroupEntity.group_type
             )
@@ -1438,16 +1444,16 @@ class RelationalHandler:
 
         # if hidden is None, we're counting for both types
         if query.hidden is not None:
-            self.env.cache.set_count_group_types_for_user(user_id, types, hidden)
+            await self.env.cache.set_count_group_types_for_user(user_id, types, hidden)
 
         return types
 
     # noinspection PyMethodMayBeStatic
-    def set_last_updated_at_on_all_stats_related_to_user(self, user_id: int, db: Session):
+    async def set_last_updated_at_on_all_stats_related_to_user(self, user_id: int, db: AsyncSession):
         now = utcnow_dt()
 
-        group_ids = (
-            db.query(UserGroupStatsEntity.group_id)
+        group_ids = await db.run_sync(lambda _db:
+            _db.query(UserGroupStatsEntity.group_id)
             .filter(
                 UserGroupStatsEntity.user_id == user_id
             )
@@ -1464,8 +1470,8 @@ class RelationalHandler:
 
         # some users have >10k conversations; split into chunks to not overload the db
         for group_id_chunk in split_into_chunks(group_ids, 500):
-            _ = (
-                db.query(UserGroupStatsEntity)
+            await db.run_sync(lambda _db:
+                _db.query(UserGroupStatsEntity)
                 .filter(
                     UserGroupStatsEntity.group_id.in_(group_id_chunk)
                 )
@@ -1475,7 +1481,7 @@ class RelationalHandler:
                 )
             )
 
-        db.commit()
+        await db.commit()
 
         if before is not None:
             the_time = utcnow_ts() - before
@@ -1484,23 +1490,23 @@ class RelationalHandler:
             logger.info(f"updating {len(group_ids)} user group stats took {the_time}s")
 
     # noinspection PyMethodMayBeStatic
-    def set_last_updated_at_for_all_in_group(self, group_id: str, db: Session):
+    async def set_last_updated_at_for_all_in_group(self, group_id: str, db: AsyncSession):
         now = utcnow_dt()
 
-        _ = (
-            db.query(UserGroupStatsEntity)
+        await db.run_sync(lambda _db:
+            _db.query(UserGroupStatsEntity)
             .filter(UserGroupStatsEntity.group_id == group_id)
             .update({UserGroupStatsEntity.last_updated_time: now})
         )
 
-        db.commit()
+        await db.commit()
 
     # noinspection PyMethodMayBeStatic
-    def update_group_information(
-        self, group_id: str, query: UpdateGroupQuery, db: Session
+    async def update_group_information(
+        self, group_id: str, query: UpdateGroupQuery, db: AsyncSession
     ) -> Optional[GroupBase]:
-        group_entity = (
-            db.query(GroupEntity)
+        group_entity = await db.run_sync(lambda _db:
+            _db.query(GroupEntity)
             .filter(GroupEntity.group_id == group_id)
             .first()
         )
@@ -1514,7 +1520,7 @@ class RelationalHandler:
         if query.status is not None:
             group_entity.status_changed_at = now
             group_entity.status = query.status
-            self.env.cache.set_group_status(group_id, query.status)
+            await self.env.cache.set_group_status(group_id, query.status)
 
         if query.group_name is not None:
             group_entity.name = query.group_name
@@ -1530,29 +1536,30 @@ class RelationalHandler:
         base = GroupBase(**group_entity.__dict__)
 
         db.add(group_entity)
-        db.commit()
+        await db.commit()
 
         # need to query users after committing the previous transaction
         if query.status is not None and query.status == GroupStatus.DELETED:
-            user_ids = (
-                db.query(UserGroupStatsEntity.user_id)
+            user_ids = await db.run_sync(lambda _db:
+                _db.query(UserGroupStatsEntity.user_id)
                 .filter(UserGroupStatsEntity.group_id == group_id)
                 .all()
             )
             user_ids = [user_id[0] for user_id in user_ids]
-            group_id_to_type = {group_id: group_entity.group_type}
+            # actual query happens, similar github issue: https://github.com/sqlalchemy/sqlalchemy/discussions/8913
+            group_id_to_type = {group_id: await db.run_sync(lambda _db: group_entity.group_type)}
             group_ids = [group_id]
 
             # deleting a group doesn't happen often, so it's okay we loop here
             for user_id in user_ids:
-                self.copy_to_deleted_groups_table(group_id_to_type, user_id, db, skip_public=False)
-                self.remove_user_group_stats_for_user(group_ids, user_id, db)
-                self.env.cache.reset_count_group_types_for_user(user_id)
+                await self.copy_to_deleted_groups_table(group_id_to_type, user_id, db, skip_public=False)
+                await self.remove_user_group_stats_for_user(group_ids, user_id, db)
+                await self.env.cache.reset_count_group_types_for_user(user_id)
 
         return base
 
-    def get_user_ids_in_groups(self, group_ids: List[str], db: Session) -> Dict[str, List[int]]:
-        group_user_join_time = self.get_user_ids_and_join_time_in_groups(group_ids, db)
+    async def get_user_ids_in_groups(self, group_ids: List[str], db: AsyncSession) -> Dict[str, List[int]]:
+        group_user_join_time = await self.get_user_ids_and_join_time_in_groups(group_ids, db)
         group_to_users = dict()
 
         for group_id, user_join_time in group_user_join_time.items():
@@ -1560,9 +1567,9 @@ class RelationalHandler:
 
         return group_to_users
 
-    def mark_all_groups_as_read(self, user_id: int, db: Session) -> List[str]:
-        group_ids = (
-            db.query(UserGroupStatsEntity.group_id)
+    async def mark_all_groups_as_read(self, user_id: int, db: AsyncSession) -> List[str]:
+        group_ids = await db.run_sync(lambda _db:
+            _db.query(UserGroupStatsEntity.group_id)
             .join(
                 GroupEntity,
                 GroupEntity.group_id == UserGroupStatsEntity.group_id
@@ -1579,7 +1586,7 @@ class RelationalHandler:
             .all()
         )
 
-        self.env.cache.reset_total_unread_message_count(user_id)
+        await self.env.cache.reset_total_unread_message_count(user_id)
 
         # sqlalchemy returns a list of tuples: [(group_id1,), (group_id2,), ...]
         group_ids = [group_id[0] for group_id in group_ids]
@@ -1588,11 +1595,11 @@ class RelationalHandler:
 
         # some users have >10k conversations; split into chunks to not overload the db
         for group_id_chunk in split_into_chunks(group_ids, 500):
-            self.env.cache.reset_unread_in_groups(user_id, group_id_chunk)
-            self.env.cache.set_last_read_in_groups_for_user(group_ids, user_id, to_ts(now))
+            await self.env.cache.reset_unread_in_groups(user_id, group_id_chunk)
+            await self.env.cache.set_last_read_in_groups_for_user(group_ids, user_id, to_ts(now))
 
-            _ = (
-                db.query(UserGroupStatsEntity)
+            await db.run_sync(lambda _db:
+                _db.query(UserGroupStatsEntity)
                 .filter(
                     UserGroupStatsEntity.group_id.in_(group_id_chunk),
                     UserGroupStatsEntity.user_id == user_id
@@ -1611,8 +1618,8 @@ class RelationalHandler:
             )
 
             # need to reset the highlight time on the other user's stats too
-            _ = (
-                db.query(UserGroupStatsEntity)
+            await db.run_sync(lambda _db:
+                _db.query(UserGroupStatsEntity)
                 .filter(
                     UserGroupStatsEntity.group_id.in_(group_id_chunk),
                     UserGroupStatsEntity.user_id != user_id,
@@ -1626,16 +1633,16 @@ class RelationalHandler:
                 )
             )
 
-        db.commit()
+        await db.commit()
 
         return group_ids
 
     # noinspection PyMethodMayBeStatic
-    def get_all_user_stats_in_group(
-            self, group_id: str, db: Session, include_kicked: bool = True
+    async def get_all_user_stats_in_group(
+            self, group_id: str, db: AsyncSession, include_kicked: bool = True
     ) -> List[UserGroupStatsBase]:
-        statement = (
-            db.query(UserGroupStatsEntity)
+        statement = await db.run_sync(lambda _db:
+            _db.query(UserGroupStatsEntity)
             .filter(UserGroupStatsEntity.group_id == group_id)
         )
 
@@ -1644,7 +1651,7 @@ class RelationalHandler:
                 UserGroupStatsEntity.kicked.is_(False)
             )
 
-        user_stats = statement.all()
+        user_stats = await db.run_sync(lambda _db: statement.all())
 
         if user_stats is None:
             raise NoSuchGroupException(f"no users in group {group_id} (include_kicked? {include_kicked})")
@@ -1654,43 +1661,43 @@ class RelationalHandler:
             for user_stat in user_stats
         ]
 
-    def get_sent_message_count(self, group_id: str, user_id: int, db: Session) -> Optional[int]:
-        sent = self.env.cache.get_sent_message_count_in_group_for_user(group_id, user_id)
+    async def get_sent_message_count(self, group_id: str, user_id: int, db: AsyncSession) -> Optional[int]:
+        sent = await self.env.cache.get_sent_message_count_in_group_for_user(group_id, user_id)
         if sent is not None:
             return sent
 
-        sent = (
-            db.query(UserGroupStatsEntity.sent_message_count)
+        sent = (await db.run_sync(lambda _db:
+            _db.query(UserGroupStatsEntity.sent_message_count)
             .filter(UserGroupStatsEntity.group_id == group_id)
             .filter(UserGroupStatsEntity.user_id == user_id)
             .first()
-        )[0]
+        ))[0]
 
         if sent == -1:
             return None
 
-        self.env.cache.set_sent_message_count_in_group_for_user(group_id, user_id, sent)
+        await self.env.cache.set_sent_message_count_in_group_for_user(group_id, user_id, sent)
         return sent
 
-    def set_sent_message_count(self, group_id, user_id, message_count, db) -> None:
-        self.env.cache.set_sent_message_count_in_group_for_user(group_id, user_id, message_count)
+    async def set_sent_message_count(self, group_id, user_id, message_count, db) -> None:
+        await self.env.cache.set_sent_message_count_in_group_for_user(group_id, user_id, message_count)
 
-        _ = (
-            db.query(UserGroupStatsEntity)
+        await db.run_sync(lambda _db:
+            _db.query(UserGroupStatsEntity)
             .filter(UserGroupStatsEntity.group_id == group_id)
             .filter(UserGroupStatsEntity.user_id == user_id)
             .update({UserGroupStatsEntity.sent_message_count: message_count})
         )
 
-        db.commit()
+        await db.commit()
 
-    def get_group_status(self, group_id: str, db: Session) -> Optional[int]:
-        group_status = self.env.cache.get_group_status(group_id)
+    async def get_group_status(self, group_id: str, db: AsyncSession) -> Optional[int]:
+        group_status = await self.env.cache.get_group_status(group_id)
         if group_status is not None:
             return group_status
 
-        group = (
-            db.query(GroupEntity)
+        group = await db.run_sync(lambda _db:
+            _db.query(GroupEntity)
             .filter(GroupEntity.group_id == group_id)
             .first()
         )
@@ -1703,15 +1710,15 @@ class RelationalHandler:
         if status is None:
             status = 0
 
-        self.env.cache.set_group_status(group_id, status)
+        await self.env.cache.set_group_status(group_id, status)
         return group.status
 
     # noinspection PyMethodMayBeStatic
-    def get_user_stats_in_group(
-        self, group_id: str, user_id: int, db: Session
+    async def get_user_stats_in_group(
+        self, group_id: str, user_id: int, db: AsyncSession
     ) -> Optional[UserGroupStatsBase]:
-        user_stats = (
-            db.query(UserGroupStatsEntity)
+        user_stats = await db.run_sync(lambda _db:
+            _db.query(UserGroupStatsEntity)
             .filter(UserGroupStatsEntity.user_id == user_id)
             .filter(UserGroupStatsEntity.group_id == group_id)
             .first()
@@ -1722,12 +1729,12 @@ class RelationalHandler:
 
         return UserGroupStatsBase(**user_stats.__dict__)
 
-    def get_both_user_stats_in_group(
+    async def get_both_user_stats_in_group(
             self,
             group_id: str,
             user_id: int,
             query: UpdateUserGroupStats,
-            db: Session
+            db: AsyncSession
     ) -> Tuple[UserGroupStatsEntity, Optional[UserGroupStatsEntity], Optional[GroupEntity]]:
         # when removing a bookmark, the highlight time will be reset
         # and unread count will become 0
@@ -1737,20 +1744,22 @@ class RelationalHandler:
             query.bookmark is False
         )
 
-        statement = (
-            db.query(UserGroupStatsEntity)
+        statement = await db.run_sync(lambda _db:
+            _db.query(UserGroupStatsEntity)
             .filter(UserGroupStatsEntity.group_id == group_id)
         )
 
         that_user_stats = None
         group = None
 
-        def filter_for_one():
-            return statement.filter(UserGroupStatsEntity.user_id == user_id).first()
+        async def filter_for_one():
+            return await db.run_sync(
+                lambda _db: statement.filter(UserGroupStatsEntity.user_id == user_id).first()
+            )
 
         if need_second_user_stats:
-            group = (
-                db.query(GroupEntity)
+            group = await db.run_sync(lambda _db:
+                _db.query(GroupEntity)
                 .filter(GroupEntity.group_id == group_id)
                 .first()
             )
@@ -1759,7 +1768,7 @@ class RelationalHandler:
                 raise NoSuchGroupException(group_id)
 
             if group.group_type == GroupTypes.ONE_TO_ONE:
-                user_stats_dict = {user.user_id: user for user in statement.all()}
+                user_stats_dict = {user.user_id: user for user in await db.run_sync(lambda _db: statement.all())}
                 that_user_id = [uid for uid in group_id_to_users(group.group_id) if uid != user_id][0]
 
                 if user_id in user_stats_dict:
@@ -1773,25 +1782,25 @@ class RelationalHandler:
                 else:
                     logger.warning(f"THAT user {that_user_id} is no longer in group {group_id}, ignoring stats")
             else:
-                user_stats = filter_for_one()
+                user_stats = await filter_for_one()
         else:
-            user_stats = filter_for_one()
+            user_stats = await filter_for_one()
 
         return user_stats, that_user_stats, group
 
-    def update_user_group_stats(
-        self, group_id: str, user_id: int, query: UpdateUserGroupStats, db: Session
+    async def update_user_group_stats(
+        self, group_id: str, user_id: int, query: UpdateUserGroupStats, db: AsyncSession
     ) -> None:
         # delegate to separate handler, too much business logic
-        self.stats_handler.update(group_id, user_id, query, db)
+        await self.stats_handler.update(group_id, user_id, query, db)
 
-    def get_delete_before(self, group_id: str, user_id: int, db: Session) -> dt:
-        delete_before = self.env.cache.get_delete_before(group_id, user_id)
+    async def get_delete_before(self, group_id: str, user_id: int, db: AsyncSession) -> dt:
+        delete_before = await self.env.cache.get_delete_before(group_id, user_id)
         if delete_before is not None:
             return delete_before
 
-        delete_before = (
-            db.query(
+        delete_before = await db.run_sync(lambda _db:
+            _db.query(
                 UserGroupStatsEntity.delete_before
             )
             .filter(
@@ -1805,17 +1814,17 @@ class RelationalHandler:
             raise NoSuchUserException(user_id)
 
         delete_before = delete_before[0]
-        self.env.cache.set_delete_before(group_id, user_id, to_ts(delete_before))
+        await self.env.cache.set_delete_before(group_id, user_id, to_ts(delete_before))
 
         return delete_before
 
-    def get_last_message_time_in_group(self, group_id: str, db: Session) -> dt:
-        last_message_time = self.env.cache.get_last_message_time_in_group(group_id)
+    async def get_last_message_time_in_group(self, group_id: str, db: AsyncSession) -> dt:
+        last_message_time = await self.env.cache.get_last_message_time_in_group(group_id)
         if last_message_time is not None:
             return to_dt(last_message_time)
 
-        last_message_time = (
-            db.query(
+        last_message_time = await db.run_sync(lambda _db:
+            _db.query(
                 GroupEntity.last_message_time
             )
             .filter(
@@ -1828,15 +1837,15 @@ class RelationalHandler:
             raise NoSuchGroupException(group_id)
 
         last_message_time = last_message_time[0]
-        self.env.cache.set_last_message_time_in_group(group_id, to_ts(last_message_time))
+        await self.env.cache.set_last_message_time_in_group(group_id, to_ts(last_message_time))
 
         return last_message_time
 
-    def update_last_read_and_highlight_in_group_for_user(
-        self, group_id: str, user_id: int, the_time: dt, db: Session
+    async def update_last_read_and_highlight_in_group_for_user(
+        self, group_id: str, user_id: int, the_time: dt, db: AsyncSession
     ) -> None:
-        user_stats = (
-            db.query(UserGroupStatsEntity)
+        user_stats = await db.run_sync(lambda _db:
+            _db.query(UserGroupStatsEntity)
             .filter(UserGroupStatsEntity.user_id == user_id)
             .filter(UserGroupStatsEntity.group_id == group_id)
             .first()
@@ -1858,16 +1867,16 @@ class RelationalHandler:
 
         # TODO: use pipeline
         # re-check next time from db and cache it
-        self.env.cache.remove_last_read_in_group_oldest(group_id)
+        await self.env.cache.remove_last_read_in_group_oldest(group_id)
 
         # /groups api will check the cache, need to update this value if we read a group
-        self.env.cache.set_unread_in_group(group_id, user_id, 0)
+        await self.env.cache.set_unread_in_group(group_id, user_id, 0)
 
         # have to reset the highlight time (if any) of the other users in the group as well
         if current_highlight_time > long_ago_ts:
             # TODO: use update() instead of running multiple queries (select and update)
-            other_user_stats = (
-                db.query(UserGroupStatsEntity)
+            other_user_stats = await db.run_sync(lambda _db:
+                _db.query(UserGroupStatsEntity)
                 .filter(UserGroupStatsEntity.user_id != user_id)
                 .filter(UserGroupStatsEntity.group_id == group_id)
                 .filter(UserGroupStatsEntity.receiver_highlight_time > self.long_ago)
@@ -1879,42 +1888,42 @@ class RelationalHandler:
                 other_stat.receiver_highlight_time = self.long_ago
                 db.add(other_stat)
 
-        self.env.cache.set_last_read_in_group_for_user(group_id, user_id, to_ts(the_time))
+        await self.env.cache.set_last_read_in_group_for_user(group_id, user_id, to_ts(the_time))
 
         db.add(user_stats)
-        db.commit()
+        await db.commit()
 
-    def update_last_read_and_sent_in_group_for_user(
-        self, group_id: str, user_id: int, the_time: dt, db: Session, unhide_group: bool = True
+    async def update_last_read_and_sent_in_group_for_user(
+        self, group_id: str, user_id: int, the_time: dt, db: AsyncSession, unhide_group: bool = True
     ) -> None:
         """
         :param unhide_group: when creating action logs in all of a user's groups, e.g. when the user is changing
          username, an action log is created in all groups, but we don't want to unhide all groups
         """
-        user_stats = (
-            db.query(UserGroupStatsEntity)
+        user_stats = await db.run_sync(lambda _db:
+            _db.query(UserGroupStatsEntity)
             .filter(UserGroupStatsEntity.user_id == user_id)
             .filter(UserGroupStatsEntity.group_id == group_id)
             .first()
         )
 
         the_time_ts = to_ts(the_time)
-        current_unread_count = self.env.cache.get_unread_in_group(group_id, user_id)
+        current_unread_count = await self.env.cache.get_unread_in_group(group_id, user_id)
 
         # use a pipeline to connect the different redis calls
-        with self.env.cache.pipeline() as p:
-            self.env.cache.set_last_read_in_group_for_user(group_id, user_id, the_time_ts, pipeline=p)
+        async with self.env.cache.pipeline() as p:
+            await self.env.cache.set_last_read_in_group_for_user(group_id, user_id, the_time_ts, pipeline=p)
 
             # used for user global stats api
-            self.env.cache.set_last_sent_for_user(user_id, group_id, the_time_ts, pipeline=p)
-            self.env.cache.set_unread_in_group(group_id, user_id, 0, pipeline=p)
+            await self.env.cache.set_last_sent_for_user(user_id, group_id, the_time_ts, pipeline=p)
+            await self.env.cache.set_unread_in_group(group_id, user_id, 0, pipeline=p)
 
             if unhide_group:
-                self.env.cache.set_hide_group(group_id, False, pipeline=p)
+                await self.env.cache.set_hide_group(group_id, False, pipeline=p)
 
             # if the user sends a message while having unread messages in the group (maybe can happen on the app?)
             if current_unread_count is not None and current_unread_count > 0:
-                self.env.cache.reset_total_unread_message_count(user_id)
+                await self.env.cache.reset_total_unread_message_count(user_id)
 
         if user_stats is None:
             raise UserNotInGroupException(f"user {user_id} is not in group {group_id}")
@@ -1935,10 +1944,10 @@ class RelationalHandler:
             user_stats.first_sent = the_time
 
         db.add(user_stats)
-        db.commit()
+        await db.commit()
 
-    def create_group(
-        self, owner_id: int, query: CreateGroupQuery, utc_now, db: Session
+    async def create_group(
+        self, owner_id: int, query: CreateGroupQuery, utc_now, db: AsyncSession
     ) -> GroupBase:
         # can't be exactly the same, because when listing groups for a
         # user, any group with only one message would not be included,
@@ -1956,11 +1965,11 @@ class RelationalHandler:
 
         # cache the existence of the group before creating it, to try to avoid race
         # conditions when sending multiple fist messages at the same time
-        self.env.cache.set_group_exists(group_id, True)
+        await self.env.cache.set_group_exists(group_id, True)
 
         language = None
         if query.group_type in GroupTypes.public_group_types:
-            self.env.cache.add_public_group_ids([group_id])
+            await self.env.cache.add_public_group_ids([group_id])
 
             # only public groups can be for a specific language
             if query.language is not None and len(query.language) == 2:
@@ -1988,8 +1997,8 @@ class RelationalHandler:
         delete_before = created_at - datetime.timedelta(seconds=1)
 
         for user_id in user_ids:
-            self.env.cache.increase_count_group_types_for_user(user_id, query.group_type)
-            user_stats = self._create_user_stats(
+            await self.env.cache.increase_count_group_types_for_user(user_id, query.group_type)
+            user_stats = await self._create_user_stats(
                 group_id=group_id,
                 user_id=user_id,
                 group_type=query.group_type,
@@ -2003,12 +2012,12 @@ class RelationalHandler:
         db.add(group_entity)
 
         try:
-            db.commit()
+            await db.commit()
         except IntegrityError:
             try:
                 # have to manually roll back this transaction, since we'll keep
                 # using the session after this method returns
-                db.rollback()
+                await db.rollback()
             except Exception as e:
                 logger.error(f"could not rollback: {str(e)}")
                 logger.exception(e)
@@ -2025,19 +2034,19 @@ class RelationalHandler:
         return base
 
     # noinspection PyMethodMayBeStatic
-    def update_first_message_time(self, group_id: str, first_message_time: dt, db: Session) -> None:
+    async def update_first_message_time(self, group_id: str, first_message_time: dt, db: AsyncSession) -> None:
         logger.info(f"group {group_id}: setting first_message_time = {first_message_time}")
 
-        _ = (
-            db.query(GroupEntity)
+        await db.run_sync(lambda _db:
+            _db.query(GroupEntity)
             .filter(GroupEntity.group_id == group_id)
             .update({GroupEntity.first_message_time: first_message_time})
         )
 
-        db.commit()
+        await db.commit()
 
-    @time_method(logger, "get_groups_with_undeleted_messages()")
-    def get_groups_with_undeleted_messages(self, db: Session):
+    @time_coroutine(logger, "get_groups_with_undeleted_messages()")
+    async def get_groups_with_undeleted_messages(self, db: AsyncSession):
         """
         Used for removing old messages from the system. It queries for the time
         of which every previous message for a group can be removed. Messages are
@@ -2065,8 +2074,8 @@ class RelationalHandler:
                     ),
                 0) = 0;
         """
-        return (
-            db.query(
+        return await db.run_sync(lambda _db:
+            _db.query(
                 GroupEntity.group_id,
                 func.min(UserGroupStatsEntity.delete_before)
             )
@@ -2090,9 +2099,9 @@ class RelationalHandler:
         )
 
     # noinspection PyMethodMayBeStatic
-    def _get_user_stats_for(self, group_id: str, user_id: int, db: Session):
-        return (
-            db.query(UserGroupStatsEntity)
+    async def _get_user_stats_for(self, group_id: str, user_id: int, db: AsyncSession):
+        return await db.run_sync(lambda _db:
+            _db.query(UserGroupStatsEntity)
             .filter(
                 UserGroupStatsEntity.group_id == group_id,
                 UserGroupStatsEntity.user_id == user_id,
@@ -2100,7 +2109,7 @@ class RelationalHandler:
             .first()
         )
 
-    def _create_user_stats(
+    async def _create_user_stats(
         self, group_id: str, user_id: int, default_dt: dt, group_type: int, delete_before: dt = None
     ) -> UserGroupStatsEntity:
         now = utcnow_dt()
@@ -2110,11 +2119,11 @@ class RelationalHandler:
 
         if group_type in GroupTypes.public_group_types:
             a_month_ago = arrow.get(now).shift(days=-max_days).datetime
-            msg_count = self.env.storage.count_messages_in_group_since(group_id, a_month_ago)
+            msg_count = await self.env.storage.count_messages_in_group_since(group_id, a_month_ago)
 
             # max 500 messages or 1 month ago
             if msg_count > max_count:
-                delete_before = self.env.storage.get_created_at_for_offset(group_id, offset=max_count - 1)
+                delete_before = await self.env.storage.get_created_at_for_offset(group_id, offset=max_count - 1)
                 if delete_before is None:
                     logger.error(f"no messages in group '{group_id}', but count > {max_count}")
                     delete_before = a_month_ago

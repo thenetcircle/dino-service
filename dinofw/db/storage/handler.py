@@ -18,7 +18,6 @@ from cassandra.cluster import PlainTextAuthProvider
 from cassandra.cluster import Session
 from cassandra.connection import ConsistencyLevel
 from cassandra.cqlengine import connection
-from cassandra.cqlengine.query import BatchQuery
 from cassandra.policies import DCAwareRoundRobinPolicy
 from cassandra.policies import RetryPolicy
 from cassandra.policies import TokenAwarePolicy
@@ -28,6 +27,7 @@ from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.models import AttachmentModel
 from dinofw.db.storage.models import MessageModel
 from dinofw.db.storage.schemas import MessageBase
+from dinofw.db.storage.aiocqlengine import aiosession_for_cqlengine, AioBatchQuery
 from dinofw.rest.queries import ActionLogQuery, AdminQuery, ExportQuery
 from dinofw.rest.queries import AttachmentQuery
 from dinofw.rest.queries import CreateAttachmentQuery
@@ -35,7 +35,7 @@ from dinofw.rest.queries import DeleteAttachmentQuery
 from dinofw.rest.queries import EditMessageQuery
 from dinofw.rest.queries import MessageQuery
 from dinofw.rest.queries import SendMessageQuery
-from dinofw.utils import to_dt, is_non_zero, is_none_or_zero, max_one_year_ago, one_year_ago
+from dinofw.utils import to_dt, is_non_zero, one_year_ago
 from dinofw.utils import utcnow_dt
 from dinofw.utils.config import ConfigKeys
 from dinofw.utils.config import DefaultValues
@@ -116,6 +116,8 @@ class CassandraHandler:
 
         # used for serial consistency level when inserting images with "if not exists"
         self.session = cluster.connect(key_space)
+        # wrap cqlengine session
+        aiosession_for_cqlengine(self.session)
 
         # from cassandra.cqlengine.management import sync_table
         # sync_table(MessageModel)
@@ -132,20 +134,20 @@ class CassandraHandler:
         return value
 
     # noinspection PyMethodMayBeStatic
-    def get_messages_in_group(
+    async def get_messages_in_group(
         self,
         group_id: str,
         query: MessageQuery
     ) -> List[MessageBase]:
         until = to_dt(query.until)
 
-        raw_messages = (
+        raw_messages = await (
             MessageModel.objects(
                 MessageModel.group_id == group_id,
                 MessageModel.created_at < until,
             )
             .limit(query.per_page or DefaultValues.PER_PAGE)
-            .all()
+            .async_all()
         )
 
         messages = list()
@@ -156,7 +158,7 @@ class CassandraHandler:
         return messages
 
     # noinspection PyMethodMayBeStatic
-    def get_attachments_in_group_for_user(
+    async def get_attachments_in_group_for_user(
             self,
             group_id: str,
             user_stats: UserGroupStatsBase,
@@ -186,7 +188,7 @@ class CassandraHandler:
             # default ordering is descending, so change to ascending when using 'since'
             statement = statement.order_by('created_at')
 
-        messages = statement.limit(query.per_page or DefaultValues.PER_PAGE).all()
+        messages = await statement.limit(query.per_page or DefaultValues.PER_PAGE).async_all()
         messages = [
             CassandraHandler.message_base_from_entity(message)
             for message in messages
@@ -215,7 +217,7 @@ class CassandraHandler:
         return messages
 
     # noinspection PyMethodMayBeStatic
-    def get_messages_in_group_only_from_user(
+    async def get_messages_in_group_only_from_user(
             self,
             group_id: str,
             user_stats: UserGroupStatsBase,
@@ -244,7 +246,7 @@ class CassandraHandler:
             until = user_stats.last_sent
             until += timedelta(milliseconds=1)
 
-        raw_messages = self._get_messages_in_group_from_user(
+        raw_messages = await self._get_messages_in_group_from_user(
             group_id,
             user_stats.user_id,
             until=until,
@@ -262,14 +264,14 @@ class CassandraHandler:
         # since we need ascending order on cassandra query if we use 'since', reverse the results here
         return list(reversed(messages))[:query_limit]
 
-    def get_all_messages_in_group(self, group_id: str) -> List[MessageBase]:
+    async def get_all_messages_in_group(self, group_id: str) -> List[MessageBase]:
         """
         internal api to get all history in a group for legal purposes
         """
-        raw_messages = MessageModel.objects.filter(MessageModel.group_id == group_id).all()
+        raw_messages = await MessageModel.objects.filter(MessageModel.group_id == group_id).async_all()
         return self._try_parse_messages(raw_messages)
 
-    def export_history_in_group(self, group_id: str, query: ExportQuery) -> List[MessageBase]:
+    async def export_history_in_group(self, group_id: str, query: ExportQuery) -> List[MessageBase]:
         statement = MessageModel.objects.filter(MessageModel.group_id == group_id)
         keep_order = True
 
@@ -287,7 +289,7 @@ class CassandraHandler:
             # default ordering is descending, so change to ascending when using 'since'
             statement = statement.order_by('created_at')
 
-        raw_messages = statement.limit(query_limit).all()
+        raw_messages = await statement.limit(query_limit).async_all()
         messages = self._try_parse_messages(raw_messages)
 
         # if since is None:
@@ -298,7 +300,7 @@ class CassandraHandler:
         return list(reversed(messages))
 
     # noinspection PyMethodMayBeStatic
-    def get_messages_in_group_for_user(
+    async def get_messages_in_group_for_user(
             self,
             group_id: str,
             user_stats: UserGroupStatsBase,
@@ -344,7 +346,7 @@ class CassandraHandler:
             statement = statement.order_by('created_at')
             keep_order = False
 
-        raw_messages = statement.limit(query_limit).all()
+        raw_messages = await statement.limit(query_limit).async_all()
         messages = self._try_parse_messages(raw_messages)
 
         # if since is None:
@@ -354,13 +356,13 @@ class CassandraHandler:
         # since we need ascending order on cassandra query if we use 'since', reverse the results here
         return list(reversed(messages))
 
-    def get_created_at_for_offset(self, group_id: str, offset: int):
-        messages = (
+    async def get_created_at_for_offset(self, group_id: str, offset: int):
+        messages = await (
             MessageModel.objects(
                 MessageModel.group_id == group_id
             )
             .limit(offset)
-            .all()
+            .async_all()
         )
 
         if not len(messages):
@@ -369,11 +371,11 @@ class CassandraHandler:
         return messages[-1].created_at
 
     # noinspection PyMethodMayBeStatic
-    def count_messages_in_group_since(self, group_id: str, since: dt, query: AdminQuery = None) -> int:
+    async def count_messages_in_group_since(self, group_id: str, since: dt, query: AdminQuery = None) -> int:
         if query and is_non_zero(query.admin_id) and query.include_deleted:
             since = one_year_ago(since)
 
-        return (
+        return await (
             MessageModel.objects(
                 MessageModel.group_id == group_id,
             )
@@ -381,13 +383,13 @@ class CassandraHandler:
                 MessageModel.created_at > since,
             )
             .limit(None)
-            .count()
+            .async_count()
         )
 
     # noinspection PyMethodMayBeStatic
-    def count_attachments_in_group_since(self, group_id: str, since: dt, sender_id: int = -1) -> int:
+    async def count_attachments_in_group_since(self, group_id: str, since: dt, sender_id: int = -1) -> int:
         if sender_id > 0:
-            attachments = (
+            attachments = await (
                 AttachmentModel.objects(
                     AttachmentModel.group_id == group_id
                 )
@@ -395,13 +397,13 @@ class CassandraHandler:
                     AttachmentModel.created_at > since,
                 )
                 .limit(None)
-                .all()
+                .async_all()
             )
 
             # can't filter on user_id above, since created_at is suing non-EQ relation
             return sum([1 for att in attachments if att.user_id == sender_id])
 
-        return (
+        return await (
             AttachmentModel.objects(
                 AttachmentModel.group_id == group_id,
             )
@@ -409,10 +411,10 @@ class CassandraHandler:
                 AttachmentModel.created_at > since,
             )
             .limit(None)
-            .count()
+            .async_count()
         )
 
-    def _get_messages_in_group_from_user(
+    async def _get_messages_in_group_from_user(
             self, group_id: str, user_id: int, until: dt, since: dt, limit: int = 1000, query_limit: int = -1
     ) -> List[MessageModel]:
         start = time()
@@ -423,7 +425,7 @@ class CassandraHandler:
 
         while True:
             # until is not inclusive
-            messages = self._get_batch_of_messages_in_group_since(
+            messages = await self._get_batch_of_messages_in_group_since(
                 group_id=group_id, until=until, since=since, limit=limit
             )
             logger.info(messages)
@@ -450,7 +452,7 @@ class CassandraHandler:
         return messages_from_user
 
     # noinspection PyMethodMayBeStatic
-    def count_messages_in_group_from_user_since(
+    async def count_messages_in_group_from_user_since(
             self, group_id: str, user_id: int, until: dt, since: dt, query: AdminQuery = None
     ) -> int:
         if query and is_non_zero(query.admin_id) and query.include_deleted:
@@ -461,20 +463,20 @@ class CassandraHandler:
         if until is None:
             return 0
 
-        messages_from_user = self._get_messages_in_group_from_user(group_id, user_id, until, since)
+        messages_from_user = await self._get_messages_in_group_from_user(group_id, user_id, until, since)
         return len(messages_from_user)
 
-    def get_unread_in_group(self, group_id: str, user_id: int, last_read: dt) -> int:
-        unread = self.env.cache.get_unread_in_group(group_id, user_id)
+    async def get_unread_in_group(self, group_id: str, user_id: int, last_read: dt) -> int:
+        unread = await self.env.cache.get_unread_in_group(group_id, user_id)
         if unread is not None:
             return unread
 
-        unread = self.count_messages_in_group_since(group_id, last_read)
+        unread = await self.count_messages_in_group_since(group_id, last_read)
 
-        self.env.cache.set_unread_in_group(group_id, user_id, unread)
+        await self.env.cache.set_unread_in_group(group_id, user_id, unread)
         return unread
 
-    def delete_attachments_in_all_groups(
+    async def delete_attachments_in_all_groups(
         self,
         group_created_at: List[Tuple[str, dt]],
         user_id: int,
@@ -484,7 +486,7 @@ class CassandraHandler:
         start = time()
 
         for group_id, created_at in group_created_at:
-            attachments = self.delete_attachments(group_id, created_at, user_id, query)
+            attachments = await self.delete_attachments(group_id, created_at, user_id, query)
 
             if len(attachments):
                 group_to_atts[group_id] = attachments
@@ -498,48 +500,48 @@ class CassandraHandler:
 
         return group_to_atts
 
-    def delete_messages_in_group_before(self, group_id: str, before: dt):
-        messages = (
+    async def delete_messages_in_group_before(self, group_id: str, before: dt):
+        messages = await (
             MessageModel.objects(
                 MessageModel.group_id == group_id,
                 MessageModel.created_at <= before,
             )
-            .all()
+            .async_all()
         )
 
         if not len(messages):
             return
 
         logger.info(f"deleting {len(messages)} messages in group {group_id}...")
-        self._delete_messages(messages, "messages")
+        await self._delete_messages(messages, "messages")
 
-    def delete_attachments_in_group_before(self, group_id: str, before: dt):
-        attachments = (
+    async def delete_attachments_in_group_before(self, group_id: str, before: dt):
+        attachments = await (
             AttachmentModel.objects(
                 AttachmentModel.group_id == group_id,
                 AttachmentModel.created_at <= before,
             )
-            .all()
+            .async_all()
         )
 
         logger.info(f"deleting {len(attachments)} attachments in group {group_id}...")
-        self._delete_messages(attachments, "attachments")
+        await self._delete_messages(attachments, "attachments")
 
-    def delete_attachments(
+    async def delete_attachments(
         self,
         group_id: str,
         group_created_at: dt,
         user_id: int,
         query: DeleteAttachmentQuery
     ) -> List[MessageBase]:
-        attachments = (
+        attachments = await (
             AttachmentModel.objects(
                 AttachmentModel.group_id == group_id,
                 AttachmentModel.created_at > group_created_at,
                 AttachmentModel.user_id == user_id,
             )
             .allow_filtering()
-            .all()
+            .async_all()
         )
 
         attachment_msg_ids = {attachment.message_id for attachment in attachments}
@@ -554,7 +556,7 @@ class CassandraHandler:
         messages = list()
 
         for attachment_type in MessageTypes.attachment_types:
-            messages_all = (
+            messages_all = await (
                 # can't restrict user_id here, since it's a primary key and we filter on a "non-EQ relation" created_at
                 # using greater-than... so filter on user_id in python instead
                 MessageModel.objects(
@@ -564,7 +566,7 @@ class CassandraHandler:
                     MessageModel.message_type == attachment_type
                 )
                 .allow_filtering()
-                .all()
+                .async_all()
             )
 
             for message in messages_all:
@@ -575,34 +577,34 @@ class CassandraHandler:
         if payload_status is None:
             payload_status = PayloadStatus.DELETED
 
-        self._update_payload_status_to(messages, payload_status)
-        self._delete_messages(attachments, "attachments")
+        await self._update_payload_status_to(messages, payload_status)
+        await self._delete_messages(attachments, "attachments")
 
         return attachment_bases
 
-    def delete_attachment(
+    async def delete_attachment(
         self,
         group_id: str,
         group_created_at: dt,
         query: DeleteAttachmentQuery
     ) -> MessageBase:
-        attachment = (
+        attachment = await (
             AttachmentModel.objects(
                 AttachmentModel.group_id == group_id,
                 AttachmentModel.created_at > group_created_at,
                 AttachmentModel.file_id == query.file_id,
             )
             .allow_filtering()
-            .first()
+            .async_first()
         )
-        message = (
+        message = await(
             MessageModel.objects(
                 MessageModel.group_id == group_id,
                 MessageModel.created_at > group_created_at,
                 MessageModel.message_id == attachment.message_id,
             )
             .allow_filtering()
-            .first()
+            .async_first()
         )
 
         if attachment is None:
@@ -619,18 +621,18 @@ class CassandraHandler:
         if payload_status is None:
             payload_status = PayloadStatus.DELETED
 
-        self._update_payload_status_to([message], payload_status)
-        attachment.delete()
+        await self._update_payload_status_to([message], payload_status)
+        await attachment.async_delete()
 
         return attachment_base
 
     # noinspection PyMethodMayBeStatic
-    def delete_message(
+    async def delete_message(
         self, group_id: str, user_id: int, message_id: str, created_at: dt
     ) -> None:
         approx_date = arrow.get(created_at).shift(minutes=-1).datetime
 
-        message = (
+        message = await (
             MessageModel.objects(
                 MessageModel.group_id == group_id,
                 MessageModel.created_at > approx_date,
@@ -638,19 +640,19 @@ class CassandraHandler:
                 MessageModel.message_id == message_id,
             )
             .allow_filtering()
-            .first()
+            .async_first()
         )
 
         if message is None:
             raise NoSuchMessageException(message_id)
 
-        message.delete()
+        await message.async_delete()
 
-    def get_message_with_id(self, group_id: str, user_id: int, message_id: str, created_at: float):
+    async def get_message_with_id(self, group_id: str, user_id: int, message_id: str, created_at: float):
         approx_after = arrow.get(created_at).shift(minutes=-1).datetime
         approx_before = arrow.get(created_at).shift(minutes=1).datetime
 
-        message = (
+        message = await (
             MessageModel.objects(
                 MessageModel.group_id == group_id,
                 MessageModel.user_id == user_id,
@@ -659,7 +661,7 @@ class CassandraHandler:
                 MessageModel.message_id == message_id,
             )
             .allow_filtering()
-            .first()
+            .async_first()
         )
 
         if message is None:
@@ -668,17 +670,17 @@ class CassandraHandler:
         return CassandraHandler.message_base_from_entity(message)
 
     # noinspection PyMethodMayBeStatic
-    def get_attachment_from_file_id(self, group_id: str, created_at: dt, query: AttachmentQuery) -> MessageBase:
+    async def get_attachment_from_file_id(self, group_id: str, created_at: dt, query: AttachmentQuery) -> MessageBase:
         approx_date = arrow.get(created_at).shift(minutes=-1).datetime
 
-        attachment = (
+        attachment = await (
             AttachmentModel.objects(
                 AttachmentModel.group_id == group_id,
                 AttachmentModel.created_at > approx_date,
                 AttachmentModel.file_id == query.file_id,
             )
             .allow_filtering()
-            .first()
+            .async_first()
         )
 
         if attachment is None:
@@ -687,7 +689,7 @@ class CassandraHandler:
         return CassandraHandler.message_base_from_entity(attachment)
 
     # noinspection PyMethodMayBeStatic
-    def store_attachment(
+    async def store_attachment(
             self, group_id: str, user_id: int, message_id: str, query: CreateAttachmentQuery
     ) -> MessageBase:
         # we should filter on the 'created_at' field, since it's a clustering key
@@ -703,7 +705,7 @@ class CassandraHandler:
         approx_date_after = arrow.get(created_at).shift(minutes=-30).datetime
         approx_date_before = arrow.get(created_at).shift(minutes=30).datetime
 
-        message = (
+        message = await (
             MessageModel.objects(
                 MessageModel.group_id == group_id,
                 MessageModel.user_id == user_id,
@@ -712,19 +714,19 @@ class CassandraHandler:
                 MessageModel.message_id == message_id,
             )
             .allow_filtering()
-            .first()
+            .async_first()
         )
 
         if message is None:
             raise NoSuchMessageException(message_id)
 
-        message.update(
+        await message.async_update(
             message_payload=query.message_payload,
             file_id=query.file_id,
             updated_at=now,
         )
 
-        AttachmentModel.create(
+        await AttachmentModel.async_create(
             group_id=group_id,
             user_id=user_id,
             created_at=message.created_at,
@@ -738,7 +740,7 @@ class CassandraHandler:
         return CassandraHandler.message_base_from_entity(message)
 
     # noinspection PyMethodMayBeStatic
-    def create_action_log(
+    async def create_action_log(
             self,
             user_id: int,
             group_id: str,
@@ -746,7 +748,7 @@ class CassandraHandler:
     ) -> MessageBase:
         action_time = utcnow_dt()
 
-        log = MessageModel.create(
+        log = await MessageModel.async_create(
             group_id=group_id,
             user_id=user_id,
             created_at=action_time,
@@ -758,7 +760,7 @@ class CassandraHandler:
         return CassandraHandler.message_base_from_entity(log)
 
     # noinspection PyMethodMayBeStatic
-    def store_message(self, group_id: str, user_id: int, query: SendMessageQuery) -> MessageBase:
+    async def store_message(self, group_id: str, user_id: int, query: SendMessageQuery) -> MessageBase:
         message = None
 
         # if the user is sending multiple images at the same time it may happen different servers create them
@@ -773,7 +775,7 @@ class CassandraHandler:
                 created_at = utcnow_dt()
 
                 # can't use "if not exists" or serial consistency when using the ORM, so use a raw query
-                results = self.session.execute(
+                results = (await self.session.execute_future(
                     "insert into messages (group_id, created_at, user_id, message_id, message_payload, message_type, context)" +
                     "values (%s, %s, %s, %s, %s, %s, %s)" +
                     "if not exists;",
@@ -783,7 +785,7 @@ class CassandraHandler:
                     ),
                     # this profile has serial consistency level set to 'serial', to make sure we don't do an UPSERT
                     execution_profile='transaction'
-                ).all()
+                )).all()
 
                 inserted = results[0].applied
                 if not inserted:
@@ -801,7 +803,7 @@ class CassandraHandler:
 
                 # when using 'if not exists', the inserted row will not be returned,
                 # so we have to query for it after insertion
-                message = (
+                message = await (
                     MessageModel.objects(
                         MessageModel.group_id == group_id,
                         MessageModel.user_id == user_id,
@@ -810,11 +812,11 @@ class CassandraHandler:
                         MessageModel.message_id == message_id,
                     )
                     .allow_filtering()
-                    .first()
+                    .async_first()
                 )
         else:
             created_at = utcnow_dt()
-            message = MessageModel.create(
+            message = await MessageModel.async_create(
                 group_id=group_id,
                 user_id=user_id,
                 created_at=created_at,
@@ -826,7 +828,7 @@ class CassandraHandler:
 
         return CassandraHandler.message_base_from_entity(message)
 
-    def edit_message(self, group_id: str, user_id: int, message_id: str, query: EditMessageQuery) -> MessageBase:
+    async def edit_message(self, group_id: str, user_id: int, message_id: str, query: EditMessageQuery) -> MessageBase:
         created_at = query.created_at
         now = utcnow_dt()
 
@@ -835,7 +837,7 @@ class CassandraHandler:
         approx_date_after = arrow.get(created_at).shift(minutes=-1).datetime
         approx_date_before = arrow.get(created_at).shift(minutes=1).datetime
 
-        message = (
+        message = await (
             MessageModel.objects(
                 MessageModel.group_id == group_id,
                 MessageModel.user_id == user_id,
@@ -844,19 +846,19 @@ class CassandraHandler:
                 MessageModel.message_id == message_id,
             )
             .allow_filtering()
-            .first()
+            .async_first()
         )
 
         if message is None:
             raise NoSuchMessageException(message_id)
 
-        message.update(
+        await message.async_update(
             context=query.context or message.context,
             message_payload=query.message_payload or message.message_payload,
             updated_at=now,
         )
 
-        attachment = (
+        attachment = await (
             AttachmentModel.objects(
                 AttachmentModel.group_id == group_id,
                 AttachmentModel.user_id == user_id,
@@ -865,12 +867,12 @@ class CassandraHandler:
                 AttachmentModel.message_id == message_id,
             )
             .allow_filtering()
-            .first()
+            .async_first()
         )
 
         # might not be an attachment
         if attachment is not None:
-            attachment.update(
+            await attachment.async_update(
                 message_type=attachment.message_type or message.message_type,
                 context=query.context or attachment.context,
                 message_payload=query.message_payload or attachment.message_payload,
@@ -879,9 +881,9 @@ class CassandraHandler:
 
         return CassandraHandler.message_base_from_entity(message)
 
-    def _update_payload_status_to(self, messages: List[MessageModel], status: int):
+    async def _update_payload_status_to(self, messages: List[MessageModel], status: int):
         start = time()
-        with BatchQuery() as b:
+        async with AioBatchQuery() as b:
             for message in messages:
                 try:
                     payload = json.loads(message.message_payload)
@@ -896,80 +898,83 @@ class CassandraHandler:
                     ))
                     continue
 
-                message.batch(b).save()
+                await message.batch(b).async_save()
 
         elapsed = time() - start
         if elapsed > 1:
             logger.info(f"updated payload status of {len(message)} messages in {elapsed:.2f}s")
 
-    def _delete_messages(self, messages, types: str) -> None:
+    async def _delete_messages(self, messages, types: str) -> None:
         start = time()
-        with BatchQuery() as b:
+        async with AioBatchQuery() as b:
             for message in messages:
-                message.batch(b).delete()
+                await message.batch(b).async_delete()
 
         elapsed = time() - start
         if elapsed > 1:
             logger.info(f"batch deleted {len(message)} {types} in {elapsed:.2f}s")
 
     # noinspection PyMethodMayBeStatic
-    def _update_messages(
+    async def _update_messages(
         self, messages: List[MessageModel], callback: callable
     ) -> Optional[dt]:
         until = None
 
-        with BatchQuery() as b:
+        async with AioBatchQuery() as b:
             for message in messages:
                 callback(message)
-                message.batch(b).save()
+                await message.batch(b).async_save()
 
                 until = message.created_at
 
         return until
 
     # noinspection PyMethodMayBeStatic
-    def _get_batch_of_messages_in_group_since(
+    async def _get_batch_of_messages_in_group_since(
         self, group_id: str, until: dt, since: dt, limit=1000
     ) -> List[MessageModel]:
-        return (
+        return await (
             MessageModel.objects(
                 MessageModel.group_id == group_id,
                 MessageModel.created_at < until,
                 MessageModel.created_at > since,
             )
             .limit(limit)
-            .all()
+            .async_all()
         )
 
     # noinspection PyMethodMayBeStatic
-    def _get_batch_of_messages_in_group(
+    async def _get_batch_of_messages_in_group(
         self, group_id: str, until: dt, user_id: int = None
     ) -> List[MessageModel]:
         if user_id is None:
-            return (
+            return await (
                 MessageModel.objects(
                     MessageModel.group_id == group_id,
                     MessageModel.created_at < until,
                 )
                 .limit(500)
-                .all()
+                .async_all()
             )
         else:
-            return (
+            return await (
                 MessageModel.objects(
                     MessageModel.group_id == group_id,
                     MessageModel.user_id == user_id,
                     MessageModel.created_at < until,
                 )
                 .limit(500)
-                .all()
+                .async_all()
             )
 
     @staticmethod
     def message_base_from_entity(message: MessageModel) -> MessageBase:
         return MessageBase(
             group_id=str(message.group_id),
-            created_at=message.created_at,
+            # we have to explicitly set the UTC timezone here, since when reading the datetime from the Cassandra model
+            # it will skip the tzinfo, causing issues on servers where the local time of the postgres database is not
+            # set to UTC
+            created_at=arrow.get(message.created_at, tzinfo='UTC').datetime,
             user_id=message.user_id,
             message_id=str(message.message_id),
             message_payload=message.message_payload,

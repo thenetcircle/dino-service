@@ -29,12 +29,12 @@ class BaseResource(ABC):
         beginning_of_1995 = 789_000_000
         self.long_ago = arrow.Arrow.utcfromtimestamp(beginning_of_1995).datetime
 
-    def _user_opens_conversation(self, group_id: str, user_id: int, user_stats: UserGroupStatsBase, db):
+    async def _user_opens_conversation(self, group_id: str, user_id: int, user_stats: UserGroupStatsBase, db):
         """
         update database and cache with everything related to opening a conversation (if needed)
         """
         # TODO: maybe use unread count here instead? since migration doesn't have MS on last_message_time
-        last_message_time = self.env.db.get_last_message_time_in_group(group_id, db)
+        last_message_time = await self.env.db.get_last_message_time_in_group(group_id, db)
 
         # if a user opens a conversation a second time and nothing has changed, we don't need to update
         if not need_to_update_stats_in_group(user_stats, last_message_time):
@@ -44,27 +44,27 @@ class BaseResource(ABC):
         now_dt = utcnow_dt(now_ts)
 
         # something changed, so update and set last_updated_time to sync to apps
-        self.env.db.update_last_read_and_highlight_in_group_for_user(
+        await self.env.db.update_last_read_and_highlight_in_group_for_user(
             group_id, user_id, now_dt, db
         )
 
         if user_stats.unread_count > 0 or user_stats.bookmark:
-            self.env.cache.set_unread_in_group(group_id, user_id, 0)
-            self.env.cache.remove_unread_group(user_id, group_id)
-            self.env.cache.reset_total_unread_message_count(user_id)
+            await self.env.cache.set_unread_in_group(group_id, user_id, 0)
+            await self.env.cache.remove_unread_group(user_id, group_id)
+            await self.env.cache.reset_total_unread_message_count(user_id)
 
         # no point updating if already newer than last message (also skips
         # broadcasting unnecessary read-receipts)
         # TODO: double check this; won't it cause read-receipts to not be sent when reading a new message?
         if last_message_time > user_stats.last_read:
-            user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
+            user_ids = await self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
 
             del user_ids[user_id]
             self.env.client_publisher.read(
                 group_id, user_id, user_ids, now_dt, bookmark=user_stats.bookmark
             )
 
-    def create_action_log(
+    async def create_action_log(
         self,
             query: ActionLogQuery,
             db: Session,
@@ -87,10 +87,10 @@ class BaseResource(ABC):
         if query.group_id is not None and len(query.group_id.strip()):
             group_id = query.group_id
         elif query.receiver_id is not None and query.receiver_id > 0:
-            group_id = self._get_or_create_group_for_1v1(user_id, query.receiver_id, db)
+            group_id = await self._get_or_create_group_for_1v1(user_id, query.receiver_id, db)
 
-        log = self.env.storage.create_action_log(user_id, group_id, query)
-        self._user_sends_a_message(
+        log = await self.env.storage.create_action_log(user_id, group_id, query)
+        await self._user_sends_a_message(
             group_id,
             user_id=user_id,
             message=log,
@@ -104,7 +104,7 @@ class BaseResource(ABC):
 
         return message_base_to_message(log)
 
-    def _user_sends_a_message(
+    async def _user_sends_a_message(
             self,
             group_id: str,
             user_id: int,
@@ -120,9 +120,9 @@ class BaseResource(ABC):
         """
         update database and cache with everything related to sending a message
         """
-        user_ids = self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
+        user_ids = await self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
 
-        group_base = self.env.db.update_group_new_message(
+        group_base = await self.env.db.update_group_new_message(
             message,
             db,
             sender_user_id=user_id,
@@ -140,24 +140,24 @@ class BaseResource(ABC):
         if user_id not in user_ids and unhide_group:
             # if the user deleted the group, this is an action log for the
             # deletion, and we only have to un-hide it for the other user(s)
-            self.env.cache.set_hide_group(group_id, False)
+            await self.env.cache.set_hide_group(group_id, False)
         else:
             # otherwise we update as normal
-            self.env.db.update_last_read_and_sent_in_group_for_user(
+            await self.env.db.update_last_read_and_sent_in_group_for_user(
                 group_id, user_id, message.created_at, db, unhide_group=unhide_group
             )
 
         if event_type == EventTypes.ATTACHMENT:
-            self.env.cache.increase_attachment_count_in_group_for_users(group_id, list(user_ids.keys()))
+            await self.env.cache.increase_attachment_count_in_group_for_users(group_id, list(user_ids.keys()))
         elif event_type == EventTypes.DELETE_ATTACHMENT:
             # instead of decreasing, just remove it, since in case no count is cached, decreasing
             # a non-existing key will store -1, which is incorrect
-            self.env.cache.remove_attachment_count_in_group_for_users(group_id, list(user_ids.keys()))
+            await self.env.cache.remove_attachment_count_in_group_for_users(group_id, list(user_ids.keys()))
             # TODO: decrease total unread count in redis? or remove it?
 
         return group_base
 
-    def _get_or_create_group_for_1v1(
+    async def _get_or_create_group_for_1v1(
         self, user_id: int, receiver_id: int, db: Session
     ) -> str:
         if user_id is None or receiver_id is None:
@@ -166,19 +166,19 @@ class BaseResource(ABC):
             )
 
         group_id = users_to_group_id(user_id, receiver_id)
-        if self.env.cache.get_group_exists(group_id):
+        if await self.env.cache.get_group_exists(group_id):
             return group_id
 
         try:
-            group = self.env.db.get_group_for_1to1(user_id, receiver_id, db)
+            group = await self.env.db.get_group_for_1to1(user_id, receiver_id, db)
         except NoSuchGroupException:
             try:
-                group = self.env.db.create_group_for_1to1(user_id, receiver_id, db)
+                group = await self.env.db.create_group_for_1to1(user_id, receiver_id, db)
             except UserStatsOrGroupAlreadyCreated:
                 # another api call created it after we checked but before we finished creating it,
                 # so we should now be able to just fetch the one created by the other call
-                group = self.env.db.get_group_for_1to1(user_id, receiver_id, db)
+                group = await self.env.db.get_group_for_1to1(user_id, receiver_id, db)
 
         group_id = group.group_id
-        self.env.cache.set_group_exists(group_id, True)
+        await self.env.cache.set_group_exists(group_id, True)
         return group_id

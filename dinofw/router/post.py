@@ -557,7 +557,7 @@ async def create_action_log(
     * `250`: if an unknown error occurred.
     """
     try:
-        return environ.env.rest.group.create_action_log(query, db, user_id=user_id)
+        return await environ.env.rest.group.create_action_log(query, db, user_id=user_id)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
 
@@ -585,8 +585,8 @@ async def create_action_log_in_all_groups_for_user(
     * `250`: if an unknown error occurred.
     """
 
-    def _create_action_logs(user_id_, query_, db_):
-        environ.env.rest.user.create_action_log_in_all_groups(user_id_, query_, db_)
+    async def _create_action_logs(user_id_, query_, db_):
+        await environ.env.rest.user.create_action_log_in_all_groups(user_id_, query_, db_)
 
     try:
         task = BackgroundTask(
@@ -652,12 +652,12 @@ async def get_message_count_for_user_in_group(
     * `601`: if the group does not exist,
     * `250`: if an unknown error occurred.
     """
-    def count_messages():
+    async def count_messages():
         # can't filter by user id in cassandra without restricting 'created_at', so
         # use the cached value from the rdbms
         if query and query.only_sender:
             try:
-                group_info: UserGroupStatsBase = environ.env.db.get_user_stats_in_group(group_id, user_id, db)
+                group_info: UserGroupStatsBase = await environ.env.db.get_user_stats_in_group(group_id, user_id, db)
 
                 # until isn't inclusive, so the last message sent won't be counted otherwise;
                 until = group_info.last_sent
@@ -677,11 +677,11 @@ async def get_message_count_for_user_in_group(
             else:
                 # can return both None and -1; -1 means we've checked the db before, but it has not
                 # yet been counted, to avoid checking the db every time a new message is sent
-                message_count = environ.env.db.get_sent_message_count(group_id, user_id, db)
+                message_count = await environ.env.db.get_sent_message_count(group_id, user_id, db)
 
             # if it hasn't been counted before, count from cassandra in batches (could be slow)
             if message_count is None or message_count == -1:
-                message_count = environ.env.storage.count_messages_in_group_from_user_since(
+                message_count = await environ.env.storage.count_messages_in_group_from_user_since(
                     group_id,
                     user_id,
                     until=until,
@@ -691,10 +691,10 @@ async def get_message_count_for_user_in_group(
 
                 # don't cache counts when including deleted messages, it's only used by admins
                 if not query.include_deleted:
-                    environ.env.db.set_sent_message_count(group_id, user_id, message_count, db)
+                    await environ.env.db.set_sent_message_count(group_id, user_id, message_count, db)
 
         else:
-            message_count = environ.env.storage.count_messages_in_group_since(
+            message_count = await environ.env.storage.count_messages_in_group_since(
                 group_id, delete_before, query
             )
 
@@ -710,13 +710,13 @@ async def get_message_count_for_user_in_group(
             delete_before = LONG_AGO
             delete_before_ts = to_ts(delete_before)
         else:
-            delete_before = environ.env.db.get_delete_before(group_id, user_id, db)
+            delete_before = await environ.env.db.get_delete_before(group_id, user_id, db)
             delete_before_ts = to_ts(delete_before)
 
         if query.only_attachments:
             the_count = await count_attachments()
         else:
-            the_count = count_messages()
+            the_count = await count_messages()
 
         return MessageCount(
             group_id=group_id,
