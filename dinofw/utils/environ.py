@@ -62,9 +62,9 @@ async def init_logging(gn_env: GNEnvironment) -> None:
         server_name=socket.gethostname(),
         release=tag_name,
         integrations=[
-            AsyncioIntegration(),
             SqlalchemyIntegration(),
-            RedisIntegration()
+            RedisIntegration(),
+            AsyncioIntegration()
         ],
         traces_sample_rate=float(env.config.get(
             ConfigKeys.TRACE_SAMPLE_RATE,
