@@ -3,7 +3,6 @@ from typing import Final
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
 
 from dinofw.router import delete
 from dinofw.router import get
@@ -29,7 +28,6 @@ def create_app():
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    api.add_middleware(SentryAsgiMiddleware)
 
     api.include_router(
         post.router,
