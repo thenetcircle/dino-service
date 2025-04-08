@@ -7,7 +7,7 @@ from loguru import logger
 from dinofw.utils.config import ConfigKeys
 
 
-def init_logging(gn_env: GNEnvironment) -> None:
+async def init_logging(gn_env: GNEnvironment) -> None:
     if len(gn_env.config) == 0 or gn_env.config.get(ConfigKeys.TESTING, False):
         # assume we're testing
         return
@@ -53,6 +53,7 @@ def init_logging(gn_env: GNEnvironment) -> None:
     from sentry_sdk import capture_message as sentry_capture_message
     from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
     from sentry_sdk.integrations.redis import RedisIntegration
+    from sentry_sdk.integrations.asyncio import AsyncioIntegration
 
     logger.info(f"initializing sentry sdk with version '{tag_name}'")
     sentry_sdk.init(
@@ -61,6 +62,7 @@ def init_logging(gn_env: GNEnvironment) -> None:
         server_name=socket.gethostname(),
         release=tag_name,
         integrations=[
+            AsyncioIntegration(),
             SqlalchemyIntegration(),
             RedisIntegration()
         ],
@@ -225,7 +227,7 @@ async def initialize_env(dino_env):
     if env_override and len(env_override) and not env_override.startswith("$"):
         dino_env.config.set(ConfigKeys.ENVIRONMENT, env_override)
 
-    init_logging(dino_env)
+    await init_logging(dino_env)
     await init_database(dino_env)
     init_cassandra(dino_env)
     init_cache_service(dino_env)

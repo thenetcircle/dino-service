@@ -11,7 +11,6 @@ from dinofw.router import post
 from dinofw.router import put
 from dinofw.utils import environ
 from dinofw.utils.custom_logging import CustomizeLogger
-from dinofw.utils.config import ConfigKeys
 
 API_VERSION: Final = "v1"
 

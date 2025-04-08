@@ -27,4 +27,3 @@ async def init_db(env, engine=None):
 
     async with engine.begin() as conn:
         await conn.run_sync(env.Base.metadata.create_all)
-
