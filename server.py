@@ -5,6 +5,7 @@ logging.getLogger("cassandra").setLevel(logging.INFO)
 logging.getLogger("gmqtt").setLevel(logging.WARNING)
 logging.getLogger("kafka").setLevel(logging.INFO)
 logging.getLogger("urllib3.connectionpool").setLevel(logging.INFO)
+logging.getLogger("sentry_sdk.errors").setLevel(logging.WARNING)
 
 CQL_ALLOW_MNG = "CQLENG_ALLOW_SCHEMA_MANAGEMENT"
 
