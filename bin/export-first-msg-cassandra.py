@@ -2,6 +2,7 @@ import subprocess
 import sys
 import arrow
 from tqdm import tqdm
+import os
 
 
 def group_id_to_users(group_id_: str) -> (int, int):
@@ -28,23 +29,40 @@ def split_into_chunks(objects, n):
 """
 get group ids using this query:
 
-dinoms_feti_prod=# copy (select group_id from groups where updated_at >= '2024-03-18 02:50:00+00' and first_message_time < '2024-03-18 02:56:00+00') to '/tmp/feti_msgs_psql-240320.csv' (format csv);
+dinoms_feti_prod=# copy (select group_id from groups where updated_at >= '2025-04-24 06:40:00+00' and first_message_time < '2025-04-24 07:00:00+00') to '/tmp/popp_msgs_psql-250506.csv' (format csv);
 COPY 108091
 """
-
 
 with open(sys.argv[1]) as f:
     group_ids = [g.replace('\n', '') for g in f.readlines()]
 
+from_time = '2025-04-24 06:40:00.000+0000'
+to_time = '2025-04-24 07:00:00.000+0000'
+outname = 'popp_msgs_cassandra-250506.csv'
+existing = set()
+batch_size = 75
 
-from_time = '2024-03-18 02:50:00.000+0000'
-to_time = '2023-12-07 02:56:00.000+0000'
+if os.path.exists(outname):
+    with open(outname, 'r') as f:
+        for line in f.readlines():
+            existing.add(','.join(sorted(line.split(',')[0:2])))
 
-with open('feti_msgs_cassandra-240320.csv', 'w') as f:
-    f.write('sender_id,receiver_id,created_at\n')
+print(f'found {len(existing)} existing exports already')
+
+with open(outname, 'wa') as f:
+    if not len(existing):
+        f.write('sender_id,receiver_id,created_at\n')
 
     # don't increase above 100 in batch size, query usually will timeout then and the whole export needs to be restarted
-    for group_ids in tqdm(split_into_chunks(group_ids, 100), total=len(group_ids) / 100):
+    for group_ids_to_try in tqdm(split_into_chunks(group_ids, batch_size), total=len(group_ids) / batch_size):
+        group_ids = [
+            group_id for group_id in group_ids_to_try
+                if ','.join([str(j) for j in group_id_to_users(group_id)]) not in existing
+        ]
+
+        if not len(group_ids):
+            continue
+
         args = [
             "/usr/local/tncdata/apps/apache-cassandra-3.11.8/bin/cqlsh",
             "--request-timeout=3600",
@@ -52,7 +70,7 @@ with open('feti_msgs_cassandra-240320.csv', 'w') as f:
             "-k",
             "dinoms_feti_prod",
             "-e"
-            "paging off; select group_id, created_at, user_id from messages where group_id in ({}) and created_at > '{}' and created_at < '{}'".format(
+            "paging off; select group_id, created_at, user_id, message_type from messages where group_id in ({}) and created_at > '{}' and created_at < '{}'".format(
                 ','.join(group_ids),
                 from_time,
                 to_time
@@ -67,7 +85,7 @@ with open('feti_msgs_cassandra-240320.csv', 'w') as f:
                     continue
 
                 try:
-                    group_id, created_at, sender_id = map(str.strip, line.split('|'))
+                    group_id, created_at, sender_id, message_type = map(str.strip, line.split('|'))
                 except Exception as e2:
                     print(e2)
                     print(line)
@@ -76,7 +94,7 @@ with open('feti_msgs_cassandra-240320.csv', 'w') as f:
 
                 receiver_id = receiver_for(group_id, sender_id)
 
-                line_to_write = ",".join([sender_id, receiver_id, str(arrow.get(created_at).float_timestamp)])
+                line_to_write = ",".join([sender_id, receiver_id, message_type, str(arrow.get(created_at).float_timestamp)])
                 f.write(line_to_write + '\n')
 
         except Exception as e:
