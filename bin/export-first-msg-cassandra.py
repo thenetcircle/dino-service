@@ -47,8 +47,10 @@ to_time = '2025-05-06 16:21:03.000+0000'
 outname = 'feti_msgs_cassandra-250516.csv'
 existing = set()
 batch_size = 75
+mode = 'w'
 
 if os.path.exists(outname):
+    mode = 'a'
     with open(outname, 'r') as f:
         for line in f.readlines():
             existing.add(','.join(sorted(line.split(',')[0:2])))
@@ -67,7 +69,7 @@ kwargs = {
 connection.setup(os.environ['CASD_HOSTS'].split(','), **kwargs)
 
 cluster = Cluster(
-    contact_points=os.environ['CASD_HOSTS'],
+    contact_points=os.environ['CASD_HOSTS'].split(','),
     protocol_version=3,
     auth_provider=kwargs["auth_provider"]
 )
@@ -75,7 +77,7 @@ cluster = Cluster(
 session = cluster.connect(os.environ['CASD_KEY_SPACE'])
 
 
-with open(outname, 'wa') as f:
+with open(outname, mode) as f:
     if not len(existing):
         f.write('sender_id,receiver_id,created_at\n')
 
@@ -97,9 +99,8 @@ with open(outname, 'wa') as f:
             ))
 
             for row in rows:
-                receiver_id = receiver_for(row.group_id, row.user_id)
-
-                line_to_write = ",".join([row.user_id, receiver_id, row.message_type, str(arrow.get(row.created_at).float_timestamp)])
+                receiver_id = receiver_for(str(row.group_id), row.user_id)
+                line_to_write = ",".join(map(str, [row.user_id, receiver_id, row.message_type, arrow.get(row.created_at).float_timestamp]))
                 f.write(line_to_write + '\n')
 
         except Exception as e:
