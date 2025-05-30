@@ -1,6 +1,6 @@
 from datetime import datetime as dt
 from time import time
-from typing import List, Tuple, Set
+from typing import List, Tuple, Set, Optional
 
 from loguru import logger
 from sqlalchemy.orm import Session
@@ -75,7 +75,12 @@ class UserResource(BaseResource):
             user_id, query, db
         )
 
-        return to_user_group(user_groups)
+        deleted_groups: Optional[List[DeletedStatsBase]] = None
+
+        if query.include_deleted:
+            deleted_groups: List[DeletedStatsBase] = self.env.db.get_deleted_groups_for_user(user_id, db)
+
+        return to_user_group(user_groups, deleted_groups=deleted_groups)
 
     def create_action_log_in_all_groups(
             self, user_id: int, query: ActionLogQuery, db: Session

@@ -5,7 +5,7 @@ import arrow
 
 from dinofw.rest.queries import AbstractQuery
 from dinofw.utils import utcnow_ts, to_dt
-from dinofw.utils.config import MessageTypes, ErrorCodes
+from dinofw.utils.config import MessageTypes, ErrorCodes, GroupStatus
 from test.base import BaseTest
 from test.functional.base_functional import BaseServerRestApi
 
@@ -1125,6 +1125,23 @@ class TestServerRestApi(BaseServerRestApi):
         )
 
         self.user_joins_group(group, other_users[0])
+
+    def test_get_groups_including_deleted(self):
+        self.send_1v1_message(user_id=BaseTest.USER_ID, receiver_id=BaseTest.OTHER_USER_ID)
+        self.send_1v1_message(user_id=BaseTest.USER_ID, receiver_id=BaseTest.THIRD_USER_ID)
+
+        groups = self.groups_for_user(BaseTest.USER_ID)
+        self.assertEqual(2, len(groups))
+
+        self.user_leaves_group(group_id=groups[0]["group"]["group_id"], user_id=BaseTest.USER_ID)
+
+        groups = self.groups_for_user(BaseTest.USER_ID)
+        self.assertEqual(1, len(groups))
+
+        groups = self.groups_for_user(BaseTest.USER_ID, include_deleted=True)
+        self.assertEqual(2, len(groups))
+
+        self.assertEqual(GroupStatus.DELETED, groups[-1]["group"]["status"])
 
     def test_get_groups_with_undeleted_messages(self):
         groups = list()
