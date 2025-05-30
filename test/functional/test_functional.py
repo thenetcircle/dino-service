@@ -1127,18 +1127,18 @@ class TestServerRestApi(BaseServerRestApi):
         await self.user_joins_group(group, other_users[0])
 
     async def test_get_groups_including_deleted(self):
-        self.send_1v1_message(user_id=BaseTest.USER_ID, receiver_id=BaseTest.OTHER_USER_ID)
-        self.send_1v1_message(user_id=BaseTest.USER_ID, receiver_id=BaseTest.THIRD_USER_ID)
+        await self.send_1v1_message(user_id=BaseTest.USER_ID, receiver_id=BaseTest.OTHER_USER_ID)
+        await self.send_1v1_message(user_id=BaseTest.USER_ID, receiver_id=BaseTest.THIRD_USER_ID)
 
-        groups = self.groups_for_user(BaseTest.USER_ID)
+        groups = await self.groups_for_user(BaseTest.USER_ID)
         self.assertEqual(2, len(groups))
 
-        self.user_leaves_group(group_id=groups[0]["group"]["group_id"], user_id=BaseTest.USER_ID)
+        await self.user_leaves_group(group_id=groups[0]["group"]["group_id"], user_id=BaseTest.USER_ID)
 
-        groups = self.groups_for_user(BaseTest.USER_ID)
+        groups = await self.groups_for_user(BaseTest.USER_ID)
         self.assertEqual(1, len(groups))
 
-        groups = self.groups_for_user(BaseTest.USER_ID, include_deleted=True)
+        groups = await self.groups_for_user(BaseTest.USER_ID, include_deleted=True)
         self.assertEqual(2, len(groups))
 
         self.assertEqual(GroupStatus.DELETED, groups[-1]["group"]["status"])

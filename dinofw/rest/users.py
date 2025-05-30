@@ -78,7 +78,7 @@ class UserResource(BaseResource):
         deleted_groups: Optional[List[DeletedStatsBase]] = None
 
         if query.include_deleted:
-            deleted_groups: List[DeletedStatsBase] = self.env.db.get_deleted_groups_for_user(user_id, db)
+            deleted_groups: List[DeletedStatsBase] = await self.env.db.get_deleted_groups_for_user(user_id, db)
 
         return to_user_group(user_groups, deleted_groups=deleted_groups)
 
