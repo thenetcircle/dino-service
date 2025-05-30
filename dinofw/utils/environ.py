@@ -1,8 +1,10 @@
 import os
+from typing import List
 
 from gnenv import create_env
 from gnenv.environ import GNEnvironment
 from loguru import logger
+from sentry_sdk.integrations import Integration
 
 from dinofw.utils.config import ConfigKeys
 
@@ -53,7 +55,15 @@ async def init_logging(gn_env: GNEnvironment) -> None:
     from sentry_sdk import capture_message as sentry_capture_message
     from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
     from sentry_sdk.integrations.redis import RedisIntegration
-    from sentry_sdk.integrations.asyncio import AsyncioIntegration
+
+    sentry_integrations: List[Integration] = [
+        RedisIntegration(),
+        SqlalchemyIntegration()
+    ]
+
+    if "test" not in os.getenv("ENVIRONMENT"):
+        from sentry_sdk.integrations.asyncio import AsyncioIntegration
+        sentry_integrations.append(AsyncioIntegration())
 
     logger.info(f"initializing sentry sdk with version '{tag_name}'")
     sentry_sdk.init(
@@ -61,11 +71,7 @@ async def init_logging(gn_env: GNEnvironment) -> None:
         environment=os.getenv("ENVIRONMENT"),  # TODO: fix DINO_ENVIRONMENT / ENVIRONMENT discrepancy
         server_name=socket.gethostname(),
         release=tag_name,
-        integrations=[
-            SqlalchemyIntegration(),
-            RedisIntegration(),
-            AsyncioIntegration()
-        ],
+        integrations=sentry_integrations,
         traces_sample_rate=float(env.config.get(
             ConfigKeys.TRACE_SAMPLE_RATE,
             domain=ConfigKeys.LOGGING,
