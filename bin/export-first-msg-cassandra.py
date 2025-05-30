@@ -7,6 +7,10 @@ from cassandra.cluster import Cluster
 from cassandra.cluster import PlainTextAuthProvider
 from cassandra.cqlengine import connection
 from tqdm import tqdm
+import psycopg2
+from urllib.parse import urlparse
+from loguru import logger
+import yaml
 
 dotenv.load_dotenv()
 
@@ -32,19 +36,53 @@ def split_into_chunks(objects, n):
         yield objects[i:i + n]
 
 
-"""
-get group ids using this query:
+def get_group_ids(_db_uri, _from_time, _to_time):
+    try:
+        result = urlparse(_db_uri)
+        username = result.username
+        password = result.password
+        database = result.path[1:]
+        hostname = result.hostname
+        port = result.port
 
-dinoms_feti_prod=# copy (select group_id from groups where updated_at >= '2025-05-06 20:43:13+00' and first_message_time <= '2025-05-06 20:45:38+00') to '/tmp/feti_msgs_psql-250516-2.csv' (format csv);
-COPY 108091
-"""
+        conn = psycopg2.connect(
+            database=database,
+            user=username,
+            password=password,
+            host=hostname,
+            port=port
+        )
+    except Exception as e:
+        logger.error(f"unable to connect to the database: {str(e)}")
+        logger.exception(e)
+        sys.exit(1)
 
-with open(sys.argv[1]) as f:
-    group_ids = [g.replace('\n', '') for g in f.readlines()]
+    with conn.cursor() as curs:
+        try:
+            curs.execute(f"select group_id from groups where updated_at >= '{_from_time}' and first_message_time < '{_to_time}'")
+            rows = curs.fetchall()
+            return [row[0] for row in rows]
+        except (Exception, psycopg2.DatabaseError) as e:
+            logger.error(f"could not query db: {str(e)}")
+            logger.exception(e)
+            sys.exit(1)
 
-from_time = '2025-05-06 16:19:00.000+0000'
-to_time = '2025-05-06 16:21:03.000+0000'
-outname = 'feti_msgs_cassandra-250516.csv'
+
+env_name = sys.argv[1]
+from_time = arrow.get(int(sys.argv[2])).strftime('%Y-%m-%d %H:%M:%S+00')
+to_time = arrow.get(int(sys.argv[3])).strftime('%Y-%m-%d %H:%M:%S+00')
+outname = sys.argv[4]
+
+secrets_path = os.path.join("..", "secrets", f"{env_name}.yaml")
+with open(secrets_path) as f:
+    secrets = yaml.safe_load(f.read())
+    db_uri = secrets["DINO_DB_URI"]
+    key_space = secrets["DINO_STORAGE_KEY_SPACE"]
+
+logger.info(f"exporting messages from '{from_time}' to '{to_time}' for environment '{env_name}'")
+
+group_ids = get_group_ids(db_uri, from_time, to_time)
+
 existing = set()
 batch_size = 75
 mode = 'w'
@@ -58,7 +96,7 @@ if os.path.exists(outname):
 print(f'found {len(existing)} existing exports already')
 
 kwargs = {
-    "default_keyspace": os.environ['CASD_KEY_SPACE'],
+    "default_keyspace": key_space,
     "protocol_version": 3,
     "retry_connect": True,
     "auth_provider": PlainTextAuthProvider(
@@ -74,12 +112,12 @@ cluster = Cluster(
     auth_provider=kwargs["auth_provider"]
 )
 
-session = cluster.connect(os.environ['CASD_KEY_SPACE'])
+session = cluster.connect(key_space)
 
 
 with open(outname, mode) as f:
     if not len(existing):
-        f.write('sender_id,receiver_id,created_at\n')
+        f.write('sender_id,receiver_id,message_type,created_at\n')
 
     # don't increase above 100 in batch size, query usually will timeout then and the whole export needs to be restarted
     for group_ids_to_try in tqdm(split_into_chunks(group_ids, batch_size), total=len(group_ids) / batch_size):
