@@ -387,14 +387,16 @@ class BaseServerRestApi(BaseDatabaseTest):
             only_unread: bool = False,
             hidden: bool = False,
             until: float = None,
-            receiver_stats: bool = True
+            receiver_stats: bool = True,
+            include_deleted: bool = False
     ):
         json_data = {
             "per_page": "10",
             "count_unread": count_unread,
             "only_unread": only_unread,
             "hidden": hidden,
-            "receiver_stats": receiver_stats
+            "receiver_stats": receiver_stats,
+            "include_deleted": include_deleted
         }
         if until is not None:
             json_data["until"] = until

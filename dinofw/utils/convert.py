@@ -1,5 +1,5 @@
 from datetime import datetime as dt
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional
 from typing import List
 from typing import Union
 
@@ -13,7 +13,7 @@ from dinofw.rest.models import Message
 from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UserGroupStats
 from dinofw.utils import to_ts
-from dinofw.utils.config import EventTypes
+from dinofw.utils.config import EventTypes, GroupStatus
 
 
 def to_int(time_float):
@@ -66,6 +66,39 @@ def to_user_group_stats(user_stats: UserGroupStatsBase) -> UserGroupStats:
     )
 
 
+def deleted_group_base_to_user_group(deleted_group: DeletedStatsBase) -> UserGroup:
+    join_time = to_ts(deleted_group.join_time, allow_none=False)
+    delete_time = to_ts(deleted_group.delete_time, allow_none=False)
+
+    group = Group(
+        group_id=deleted_group.group_id,
+        users=list(),
+        user_count=0,
+        name="deleted group",
+        status=GroupStatus.DELETED,
+        status_changed_at=delete_time,
+        group_type=deleted_group.group_type,
+        created_at=join_time,
+        updated_at=delete_time,
+        first_message_time=join_time,
+        last_message_time=delete_time
+    )
+
+    stats = UserGroupStats(
+        user_id=deleted_group.user_id,
+        group_id=deleted_group.group_id,
+        unread=-1,  # not applicable for deleted groups
+        receiver_unread=-1,  # not applicable for deleted groups
+        delete_before=delete_time,
+        join_time=join_time,
+        last_updated_time=delete_time,
+        notifications=False,
+        mentions=-1,
+        kicked=False
+    )
+
+    return UserGroup(group=group, stats=stats)
+
 def group_base_to_user_group(
     group_base: GroupBase,
     stats_base: UserGroupStatsBase,
@@ -98,7 +131,7 @@ def group_base_to_user_group(
 
     stats = UserGroupStats(**stats_dict)
 
-    return UserGroup(group=group, stats=stats,)
+    return UserGroup(group=group, stats=stats)
 
 
 def group_base_to_group(
@@ -173,7 +206,7 @@ def to_deleted_stats(deleted_stats: List[DeletedStatsBase]) -> List[DeletedStats
     return stats
 
 
-def to_user_group(user_groups: List[UserGroupBase]):
+def to_user_group(user_groups: List[UserGroupBase], deleted_groups: Optional[List[DeletedStatsBase]] = None):
     groups: List[UserGroup] = list()
 
     for user_group in user_groups:
@@ -188,6 +221,10 @@ def to_user_group(user_groups: List[UserGroupBase]):
                 users=user_group.user_join_times,
             )
         )
+
+    if deleted_groups is not None:
+        for deleted_group in deleted_groups:
+            groups.append(deleted_group_base_to_user_group(deleted_group))
 
     return groups
 

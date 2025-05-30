@@ -249,6 +249,9 @@ async def get_groups_for_user(
     is `receiver_highlight_time`. Default value is 789000000.0, (means "long ago",
     translates to 1995-01-01 22:40:00 UTC).
 
+    The `include_deleted` parameter can be set to `true` to include deleted groups in the
+    response (only for use by supporters in the admin backend). Default value is `false`.
+
     **Potential error codes in response:**
     * `250`: if an unknown error occurred.
     """

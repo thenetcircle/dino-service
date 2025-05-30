@@ -146,6 +146,7 @@ class ReceiverStatsQuery(AbstractQuery):
 class GroupQuery(PaginationQuery, UserStatsQuery, ReceiverStatsQuery):
     receiver_ids: Optional[List[int]]
     group_type: Optional[int] = None
+    include_deleted: Optional[bool] = False
 
 
 class GroupUpdatesQuery(GroupQuery):
