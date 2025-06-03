@@ -99,7 +99,8 @@ class BaseResource(ABC):
             update_last_message=query.update_last_message,
             update_last_message_time=query.update_last_message_time,
             unhide_group=query.unhide_group,
-            event_type=EventTypes.ACTION_LOG
+            event_type=EventTypes.ACTION_LOG,
+            context=None
         )
 
         return message_base_to_message(log)
@@ -111,11 +112,12 @@ class BaseResource(ABC):
             message: MessageBase,
             db,
             should_increase_unread: bool,
-            event_type: EventTypes,
+            event_type: str,
             update_last_message: bool = True,
             update_last_message_time: bool = True,
             unhide_group: bool = True,
-            mentions: List[int] = None
+            mentions: List[int] = None,
+            context: Optional[str] = None,
     ) -> Optional[GroupBase]:
         """
         update database and cache with everything related to sending a message
@@ -130,7 +132,8 @@ class BaseResource(ABC):
             update_last_message=update_last_message,
             update_last_message_time=update_last_message_time,
             unhide_group=unhide_group,
-            mentions=mentions
+            mentions=mentions,
+            context=context
         )
 
         # if all users left the group, this message is an action log, and there's nothing more to do

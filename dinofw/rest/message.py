@@ -1,6 +1,6 @@
 from typing import List
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, query_expression
 
 from dinofw.rest.base import BaseResource
 from dinofw.rest.models import Message
@@ -41,7 +41,8 @@ class MessageResource(BaseResource):
             # attachment has been processed, the unread count will be increased
             should_increase_unread=query.message_type not in MessageTypes.attachment_types,
             event_type=EventTypes.MESSAGE,
-            mentions=query.mention_user_ids
+            mentions=query.mention_user_ids,
+            context=query.context
         )
 
         return message_base_to_message(message)
@@ -151,7 +152,8 @@ class MessageResource(BaseResource):
             should_increase_unread=True,
             event_type=EventTypes.ATTACHMENT,
             update_last_message=update_last_message,
-            update_last_message_time=update_last_message_time
+            update_last_message_time=update_last_message_time,
+            context=None
         )
 
         return message_base_to_message(attachment)

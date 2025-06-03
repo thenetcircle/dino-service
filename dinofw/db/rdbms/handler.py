@@ -1,6 +1,7 @@
 import datetime
+import json
 from datetime import datetime as dt
-from typing import Dict
+from typing import Dict, Union
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -25,7 +26,7 @@ from dinofw.db.rdbms.schemas import GroupBase, DeletedStatsBase
 from dinofw.db.rdbms.schemas import UserGroupBase
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.db.storage.schemas import MessageBase
-from dinofw.rest.queries import CreateGroupQuery, PublicGroupQuery
+from dinofw.rest.queries import CreateGroupQuery, PublicGroupQuery, SendMessageQuery, ActionLogQuery
 from dinofw.rest.queries import GroupQuery
 from dinofw.rest.queries import GroupUpdatesQuery
 from dinofw.rest.queries import UpdateGroupQuery
@@ -37,10 +38,53 @@ from dinofw.utils import trim_micros
 from dinofw.utils import users_to_group_id
 from dinofw.utils import utcnow_dt
 from dinofw.utils import utcnow_ts
-from dinofw.utils.config import GroupTypes, ConfigKeys, GroupStatus
+from dinofw.utils.config import GroupTypes, ConfigKeys, GroupStatus, MessageTypes
 from dinofw.utils.exceptions import NoSuchGroupException, NoSuchUserException, UserStatsOrGroupAlreadyCreated
 from dinofw.utils.exceptions import UserNotInGroupException
 from dinofw.utils.perf import time_coroutine
+
+
+def filter_whisper_users_if_any(
+    all_users: List[UserGroupStatsEntity], message: MessageBase, context: Optional[str] = None
+) -> (List[UserGroupStatsEntity], bool):
+    """
+    If the message is a whisper, filter out users that are not mentioned in the message.
+
+    Example payload:
+
+        {
+            "message_payload": "{"content":" - vipleo abccc","msg_group_type":2}",
+            "message_type": 0,
+            "mention_user_ids": [],
+            "context": "{"action":64,"whisper":[{"id":5000441,"nickname":"vipleo"},{"id":5000440,"nickname":"
+            premiumleo"}]}"
+        }
+    """
+    if context is None or message.message_type != 0:
+        return all_users, False
+
+    try:
+        context = json.loads(context)
+    except json.decoder.JSONDecodeError as e:
+        logger.error(f"Failed to decode context to check for whispers. Context was '{context}', error: {e}")
+        return all_users, False
+
+    if context.get("action") != MessageTypes.ACTION_WHISPER:
+        return all_users, False
+
+    mentioned_ids = {
+        user.get("id", None)
+        for user in context.get("whisper", [])
+    }
+    mentioned_ids = {
+        int(user_id)
+        for user_id in mentioned_ids if user_id is not None
+    }
+
+    return [
+        user for user in all_users
+        if user.user_id in mentioned_ids
+    ], True
 
 
 class RelationalHandler:
@@ -611,23 +655,13 @@ class RelationalHandler:
         update_last_message: bool = True,
         update_last_message_time: bool = True,
         unhide_group: bool = True,
-        mentions: List[int] = None
+        mentions: List[int] = None,
+        context: Optional[str] = None
     ) -> GroupBase:
-        group = await db.run_sync(lambda _db:
-            _db.query(GroupEntity)
-            .filter(GroupEntity.group_id == message.group_id)
-            .first()
-        )
-        sent_time = message.created_at
-
-        if group is None:
-            raise NoSuchGroupException(message.group_id)
-
-        # some action logs don't need to update these
-        if update_unread_count:
+        async def get_receivers() -> (List[UserGroupStatsEntity], bool):
             # if a group is hidden, it might have unread messages when it was hidden, so we have
             # to query for it and restore the original amount plus one (this message)
-            receivers_in_group = await db.run_sync(lambda _db:
+            _receivers_in_group = await db.run_sync(lambda _db:
                 _db.query(UserGroupStatsEntity)
                 .filter(
                     UserGroupStatsEntity.group_id == message.group_id,
@@ -636,22 +670,9 @@ class RelationalHandler:
                 )
                 .all()
             )
+            return filter_whisper_users_if_any(_receivers_in_group, message, context)
 
-            non_sender_user_ids = [
-                user.user_id
-                for user in receivers_in_group
-            ]
-            user_to_hidden_stats = {
-                user.user_id: user
-                for user in receivers_in_group
-                if user.hide
-            }
-            user_ids_with_notification_on = {
-                user.user_id
-                for user in receivers_in_group
-                if user.notifications
-            }
-
+        async def update_cached_unread():
             async with self.env.cache.pipeline() as p:
                 # for knowing if we need to send read-receipts when user opens a conversation
                 await self.env.cache.set_last_message_time_in_group(
@@ -683,8 +704,44 @@ class RelationalHandler:
                         if mention_user_id not in user_ids_with_notification_on:
                             await self.env.cache.increase_total_unread_message_count([mention_user_id], 1, pipeline=p)
 
-        # some action logs don't need to update last message
-        if update_last_message:
+        async def increase_mentions():
+            await db.run_sync(lambda _db:
+                _db.query(UserGroupStatsEntity)
+                .filter(
+                    UserGroupStatsEntity.group_id == group.group_id,
+                    UserGroupStatsEntity.user_id.in_(mentions),
+                    UserGroupStatsEntity.kicked.is_(False)
+                )
+                .update({
+                    UserGroupStatsEntity.mentions: UserGroupStatsEntity.mentions + 1
+                }, synchronize_session=False)
+            )
+
+        async def update_sent_message_count_in_cache():
+            previous_sent_count = await self._get_then_update_sent_count(message.group_id, sender_user_id, db)
+
+            # previously we increase unread for all; now set to 0 for the sender, since
+            # it won't be unread for him/her
+            #
+            # also only update 'sent_message_count' if it's been previously counted using
+            # the /count api (-1 means it has not been counted in cassandra yet)
+            if previous_sent_count == -1:
+                await db.run_sync(lambda _db: _db.query(UserGroupStatsEntity).filter(
+                    UserGroupStatsEntity.group_id == message.group_id,
+                    UserGroupStatsEntity.user_id == sender_user_id
+                ).update({
+                    UserGroupStatsEntity.unread_count: 0
+                }))
+            else:
+                await db.run_sync(lambda _db: _db.query(UserGroupStatsEntity).filter(
+                    UserGroupStatsEntity.group_id == message.group_id,
+                    UserGroupStatsEntity.user_id == sender_user_id
+                ).update({
+                    UserGroupStatsEntity.unread_count: 0,
+                    UserGroupStatsEntity.sent_message_count: previous_sent_count + 1
+                }))
+
+        async def update_last_message_in_db():
             # sometimes we don't want to change the order of conversations on action log creation
             if update_last_message_time:
                 group.last_message_time = sent_time
@@ -700,22 +757,68 @@ class RelationalHandler:
                 only_content=True  # column changed to text, can save everything
             )
 
+        async def update_unread_count_in_db_and_unhide():
+            # when creating action logs, we want to sync changes to apps, but not necessarily un-hide a group
+            if update_unread_count:
+                await db.run_sync(lambda _db: statement.update({
+                    UserGroupStatsEntity.last_updated_time: sent_time,
+                    UserGroupStatsEntity.unread_count: UserGroupStatsEntity.unread_count + 1,
+                    UserGroupStatsEntity.deleted: False
+                }))
+            else:
+                await db.run_sync(lambda _db: statement.update({
+                    UserGroupStatsEntity.last_updated_time: sent_time,
+                }))
+
+            if unhide_group:
+                await self.env.cache.set_hide_group(group.group_id, False)
+                await db.run_sync(lambda _db: statement.update({
+                    UserGroupStatsEntity.hide: False
+                }))
+
+        group = await db.run_sync(lambda _db:
+            _db.query(GroupEntity)
+            .filter(GroupEntity.group_id == message.group_id)
+            .first()
+        )
+        sent_time = message.created_at
+        is_whisper = False
+        receivers_in_group = None
+
+        if group is None:
+            raise NoSuchGroupException(message.group_id)
+
+        # some action logs don't need to update these
+        if update_unread_count:
+            receivers_in_group, is_whisper = await get_receivers()
+
+            non_sender_user_ids = [
+                user.user_id
+                for user in receivers_in_group
+            ]
+            user_to_hidden_stats = {
+                user.user_id: user
+                for user in receivers_in_group
+                if user.hide
+            }
+            user_ids_with_notification_on = {
+                user.user_id
+                for user in receivers_in_group
+                if user.notifications
+            }
+
+            await update_cached_unread()
+
+        # some action logs don't need to update last message
+        if update_last_message and not is_whisper:
+            await update_last_message_in_db()
+
         # always update this
         group.updated_at = sent_time
 
         # we have to count the number of mentions; it's reset when the user reads/opens the conversation
         if mentions and len(mentions):
-            await db.run_sync(lambda _db:
-                _db.query(UserGroupStatsEntity)
-                .filter(
-                    UserGroupStatsEntity.group_id == group.group_id,
-                    UserGroupStatsEntity.user_id.in_(mentions),
-                    UserGroupStatsEntity.kicked.is_(False)
-                )
-                .update({
-                    UserGroupStatsEntity.mentions: UserGroupStatsEntity.mentions + 1
-                }, synchronize_session=False)
-            )
+            await increase_mentions()
 
         statement = await db.run_sync(lambda _db:
             _db.query(UserGroupStatsEntity)
@@ -726,47 +829,14 @@ class RelationalHandler:
             )
         )
 
-        # when creating action logs, we want to sync changes to apps, but not necessarily un-hide a group
-        if update_unread_count:
-            await db.run_sync(lambda _db: statement.update({
-                UserGroupStatsEntity.last_updated_time: sent_time,
-                UserGroupStatsEntity.unread_count: UserGroupStatsEntity.unread_count + 1,
-                UserGroupStatsEntity.deleted: False
-            }))
-        else:
-            await db.run_sync(lambda _db: statement.update({
-                UserGroupStatsEntity.last_updated_time: sent_time,
-            }))
+        if is_whisper and receivers_in_group is not None:
+            # if the message is a whisper, we only want to update the users that are mentioned in the message
+            statement = statement.filter(
+                UserGroupStatsEntity.user_id.in_([user.user_id for user in receivers_in_group])
+            )
 
-        if unhide_group:
-            await self.env.cache.set_hide_group(group.group_id, False)
-            await db.run_sync(lambda _db: statement.update({
-                UserGroupStatsEntity.hide: False
-            }))
-
-        # update 'sent_message_count' in cache
-        previous_sent_count = await self._get_then_update_sent_count(message.group_id, sender_user_id, db)
-
-        # previously we increase unread for all; now set to 0 for the sender, since
-        # it won't be unread for him/her
-        #
-        # also only update 'sent_message_count' if it's been previously counted using
-        # the /count api (-1 means it has not been counted in cassandra yet)
-        if previous_sent_count == -1:
-            await db.run_sync(lambda _db: _db.query(UserGroupStatsEntity).filter(
-                UserGroupStatsEntity.group_id == message.group_id,
-                UserGroupStatsEntity.user_id == sender_user_id
-            ).update({
-                UserGroupStatsEntity.unread_count: 0
-            }))
-        else:
-            await db.run_sync(lambda _db: _db.query(UserGroupStatsEntity).filter(
-                UserGroupStatsEntity.group_id == message.group_id,
-                UserGroupStatsEntity.user_id == sender_user_id
-            ).update({
-                UserGroupStatsEntity.unread_count: 0,
-                UserGroupStatsEntity.sent_message_count: previous_sent_count + 1
-            }))
+        await update_unread_count_in_db_and_unhide()
+        await update_sent_message_count_in_cache()
 
         group_base = GroupBase(**group.__dict__)
 

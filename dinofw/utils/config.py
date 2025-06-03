@@ -44,6 +44,7 @@ class MessageTypes:
     AUDIO: Final = 10
 
     ACTION: Final = 100
+    ACTION_WHISPER: Final = 64
 
     attachment_types = {IMAGE, VIDEO, AUDIO}
 

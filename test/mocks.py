@@ -555,7 +555,8 @@ class FakeDatabase:
         update_last_message: bool = True,
         update_last_message_time: bool = True,
         unhide_group: bool = True,
-        mentions: List[int] = None
+        mentions: List[int] = None,
+        context: Optional[str] = None
     ):
         if message.group_id not in self.groups:
             return
