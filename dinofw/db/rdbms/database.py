@@ -16,8 +16,9 @@ async def init_db(env, engine=None):
             # disable prepared statements, so we can use pgbouncer in transaction mode
             "statement_cache_size": 0,
 
+            # TODO: only works in sqlalchemy 2.0+
             # use a unique name for prepared statements to avoid conflicts
-            "prepared_statement_name_func": lambda: f"__asyncpg_{uuid4()}__",
+            # "prepared_statement_name_func": lambda: f"__asyncpg_{uuid4()}__",
         }
 
         engine = create_async_engine(
