@@ -10,10 +10,10 @@ async def init_db(env, engine=None):
         database_uri = env.config.get(ConfigKeys.URI, domain=ConfigKeys.DB)
         pool_size = int(float(env.config.get(ConfigKeys.POOL_SIZE, default=15, domain=ConfigKeys.DB)))
 
-        if database_uri.startswith("sqlite"):
-            connection_args = {"check_same_thread": False}
-        else:
-            connection_args = {}
+        connection_args = {
+            # disable prepared statements, so we can use pgbouncer in transaction mode
+            "statement_cache_size": 0
+        }
 
         engine = create_async_engine(
             database_uri,
