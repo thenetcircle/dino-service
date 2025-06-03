@@ -803,8 +803,8 @@ class CacheRedis(ICache):
         for user_id, join_time in users.items():
             await p.hset(key, str(user_id), str(join_time))
 
-        p.expire(key, FIVE_MINUTES)
-        p.execute()
+        await p.expire(key, FIVE_MINUTES)
+        await p.execute()
 
     async def clear_user_ids_and_join_time_in_group(self, group_id: str) -> None:
         key = RedisKeys.user_in_group(group_id)
