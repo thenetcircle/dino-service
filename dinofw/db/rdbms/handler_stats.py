@@ -253,6 +253,11 @@ class UpdateUserGroupStatsHandler:
     ) -> None:
         user_stats, that_user_stats, group = self.handler.get_both_user_stats_in_group(group_id, user_id, query, db)
 
+        if user_stats is None:
+            raise UserNotInGroupException(
+                f"tried to update group stats for user {user_id} not in group {group_id}"
+            )
+
         unread_count_before_changing = user_stats.unread_count
         last_read = to_dt(query.last_read_time, allow_none=True)
         delete_before = to_dt(query.delete_before, allow_none=True)
@@ -260,11 +265,6 @@ class UpdateUserGroupStatsHandler:
             query.highlight_time, allow_none=True
         )
         now = utcnow_dt()
-
-        if user_stats is None:
-            raise UserNotInGroupException(
-                f"tried to update group stats for user {user_id} not in group {group_id}"
-            )
 
         # used by apps to sync changes
         user_stats.last_updated_time = now
