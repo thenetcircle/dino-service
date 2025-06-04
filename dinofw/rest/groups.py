@@ -202,13 +202,13 @@ class GroupResource(BaseResource):
 
         return the_count
 
-    async def all_history_in_group(self, group_id: str) -> Histories:
-        return Histories(
-            messages=[
-                message_base_to_message(message)
-                for message in await self.env.storage.get_all_messages_in_group(group_id)
-            ]
-        )
+    async def all_history_in_group(self, group_id: str, query: PaginationQuery) -> Histories:
+        return await self.export_history_in_group(group_id, ExportQuery(
+            user_id=None,
+            per_page=query.per_page,
+            since=query.since,
+            until=query.until
+        ))
 
     async def _check_that_query_is_valid_and_group_is_active(self, group_id: str, query: PaginationQuery, db: Session):
         # TODO: don't return history for archived or deleted groups unless admin
@@ -253,7 +253,7 @@ class GroupResource(BaseResource):
             kicked=False
         )
 
-    async def export_history_in_group(self, group_id: str, query: ExportQuery, db: Session) -> Histories:
+    async def export_history_in_group(self, group_id: str, query: ExportQuery) -> Histories:
         async def get_messages():
             # need to batch query cassandra, can't filter by user id
             if query.user_id is not None:

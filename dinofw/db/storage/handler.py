@@ -264,13 +264,6 @@ class CassandraHandler:
         # since we need ascending order on cassandra query if we use 'since', reverse the results here
         return list(reversed(messages))[:query_limit]
 
-    async def get_all_messages_in_group(self, group_id: str) -> List[MessageBase]:
-        """
-        internal api to get all history in a group for legal purposes
-        """
-        raw_messages = await MessageModel.objects.filter(MessageModel.group_id == group_id).async_all()
-        return self._try_parse_messages(raw_messages)
-
     async def export_history_in_group(self, group_id: str, query: ExportQuery) -> List[MessageBase]:
         statement = MessageModel.objects.filter(MessageModel.group_id == group_id)
         keep_order = True
