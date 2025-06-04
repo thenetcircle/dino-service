@@ -2,7 +2,7 @@ import datetime
 from uuid import uuid4 as uuid
 
 from dinofw.utils.config import MessageTypes
-from dinofw.rest.queries import SendMessageQuery, AdminQuery, ActionLogQuery
+from dinofw.rest.queries import SendMessageQuery, AdminQuery, ActionLogQuery, ExportQuery
 from dinofw.rest.queries import EditMessageQuery
 from dinofw.utils.exceptions import NoSuchMessageException
 from dinofw.utils import utcnow_dt, utcnow_ts
@@ -21,7 +21,7 @@ class BaseMessageTest(BaseCassandraHandlerTest):
             )
         )
 
-        message = await self.handler.get_all_messages_in_group(msg.group_id)
+        message = await self.handler.export_history_in_group(msg.group_id, ExportQuery(per_page=100))
         self.assertEqual(1, len(message))
         self.assertIsNotNone(message[0].created_at.tzinfo)
 
@@ -35,7 +35,7 @@ class BaseMessageTest(BaseCassandraHandlerTest):
                 message_type=MessageTypes.MESSAGE,
             ),
         )
-        message = await self.handler.get_all_messages_in_group(msg.group_id)
+        message = await self.handler.export_history_in_group(msg.group_id, ExportQuery(per_page=100))
         self.assertEqual(1, len(message))
 
         user = BaseMessageTest._generate_user_group_stats()
