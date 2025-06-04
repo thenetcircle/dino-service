@@ -757,7 +757,7 @@ class CacheRedis(ICache):
             if len(users):
                 for user_id, join_time in users.items():
                     p.hset(key, str(user_id), str(join_time))
-                p.expire(key, ONE_DAY)
+                p.expire(key, FIVE_MINUTES)
 
         p.execute()
 
@@ -779,7 +779,7 @@ class CacheRedis(ICache):
 
         if len(users):
             self.add_user_ids_and_join_time_in_group(group_id, users)
-            self.redis.expire(key, ONE_HOUR)
+            self.redis.expire(key, FIVE_MINUTES)
 
     def remove_user_id_and_join_time_in_groups_for_user(self, group_ids: List[str], user_id: int, pipeline=None):
         # use pipeline if provided
@@ -803,7 +803,6 @@ class CacheRedis(ICache):
         for user_id, join_time in users.items():
             p.hset(key, str(user_id), str(join_time))
 
-        p.expire(key, FIVE_MINUTES)
         p.execute()
 
     def clear_user_ids_and_join_time_in_group(self, group_id: str) -> None:
