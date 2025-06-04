@@ -20,7 +20,7 @@ from dinofw.rest.models import MessageCount
 from dinofw.rest.models import OneToOneStats
 from dinofw.rest.models import UserGroup
 from dinofw.rest.models import UserStats
-from dinofw.rest.queries import ActionLogQuery, UserIdQuery, PublicGroupQuery, ExportQuery
+from dinofw.rest.queries import ActionLogQuery, UserIdQuery, PublicGroupQuery, ExportQuery, PaginationQuery
 from dinofw.rest.queries import AttachmentQuery
 from dinofw.rest.queries import CountMessageQuery
 from dinofw.rest.queries import CreateAttachmentQuery
@@ -763,10 +763,23 @@ async def get_last_read_in_group(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
+@router.post("/history/{group_id}", response_model=Histories)
+@timeit(logger, "POST", "/history/{group_id}")
+@wrap_exception()
+async def get_all_history_in_group(group_id: str, query: PaginationQuery) -> Histories:
+    """
+    Internal api to get all the history in a group for legal purposes.
+
+    **Potential error codes in response:**
+    * `250`: if an unknown error occurred.
+    """
+    return await environ.env.rest.group.all_history_in_group(group_id, query)
+
+
 @router.post("/history/{group_id}/export", response_model=Histories)
 @timeit(logger, "POST", "/history/{group_id}/export")
 @wrap_exception()
-async def get_history_in_group_for_export(group_id: str, query: ExportQuery, db: Session = Depends(get_db)) -> Histories:
+async def get_history_in_group_for_export(group_id: str, query: ExportQuery) -> Histories:
     """
     Internal api to get history in a group for export and SEO reasons.
 
@@ -776,7 +789,7 @@ async def get_history_in_group_for_export(group_id: str, query: ExportQuery, db:
     * `250`: if an unknown error occurred.
     """
     try:
-        return await environ.env.rest.group.export_history_in_group(group_id, query, db)
+        return await environ.env.rest.group.export_history_in_group(group_id, query)
     except UserIsKickedException as e:
         log_error_and_raise_known(ErrorCodes.USER_IS_KICKED, sys.exc_info(), e)
     except NoSuchGroupException as e:

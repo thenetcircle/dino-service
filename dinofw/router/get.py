@@ -106,19 +106,6 @@ async def get_undeleted_groups_for_user(user_id: int, db: Session = Depends(get_
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.get("/history/{group_id}", response_model=Histories)
-@timeit(logger, "GET", "/history/{group_id}")
-@wrap_exception()
-async def get_all_history_in_group(group_id: str) -> Histories:
-    """
-    Internal api to get all the history in a group for legal purposes.
-
-    **Potential error codes in response:**
-    * `250`: if an unknown error occurred.
-    """
-    return await environ.env.rest.group.all_history_in_group(group_id)
-
-
 @router.get("/groups/{group_id}/users", response_model=UsersGroup)
 @timeit(logger, "GET", "/groups/{group_id}/users")
 @wrap_exception()
