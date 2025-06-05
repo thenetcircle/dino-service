@@ -658,10 +658,10 @@ class RelationalHandler:
         mentions: List[int] = None,
         context: Optional[str] = None
     ) -> GroupBase:
-        async def get_receivers() -> (List[UserGroupStatsEntity], bool):
+        async def get_receivers() -> List[UserGroupStatsEntity]:
             # if a group is hidden, it might have unread messages when it was hidden, so we have
             # to query for it and restore the original amount plus one (this message)
-            _receivers_in_group = await db.run_sync(lambda _db:
+            return await db.run_sync(lambda _db:
                 _db.query(UserGroupStatsEntity)
                 .filter(
                     UserGroupStatsEntity.group_id == message.group_id,
@@ -670,7 +670,6 @@ class RelationalHandler:
                 )
                 .all()
             )
-            return filter_whisper_users_if_any(_receivers_in_group, message, context)
 
         async def update_cached_unread():
             async with self.env.cache.pipeline() as p:
@@ -790,7 +789,8 @@ class RelationalHandler:
 
         # some action logs don't need to update these
         if update_unread_count:
-            receivers_in_group, is_whisper = await get_receivers()
+            receivers_in_group = await get_receivers()
+            receivers_in_group, is_whisper = filter_whisper_users_if_any(receivers_in_group, message, context)
 
             non_sender_user_ids = [
                 user.user_id
