@@ -362,8 +362,9 @@ class BaseServerRestApi(BaseDatabaseTest):
             self,
             group_id: int
     ):
-        raw_response = await self.client.get(
-            f"/v1/history/{group_id}"
+        raw_response = await self.client.post(
+            f"/v1/history/{group_id}",
+            json={"per_page": 100}
         )
         self.assertEqual(raw_response.status_code, 200)
 
