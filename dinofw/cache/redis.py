@@ -315,8 +315,8 @@ class CacheRedis(ICache):
         await self.redis.set(key, "1")
         await self.redis.expire(key, ttl)
 
-    def get_online_users(self) -> Set[int]:
-        return {int(user_id) for user_id in self.redis.smembers(RedisKeys.online_users())}
+    async def get_online_users(self) -> Set[int]:
+        return {int(user_id) for user_id in await self.redis.smembers(RedisKeys.online_users())}
 
     async def set_online_users(self, offline: List[int] = None, online: List[int] = None) -> None:
         key = RedisKeys.online_users()
@@ -335,7 +335,7 @@ class CacheRedis(ICache):
     async def set_online_users_only(self, online: List[int] = None) -> None:
         key = RedisKeys.online_users()
 
-        in_cache = {int(user_id) for user_id in self.redis.smembers(RedisKeys.online_users())}
+        in_cache = {int(user_id) for user_id in await self.redis.smembers(RedisKeys.online_users())}
         to_remove = in_cache - set(online)
 
         if len(to_remove):
