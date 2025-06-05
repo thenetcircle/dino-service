@@ -581,6 +581,11 @@ async def create_action_log_in_all_groups_for_user(
     useful when a user is changing his/her nickname, otherwise all groups
     for this user will be unhidden. Default value is True.
 
+    The action log parameter `update_group_updated_at` will ALWAYS be set to
+    `false` for this API, since this API is used to create action logs when
+    a user changes gender/nickname, and we don't want to undelete or reorder
+    conversations when this happens.
+
     This API is run asynchronously, and returns a `201 Created` instead of
     `200 OK`.
 
@@ -589,6 +594,7 @@ async def create_action_log_in_all_groups_for_user(
     """
 
     async def _create_action_logs(user_id_, query_, db_):
+        query_.update_group_updated_at = False
         await environ.env.rest.user.create_action_log_in_all_groups(user_id_, query_, db_)
 
     try:

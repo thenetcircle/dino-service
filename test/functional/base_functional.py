@@ -518,10 +518,20 @@ class BaseServerRestApi(BaseDatabaseTest):
     async def create_action_log_in_all_groups_for_user(
             self,
             user_id: int = BaseTest.USER_ID,
+            unhide_group: bool = True,
+            update_unread_count: bool = False,
+            update_last_message: bool = True,
+            update_last_message_time: bool = True,
+            update_group_updated_at: bool = True,
             delay: int = 20
     ):
         json_data = {
-            "payload": "some action log payload"
+            "payload": "some action log payload",
+            "unhide_group": unhide_group,
+            "update_unread_count": update_unread_count,
+            "update_last_message": update_last_message,
+            "update_last_message_time": update_last_message_time,
+            "update_group_updated_at": update_group_updated_at
         }
 
         raw_response = await self.client.post(

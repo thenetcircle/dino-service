@@ -99,6 +99,7 @@ class BaseResource(ABC):
             update_last_message=query.update_last_message,
             update_last_message_time=query.update_last_message_time,
             unhide_group=query.unhide_group,
+            update_group_updated_at=query.update_group_updated_at,
             event_type=EventTypes.ACTION_LOG,
             context=None
         )
@@ -116,6 +117,7 @@ class BaseResource(ABC):
             update_last_message: bool = True,
             update_last_message_time: bool = True,
             unhide_group: bool = True,
+            update_group_updated_at: bool = True,
             mentions: List[int] = None,
             context: Optional[str] = None,
     ) -> Optional[GroupBase]:
@@ -131,6 +133,7 @@ class BaseResource(ABC):
             update_unread_count=should_increase_unread,
             update_last_message=update_last_message,
             update_last_message_time=update_last_message_time,
+            update_group_updated_at=update_group_updated_at,
             unhide_group=unhide_group,
             mentions=mentions,
             context=context

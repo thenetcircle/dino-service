@@ -654,6 +654,7 @@ class RelationalHandler:
         update_unread_count: bool = True,
         update_last_message: bool = True,
         update_last_message_time: bool = True,
+        update_group_updated_at: bool = True,
         unhide_group: bool = True,
         mentions: List[int] = None,
         context: Optional[str] = None
@@ -813,8 +814,9 @@ class RelationalHandler:
         if update_last_message and not is_whisper:
             await update_last_message_in_db()
 
-        # always update this
-        group.updated_at = sent_time
+        # always update this, unless it's a nickname change or some other action log
+        if update_group_updated_at:
+            group.updated_at = sent_time
 
         # we have to count the number of mentions; it's reset when the user reads/opens the conversation
         if mentions and len(mentions):

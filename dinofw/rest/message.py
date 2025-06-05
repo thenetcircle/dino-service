@@ -137,10 +137,12 @@ class MessageResource(BaseResource):
 
         update_last_message = True
         update_last_message_time = True
+        update_group_updated_at = True
 
         if query.action_log is not None:
             update_last_message = query.action_log.update_last_message
             update_last_message_time = query.action_log.update_last_message_time
+            update_group_updated_at = query.action_log.update_group_updated_at
 
         await self._user_sends_a_message(
             group_id,
@@ -153,6 +155,7 @@ class MessageResource(BaseResource):
             event_type=EventTypes.ATTACHMENT,
             update_last_message=update_last_message,
             update_last_message_time=update_last_message_time,
+            update_group_updated_at=update_group_updated_at,
             context=None
         )
 

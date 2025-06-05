@@ -20,6 +20,9 @@ class ActionLogQuery(BaseModel):
     # sometimes, the preview should update, but not the time (i.e. keep ordering of conversations)
     update_last_message_time: Optional[bool] = True
 
+    # for e.g. nickname changes, don't update the group updated_at time, or it will undelete and reorder conversations
+    update_group_updated_at: Optional[bool] = True
+
     unhide_group: Optional[bool] = Field(
         default=True,
         description="""

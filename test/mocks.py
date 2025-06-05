@@ -554,6 +554,7 @@ class FakeDatabase:
         update_unread_count: bool = True,
         update_last_message: bool = True,
         update_last_message_time: bool = True,
+        update_group_updated_at: bool = True,
         unhide_group: bool = True,
         mentions: List[int] = None,
         context: Optional[str] = None
