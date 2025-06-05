@@ -169,7 +169,7 @@ class BaseMessageTest(BaseCassandraHandlerTest):
             BaseMessageTest.GROUP_ID,
             ActionLogQuery(payload=BaseMessageTest.MESSAGE_PAYLOAD),
         )
-        message = await self.handler.get_all_messages_in_group(msg.group_id)
+        message = await self.handler.export_history_in_group(msg.group_id, ExportQuery(per_page=100))
         self.assertEqual(1, len(message))
 
         new_payload = "edited action log"
