@@ -21,6 +21,7 @@ class BaseTest(IsolatedAsyncioTestCase):
     USER_ID = 1234
     OTHER_USER_ID = 8888
     THIRD_USER_ID = 4321
+    FOURTH_USER_ID = 5555
     MESSAGE_PAYLOAD = '{"message": "test message"}'
     FILE_ID = str(uuid()).replace("-", "")
     FILE_STATUS = 1

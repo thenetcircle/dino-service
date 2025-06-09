@@ -206,21 +206,25 @@ def to_deleted_stats(deleted_stats: List[DeletedStatsBase]) -> List[DeletedStats
     return stats
 
 
-def to_user_group(user_groups: List[UserGroupBase], deleted_groups: Optional[List[DeletedStatsBase]] = None):
+def to_user_group(
+        user_groups: Optional[List[UserGroupBase]],
+        deleted_groups: Optional[List[DeletedStatsBase]] = None
+):
     groups: List[UserGroup] = list()
 
-    for user_group in user_groups:
-        groups.append(
-            group_base_to_user_group(
-                group_base=user_group.group,
-                stats_base=user_group.user_stats,
-                receiver_stats_base=user_group.receiver_user_stats,
-                unread=user_group.unread,
-                receiver_unread=user_group.receiver_unread,
-                user_count=user_group.user_count,
-                users=user_group.user_join_times,
+    if user_groups is not None:
+        for user_group in user_groups:
+            groups.append(
+                group_base_to_user_group(
+                    group_base=user_group.group,
+                    stats_base=user_group.user_stats,
+                    receiver_stats_base=user_group.receiver_user_stats,
+                    unread=user_group.unread,
+                    receiver_unread=user_group.receiver_unread,
+                    user_count=user_group.user_count,
+                    users=user_group.user_join_times,
+                )
             )
-        )
 
     if deleted_groups is not None:
         for deleted_group in deleted_groups:

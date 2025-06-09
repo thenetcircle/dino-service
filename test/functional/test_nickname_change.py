@@ -18,7 +18,6 @@ class TestNicknameChange(BaseServerRestApi):
         msgs = await self.send_message_to_group_from(group_id, user_id=BaseTest.USER_ID)
         creation_time = msgs[0]["created_at"]
 
-
         await self.assert_groups_for_user(1, user_id=BaseTest.OTHER_USER_ID)
         await self.assert_groups_for_user(1, user_id=BaseTest.THIRD_USER_ID)
 

@@ -281,8 +281,7 @@ class RelationalHandler:
         inner join
             user_group_stats u on u.group_id = g.group_id
         where
-            u.user_id = 6510486 and
-            g.group_id = '00000000-005f-c238-0000-000000635796' and
+            u.user_id = 4444 and
             u.hide = false and
             u.deleted = false and
             g.status in (0, -1) and

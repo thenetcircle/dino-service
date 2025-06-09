@@ -149,7 +149,7 @@ class ReceiverStatsQuery(AbstractQuery):
 class GroupQuery(PaginationQuery, UserStatsQuery, ReceiverStatsQuery):
     receiver_ids: Optional[List[int]]
     group_type: Optional[int] = None
-    include_deleted: Optional[bool] = False
+    deleted: Optional[bool] = False  # None means both
 
 
 class GroupUpdatesQuery(GroupQuery):

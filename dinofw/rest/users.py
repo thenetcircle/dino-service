@@ -71,13 +71,15 @@ class UserResource(BaseResource):
     async def get_groups_for_user(
         self, user_id: int, query: GroupQuery, db: Session
     ) -> List[UserGroup]:
-        user_groups: List[UserGroupBase] = await self.env.db.get_groups_for_user(
-            user_id, query, db
-        )
-
+        user_groups: Optional[List[UserGroupBase]] = None
         deleted_groups: Optional[List[DeletedStatsBase]] = None
 
-        if query.include_deleted:
+        if query.deleted is None or query.deleted == False:
+            user_groups: List[UserGroupBase] = await self.env.db.get_groups_for_user(
+                user_id, query, db
+            )
+
+        if query.deleted is None or query.deleted == True:
             deleted_groups: List[DeletedStatsBase] = await self.env.db.get_deleted_groups_for_user(user_id, db)
 
         return to_user_group(user_groups, deleted_groups=deleted_groups)

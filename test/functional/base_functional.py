@@ -1,6 +1,6 @@
 import json
 import time
-from typing import List
+from typing import List, Optional
 
 import arrow
 
@@ -389,16 +389,23 @@ class BaseServerRestApi(BaseDatabaseTest):
             hidden: bool = False,
             until: float = None,
             receiver_stats: bool = True,
-            include_deleted: bool = False
+            set_deleted_to: int = -2
     ):
         json_data = {
             "per_page": "10",
             "count_unread": count_unread,
             "only_unread": only_unread,
             "hidden": hidden,
-            "receiver_stats": receiver_stats,
-            "include_deleted": include_deleted
+            "receiver_stats": receiver_stats
         }
+
+        if set_deleted_to == 1:
+            json_data["deleted"] = True
+        elif set_deleted_to == 0:
+            json_data["deleted"] = False
+        elif set_deleted_to == -1:
+            json_data["deleted"] = None
+
         if until is not None:
             json_data["until"] = until
 
