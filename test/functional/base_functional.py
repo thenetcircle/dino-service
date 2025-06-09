@@ -328,12 +328,25 @@ class BaseServerRestApi(BaseDatabaseTest):
 
         return float(now_ts)
 
-    async def get_global_user_stats(self, user_id: int = BaseTest.USER_ID, hidden: bool = None, count_unread: bool = None):
+    async def get_global_user_stats(
+            self,
+            user_id: int = BaseTest.USER_ID,
+            hidden: bool = None,
+            count_unread: bool = None,
+            set_deleted_to: int = -2
+    ):
         json_data = {}
         if hidden is not None:
             json_data["hidden"] = hidden
         if count_unread is not None:
             json_data["count_unread"] = count_unread
+
+        if set_deleted_to == 1:
+            json_data["deleted"] = True
+        elif set_deleted_to == 0:
+            json_data["deleted"] = False
+        elif set_deleted_to == -1:
+            json_data["deleted"] = None
 
         raw_response = await self.client.post(
             f"/v1/userstats/{user_id}",

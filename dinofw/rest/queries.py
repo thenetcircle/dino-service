@@ -136,6 +136,7 @@ class UserStatsQuery(AbstractQuery):
     hidden: Optional[bool] = None  # None means both
     count_unread: Optional[bool] = True
     only_unread: Optional[bool] = True
+    deleted: Optional[bool] = False  # None means both
 
 
 class GroupInfoQuery(AbstractQuery):

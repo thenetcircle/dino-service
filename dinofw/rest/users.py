@@ -175,6 +175,7 @@ class UserResource(BaseResource):
                 only_unread=query.only_unread,
                 count_unread=query.count_unread,
                 hidden=query.hidden,
+                deleted=query.deleted
             ),
             db
         )

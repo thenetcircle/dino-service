@@ -9,6 +9,7 @@ from uuid import uuid4 as uuid
 
 import arrow
 from loguru import logger
+from pydantic.fields import defaultdict
 from sqlalchemy import case
 from sqlalchemy import func
 from sqlalchemy import literal
@@ -1468,42 +1469,66 @@ class RelationalHandler:
             self, user_id: int, query: GroupQuery, db: AsyncSession
     ) -> List[Tuple[int, int]]:
         hidden = query.hidden
+        deleted = query.deleted
+        types = list()
+        deleted_types = list()
 
-        types = await self.env.cache.get_count_group_types_for_user(user_id, hidden)
-        if types is not None:
-            return types
+        # don't check cache for deleted, only supporters and admins use it
+        if deleted is False:
+            types = await self.env.cache.get_count_group_types_for_user(user_id, hidden)
+            if types is not None:
+                return types
 
-        statement = await db.run_sync(lambda _db:
-            _db.query(
-                GroupEntity.group_type,
-                func.count(GroupEntity.group_type),
-            )
-            .join(
-                UserGroupStatsEntity,
-                UserGroupStatsEntity.group_id == GroupEntity.group_id,
-            )
-            .filter(
-                UserGroupStatsEntity.user_id == user_id,
-                UserGroupStatsEntity.deleted.is_(False),
-                UserGroupStatsEntity.delete_before < GroupEntity.updated_at,
-            )
-        )
-
-        if query.hidden is not None:
-            statement = statement.filter(
-                UserGroupStatsEntity.hide.is_(hidden)
+        if deleted is None or deleted is False:
+            statement = await db.run_sync(lambda _db:
+                _db.query(
+                    GroupEntity.group_type,
+                    func.count(GroupEntity.group_type)
+                )
+                .join(
+                    UserGroupStatsEntity,
+                    UserGroupStatsEntity.group_id == GroupEntity.group_id
+                )
+                .filter(
+                    UserGroupStatsEntity.user_id == user_id,
+                    UserGroupStatsEntity.deleted.is_(False),
+                    UserGroupStatsEntity.delete_before < GroupEntity.updated_at
+                )
             )
 
-        types = await db.run_sync(lambda _db:
-            statement.group_by(
-                GroupEntity.group_type
-            )
-            .all()
-        )
+            if query.hidden is not None:
+                statement = statement.filter(
+                    UserGroupStatsEntity.hide.is_(hidden)
+                )
 
-        types_dict = dict()
+            types = await db.run_sync(lambda _db:
+                statement.group_by(
+                    GroupEntity.group_type
+                )
+                .all()
+            )
+
+        if deleted is None or deleted is True:
+            deleted_types = await db.run_sync(lambda _db:
+                _db.query(
+                    DeletedStatsEntity.group_type,
+                    func.count(DeletedStatsEntity.group_type)
+                )
+                .filter(
+                    DeletedStatsEntity.user_id == user_id
+                )
+               .group_by(
+                    DeletedStatsEntity.group_type
+                )
+                .all()
+            )
+
+        types_dict = defaultdict(lambda: 0)
         for the_type, the_count in types:
             types_dict[the_type] = the_count
+
+        for the_type, the_count in deleted_types:
+            types_dict[the_type] += the_count
 
         # make sure we have the cached amount for all possible group
         # types even if the user is not part of all group types
@@ -1513,8 +1538,9 @@ class RelationalHandler:
 
         types = list(types_dict.items())
 
+        # don't cache if we're checking deleted groups
         # if hidden is None, we're counting for both types
-        if query.hidden is not None:
+        if deleted is False and hidden is not None:
             await self.env.cache.set_count_group_types_for_user(user_id, types, hidden)
 
         return types
