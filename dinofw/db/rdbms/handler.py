@@ -1012,8 +1012,7 @@ class RelationalHandler:
                 DeletedStatsEntity
             )
             .filter(
-                DeletedStatsEntity.user_id == user_id,
-                DeletedStatsEntity.group_type == GroupTypes.ONE_TO_ONE
+                DeletedStatsEntity.user_id == user_id
             )
             .all()
         )
