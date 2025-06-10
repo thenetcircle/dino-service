@@ -4,6 +4,7 @@ from typing import List, Optional
 
 import arrow
 
+from dinofw.rest.queries import GroupQuery
 from dinofw.utils import to_ts
 from dinofw.utils import utcnow_ts
 from dinofw.utils.config import MessageTypes, PayloadStatus, GroupStatus
