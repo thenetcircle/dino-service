@@ -1,8 +1,8 @@
-from dinofw.utils.config import GroupStatus
+import asyncio
+
 from test.base import BaseTest
 from test.functional.base_functional import BaseServerRestApi
 
-import asyncio
 
 class TestCountGroups(BaseServerRestApi):
     async def test_count_groups_including_deleted(self):
@@ -15,8 +15,7 @@ class TestCountGroups(BaseServerRestApi):
         groups = await self.groups_for_user(BaseTest.USER_ID)
         self.assertEqual(3, len(groups))
 
-        # we should call `delete_all_groups()`, but that will async delete the groups, which makes this test flaky
-        await self.user_leaves_group(msg["group_id"], BaseTest.USER_ID)
+        await self.update_delete_before(msg["group_id"], delete_before=msg["created_at"], user_id=BaseTest.USER_ID)
 
         # without specifying deleted, the default of False should count only non-deleted groups
         stats = await self.get_global_user_stats(BaseTest.USER_ID)

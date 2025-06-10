@@ -88,6 +88,25 @@ def filter_whisper_users_if_any(
     ], True
 
 
+def update_statement_for_deleted_flag(statement, deleted: bool):
+    if deleted is False:
+        statement = statement.filter(
+            GroupEntity.status.in_(GroupStatus.visible_statuses),
+            UserGroupStatsEntity.deleted.is_(False),
+            UserGroupStatsEntity.delete_before < GroupEntity.updated_at
+        )
+    elif deleted is True:
+        statement = statement.filter(
+            UserGroupStatsEntity.deleted.is_(True),
+            UserGroupStatsEntity.delete_before >= GroupEntity.updated_at
+        )
+    else:
+        # 'query.deleted==None' means to include both deleted and non-deleted groups
+        pass
+
+    return statement
+
+
 class RelationalHandler:
     def __init__(self, env):
         self.env = env
@@ -313,35 +332,25 @@ class RelationalHandler:
                 )
                 .filter(
                     GroupEntity.last_message_time < until,
-                    GroupEntity.status.in_(GroupStatus.visible_statuses),
-                    GroupEntity.group_type.in_(GroupTypes.private_group_types),
-                    UserGroupStatsEntity.deleted.is_(False),
-                    UserGroupStatsEntity.user_id == user_id,
-
-                    # TODO: double check this; before was '<= updated at', but then the '/groups' api
-                    #  will return all groups that the user deleted (when a user deletes a group,
-                    #  'delete_before' will be set to the same time as 'updated_at'
-                    UserGroupStatsEntity.delete_before < GroupEntity.updated_at,
-
-                    # TODO: when joining a "group", the last message was before you joined; if we create
-                    #  an action log when a user joins it will update `last_message_time` and we can use
-                    #  that instead of `updated_at`, which would make more sense
-                    # UserGroupStatsEntity.delete_before < GroupEntity.last_message_time
+                    UserGroupStatsEntity.user_id == user_id
                 )
             )
+
+            # "include deleted? yes/no/both" based on the query.deleted parameter
+            statement = update_statement_for_deleted_flag(statement, query.deleted)
 
             if query.hidden is not None:
                 statement = statement.filter(
                     UserGroupStatsEntity.hide.is_(query.hidden)
                 )
 
-            if query.group_type is not None:
+            if query.group_type is None:
                 statement = statement.filter(
-                    GroupEntity.group_type == query.group_type
+                    GroupEntity.group_type.in_(GroupTypes.private_group_types)
                 )
             else:
                 statement = statement.filter(
-                    GroupEntity.group_type != GroupTypes.PUBLIC_ROOM
+                    GroupEntity.group_type == query.group_type
                 )
 
             if query.only_unread:
@@ -1472,7 +1481,6 @@ class RelationalHandler:
         hidden = query.hidden
         deleted = query.deleted
         types = list()
-        deleted_types = list()
 
         # don't check cache for deleted, only supporters and admins use it
         if deleted is False:
@@ -1480,56 +1488,38 @@ class RelationalHandler:
             if types is not None:
                 return types
 
-        if deleted is None or deleted is False:
-            statement = await db.run_sync(lambda _db:
-                _db.query(
-                    GroupEntity.group_type,
-                    func.count(GroupEntity.group_type)
-                )
-                .join(
-                    UserGroupStatsEntity,
-                    UserGroupStatsEntity.group_id == GroupEntity.group_id
-                )
-                .filter(
-                    UserGroupStatsEntity.user_id == user_id,
-                    UserGroupStatsEntity.deleted.is_(False),
-                    UserGroupStatsEntity.delete_before < GroupEntity.updated_at
-                )
+        statement = await db.run_sync(lambda _db:
+            _db.query(
+                GroupEntity.group_type,
+                func.count(GroupEntity.group_type)
+            )
+            .join(
+                UserGroupStatsEntity,
+                UserGroupStatsEntity.group_id == GroupEntity.group_id
+            )
+            .filter(
+                UserGroupStatsEntity.user_id == user_id,
+            )
+        )
+
+        # "include deleted? yes/no/both" based on the query.deleted parameter
+        statement = update_statement_for_deleted_flag(statement, query.deleted)
+
+        if hidden is not None:
+            statement = statement.filter(
+                UserGroupStatsEntity.hide.is_(hidden)
             )
 
-            if query.hidden is not None:
-                statement = statement.filter(
-                    UserGroupStatsEntity.hide.is_(hidden)
-                )
-
-            types = await db.run_sync(lambda _db:
-                statement.group_by(
-                    GroupEntity.group_type
-                )
-                .all()
+        types = await db.run_sync(lambda _db:
+            statement.group_by(
+                GroupEntity.group_type
             )
-
-        if deleted is None or deleted is True:
-            deleted_types = await db.run_sync(lambda _db:
-                _db.query(
-                    DeletedStatsEntity.group_type,
-                    func.count(DeletedStatsEntity.group_type)
-                )
-                .filter(
-                    DeletedStatsEntity.user_id == user_id
-                )
-               .group_by(
-                    DeletedStatsEntity.group_type
-                )
-                .all()
-            )
+            .all()
+        )
 
         types_dict = defaultdict(lambda: 0)
         for the_type, the_count in types:
             types_dict[the_type] = the_count
-
-        for the_type, the_count in deleted_types:
-            types_dict[the_type] += the_count
 
         # make sure we have the cached amount for all possible group
         # types even if the user is not part of all group types
