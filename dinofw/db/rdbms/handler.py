@@ -98,11 +98,23 @@ def update_statement_for_deleted_flag(statement, deleted: bool):
     elif deleted is True:
         statement = statement.filter(
             UserGroupStatsEntity.deleted.is_(True),
-            UserGroupStatsEntity.delete_before >= GroupEntity.updated_at
+            UserGroupStatsEntity.delete_before >= GroupEntity.updated_at,
+
+            # if a user is kicked then deletes the group, we don't want to include it
+            UserGroupStatsEntity.kicked.is_(False)
         )
     else:
         # 'query.deleted==None' means to include both deleted and non-deleted groups
-        pass
+        statement = statement.filter(
+            # but still ignore kicked groups
+            or_(
+                and_(
+                    UserGroupStatsEntity.deleted.is_(True),
+                    UserGroupStatsEntity.kicked.is_(False)
+                ),
+                UserGroupStatsEntity.deleted.is_(False)
+            )
+        )
 
     return statement
 
