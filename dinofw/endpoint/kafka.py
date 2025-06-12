@@ -63,6 +63,16 @@ class KafkaPublisher(IServerPublisher):
             bootstrap_servers=bootstrap_servers,
         )
 
+    def stop(self):
+        if self.producer is not None:
+            try:
+                self.producer.flush()
+                self.producer.close()
+            except Exception as e:
+                logger.error("could not close kafka producer: {}".format(str(e)))
+                logger.exception(e)
+                self.env.capture_exception(sys.exc_info())
+
     def send(self, data: dict) -> None:
         try:
             key = data.get("actor", dict()).get("id", None)
@@ -118,6 +128,9 @@ class KafkaPublishHandler(IServerPublishHandler):
 
     def setup(self):
         self.publisher.setup()
+
+    def stop(self):
+        self.publisher.stop()
 
     def delete_attachments(
         self,

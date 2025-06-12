@@ -28,6 +28,9 @@ async def init_db(env, engine=None):
             pool_size=pool_size
         )
 
+    # store it so we can dispose it on shutdown cleanly
+    env.engine = engine
+
     env.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, class_=AsyncSession)
     env.Base = declarative_base()
 

@@ -107,7 +107,7 @@ class CassandraHandler:
 
         connection.setup(hosts, **kwargs)
 
-        cluster = Cluster(
+        self.cluster = Cluster(
             contact_points=hosts,
             protocol_version=3,
             execution_profiles=profiles,
@@ -115,13 +115,16 @@ class CassandraHandler:
         )
 
         # used for serial consistency level when inserting images with "if not exists"
-        self.session = cluster.connect(key_space)
+        self.session = self.cluster.connect(key_space)
         # wrap cqlengine session
         aiosession_for_cqlengine(self.session)
 
         # from cassandra.cqlengine.management import sync_table
         # sync_table(MessageModel)
         # sync_table(AttachmentModel)
+
+    def stop(self):
+        self.cluster.shutdown()
 
     def _get_from_conf(self, key, domain):
         if key not in self.env.config.get(domain):

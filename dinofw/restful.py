@@ -3,6 +3,7 @@ from typing import Final
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from loguru import logger
 
 from dinofw.router import delete
 from dinofw.router import get
@@ -69,4 +70,14 @@ async def startup():
 
 @app.on_event("shutdown")
 async def shutdown_event():
+    logger.info("🔌 stopping the MQTT publisher...")
     await environ.env.client_publisher.stop()
+
+    logger.info("🔌 stopping the Kafka publisher...")
+    environ.env.server_publisher.stop()
+
+    logger.info("🔌 tearing down SQLAlchemy pool...")
+    # AsyncEngine.dispose() is a coroutine in SQLAlchemy:
+    await environ.env.engine.dispose()
+
+    logger.info("✅ all cleanups complete")
