@@ -66,10 +66,7 @@ def timeit(_logger, method: str, tag: str = None, threshold_ms: int = 100, only_
                         _logger.warning(f"{method} {tag or ''}... {the_time:.2f}ms {relevant_args}")
 
                     # don't always need to send telemetry to upstreams stats collector
-                    if only_log:
-                        return
-
-                    if environ.env.stats is not None:
+                    if not only_log and environ.env.stats is not None:
                         stats_tag = method.lower().replace("(", "").replace(")", "")
                         if tag is not None:
                             tag_cleaned = tag.lstrip("/").replace("/", ".").replace("{", "").replace("}", "")

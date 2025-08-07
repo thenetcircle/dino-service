@@ -39,7 +39,7 @@ def count_messages(config_file, max_year):
         conn = psycopg2.connect(f"dbname='{p_name}' user='{p_user}' host='{p_host}' password='{p_pass}'")
     except Exception as e:
         print(f"could not connect to the database: {str(e)}")
-        print(traceback.format_exception(e))
+        traceback.print_exc()
         sys.exit(1)
 
     with conn.cursor() as curs:

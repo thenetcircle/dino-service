@@ -189,7 +189,9 @@ class UpdateUserGroupStatsHandler:
         if group.last_message_time > user_stats.last_read:
             user_ids = await self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
 
-            del user_ids[user_id]
+            if user_id in user_ids:
+                del user_ids[user_id]
+
             self.env.client_publisher.read(
                 group_id, user_id, list(user_ids.keys()), last_read, bookmark=user_stats.bookmark
             )

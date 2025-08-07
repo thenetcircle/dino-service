@@ -62,7 +62,7 @@ def timeit(key: str):
                 return view_func(*args, **kwargs)
             except Exception as e:
                 print(f"could not call api: {e}")
-                print(traceback.format_exc(sys.exc_info()))
+                traceback.print_exc()
                 return None
             finally:
                 the_time = (time.time() - before) * 1000
@@ -228,7 +228,7 @@ for i in range(N_RUNS):
 
     except Exception as e:
         print(f"ERROR: {str(e)}")
-        print(traceback.format_exc())
+        traceback.print_exc()
     except KeyboardInterrupt:
         break
 

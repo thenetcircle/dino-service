@@ -15,7 +15,7 @@ from dinofw.rest.models import Histories
 from dinofw.rest.models import Message
 from dinofw.rest.models import OneToOneStats
 from dinofw.rest.models import UserGroupStats
-from dinofw.rest.queries import CreateActionLogQuery, DeleteAttachmentQuery, AdminQuery, CountMessageQuery, \
+from dinofw.rest.queries import CreateActionLogQuery, DeleteAttachmentQuery, CountMessageQuery, \
     PublicGroupQuery, ExportQuery, PaginationQuery
 from dinofw.rest.queries import CreateGroupQuery
 from dinofw.rest.queries import GroupInfoQuery
