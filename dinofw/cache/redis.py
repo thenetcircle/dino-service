@@ -775,11 +775,15 @@ class CacheRedis(ICache):
         self, group_id: str, users: Dict[int, float]
     ):
         key = RedisKeys.user_in_group(group_id)
-        await self.redis.delete(key)
+        p = self.redis.pipeline()
+
+        await p.delete(key)
 
         if len(users):
-            await self.add_user_ids_and_join_time_in_group(group_id, users)
-            await self.redis.expire(key, FIVE_MINUTES)
+            await self.add_user_ids_and_join_time_in_group(group_id, users, pipeline=p, execute=False)
+            await p.expire(key, FIVE_MINUTES)
+
+        await p.execute()
 
     async def remove_user_id_and_join_time_in_groups_for_user(self, group_ids: List[str], user_id: int, pipeline=None):
         # use pipeline if provided
@@ -795,15 +799,19 @@ class CacheRedis(ICache):
             await r.execute()
 
     async def add_user_ids_and_join_time_in_group(
-        self, group_id: str, users: Dict[int, float]
+        self, group_id: str, users: Dict[int, float], pipeline=None, execute: bool = True
     ) -> None:
         key = RedisKeys.user_in_group(group_id)
-        p = self.redis.pipeline()
+
+        # use pipeline if provided
+        r = pipeline or self.redis.pipeline()
 
         for user_id, join_time in users.items():
-            await p.hset(key, str(user_id), str(join_time))
+            await r.hset(key, str(user_id), str(join_time))
 
-        await p.execute()
+        # only execute if we weren't provided a pipeline
+        if pipeline is None and execute:
+            await r.execute()
 
     async def clear_user_ids_and_join_time_in_group(self, group_id: str) -> None:
         key = RedisKeys.user_in_group(group_id)
