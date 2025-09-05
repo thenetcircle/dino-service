@@ -1,18 +1,20 @@
+import asyncio
 import itertools
+import json
+import random
+import time
 from datetime import datetime as dt
 from typing import List
 from typing import Optional
 
 import arrow
-import asyncio
-import random
-import time
-import json
+from loguru import logger
 from sqlalchemy.orm import Session
 
-from dinofw.rest.api_cache import _langs_key, _to_payload, _from_payload
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
+from dinofw.rest.api_cache import _langs_key, _to_payload, _from_payload
 from dinofw.rest.base import BaseResource
+from dinofw.rest.groups_cache import PublicGroupsCacheMixin
 from dinofw.rest.models import Group
 from dinofw.rest.models import GroupJoinTime
 from dinofw.rest.models import GroupUsers
@@ -39,14 +41,13 @@ from dinofw.utils.convert import to_user_group_stats
 from dinofw.utils.exceptions import InvalidRangeException, NoSuchGroupException, GroupIsFrozenOrArchivedException
 from dinofw.utils.exceptions import UserIsKickedException
 
-
 SOFT_TTL_SEC = 60          # serve fresh for this long (+ jitter)
 HARD_TTL_SEC = 600         # Redis hard TTL in case rebuilds fail
 LOCK_TTL_SEC = 15          # single-flight lock TTL
 CACHE_PREFIX = "public_groups:v1"  # bump to invalidate
 
 
-class GroupResource(BaseResource):
+class GroupResource(BaseResource, PublicGroupsCacheMixin):
     async def get_users_in_group(
         self, group_id: str, db: Session
     ) -> Optional[GroupUsers]:
@@ -64,7 +65,7 @@ class GroupResource(BaseResource):
             group_id=group_id, owner_id=group.owner_id, user_count=n_users, users=users,
         )
 
-    async def _compute_public_groups(self, query: PublicGroupQuery, db) -> List[Group]:
+    async def compute_public_groups(self, query: PublicGroupQuery, db) -> List[Group]:
         group_bases = await self.env.db.get_public_groups(query, db)
         groups: List[Group] = list()
 
@@ -84,7 +85,7 @@ class GroupResource(BaseResource):
 
     async def get_all_public_groups(self, query: PublicGroupQuery, db) -> List[Group]:
         async def _compute_and_cache():
-            groups = await self._compute_public_groups(query, db)
+            groups = await self.compute_public_groups(query, db)
             new_doc = {
                 "soft_expire": now + SOFT_TTL_SEC + random.randint(0, 30),
                 "payload": _to_payload(groups),
@@ -95,7 +96,7 @@ class GroupResource(BaseResource):
 
         # 1) Skip cache if admin, or checking friends
         if (getattr(query, "admin_id", None) is not None) or getattr(query, "users", None):
-            return await self._compute_public_groups(query, db)
+            return await self.compute_public_groups(query, db)
 
         # 2) Build cache keys (only languages matter for cache)
         langs_key = _langs_key(getattr(query, "spoken_languages", None))
@@ -127,9 +128,9 @@ class GroupResource(BaseResource):
                 else:
                     # Another worker is refreshing; serve stale
                     return _from_payload(payload)
-            except Exception:
+            except Exception as e:
                 # Fall through to rebuild on any decode/shape error
-                pass
+                logger.exception(e)
 
         # 4) Cache miss → single-flight; if lock busy, briefly poll else compute
         acquired = await redis.set(lock_key, "1", nx=True, ex=LOCK_TTL_SEC)
@@ -146,10 +147,12 @@ class GroupResource(BaseResource):
                     try:
                         doc = json.loads(cached)
                         return _from_payload(doc.get("payload", []))
-                    except Exception:
+                    except Exception as e:
+                        logger.exception(e)
                         break
+
             # Worst case: compute without caching (very rare)
-            return await self._compute_public_groups(query, db)
+            return await self.compute_public_groups(query, db)
 
     async def get_group(
             self,

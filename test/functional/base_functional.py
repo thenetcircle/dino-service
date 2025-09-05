@@ -228,6 +228,9 @@ class BaseServerRestApi(BaseDatabaseTest):
             spoken_languages: List[str] = None,
             users: List[int] = None
     ):
+        """
+        helper test method to call the AsyncClient api for /v1/groups/public
+        """
         data = {
             "include_archived": include_archived,
             "admin_id": admin_id
@@ -240,8 +243,7 @@ class BaseServerRestApi(BaseDatabaseTest):
         raw_response = await self.client.post(
             f"/v1/groups/public", json=data
         )
-        self.assertEqual(raw_response.status_code, 200)
-
+        raw_response.raise_for_status()
         return raw_response.json()
 
     async def user_leaves_group(self, group_id: str, user_id: int = BaseTest.USER_ID) -> None:

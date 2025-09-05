@@ -1,3 +1,4 @@
+import asyncio
 import sys
 from datetime import timedelta
 from typing import List
@@ -13,6 +14,7 @@ from starlette.responses import Response
 from starlette.status import HTTP_201_CREATED
 
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
+from dinofw.rest.groups_cache import dumps_to_bytes
 from dinofw.rest.models import Group, LastReads
 from dinofw.rest.models import Histories
 from dinofw.rest.models import Message
@@ -25,13 +27,13 @@ from dinofw.rest.queries import AttachmentQuery
 from dinofw.rest.queries import CountMessageQuery
 from dinofw.rest.queries import CreateAttachmentQuery
 from dinofw.rest.queries import CreateGroupQuery
+from dinofw.rest.queries import GetOneToOneQuery
 from dinofw.rest.queries import GroupInfoQuery
 from dinofw.rest.queries import GroupQuery
 from dinofw.rest.queries import GroupUpdatesQuery
 from dinofw.rest.queries import MessageInfoQuery
 from dinofw.rest.queries import MessageQuery
 from dinofw.rest.queries import NotificationQuery
-from dinofw.rest.queries import GetOneToOneQuery
 from dinofw.rest.queries import SendMessageQuery
 from dinofw.rest.queries import UserStatsQuery
 from dinofw.utils import environ, is_non_zero, LONG_AGO
@@ -116,10 +118,10 @@ async def send_message_to_user(
         log_error_and_raise_unknown(sys.exc_info(), e)
 
 
-@router.post("/groups/public", response_model=Optional[List[Group]])
+@router.post("/groups/public", response_model=List[Group])
 @timeit(logger, "POST", "/groups/public")
 @wrap_exception()
-async def get_public_groups(query: PublicGroupQuery, db: Session = Depends(get_db)) -> List[Group]:
+async def get_public_groups(query: PublicGroupQuery, db: Session = Depends(get_db)):
     """
     Get all public groups, including the user amount and a list of user ids in the group, sorted by their join time.
 
@@ -133,10 +135,43 @@ async def get_public_groups(query: PublicGroupQuery, db: Session = Depends(get_d
     **Potential error codes in response:**
     * `250`: if an unknown error occurred.
     """
+
+    # before we switched to a raw cache-based approach; ow there's no pydantic serialize/deserialize slowdowns
+    """
     try:
         return await environ.env.rest.group.get_all_public_groups(query, db)
     except Exception as e:
         log_error_and_raise_unknown(sys.exc_info(), e)
+    """
+
+    # 1) try cache based on language
+    raw, status, base = await environ.env.rest.group.get_cached_public_groups_raw(query)
+    if raw is not None:
+        # if stale, and we acquired the right to refresh, do it in background.
+        if status == "stale-refreshing" and base:
+            # fire-and-forget; the current caller gets stale but fast
+            asyncio.create_task(environ.env.rest.group.refresh_cache_in_background(base, query, db))
+        return Response(content=raw, media_type="application/json", headers={"X-Cache": status})
+
+    # 2) Not cached (miss or miss-wait): compute
+    groups = await environ.env.rest.group.compute_public_groups(query, db)
+
+    # 3) Serialize once to bytes (dicts, not models)
+    items = []
+    for g in groups:
+        if hasattr(g, "model_dump"):
+            items.append(g.model_dump(exclude_none=True))
+        else:
+            items.append(g.dict(exclude_none=True))
+    raw_json = dumps_to_bytes(items)
+
+    # 4) If we own the refresh (miss-refreshing), write to cache
+    if status == "miss-refreshing" and base:
+        await environ.env.rest.group.set_cached_public_groups_raw(base, raw_json)
+
+    # If status == "miss-wait", another worker should fill soon; we still return fast.
+    return Response(content=raw_json, media_type="application/json", headers={"X-Cache": status or "nocache"})
+
 
 
 @router.post("/users/{user_id}/message/{message_id}/info", response_model=Optional[Message])
