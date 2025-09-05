@@ -7,6 +7,7 @@ from typing import Dict, Set
 from typing import List
 from typing import Optional
 from typing import Tuple
+import random
 
 import redis
 from loguru import logger
@@ -781,7 +782,7 @@ class CacheRedis(ICache):
 
         if len(users):
             await self.add_user_ids_and_join_time_in_group(group_id, users, pipeline=p, execute=False)
-            await p.expire(key, FIVE_MINUTES)
+            await p.expire(key, FIVE_MINUTES + random.randint(0, ONE_MINUTE))
 
         await p.execute()
 

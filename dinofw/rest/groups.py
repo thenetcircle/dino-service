@@ -4,8 +4,13 @@ from typing import List
 from typing import Optional
 
 import arrow
+import asyncio
+import random
+import time
+import json
 from sqlalchemy.orm import Session
 
+from dinofw.rest.api_cache import _langs_key, _to_payload, _from_payload
 from dinofw.db.rdbms.schemas import UserGroupStatsBase
 from dinofw.rest.base import BaseResource
 from dinofw.rest.models import Group
@@ -35,6 +40,12 @@ from dinofw.utils.exceptions import InvalidRangeException, NoSuchGroupException,
 from dinofw.utils.exceptions import UserIsKickedException
 
 
+SOFT_TTL_SEC = 60          # serve fresh for this long (+ jitter)
+HARD_TTL_SEC = 600         # Redis hard TTL in case rebuilds fail
+LOCK_TTL_SEC = 15          # single-flight lock TTL
+CACHE_PREFIX = "public_groups:v1"  # bump to invalidate
+
+
 class GroupResource(BaseResource):
     async def get_users_in_group(
         self, group_id: str, db: Session
@@ -53,13 +64,14 @@ class GroupResource(BaseResource):
             group_id=group_id, owner_id=group.owner_id, user_count=n_users, users=users,
         )
 
-    async def get_all_public_groups(self, query: PublicGroupQuery, db: Session) -> List[Group]:
+    async def _compute_public_groups(self, query: PublicGroupQuery, db) -> List[Group]:
         group_bases = await self.env.db.get_public_groups(query, db)
-        groups = list()
+        groups: List[Group] = list()
 
-        # TODO: skip users if only checking rooms for user ids
         for group in group_bases:
-            _, first_users, n_users = await self.env.db.get_users_in_group(group.group_id, db, include_group=False)
+            _, first_users, n_users = await self.env.db.get_users_in_group(
+                group.group_id, db, include_group=False
+            )
             groups.append(
                 group_base_to_group(
                     group,
@@ -69,6 +81,75 @@ class GroupResource(BaseResource):
             )
 
         return groups
+
+    async def get_all_public_groups(self, query: PublicGroupQuery, db) -> List[Group]:
+        async def _compute_and_cache():
+            groups = await self._compute_public_groups(query, db)
+            new_doc = {
+                "soft_expire": now + SOFT_TTL_SEC + random.randint(0, 30),
+                "payload": _to_payload(groups),
+            }
+            await redis.set(data_key, json.dumps(new_doc), ex=HARD_TTL_SEC)
+            await redis.delete(lock_key)
+            return groups
+
+        # 1) Skip cache if admin, or checking friends
+        if (getattr(query, "admin_id", None) is not None) or getattr(query, "users", None):
+            return await self._compute_public_groups(query, db)
+
+        # 2) Build cache keys (only languages matter for cache)
+        langs_key = _langs_key(getattr(query, "spoken_languages", None))
+        data_key = f"{CACHE_PREFIX}:{langs_key}"
+        lock_key = f"{data_key}:lock"
+
+        redis = self.env.cache.redis
+        now = int(time.time())
+
+        # 3) Try to serve from cache
+        cached = await redis.get(data_key)
+        if cached:
+            # if your client returns bytes and not str:
+            if isinstance(cached, (bytes, bytearray)):
+                cached = cached.decode("utf-8", errors="ignore")
+            try:
+                doc = json.loads(cached)
+                payload = doc.get("payload", [])
+                soft_expire = int(doc.get("soft_expire", 0))
+
+                # 3a) Fresh → return immediately
+                if soft_expire >= now:
+                    return _from_payload(payload)
+
+                # 3b) Stale → try single-flight rebuild; if we fail, serve stale
+                acquired = await redis.set(lock_key, "1", nx=True, ex=LOCK_TTL_SEC)
+                if acquired:
+                    return await _compute_and_cache()
+                else:
+                    # Another worker is refreshing; serve stale
+                    return _from_payload(payload)
+            except Exception:
+                # Fall through to rebuild on any decode/shape error
+                pass
+
+        # 4) Cache miss → single-flight; if lock busy, briefly poll else compute
+        acquired = await redis.set(lock_key, "1", nx=True, ex=LOCK_TTL_SEC)
+        if acquired:
+            return await _compute_and_cache()
+        else:
+            # Tiny backoff to let the lock holder populate, then try read once
+            for _ in range(5):
+                await asyncio.sleep(0.05)
+                cached = await redis.get(data_key)
+                if cached:
+                    if isinstance(cached, (bytes, bytearray)):
+                        cached = cached.decode("utf-8", errors="ignore")
+                    try:
+                        doc = json.loads(cached)
+                        return _from_payload(doc.get("payload", []))
+                    except Exception:
+                        break
+            # Worst case: compute without caching (very rare)
+            return await self._compute_public_groups(query, db)
 
     async def get_group(
             self,
