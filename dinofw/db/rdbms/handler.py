@@ -1477,7 +1477,7 @@ class RelationalHandler:
             return
 
         join_times = {
-            user_id: stats.join_time
+            user_id: to_ts(stats.join_time)
             for user_id, stats in user_ids_to_stats.items()
         }
 
