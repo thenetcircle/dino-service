@@ -1439,6 +1439,8 @@ class RelationalHandler:
         user_ids_for_cache = set()
         user_ids_to_stats = dict()
         user_ids = list(users.keys())
+        read_times = dict()
+        now_ts = to_ts(now)
 
         user_stats = await db.run_sync(lambda _db:
             _db.query(UserGroupStatsEntity)
@@ -1451,6 +1453,8 @@ class RelationalHandler:
             user_ids_to_stats[user_stat.user_id] = user_stat
 
         for user_id in user_ids:
+            read_times[user_id] = now_ts
+
             if user_id not in user_ids_to_stats:
                 await self.env.cache.increase_count_group_types_for_user(user_id, GroupTypes.PRIVATE_GROUP)
 
@@ -1472,16 +1476,21 @@ class RelationalHandler:
         if not len(user_ids_to_stats):
             return
 
+        join_times = {
+            user_id: stats.join_time
+            for user_id, stats in user_ids_to_stats.items()
+        }
+
         await db.commit()
 
-        now_ts = to_ts(now)
-
+        # why query again? we have the info already in user_ids_to_stats
+        """
         join_times = {
             # actual query happens, similar github issue: https://github.com/sqlalchemy/sqlalchemy/discussions/8913
             user_id: to_ts(await db.run_sync(lambda _db: stats.join_time))
             for user_id, stats in user_ids_to_stats.items()
         }
-        read_times = {user_id: now_ts for user_id in user_ids}
+        """
 
         await self.env.cache.add_user_ids_and_join_time_in_group(group_id, join_times)
         await self.env.cache.set_last_read_in_group_for_users(group_id, read_times)
@@ -2214,10 +2223,12 @@ class RelationalHandler:
         now = utcnow_dt()
 
         max_days = self.room_max_history_days
-        max_count = self.room_max_history_count
+        # max_count = self.room_max_history_count
 
         if group_type in GroupTypes.public_group_types:
             a_month_ago = arrow.get(now).shift(days=-max_days).datetime
+            # disable counting messages, takes too long when joining active groups, just set the limit to a month ago
+            """
             msg_count = await self.env.storage.count_messages_in_group_since(group_id, a_month_ago)
 
             # max 500 messages or 1 month ago
@@ -2228,6 +2239,8 @@ class RelationalHandler:
                     delete_before = a_month_ago
             else:
                 delete_before = a_month_ago
+            """
+            delete_before = a_month_ago
 
         elif delete_before is None:
             delete_before = default_dt
