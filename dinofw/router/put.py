@@ -76,7 +76,7 @@ async def update_single_mqtt_session(query: UpdateSessionsQuery) -> None:
 
 
 @router.put("/mqtt/sessions", response_model=None)
-@timeit(logger, "POST", "/mqtt/sessions")
+@timeit(logger, "PUT", "/mqtt/sessions")
 @wrap_exception()
 async def update_batch_mqtt_sessions(query: UpdateSessionsQuery, db: Session = Depends(get_db)) -> None:
     """
