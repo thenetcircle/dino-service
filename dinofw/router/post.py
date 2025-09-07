@@ -778,7 +778,7 @@ async def get_message_count_for_user_in_group(
 
 
 @router.post("/groups/{group_id}/lastread", response_model=Optional[LastReads])
-@timeit(logger, "GET", "/groups/{group_id}/lastread")
+@timeit(logger, "POST", "/groups/{group_id}/lastread")
 @wrap_exception()
 async def get_last_read_in_group(
         group_id: str, query: Optional[UserIdQuery] = None, db: Session = Depends(get_db)

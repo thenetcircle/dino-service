@@ -2077,8 +2077,6 @@ class RelationalHandler:
 
         language = None
         if query.group_type in GroupTypes.public_group_types:
-            await self.env.cache.add_public_group_ids([group_id])
-
             # only public groups can be for a specific language
             if query.language is not None and len(query.language) == 2:
                 language = query.language

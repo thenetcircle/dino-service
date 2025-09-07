@@ -24,6 +24,22 @@ ONE_DAY = 24 * ONE_HOUR
 ONE_WEEK = 7 * ONE_DAY
 
 
+def _to_str(b):
+    if isinstance(b, (bytes, bytearray)):
+        return b.decode("utf-8")
+    return b
+
+
+def _to_int(b):
+    s = _to_str(b)
+    return int(s)
+
+
+def _to_float(b):
+    s = _to_str(b)
+    return float(s)
+
+
 class MemoryCache:
     def __init__(self):
         self.vals = dict()
@@ -424,23 +440,25 @@ class CacheRedis(ICache):
         self, group_id: str, users: Dict[int, float]
     ) -> None:
         key = RedisKeys.last_read_time(group_id)
-        p = self.redis.pipeline()
+        await self.redis.delete(key)
+        if users:
+            mapping = {
+                str(user_id): str(last_read)
+                for user_id, last_read in users.items()
+            }
+            await self.redis.hset(key, mapping=mapping)
+        await self.redis.expire(key, 7 * ONE_DAY)
 
-        for user_id, last_read in users.items():
-            await p.hset(key, str(user_id), str(last_read))
-
-        await p.expire(key, 7 * ONE_DAY)
-        await p.execute()
 
     async def get_last_read_times_in_group(self, group_id: str) -> Optional[Dict[int, float]]:
         key = RedisKeys.last_read_time(group_id)
         last_reads = await self.redis.hgetall(key)
 
         if not len(last_reads):
-            return
+            return None
 
         return {
-            int(float(user_id)): float(last_read)
+            _to_int(user_id): _to_float(last_read)
             for user_id, last_read in last_reads.items()
         }
 
@@ -668,13 +686,6 @@ class CacheRedis(ICache):
         r = pipeline or self.redis
 
         await r.set(key, f"{group_id}:{last_time}")
-
-    async def get_public_group_ids(self) -> Optional[set]:
-        return await self.redis.smembers(RedisKeys.public_group_ids())
-
-    async def add_public_group_ids(self, group_ids: List[str]) -> None:
-        key = RedisKeys.public_group_ids()
-        await self.redis.sadd(key, *group_ids)
 
     async def get_last_sent_for_user(self, user_id: int) -> (str, float):
         key = RedisKeys.last_sent_time_user(user_id)
