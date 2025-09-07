@@ -405,9 +405,10 @@ class CacheRedis(ICache):
         await self.redis.set(key, str(last_read))
         await self.redis.expire(key, ONE_DAY * 7)
 
-    async def remove_last_read_in_group_oldest(self, group_id: str) -> None:
+    async def remove_last_read_in_group_oldest(self, group_id: str, pipeline=None) -> None:
         key = RedisKeys.oldest_last_read_time(group_id)
-        await self.redis.delete(key)
+        r = pipeline or self.redis
+        await r.delete(key)
 
     async def get_last_read_in_group_for_user(self, group_id: str, user_id: int) -> Optional[float]:
         key = RedisKeys.last_read_time(group_id)

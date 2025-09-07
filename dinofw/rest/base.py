@@ -49,9 +49,10 @@ class BaseResource(ABC):
         )
 
         if user_stats.unread_count > 0 or user_stats.bookmark:
-            await self.env.cache.set_unread_in_group(group_id, user_id, 0)
-            await self.env.cache.remove_unread_group(user_id, group_id)
-            await self.env.cache.reset_total_unread_message_count(user_id)
+            async with self.env.cache.pipeline() as p:
+                await self.env.cache.set_unread_in_group(group_id, user_id, 0, pipeline=p)
+                await self.env.cache.remove_unread_group(user_id, group_id, pipeline=p)
+                await self.env.cache.reset_total_unread_message_count(user_id, pipeline=p)
 
         # no point updating if already newer than last message (also skips
         # broadcasting unnecessary read-receipts)

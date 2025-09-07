@@ -12,6 +12,7 @@ from loguru import logger
 from pydantic.fields import defaultdict
 from sqlalchemy import case
 from sqlalchemy import func
+from sqlalchemy import update
 from sqlalchemy import literal
 from sqlalchemy import distinct
 from sqlalchemy import or_
@@ -1949,6 +1950,42 @@ class RelationalHandler:
 
         return last_message_time
 
+    async def reset_highlight_for_others(
+            self,
+            *,
+            group_id: str,
+            user_id: int,
+            current_highlight_time_ts: float,  # your current_highlight_time in seconds
+            db: AsyncSession,
+    ) -> None:
+        """
+        Set highlight_time and receiver_highlight_time to self.long_ago for all
+        other users in the group that currently have a 'recent' receiver_highlight_time.
+        Returns the number of rows updated.
+        """
+        # only reset if the current highlight time is newer than self.long_ago
+        if current_highlight_time_ts <= to_ts(self.long_ago):
+            return
+
+        stmt = (
+            update(UserGroupStatsEntity)
+            .where(
+                UserGroupStatsEntity.group_id == group_id,
+                UserGroupStatsEntity.user_id != user_id,
+                UserGroupStatsEntity.receiver_highlight_time > self.long_ago
+            )
+            .values(
+                highlight_time=self.long_ago,
+                receiver_highlight_time=self.long_ago,
+                last_updated_time=func.now(),  # keeps your “sync changes” field current
+            )
+            # no ORM state to sync; this keeps it fast
+            .execution_options(synchronize_session=False)
+        )
+
+        await db.execute(stmt)
+        await db.commit()
+
     async def update_last_read_and_highlight_in_group_for_user(
         self, group_id: str, user_id: int, the_time: dt, db: AsyncSession
     ) -> None:
@@ -1962,7 +1999,6 @@ class RelationalHandler:
             raise UserNotInGroupException(f"user {user_id} is not in group {group_id}")
 
         current_highlight_time = to_ts(user_stats.highlight_time)
-        long_ago_ts = to_ts(self.long_ago)
 
         user_stats.last_read = the_time
         user_stats.last_updated_time = the_time
@@ -1973,30 +2009,22 @@ class RelationalHandler:
         user_stats.mentions = 0
         user_stats.unread_count = 0
 
-        # TODO: use pipeline
-        # re-check next time from db and cache it
-        await self.env.cache.remove_last_read_in_group_oldest(group_id)
+        async with self.env.cache.pipeline() as p:
+            await self.env.cache.set_last_read_in_group_for_user(group_id, user_id, to_ts(the_time), pipeline=p)
 
-        # /groups api will check the cache, need to update this value if we read a group
-        await self.env.cache.set_unread_in_group(group_id, user_id, 0)
+            # re-check next time from db and cache it
+            await self.env.cache.remove_last_read_in_group_oldest(group_id, pipeline=p)
+
+            # /groups api will check the cache, need to update this value if we read a group
+            await self.env.cache.set_unread_in_group(group_id, user_id, 0, pipeline=p)
 
         # have to reset the highlight time (if any) of the other users in the group as well
-        if current_highlight_time > long_ago_ts:
-            # TODO: use update() instead of running multiple queries (select and update)
-            other_user_stats = await db.run_sync(lambda _db:
-                _db.query(UserGroupStatsEntity)
-                .filter(UserGroupStatsEntity.user_id != user_id)
-                .filter(UserGroupStatsEntity.group_id == group_id)
-                .filter(UserGroupStatsEntity.receiver_highlight_time > self.long_ago)
-                .all()
-            )
-
-            for other_stat in other_user_stats:
-                other_stat.highlight_time = self.long_ago
-                other_stat.receiver_highlight_time = self.long_ago
-                db.add(other_stat)
-
-        await self.env.cache.set_last_read_in_group_for_user(group_id, user_id, to_ts(the_time))
+        await self.reset_highlight_for_others(
+            group_id=group_id,
+            user_id=user_id,
+            current_highlight_time_ts=current_highlight_time,
+            db=db
+        )
 
         db.add(user_stats)
         await db.commit()
