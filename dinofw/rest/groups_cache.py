@@ -136,22 +136,23 @@ class PublicGroupsCacheMixin(ABC):
         p.delete(lock_key)
         await p.execute()
 
-    async def refresh_cache_in_background(self, base: str, query, db) -> None:
+    async def refresh_cache_in_background(self, base: str, query) -> None:
         """
         Compute → serialize → set cache, then release the lock.
         Safe to fire-and-forget with asyncio.create_task.
         """
         try:
-            groups = await self.compute_public_groups(query, db)
-            # dump dicts, not models, for stable JSON shape
-            items = []
-            for g in groups:
-                if hasattr(g, "model_dump"):
-                    items.append(g.model_dump(exclude_none=True))  # pydantic v2
-                else:
-                    items.append(g.dict(exclude_none=True))        # pydantic v1
-            raw = dumps_to_bytes(items)
-            await self.set_cached_public_groups_raw(base, raw)
+            with self.env.SessionLocal() as db:
+                groups = await self.compute_public_groups(query, db)
+                # dump dicts, not models, for stable JSON shape
+                items = []
+                for g in groups:
+                    if hasattr(g, "model_dump"):
+                        items.append(g.model_dump(exclude_none=True))  # pydantic v2
+                    else:
+                        items.append(g.dict(exclude_none=True))        # pydantic v1
+                raw = dumps_to_bytes(items)
+                await self.set_cached_public_groups_raw(base, raw)
         except Exception as e:
             # If background refresh fails, lock TTL will expire naturally.
             logger.exception(e)

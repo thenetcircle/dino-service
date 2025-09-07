@@ -150,7 +150,7 @@ async def get_public_groups(query: PublicGroupQuery, db: Session = Depends(get_d
         # if stale, and we acquired the right to refresh, do it in background.
         if status == "stale-refreshing" and base:
             # fire-and-forget; the current caller gets stale but fast
-            asyncio.create_task(environ.env.rest.group.refresh_cache_in_background(base, query, db))
+            asyncio.create_task(environ.env.rest.group.refresh_cache_in_background(base, query))
         return Response(content=raw, media_type="application/json", headers={"X-Cache": status})
 
     # 2) Not cached (miss or miss-wait): compute
