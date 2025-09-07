@@ -142,7 +142,7 @@ class PublicGroupsCacheMixin(ABC):
         Safe to fire-and-forget with asyncio.create_task.
         """
         try:
-            with self.env.SessionLocal() as db:
+            async with self.env.SessionLocal() as db:
                 groups = await self.compute_public_groups(query, db)
                 # dump dicts, not models, for stable JSON shape
                 items = []
