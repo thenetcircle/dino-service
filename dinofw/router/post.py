@@ -136,7 +136,7 @@ async def get_public_groups(query: PublicGroupQuery, db: Session = Depends(get_d
     * `250`: if an unknown error occurred.
     """
 
-    # before we switched to a raw cache-based approach; ow there's no pydantic serialize/deserialize slowdowns
+    # before we switched to a raw cache-based approach; now there's no pydantic serialize/deserialize slowdowns
     """
     try:
         return await environ.env.rest.group.get_all_public_groups(query, db)

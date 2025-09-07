@@ -8,6 +8,7 @@ import orjson
 from loguru import logger
 
 from dinofw.rest.models import Group
+from dinofw.rest.queries import PublicGroupQuery
 
 # ---- Cache constants (can be monkeypatched in tests) ----
 SOFT_TTL_SEC = 60      # serve-as-fresh duration (+ jitter)

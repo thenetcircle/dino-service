@@ -521,9 +521,10 @@ class CacheRedis(ICache):
 
         await p.execute()
 
-    async def clear_unread_in_group_for_user(self, group_id: str, user_id) -> None:
+    async def clear_unread_in_group_for_user(self, group_id: str, user_id, pipeline=None) -> None:
         key = RedisKeys.unread_in_group(group_id)
-        await self.redis.hdel(key, str(user_id))
+        r = pipeline or self.redis
+        await r.hdel(key, str(user_id))
 
     async def get_unread_in_group(self, group_id: str, user_id: int) -> Optional[int]:
         key = RedisKeys.unread_in_group(group_id)
