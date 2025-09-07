@@ -153,7 +153,8 @@ async def get_user_statistics_in_group(
     * `250`: if an unknown error occurred.
     """
     try:
-        message_amount = await environ.env.rest.group.count_messages_in_group(group_id)
+        # message_amount = await environ.env.rest.group.count_messages_in_group(group_id)
+        message_amount = -1
         user_group_stats = await environ.env.rest.group.get_user_group_stats(
             group_id, user_id, db
         )
