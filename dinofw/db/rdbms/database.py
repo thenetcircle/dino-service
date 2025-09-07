@@ -1,6 +1,7 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import NullPool
 
 from dinofw.utils.config import ConfigKeys
 
@@ -23,7 +24,9 @@ async def init_db(env, engine=None):
             database_uri,
             connect_args=connection_args,
             echo=False,
-            pool_size=pool_size
+            poolclass=NullPool,  # use pgbouncer pooling
+            pool_pre_ping=True,
+            # pool_size=pool_size
         )
 
     # store it so we can dispose it on shutdown cleanly
