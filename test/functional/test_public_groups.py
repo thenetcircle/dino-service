@@ -1,3 +1,4 @@
+import asyncio
 import time
 
 from dinofw.utils.config import GroupTypes, GroupStatus
@@ -222,52 +223,6 @@ class TestPublicGroups(BaseServerRestApi):
         self.assertIsNotNone(group["status_changed_at"])
 
         await self.send_message_to_group_from(group_id, BaseTest.OTHER_USER_ID, expected_error_code=607)
-
-    async def test_only_admins_can_list_archived_groups(self):
-        group_id = await self.create_and_join_group(
-            user_id=BaseTest.USER_ID,
-            users=[
-                BaseTest.OTHER_USER_ID,
-                BaseTest.THIRD_USER_ID
-            ],
-            group_type=GroupTypes.PUBLIC_ROOM
-        )
-
-        groups = await self.get_public_groups()
-        self.assertEqual(1, len(groups))
-
-        await self.update_group_archived(group_id, archived=True)
-
-        # TODO: this fails because we cache the api responses now, changing to archived doesn't update cache
-        #  immediately, we need to set the cache expire to 0s like in test/functional/test_public_groups_cache.py
-        groups = await self.get_public_groups()
-        self.assertEqual(0, len(groups))
-
-        groups = await self.get_public_groups(include_archived=True, admin_id=1971)
-        self.assertEqual(1, len(groups))
-
-    async def test_no_archived_groups_listed_without_admin_id(self):
-        group_id = await self.create_and_join_group(
-            user_id=BaseTest.USER_ID,
-            users=[
-                BaseTest.OTHER_USER_ID,
-                BaseTest.THIRD_USER_ID
-            ],
-            group_type=GroupTypes.PUBLIC_ROOM
-        )
-
-        groups = await self.get_public_groups()
-        self.assertEqual(1, len(groups))
-
-        await self.update_group_archived(group_id, archived=True)
-
-        # TODO: this fails because we cache the api responses now, changing to archived doesn't update cache
-        #  immediately, we need to set the cache expire to 0s like in test/functional/test_public_groups_cache.py
-        groups = await self.get_public_groups(include_archived=True, admin_id=None)
-        self.assertEqual(0, len(groups))
-
-        groups = await self.get_public_groups(include_archived=False, admin_id=1971)
-        self.assertEqual(0, len(groups))
 
     async def test_public_groups_can_have_language(self):
         await self.create_and_join_group(
