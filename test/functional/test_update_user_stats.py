@@ -1,5 +1,6 @@
 import time
 
+from test.base import BaseTest
 from test.functional.base_db import BaseDatabaseTest
 from test.functional.base_functional import BaseServerRestApi
 
@@ -49,3 +50,16 @@ class TestUpdateUserStats(BaseServerRestApi):
 
         self.assertGreater(s1_after["stats"]["last_updated_time"], m1["created_at"])
         self.assertGreater(s2_after["stats"]["last_updated_time"], m2["created_at"])
+
+    @BaseServerRestApi.init_db_session
+    async def test_update_last_read_uses_fast_path(self):
+        m1 = await self.send_1v1_message(receiver_id=BaseTest.OTHER_USER_ID)
+
+        s1 = await self.get_user_stats(group_id=m1["group_id"], user_id=BaseTest.OTHER_USER_ID)
+        self.assertEqual(1, s1["stats"]["unread"])
+
+        time.sleep(0.05)
+        await self.update_last_read(m1["group_id"], BaseTest.OTHER_USER_ID)
+
+        s1 = await self.get_user_stats(group_id=m1["group_id"], user_id=BaseTest.OTHER_USER_ID)
+        self.assertEqual(0, s1["stats"]["unread"])

@@ -23,6 +23,7 @@ def _is_fast_last_read_only(q: UpdateUserGroupStats) -> bool:
         and q.highlight_time is None
         and q.highlight_limit is None
         and q.hide is None
+        and (q.bookmark is None or q.bookmark is False)
         and q.bookmark is None
         and q.pin is None
         and q.rating is None
@@ -372,7 +373,8 @@ class UpdateUserGroupStatsHandler:
             db: AsyncSession
     ) -> None:
         if _is_fast_last_read_only(query):
-            return await self._fast_update_last_read(group_id, user_id, to_dt(query.last_read_time), db)
+            await self._fast_update_last_read(group_id, user_id, to_dt(query.last_read_time), db)
+            return
 
         user_stats, that_user_stats, group = await self.handler.get_both_user_stats_in_group(group_id, user_id, query, db)
 

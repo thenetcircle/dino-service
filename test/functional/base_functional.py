@@ -80,7 +80,8 @@ class BaseServerRestApi(BaseDatabaseTest):
 
     async def update_last_read(self, group_id: str, user_id: int):
         the_json = {
-            "last_read_time": arrow.utcnow().timestamp()
+            "last_read_time": arrow.utcnow().timestamp(),
+            "bookmark": False
         }
 
         raw_response = await self.client.put(
