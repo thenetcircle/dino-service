@@ -1,5 +1,6 @@
 from datetime import datetime
-from typing import Tuple, Dict
+from datetime import timedelta
+from typing import Tuple, Dict, Final
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,6 +13,9 @@ from dinofw.utils import to_ts
 from dinofw.utils import utcnow_dt
 from dinofw.utils.config import GroupTypes
 from dinofw.utils.exceptions import UserNotInGroupException, NoSuchGroupException
+
+# don't recount unread messages in cassandra if last_read is within 5 seconds of last_message_time
+NEAR_TIP_SLACK: Final[timedelta] = timedelta(seconds=5)
 
 
 def _is_fast_last_read_only(q: UpdateUserGroupStats) -> bool:
@@ -241,15 +245,19 @@ class UpdateUserGroupStatsHandler:
         # now check the new last read time, but only recount if there's potentially unread messages
         if group.last_message_time > last_read:
             user_stats.unread_count = await self.env.storage.get_unread_in_group(group_id, user_id, last_read)
+            reset_unread_in_cache = False
         else:
             user_stats.unread_count = 0
+            reset_unread_in_cache = True
 
         # when updating last read, we reset the mention count to 0 and bookmark to false
         user_stats.mentions = 0
         user_stats.bookmark = False
         user_stats.last_read = last_read
 
-        await self.env.cache.last_read_was_updated(group_id, user_id, last_read)
+        await self.env.cache.last_read_was_updated(
+            group_id, user_id, last_read, reset_unread_in_cache=reset_unread_in_cache
+        )
 
         # highlight time is removed if a user reads a conversation
         user_stats.highlight_time = self.handler.long_ago
@@ -325,11 +333,14 @@ class UpdateUserGroupStatsHandler:
         if group_type == GroupTypes.ONE_TO_ONE and group_last_msg_time > prev_last_read:
             await _send_read_receipts()
 
-        # 4) Only hit Cassandra if there *can* be unread after new_last_read
-        if group_last_msg_time > new_last_read:
-            unread = await self.env.storage.get_unread_in_group(group_id, user_id, new_last_read)
-        else:
+        # 4) Only hit Cassandra if there *can* be unread after new_last_read (don't spend time counting in cassandra
+        # if the resulting unread is only 1 or 2 messages anyway (common in "hot" active groups)
+        if group_last_msg_time <= new_last_read + NEAR_TIP_SLACK:
             unread = 0
+            reset_unread_in_cache = True
+        else:
+            unread = await self.env.storage.get_unread_in_group(group_id, user_id, new_last_read)
+            reset_unread_in_cache = False
 
         # 5) Minimal DB updates (single UPDATE for this row; no ORM add/flush)
         await db.execute(
@@ -361,7 +372,9 @@ class UpdateUserGroupStatsHandler:
             )
 
         # 6) Update all relevant redis keys in a pipeline
-        await self.env.cache.last_read_was_updated(group_id, user_id, new_last_read)
+        await self.env.cache.last_read_was_updated(
+            group_id, user_id, new_last_read, reset_unread_in_cache=reset_unread_in_cache
+        )
 
         await db.commit()
 

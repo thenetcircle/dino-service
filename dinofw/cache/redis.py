@@ -785,12 +785,20 @@ class CacheRedis(ICache):
 
         return {int(user_id): float(join_time) for user_id, join_time in users.items()}
 
-    async def last_read_was_updated(self, group_id: str, user_id: int, last_read: float) -> None:
+    async def last_read_was_updated(
+            self,
+            group_id: str,
+            user_id: int,
+            last_read: float,
+            reset_unread_in_cache: bool = True
+    ) -> None:
         async with self.pipeline() as p:
             await self.set_last_read_in_group_for_user(group_id, user_id, to_ts(last_read), pipeline=p)
             await self.clear_unread_in_group_for_user(group_id, user_id, pipeline=p)
-            await self.remove_unread_group(user_id, group_id, pipeline=p)
             await self.reset_total_unread_message_count(user_id, pipeline=p)
+
+            if reset_unread_in_cache:
+                await self.remove_unread_group(user_id, group_id, pipeline=p)
 
     async def set_user_ids_and_join_time_in_group(
         self, group_id: str, users: Dict[int, float]
