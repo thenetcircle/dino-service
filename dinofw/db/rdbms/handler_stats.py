@@ -1,13 +1,34 @@
-from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
+from typing import Tuple, Dict
+
+from sqlalchemy import select, update
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from dinofw.db.rdbms.models import GroupEntity
 from dinofw.db.rdbms.models import UserGroupStatsEntity
 from dinofw.rest.queries import UpdateUserGroupStats
-from dinofw.utils import to_dt
+from dinofw.utils import to_dt, group_id_to_users
 from dinofw.utils import to_ts
 from dinofw.utils import utcnow_dt
-from dinofw.utils.exceptions import UserNotInGroupException
+from dinofw.utils.config import GroupTypes
+from dinofw.utils.exceptions import UserNotInGroupException, NoSuchGroupException
+
+
+def _is_fast_last_read_only(q: UpdateUserGroupStats) -> bool:
+    return (
+        q is not None
+        and q.last_read_time is not None
+        and q.action_log is None
+        and q.delete_before is None
+        and q.highlight_time is None
+        and q.highlight_limit is None
+        and q.hide is None
+        and q.bookmark is None
+        and q.pin is None
+        and q.rating is None
+        and q.notifications is None
+        and q.kicked is None
+    )
 
 
 class UpdateUserGroupStatsHandler:
@@ -173,6 +194,26 @@ class UpdateUserGroupStatsHandler:
                 #     [user_id], unread_count_before_changing, pipeline=p
                 # )
 
+    async def _set_bookmark(
+            self,
+            group_id: str,
+            user_id: int,
+            user_stats: UserGroupStatsEntity,
+            query: UpdateUserGroupStats
+    ) -> None:
+        user_stats.bookmark = query.bookmark
+
+        if query.bookmark:
+            async with self.env.cache.pipeline() as p:
+                await self.env.cache.increase_total_unread_message_count([user_id], 1, pipeline=p)
+                await self.env.cache.add_unread_group([user_id], group_id, pipeline=p)
+        # doesn't work well with pipeline
+        else:
+            # bookmark always counts as 1 unread, so just decrease by 1
+            # self.env.cache.decrease_total_unread_message_count(user_id, 1)
+            await self.env.cache.reset_total_unread_message_count(user_id)
+            await self.env.cache.remove_unread_group(user_id, group_id)
+
     async def _set_last_read(
             self,
             group_id: str,
@@ -207,36 +248,121 @@ class UpdateUserGroupStatsHandler:
         user_stats.bookmark = False
         user_stats.last_read = last_read
 
-        async with self.env.cache.pipeline() as p:
-            await self.env.cache.set_last_read_in_group_for_user(group_id, user_id, to_ts(last_read), pipeline=p)
-            await self.env.cache.clear_unread_in_group_for_user(group_id, user_id, pipeline=p)
-            await self.env.cache.remove_unread_group(user_id, group_id, pipeline=p)
-            await self.env.cache.reset_total_unread_message_count(user_id, pipeline=p)
+        await self.env.cache.last_read_was_updated(group_id, user_id, last_read)
 
         # highlight time is removed if a user reads a conversation
         user_stats.highlight_time = self.handler.long_ago
         if that_user_stats is not None:
             that_user_stats.receiver_highlight_time = self.handler.long_ago
 
-    async def _set_bookmark(
+    async def _fast_update_last_read(
             self,
             group_id: str,
             user_id: int,
-            user_stats: UserGroupStatsEntity,
-            query: UpdateUserGroupStats
+            new_last_read: datetime,
+            db: AsyncSession
     ) -> None:
-        user_stats.bookmark = query.bookmark
+        """
+        Previously the p95 for the "update user stats in group" api was around 450ms when going through the full ORM
+        path for all the update possibilities, but 99% of the time, the api is called only to update the
+        last_read time. This method is the fast path for updating last_read only, which only loads the bare minimum
+        from the DB and does a single UPDATE statement, plus all cache updates are done in a single pipeline.
+        """
+        async def _fetch_last_read_and_bookmark() -> Tuple[datetime, bool]:
+            _res = await db.execute(
+                select(
+                    UserGroupStatsEntity.last_read,
+                    UserGroupStatsEntity.bookmark
+                ).where(
+                    UserGroupStatsEntity.group_id == group_id,
+                    UserGroupStatsEntity.user_id == user_id,
+                )
+            )
+            _row = _res.one_or_none()
+            if _row is None:
+                raise UserNotInGroupException(
+                    f"tried to update group stats for user {user_id} not in group {group_id}"
+                )
+            return _row
 
-        if query.bookmark:
-            async with self.env.cache.pipeline() as p:
-                await self.env.cache.increase_total_unread_message_count([user_id], 1, pipeline=p)
-                await self.env.cache.add_unread_group([user_id], group_id, pipeline=p)
-        # doesn't work well with pipeline
+        async def _get_group_type_and_last_msg_time() -> Tuple[int, datetime]:
+            _g = await db.execute(
+                select(
+                    GroupEntity.group_type,
+                    GroupEntity.last_message_time
+                )
+                .where(GroupEntity.group_id == group_id)
+            )
+            _row = _g.one_or_none()
+            if _row is None:
+                raise NoSuchGroupException(group_id)
+            return _row
+
+        async def _send_read_receipts() -> None:
+            user_ids_join_time: Dict[int, str] = \
+                await self.env.db.get_user_ids_and_join_time_in_group(group_id, db)
+
+            if user_id in user_ids_join_time:
+                user_ids_join_time = dict(user_ids_join_time)  # shallow copy
+                user_ids_join_time.pop(user_id, None)
+
+            self.env.client_publisher.read(
+                group_id, user_id, list(user_ids_join_time.keys()), new_last_read, bookmark=was_bookmarked
+            )
+
+        # 1) Fetch only what we absolutely need: previous last_read & bookmark
+        prev_last_read, was_bookmarked = await _fetch_last_read_and_bookmark()
+
+        # if we’re not advancing, do nothing
+        if new_last_read is None or (prev_last_read is not None and new_last_read <= prev_last_read):
+            return
+
+        # 2) Fetch only last_message_time + group_type for the group
+        group_type, group_last_msg_time = await _get_group_type_and_last_msg_time()
+
+        # 3) Send read receipts only to 1v1 groups and only if the new read crosses the previous boundary
+        if group_type == GroupTypes.ONE_TO_ONE and group_last_msg_time > prev_last_read:
+            await _send_read_receipts()
+
+        # 4) Only hit Cassandra if there *can* be unread after new_last_read
+        if group_last_msg_time > new_last_read:
+            unread = await self.env.storage.get_unread_in_group(group_id, user_id, new_last_read)
         else:
-            # bookmark always counts as 1 unread, so just decrease by 1
-            # self.env.cache.decrease_total_unread_message_count(user_id, 1)
-            await self.env.cache.reset_total_unread_message_count(user_id)
-            await self.env.cache.remove_unread_group(user_id, group_id)
+            unread = 0
+
+        # 5) Minimal DB updates (single UPDATE for this row; no ORM add/flush)
+        await db.execute(
+            update(UserGroupStatsEntity)
+            .where(
+                UserGroupStatsEntity.group_id == group_id,
+                UserGroupStatsEntity.user_id == user_id,
+            )
+            .values(
+                last_updated_time=utcnow_dt(),
+                last_read=new_last_read,
+                unread_count=unread,
+                mentions=0,
+                bookmark=False,  # bookmark always drops on read
+                highlight_time=self.handler.long_ago,  # highlight cleared on read
+            )
+        )
+
+        # Also drop receiver_highlight_time on the other row in 1:1 groups, without loading it
+        if group_type == GroupTypes.ONE_TO_ONE:
+            other_user_id = [uid for uid in group_id_to_users(group_id) if uid != user_id][0]
+            await db.execute(
+                update(UserGroupStatsEntity)
+                .where(
+                    UserGroupStatsEntity.group_id == group_id,
+                    UserGroupStatsEntity.user_id == other_user_id,
+                )
+                .values(receiver_highlight_time=self.handler.long_ago)
+            )
+
+        # 6) Update all relevant redis keys in a pipeline
+        await self.env.cache.last_read_was_updated(group_id, user_id, new_last_read)
+
+        await db.commit()
 
     async def update(
             self,
@@ -245,6 +371,9 @@ class UpdateUserGroupStatsHandler:
             query: UpdateUserGroupStats,
             db: AsyncSession
     ) -> None:
+        if _is_fast_last_read_only(query):
+            return await self._fast_update_last_read(group_id, user_id, to_dt(query.last_read_time), db)
+
         user_stats, that_user_stats, group = await self.handler.get_both_user_stats_in_group(group_id, user_id, query, db)
 
         if user_stats is None:

@@ -13,7 +13,7 @@ import redis
 from loguru import logger
 
 from dinofw.cache import ICache
-from dinofw.utils import to_dt, split_into_chunks
+from dinofw.utils import to_dt, split_into_chunks, to_ts
 from dinofw.utils.config import ConfigKeys
 from dinofw.utils.config import RedisKeys
 
@@ -784,6 +784,13 @@ class CacheRedis(ICache):
             return None
 
         return {int(user_id): float(join_time) for user_id, join_time in users.items()}
+
+    async def last_read_was_updated(self, group_id: str, user_id: int, last_read: float) -> None:
+        async with self.pipeline() as p:
+            await self.set_last_read_in_group_for_user(group_id, user_id, to_ts(last_read), pipeline=p)
+            await self.clear_unread_in_group_for_user(group_id, user_id, pipeline=p)
+            await self.remove_unread_group(user_id, group_id, pipeline=p)
+            await self.reset_total_unread_message_count(user_id, pipeline=p)
 
     async def set_user_ids_and_join_time_in_group(
         self, group_id: str, users: Dict[int, float]
