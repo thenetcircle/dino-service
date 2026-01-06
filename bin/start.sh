@@ -51,4 +51,10 @@ if ! conda activate ${CONDA_ENV}; then
     exit 1
 fi
 
-LOGURU_LEVEL=WARNING ENVIRONMENT=${DINO_ENV} uvicorn --backlog 8192 --host 0.0.0.0 --port ${PORT} --workers=${N_WORKERS} server:app
+LOGURU_LEVEL=WARNING ENVIRONMENT=${DINO_ENV} uvicorn \
+    --backlog 8192 \
+    --timeout-keep-alive 15 \
+    --host 0.0.0.0 \
+    --port ${PORT} \
+    --workers=${N_WORKERS} \
+    server:app
